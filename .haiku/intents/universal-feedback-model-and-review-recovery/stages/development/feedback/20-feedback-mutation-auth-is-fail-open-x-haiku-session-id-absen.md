@@ -2,7 +2,7 @@
 title: >-
   Feedback mutation auth is fail-open — X-Haiku-Session-Id absence is silently
   allowed
-status: fixing
+status: closed
 origin: adversarial-review
 author: security
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:22:44Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-20:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
