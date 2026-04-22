@@ -7,7 +7,7 @@
   "gate_entered_at": null,
   "gate_outcome": null,
   "visits": 0,
-  "elaboration_turns": 2,
+  "elaboration_turns": 3,
   "pre_review_dispatched": true,
   "pre_review_dispatched_at": "2026-04-21T03:07:22Z",
   "pre_review_reviewers_acknowledged": true,
