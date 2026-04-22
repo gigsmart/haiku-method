@@ -1,19 +1,27 @@
 /**
  * FeedbackSidebar — desktop LEFT-column composition of the review page.
  *
- * Matches the canonical design mockup
- * (`stages/design/artifacts/review-ui-mockup.html` §sidebar): a flush-left
- * aside with its own vertical scroll, organized as:
+ * Matches the canonical design mockup (`stages/design/artifacts/review-ui-mockup.html`):
  *
  *   [Reviewing context]       stage title + current/gate badges + intent title
  *   [Feedback count header]   "Feedback — N" chip + tagline
  *   [Feedback list]           scrollable list of feedback cards
- *   [Composer + actions]      pinned bottom: textarea + Approve / External /
- *                             Request Changes buttons
+ *   [Composer + actions]      pinned bottom: textarea + smart decision button
  *
- * The composer's textarea value is captured locally and passed into the
- * review-decision POST via `submitDecision` alongside pins + inline
- * comments gathered by the artifacts pane.
+ * Smart decision button (canonical mockup §onApprove/onRequestChanges):
+ *   - If there is any pending feedback on this stage OR the composer has
+ *     typed text, the button is "Request Changes" (amber) and clicking it
+ *     opens the RevisitModal with the current stage pinned as the revisit
+ *     target. The composer text becomes the first reason.
+ *   - Otherwise, if the selected stage IS the current active stage, the
+ *     button is "Approve" (green) and posts to `submitDecision`.
+ *   - Otherwise (non-current stage, nothing pending, nothing typed), the
+ *     button is a disabled hint "Add feedback above to enable".
+ *
+ * Item-click bridge: a single delegated click handler on the list body
+ * surfaces the clicked feedback's id to the parent `ReviewPage`, which
+ * routes a highlight request to `StageReview` to scroll-and-flash the
+ * matching artifact card.
  */
 
 import type { ReviewAnnotations } from "haiku-api"
@@ -26,32 +34,33 @@ import {
 	useAnnounce,
 } from "../../a11y"
 import { useApiClient } from "../../api/context"
+import { RevisitModal } from "../../components/RevisitModal"
 import { FeedbackPanelBody } from "./FeedbackPanelBody"
 import { useFeedbackSidebarController } from "./useFeedbackSidebarController"
 
 export interface FeedbackSidebarProps {
 	intent: string | null
 	stage: string | null
+	activeStage?: string | null
 	sessionId: string
 	intentTitle?: string
 	gateBadge?: { label: string; classes: string }
 	gateType?: string
 	getAnnotations?: () => ReviewAnnotations | undefined
+	onFeedbackItemClick?: (feedbackId: string) => void
 	className?: string
 }
 
-type DecisionKind = "approved" | "external" | "changes_requested"
+type DecisionKind = "approved" | "external"
 
 const DECISION_LABELS: Record<DecisionKind, string> = {
 	approved: "Approve",
 	external: "External",
-	changes_requested: "Request Changes",
 }
 
 const DECISION_ANNOUNCE: Record<DecisionKind, string> = {
 	approved: "Review approved",
 	external: "External review submitted",
-	changes_requested: "Changes requested",
 }
 
 function isExternalGate(gateType: string | undefined): boolean {
@@ -61,11 +70,13 @@ function isExternalGate(gateType: string | undefined): boolean {
 export function FeedbackSidebar({
 	intent,
 	stage,
+	activeStage,
 	sessionId,
 	intentTitle,
 	gateBadge,
 	gateType,
 	getAnnotations,
+	onFeedbackItemClick,
 	className,
 }: FeedbackSidebarProps): React.ReactElement {
 	const { items, loading, error, retry, handleStatusChange, handleDelete } =
@@ -75,11 +86,17 @@ export function FeedbackSidebar({
 	const announce = useAnnounce()
 	const [composerText, setComposerText] = useState("")
 	const [submitting, setSubmitting] = useState<DecisionKind | null>(null)
-	const [pendingApprove, setPendingApprove] = useState(false)
+	const [revisitOpen, setRevisitOpen] = useState(false)
 
 	const pendingCount = items.filter((i) => i.status === "pending").length
 	const hasPending = pendingCount > 0
+	const hasTyped = composerText.trim().length > 0
 	const showExternal = isExternalGate(gateType)
+	const isCurrent = !!stage && stage === activeStage
+
+	// Decide which button to render.
+	const mode: "request" | "approve" | "disabled" =
+		hasPending || hasTyped ? "request" : isCurrent ? "approve" : "disabled"
 
 	const submit = useCallback(
 		async (decision: DecisionKind): Promise<void> => {
@@ -103,20 +120,31 @@ export function FeedbackSidebar({
 		[announce, client, composerText, getAnnotations, sessionId],
 	)
 
-	const handleApprove = useCallback(() => {
-		if (hasPending && !pendingApprove) {
-			setPendingApprove(true)
-			return
-		}
-		setPendingApprove(false)
-		void submit("approved")
-	}, [hasPending, pendingApprove, submit])
+	const handleBodyClick = useCallback(
+		(e: React.MouseEvent<HTMLDivElement>): void => {
+			if (!onFeedbackItemClick) return
+			const card = (e.target as HTMLElement).closest<HTMLElement>(
+				"[data-feedback-id]",
+			)
+			if (!card) return
+			const id = card.getAttribute("data-feedback-id")
+			if (id) onFeedbackItemClick(id)
+		},
+		[onFeedbackItemClick],
+	)
+
+	const hintText =
+		mode === "request"
+			? `Will trigger haiku_revisit → ${stage ?? "(stage)"} ${hasPending ? "· pending feedback" : "· composer has feedback"}`
+			: mode === "approve"
+				? "No feedback pending — approving advances the FSM to the next stage."
+				: `Type feedback above to revisit ${stage ?? "this stage"}, or click into another stage.`
 
 	return (
 		<Aside
 			data-testid="feedback-sidebar-desktop"
 			ariaLabel="Review sidebar"
-			className={`hidden xl:flex w-72 shrink-0 flex-col bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800 overflow-hidden ${className ?? ""}`}
+			className={`hidden xl:flex w-[var(--sidebar-width)] xl:w-[var(--sidebar-width-xl)] shrink-0 flex-col bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800 overflow-hidden ${className ?? ""}`}
 		>
 			{/* Reviewing context */}
 			<div className="shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-800">
@@ -128,8 +156,10 @@ export function FeedbackSidebar({
 				</h2>
 				<div className="flex items-center gap-1.5 mt-2 flex-wrap">
 					{stage && (
-						<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
-							current
+						<span
+							className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${isCurrent ? "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400" : "bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"}`}
+						>
+							{isCurrent ? "current" : "viewing"}
 						</span>
 					)}
 					{gateBadge && (
@@ -168,15 +198,21 @@ export function FeedbackSidebar({
 				</span>
 			</div>
 
-			{/* Feedback list — scrollable */}
-			<FeedbackPanelBody
-				items={items}
-				loading={loading}
-				error={error}
-				onStatusChange={handleStatusChange}
-				onDelete={handleDelete}
-				onRetry={retry}
-			/>
+			{/* Feedback list — scrollable; delegated click surfaces item id */}
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: delegated click is the idiomatic way to bridge list-item clicks to the parent highlight controller without wrapping every item. Keyboard nav already lives on FeedbackItem's disclosure button. */}
+			<div
+				className="flex flex-col flex-1 min-h-0"
+				onClick={handleBodyClick}
+			>
+				<FeedbackPanelBody
+					items={items}
+					loading={loading}
+					error={error}
+					onStatusChange={handleStatusChange}
+					onDelete={handleDelete}
+					onRetry={retry}
+				/>
+			</div>
 
 			{/* Composer + decision actions — pinned bottom */}
 			<div
@@ -191,16 +227,38 @@ export function FeedbackSidebar({
 					className="w-full text-xs p-2 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:outline-none resize-none"
 				/>
 				<div className="flex gap-2 flex-wrap">
-					<button
-						type="button"
-						onClick={handleApprove}
-						disabled={submitting !== null}
-						data-decision="approved"
-						className={`${touchTargetClass} ${focusRingClass} ${focusRingVariantClasses.approve} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md bg-teal-700 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200`}
-					>
-						{pendingApprove ? "Confirm Approve" : DECISION_LABELS.approved}
-					</button>
-					{showExternal && (
+					{mode === "approve" && (
+						<button
+							type="button"
+							onClick={() => void submit("approved")}
+							disabled={submitting !== null}
+							data-decision="approved"
+							className={`${touchTargetClass} ${focusRingClass} ${focusRingVariantClasses.approve} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md bg-teal-700 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200`}
+						>
+							{DECISION_LABELS.approved}
+						</button>
+					)}
+					{mode === "request" && (
+						<button
+							type="button"
+							onClick={() => setRevisitOpen(true)}
+							disabled={submitting !== null}
+							data-decision="changes_requested"
+							className={`${touchTargetClass} ${focusRingClass} ${focusRingVariantClasses.requestChanges} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md bg-amber-600 hover:bg-amber-700 px-3 py-2 text-xs font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900`}
+						>
+							{isCurrent ? "Request Changes" : `Request Changes on ${stage}`}
+						</button>
+					)}
+					{mode === "disabled" && (
+						<button
+							type="button"
+							disabled
+							className={`${touchTargetClass} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md bg-stone-100 dark:bg-stone-800 px-3 py-2 text-xs font-semibold text-stone-500 dark:text-stone-300 cursor-not-allowed`}
+						>
+							Add feedback above to enable
+						</button>
+					)}
+					{showExternal && mode === "approve" && (
 						<button
 							type="button"
 							onClick={() => void submit("external")}
@@ -211,25 +269,22 @@ export function FeedbackSidebar({
 							{DECISION_LABELS.external}
 						</button>
 					)}
-					<button
-						type="button"
-						onClick={() => void submit("changes_requested")}
-						disabled={submitting !== null}
-						data-decision="changes_requested"
-						className={`${touchTargetClass} ${focusRingClass} ${focusRingVariantClasses.requestChanges} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50`}
-					>
-						{DECISION_LABELS.changes_requested}
-					</button>
 				</div>
-				{pendingApprove && (
-					<p
-						role="status"
-						className="text-xs text-amber-700 dark:text-amber-300 leading-snug pt-1 border-t border-stone-100 dark:border-stone-800"
-					>
-						Pending feedback present — click Approve again to confirm.
-					</p>
-				)}
+				<p className="text-xs text-stone-500 dark:text-stone-300 leading-snug pt-1 border-t border-stone-100 dark:border-stone-800">
+					{hintText}
+				</p>
 			</div>
+
+			<RevisitModal
+				sessionId={sessionId}
+				open={revisitOpen}
+				onClose={() => setRevisitOpen(false)}
+				onSuccess={() => {
+					announce("polite", "Revisit requested")
+					setComposerText("")
+				}}
+				targetStage={stage ?? undefined}
+			/>
 		</Aside>
 	)
 }

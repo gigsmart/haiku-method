@@ -380,3 +380,28 @@ dialog.feedback-sheet[open]::backdrop {
 		animation: none;
 	}
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Stage review: brief flash when a feedback card is clicked or when the
+   "Next unseen" button navigates to an artifact. One-shot animation
+   removed after ~1.4s by the caller; reduced-motion path is a solid
+   teal border instead of the ring-pulse.
+   ───────────────────────────────────────────────────────────────────────── */
+@keyframes unit-flash {
+	0% {
+		box-shadow: 0 0 0 0 oklch(0.7 0.12 200 / 0.6);
+	}
+	100% {
+		box-shadow: 0 0 0 12px oklch(0.7 0.12 200 / 0);
+	}
+}
+.unit-flash {
+	animation: unit-flash 1.2s ease-out 1;
+	outline: 2px solid oklch(0.65 0.14 200);
+	outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+	.unit-flash {
+		animation: none;
+	}
+}

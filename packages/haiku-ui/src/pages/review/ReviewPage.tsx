@@ -27,12 +27,14 @@ import {
 import type { InlineCommentEntry } from "../../components/InlineComments"
 import { StageProgressStrip } from "../../components/StageProgressStrip"
 import { ThemeToggle } from "../../components/ThemeToggle"
+import { useFeedback } from "../../hooks/useFeedback"
 import type { ReviewAnnotations } from "../../types"
 import { ArtifactsPane } from "./ArtifactsPane"
 import { FeedbackPanelBody } from "./FeedbackPanelBody"
 import { FeedbackSidebar } from "./FeedbackSidebar"
 import { RereviewBanner } from "./shared/RereviewBanner"
 import type { ReviewPageSessionData } from "./shared/session-data"
+import { StageReview } from "./stage/StageReview"
 import { useFeedbackSidebarController } from "./useFeedbackSidebarController"
 import { useIsMobile } from "./useIsMobile"
 
@@ -134,6 +136,20 @@ export function ReviewPage({
 	const gateBadge = gateBadgeCopy(gateType)
 	const isMobile = useIsMobile()
 
+	// Stepper navigation — which stage's content the main pane is showing.
+	// Defaults to the active stage (what the intent is currently on); the
+	// header stepper lets reviewers jump to any visited stage.
+	const [selectedStage, setSelectedStage] = useState<string | null>(
+		activeStage,
+	)
+
+	// Feedback-card click → scroll-and-flash the target artifact card in
+	// the main pane. One-shot: StageReview calls `onHighlightConsumed` to
+	// clear it after the scroll is in flight.
+	const [highlightFeedbackId, setHighlightFeedbackId] = useState<string | null>(
+		null,
+	)
+
 	const [inlineComments, setInlineComments] = useState<InlineCommentEntry[]>([])
 	const [pins, setPins] = useState<AnnotationPin[]>([])
 
@@ -159,7 +175,14 @@ export function ReviewPage({
 	}, [pins, inlineComments])
 
 	const stageStates = session.stage_states ?? {}
-	const stageProgressData = Object.keys(stageStates).map((name) => {
+	const intentStageOrder =
+		(session.intent?.frontmatter?.stages as string[] | undefined) ?? []
+	const stageStateKeys = Object.keys(stageStates)
+	const orderedStageNames =
+		intentStageOrder.length > 0
+			? intentStageOrder.filter((s) => stageStateKeys.includes(s))
+			: stageStateKeys
+	const stageProgressData = orderedStageNames.map((name) => {
 		const state = stageStates[name] as
 			| { status?: string; visits?: number; pending_feedback?: number }
 			| undefined
@@ -207,7 +230,8 @@ export function ReviewPage({
 				{stageProgressData.length > 0 && (
 					<StageProgressStrip
 						stages={stageProgressData}
-						currentStage={activeStage ?? ""}
+						currentStage={selectedStage ?? activeStage ?? ""}
+						onStageClick={(name) => setSelectedStage(name)}
 					/>
 				)}
 			</HeaderLandmark>
@@ -219,58 +243,56 @@ export function ReviewPage({
 				{!isMobile && (
 					<FeedbackSidebar
 						intent={intentSlug}
-						stage={activeStage}
+						stage={selectedStage ?? activeStage}
+						activeStage={activeStage}
 						sessionId={sessionId}
 						intentTitle={session.intent?.title}
 						gateBadge={gateBadge}
 						gateType={session.gate_type}
 						getAnnotations={getAnnotations}
+						onFeedbackItemClick={(id) => setHighlightFeedbackId(id)}
 					/>
 				)}
 				<Main
 					ariaLabel="Review content"
-					className="flex-1 min-w-0 overflow-y-auto px-6 lg:px-10 py-6"
+					className="flex-1 min-w-0 overflow-y-auto"
+					style={
+						{
+							// Tabs.tsx sticks its tablist at top:var(--header-height).
+							// Inside main's scroll container, that offset must match the
+							// sticky stage banner above, not the global shell header.
+							"--header-height": "5.5rem",
+						} as React.CSSProperties
+					}
 				>
-					<div
-						data-testid="review-stage-banner"
-						className="mb-4 flex items-center gap-3 px-4 py-3 rounded-lg border border-teal-200 dark:border-teal-900/60 bg-teal-50 dark:bg-teal-900/20"
-					>
-						<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-700 text-white">
-							current
-						</span>
-						<div className="flex-1 min-w-0">
-							<p className="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400 leading-none">
-								Stage
-							</p>
-							<div className="flex items-center gap-2 mt-1">
-								<h1 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-tight capitalize">
-									{activeStage ?? "Review"}
-								</h1>
-								<span
-									className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${gateBadge.classes}`}
-								>
-									{gateBadge.label}
-								</span>
-							</div>
-						</div>
-						{session.intent?.title && (
-							<p className="hidden sm:block text-xs text-stone-500 dark:text-stone-400 max-w-sm leading-snug">
-								{session.intent.title}
-							</p>
-						)}
-					</div>
-
-					{session.previous_review && (
-						<RereviewBanner snapshot={session.previous_review} />
-					)}
-					<ArtifactsPane
-						session={session}
-						sessionId={sessionId}
-						getAnnotations={getAnnotations}
-						wsRef={wsRef}
-						onInlineCommentsChange={setInlineComments}
-						onPinsChange={setPins}
+					<StageBanner
+						stageName={selectedStage ?? activeStage ?? "review"}
+						stageStatus={
+							selectedStage === activeStage
+								? "current"
+								: (stageStates[selectedStage ?? ""]?.status ?? "pending")
+						}
+						intentTitle={session.intent?.title}
+						gateBadge={gateBadge}
 					/>
+
+					<div className="px-6 lg:px-10 pb-6">
+						{session.previous_review && (
+							<RereviewBanner snapshot={session.previous_review} />
+						)}
+						<StageScopedContent
+							session={session}
+							sessionId={sessionId}
+							stageName={selectedStage ?? activeStage}
+							intentSlug={intentSlug}
+							getAnnotations={getAnnotations}
+							wsRef={wsRef}
+							onInlineCommentsChange={setInlineComments}
+							onPinsChange={setPins}
+							highlightFeedbackId={highlightFeedbackId}
+							onHighlightConsumed={() => setHighlightFeedbackId(null)}
+						/>
+					</div>
 				</Main>
 			</div>
 
@@ -281,5 +303,136 @@ export function ReviewPage({
 				/>
 			)}
 		</div>
+	)
+}
+
+/**
+ * StageBanner — sticky top-of-main banner showing the selected stage's
+ * status, name, gate, and the intent title. Updates as the reviewer
+ * clicks through the stepper.
+ */
+function StageBanner({
+	stageName,
+	stageStatus,
+	intentTitle,
+	gateBadge,
+}: {
+	stageName: string
+	stageStatus: string
+	intentTitle?: string
+	gateBadge: { label: string; classes: string }
+}): React.ReactElement {
+	const statusPill =
+		stageStatus === "current" || stageStatus === "active"
+			? {
+					bannerClasses:
+						"border-teal-200 dark:border-teal-900/60 bg-teal-50 dark:bg-teal-900/20",
+					pillClasses: "bg-teal-700 text-white",
+					label: "current",
+				}
+			: stageStatus === "completed" || stageStatus === "complete"
+				? {
+						bannerClasses:
+							"border-green-200 dark:border-green-900/60 bg-green-50 dark:bg-green-900/20",
+						pillClasses: "bg-green-700 text-white",
+						label: "complete",
+					}
+				: {
+						bannerClasses:
+							"border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/40",
+						pillClasses: "bg-stone-600 text-white",
+						label: "upcoming",
+					}
+	return (
+		<div
+			data-testid="review-stage-banner"
+			className="sticky top-0 z-20 bg-stone-50 dark:bg-stone-950 px-6 lg:px-10 pt-6 pb-3"
+		>
+			<div
+				className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${statusPill.bannerClasses}`}
+			>
+				<span
+					className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${statusPill.pillClasses}`}
+				>
+					{statusPill.label}
+				</span>
+				<div className="flex-1 min-w-0">
+					<p className="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400 leading-none">
+						Stage
+					</p>
+					<div className="flex items-center gap-2 mt-1">
+						<h1 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-tight capitalize">
+							{stageName}
+						</h1>
+						<span
+							className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${gateBadge.classes}`}
+						>
+							{gateBadge.label}
+						</span>
+					</div>
+				</div>
+				{intentTitle && (
+					<p className="hidden sm:block text-xs text-stone-500 dark:text-stone-400 max-w-sm leading-snug">
+						{intentTitle}
+					</p>
+				)}
+			</div>
+		</div>
+	)
+}
+
+/**
+ * StageScopedContent — dispatches to StageReview when a stage is selected,
+ * falls back to the intent-scoped ArtifactsPane when there is no stage
+ * (e.g. unit reviews or pre-stage state).
+ */
+function StageScopedContent({
+	session,
+	sessionId,
+	stageName,
+	intentSlug,
+	getAnnotations,
+	wsRef,
+	onInlineCommentsChange,
+	onPinsChange,
+	highlightFeedbackId,
+	onHighlightConsumed,
+}: {
+	session: ReviewPageSessionData
+	sessionId: string
+	stageName: string | null
+	intentSlug: string | null
+	getAnnotations: () => ReviewAnnotations | undefined
+	wsRef?: React.RefObject<WebSocket | null>
+	onInlineCommentsChange: (comments: InlineCommentEntry[]) => void
+	onPinsChange: (pins: AnnotationPin[]) => void
+	highlightFeedbackId: string | null
+	onHighlightConsumed: () => void
+}): React.ReactElement {
+	// All feedback for this intent+stage (fetched once per stage).
+	const { items: stageFeedback } = useFeedback(intentSlug, stageName)
+
+	const isUnitReview = session.review_type === "unit" && !!session.target
+	if (isUnitReview || !stageName) {
+		return (
+			<ArtifactsPane
+				session={session}
+				sessionId={sessionId}
+				getAnnotations={getAnnotations}
+				wsRef={wsRef}
+				onInlineCommentsChange={onInlineCommentsChange}
+				onPinsChange={onPinsChange}
+			/>
+		)
+	}
+	return (
+		<StageReview
+			session={session}
+			sessionId={sessionId}
+			stageName={stageName}
+			feedback={stageFeedback}
+			onHighlightRequestId={highlightFeedbackId}
+			onHighlightConsumed={onHighlightConsumed}
+		/>
 	)
 }

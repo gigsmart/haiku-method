@@ -116,7 +116,9 @@ export function FeedbackList({
 		itemRefs.current.length = items.length
 	}, [items.length])
 
-	const virtualized = items.length > VIRTUALIZE_THRESHOLD
+	// Disable virtualization when an item is expanded — expanded cards
+	// exceed the fixed itemSize and would overlap neighbors otherwise.
+	const virtualized = items.length > VIRTUALIZE_THRESHOLD && expandedId === null
 
 	const scrollToIndex = useCallback((index: number) => {
 		if (virtualRef.current) {

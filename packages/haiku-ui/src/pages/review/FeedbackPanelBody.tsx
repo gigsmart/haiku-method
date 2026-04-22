@@ -47,7 +47,11 @@ export function FeedbackPanelBody({
 					onFilter={setActiveStatus}
 				/>
 			</div>
-			<div className="flex-1 overflow-y-auto p-3">
+			{/* Scroll container is full-width (scrollbar sits at the sidebar's
+			    right edge). Horizontal padding lives on the list so cards span
+			    edge-to-edge minus the intended gutter, and expanded cards
+			    never get clipped by a narrower scroll viewport. */}
+			<div className="flex-1 overflow-y-auto px-3 py-3">
 				<FeedbackList
 					items={filtered}
 					isLoading={loading}
