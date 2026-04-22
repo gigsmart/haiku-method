@@ -1,6 +1,6 @@
 ---
 title: AnnotationCanvas arrow-key traversal test is a no-op
-status: fixing
+status: closed
 origin: adversarial-review
 author: test-quality
 author_type: agent
@@ -8,7 +8,7 @@ created_at: '2026-04-21T20:22:54Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-24:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
