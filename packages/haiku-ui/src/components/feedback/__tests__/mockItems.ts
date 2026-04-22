@@ -138,7 +138,8 @@ const FIXTURES: Fixture[] = [
 	},
 	// 4. Embedded newlines (LF + CRLF) + markdown specials needing escape.
 	{
-		title: "Markdown escaping: backticks | pipes * asterisks [brackets] _under_",
+		title:
+			"Markdown escaping: backticks | pipes * asterisks [brackets] _under_",
 		body:
 			"Inline specials that must not break the renderer:\r\n" +
 			"- backticks: `` `code` `` and ``` ```ts\nfenced\n``` ```\r\n" +
@@ -168,7 +169,24 @@ const FIXTURES: Fixture[] = [
 	},
 ]
 
-export function mockItems(n: number): FeedbackItemData[] {
+/**
+ * Build a deterministic array of feedback fixtures.
+ *
+ * The optional `overrides` param is merged on top of every generated item.
+ * It is intentionally a single object applied uniformly — call sites that
+ * need per-item variation should map over the result and spread overrides
+ * themselves. Widening the signature this way lets transition-matrix /
+ * upstream-stage / edge-case tests pin one field (e.g. `status: "closed"`,
+ * `visit: 3`, future `upstream_stage: "design"`) without reconstructing
+ * the whole fixture shape inline.
+ *
+ * Existing call sites that invoke `mockItems(n)` keep their behavior —
+ * `overrides` defaults to an empty object which is a no-op spread.
+ */
+export function mockItems(
+	n: number,
+	overrides: Partial<FeedbackItemData> = {},
+): FeedbackItemData[] {
 	const items: FeedbackItemData[] = []
 	for (let i = 0; i < n; i++) {
 		const status = STATUS_CYCLE[i % STATUS_CYCLE.length]
@@ -191,6 +209,7 @@ export function mockItems(n: number): FeedbackItemData[] {
 				status === "closed"
 					? CLOSED_BY_CYCLE[i % CLOSED_BY_CYCLE.length]
 					: null,
+			...overrides,
 		})
 	}
 	return items

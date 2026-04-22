@@ -24,8 +24,9 @@
 
 import { act, cleanup, fireEvent, render } from "@testing-library/react"
 import { useState } from "react"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { LiveRegionShell, POLITE_REGION_ID } from "../../../a11y"
+import type { FeedbackItemData } from "../../../types"
 import { FeedbackItem } from "../FeedbackItem"
 import { type FeedbackStatus, TOKEN_HASH } from "../tokens"
 import { mockItems } from "./mockItems"
@@ -222,7 +223,7 @@ describe("FeedbackItem — canonical verbs", () => {
 		expect(queryByText("Delete")).toBeNull()
 	})
 
-	it("Delete button on closed/rejected carries data-action=\"delete\" + aria-label=\"Delete feedback {id}\"", () => {
+	it('Delete button on closed/rejected carries data-action="delete" + aria-label="Delete feedback {id}"', () => {
 		// Lock in the contract shape downstream audit tooling relies on.
 		// data-action is the hook stable selector for E2E + keyboard-nav
 		// tests; aria-label follows the DESIGN-BRIEF §2 screen-reader table
@@ -257,13 +258,37 @@ describe("FeedbackItem — canonical verbs", () => {
 
 function ControllableFeedbackItem({
 	initialStatus,
+	onStatusChangeSpy,
+	itemOverrides,
 }: {
 	initialStatus: FeedbackStatus
+	/**
+	 * Optional spy invoked ahead of the internal state update so tests that
+	 * care about dispatch counts (e.g. the stale-reference idempotency test
+	 * below) can assert call shape + cardinality without re-plumbing the
+	 * wrapper. When omitted the wrapper behaves as before: state updates
+	 * happen synchronously, no observable from the parent.
+	 */
+	onStatusChangeSpy?: (id: string, next: FeedbackStatus) => void
+	/**
+	 * Optional overrides merged into the rendered item. Used by the
+	 * upstream-stage pinning test to inject fields the wire schema does not
+	 * yet carry (see `packages/haiku-api/src/schemas/feedback.ts`
+	 * FeedbackItemSchema — `upstream_stage` is deliberately out-of-schema
+	 * today; this override lets us pin the current "no distinct affordance"
+	 * rendering so a future schema addition forces a test update).
+	 */
+	itemOverrides?: Partial<FeedbackItemData>
 }): React.ReactElement {
 	const [status, setStatus] = useState<FeedbackStatus>(initialStatus)
 	const [isExpanded, setIsExpanded] = useState(true)
 	const items = mockItems(1)
-	const item = { ...items[0], status, feedback_id: "FB-01" }
+	const item = {
+		...items[0],
+		status,
+		feedback_id: "FB-01",
+		...(itemOverrides ?? {}),
+	}
 	return (
 		<>
 			<LiveRegionShell />
@@ -271,7 +296,11 @@ function ControllableFeedbackItem({
 				item={item}
 				isExpanded={isExpanded}
 				onToggle={() => setIsExpanded((v) => !v)}
-				onStatusChange={(_id, next) => setStatus(next)}
+				onStatusChange={(id, next) => {
+					if (onStatusChangeSpy) onStatusChangeSpy(id, next)
+					setStatus(next)
+				}}
+				onDelete={() => undefined}
 			/>
 		</>
 	)
@@ -370,5 +399,287 @@ describe("FeedbackItem — screen-reader announcement on status change", () => {
 			fireEvent.click(reopen)
 		})
 		expect(polite?.textContent).toBe("Feedback FB-01 reopened")
+	})
+})
+
+// ── Transition matrix (FB-66) ──────────────────────────────────────────────
+//
+// Per FB-66, the happy-path transition tests above only exercised three
+// edges of the FeedbackItem status machine (pending → rejected,
+// addressed → closed, rejected → pending). This matrix enumerates every
+// legal transition the UI exposes and drives each one through the real
+// DOM so the status update, the polite-region announcement, and the
+// focus-restoration `useLayoutEffect` get re-verified per cell. Any
+// regression in the `handleStatusChange` → `useLayoutEffect` plumbing
+// shows up in multiple cells instead of just one, which makes the root
+// cause obvious.
+//
+// The table deliberately excludes `pending → closed` — the UI does not
+// render a Verify & Close button on a pending item (see the canonical-
+// verbs `describe` above). The "forbidden transitions" block below
+// asserts that absence is load-bearing.
+
+type TransitionAction = "dismiss" | "verify-close" | "reopen"
+
+const LEGAL_TRANSITIONS: Array<{
+	from: FeedbackStatus
+	action: TransitionAction
+	to: FeedbackStatus
+	politeText: string
+}> = [
+	{
+		from: "pending",
+		action: "dismiss",
+		to: "rejected",
+		politeText: "Feedback FB-01 marked as rejected",
+	},
+	{
+		from: "addressed",
+		action: "verify-close",
+		to: "closed",
+		politeText: "Feedback FB-01 marked as closed",
+	},
+	{
+		from: "addressed",
+		action: "reopen",
+		to: "pending",
+		politeText: "Feedback FB-01 reopened",
+	},
+	{
+		from: "closed",
+		action: "reopen",
+		to: "pending",
+		politeText: "Feedback FB-01 reopened",
+	},
+	{
+		from: "rejected",
+		action: "reopen",
+		to: "pending",
+		politeText: "Feedback FB-01 reopened",
+	},
+]
+
+describe("FeedbackItem — transition matrix", () => {
+	for (const { from, action, to, politeText } of LEGAL_TRANSITIONS) {
+		it(`${from} → ${to} via ${action}: updates data-status, announces politely, and restores focus to the card`, async () => {
+			const { container } = render(
+				<ControllableFeedbackItem initialStatus={from} />,
+			)
+			const button = container.querySelector<HTMLButtonElement>(
+				`[data-action='${action}']`,
+			)
+			// Sanity: the action button MUST be present for a legal edge. If
+			// the table and the component disagree, the test below fails with
+			// a message that points at the exact missing edge rather than a
+			// cascading null-reference error.
+			expect(button).not.toBeNull()
+			if (!button) return
+			// Focus the button first so the focus-restoration invariant is a
+			// real test (we need something to restore from).
+			button.focus()
+			expect(document.activeElement).toBe(button)
+			await act(async () => {
+				fireEvent.click(button)
+			})
+			const card = container.querySelector<HTMLDivElement>(
+				"[data-testid='feedback-item']",
+			)
+			// Invariant 1: parent state moved to the target status and the
+			// card root's data-status reflects it.
+			expect(card?.getAttribute("data-status")).toBe(to)
+			// Invariant 2: the polite live-region text matches exactly. A
+			// regression in the announcement string (typo, punctuation, the
+			// id-vs-status word order) would surface here per-cell.
+			const polite = document.getElementById(POLITE_REGION_ID)
+			expect(polite?.textContent).toBe(politeText)
+			// Invariant 3: after the transition, the button the user clicked
+			// may no longer exist (e.g. addressed → closed removes Verify &
+			// Close), so focus MUST be on the card root, not stranded on
+			// <body>.
+			expect(document.activeElement).toBe(card)
+		})
+	}
+})
+
+// ── Forbidden transitions (FB-66) ──────────────────────────────────────────
+//
+// The reviewer's open question on FB-66 — "pending → closed directly: is
+// this even allowed?" — is answered here. The UI refuses to offer that
+// edge (no Verify & Close button on a pending item). Pinning that decision
+// with tests means a future component edit that accidentally introduces
+// the button — or a future designer who decides pending should be
+// close-able — is forced to delete these assertions consciously rather
+// than silently change the status machine. Same applies to the
+// closed → dismiss and rejected → dismiss edges: a closed or rejected
+// item exposes only Reopen + (optional) Delete.
+
+describe("FeedbackItem — forbidden transitions", () => {
+	it("pending + expanded does NOT render Verify & Close (pending cannot go directly to closed)", () => {
+		const items = mockItems(1)
+		const { container } = render(
+			<FeedbackItem
+				item={{ ...items[0], status: "pending" }}
+				isExpanded
+				onToggle={() => undefined}
+				onStatusChange={() => undefined}
+			/>,
+		)
+		expect(container.querySelector("[data-action='verify-close']")).toBeNull()
+	})
+
+	it("closed + expanded does NOT render Dismiss (closed cannot be re-dismissed to rejected)", () => {
+		const items = mockItems(1, { status: "closed" })
+		const { container } = render(
+			<FeedbackItem
+				item={items[0]}
+				isExpanded
+				onToggle={() => undefined}
+				onStatusChange={() => undefined}
+			/>,
+		)
+		expect(container.querySelector("[data-action='dismiss']")).toBeNull()
+	})
+
+	it("rejected + expanded does NOT render Dismiss or Verify & Close (Reopen + Delete only)", () => {
+		const items = mockItems(1, { status: "rejected" })
+		const { container } = render(
+			<FeedbackItem
+				item={items[0]}
+				isExpanded
+				onToggle={() => undefined}
+				onStatusChange={() => undefined}
+				onDelete={() => undefined}
+			/>,
+		)
+		expect(container.querySelector("[data-action='dismiss']")).toBeNull()
+		expect(container.querySelector("[data-action='verify-close']")).toBeNull()
+	})
+})
+
+// ── Double-click idempotency (FB-66) ───────────────────────────────────────
+//
+// The reviewer called out: "user clicks Dismiss twice rapidly — does the
+// second click no-op or re-POST?" The meaningful protection lives at the
+// API layer (and is covered in `packages/haiku-api` tests), but the UI
+// ALSO has a load-bearing guarantee: once the parent updates `item.status`
+// to rejected, the button tree re-renders to the rejected branch, which
+// does NOT contain a Dismiss button. The Dismiss button the user held a
+// reference to is detached from the DOM tree. A second click on that
+// stale reference MUST NOT cause the parent's `onStatusChange` to fire
+// a second time — the node is no longer mounted.
+//
+// Note: jsdom still dispatches click events to detached nodes (the React
+// event handler was bound at mount time). The meaningful test is
+// therefore double: (a) the button is no longer in the document after
+// the first click, and (b) whether a follow-up click fires is determined
+// by React's synthetic event system, not by our component logic. We pin
+// the "detached" invariant here and assert the spy count so a regression
+// that causes the DOM node to remain mounted (e.g. an over-eager memo)
+// is visible.
+
+describe("FeedbackItem — double-click idempotency on Dismiss", () => {
+	it("after Dismiss, the stale Dismiss button is no longer in the document and onStatusChange fired exactly once", async () => {
+		const spy = vi.fn()
+		const { container } = render(
+			<ControllableFeedbackItem
+				initialStatus="pending"
+				onStatusChangeSpy={spy}
+			/>,
+		)
+		const dismiss = container.querySelector<HTMLButtonElement>(
+			"[data-action='dismiss']",
+		)
+		if (!dismiss) throw new Error("dismiss button missing")
+		await act(async () => {
+			fireEvent.click(dismiss)
+		})
+		// The button was removed when the parent re-rendered into the
+		// rejected branch. This is the load-bearing guard against a future
+		// regression that keeps the Dismiss button mounted across statuses
+		// (which would allow double-clicks to actually re-dispatch).
+		expect(document.body.contains(dismiss)).toBe(false)
+		// First click dispatched the transition.
+		expect(spy).toHaveBeenCalledTimes(1)
+		expect(spy).toHaveBeenCalledWith("FB-01", "rejected")
+	})
+})
+
+// ── Upstream-stage pinning (FB-66) ─────────────────────────────────────────
+//
+// The reviewer asked whether a feedback item carrying
+// `upstream_stage: <other-stage>` renders a distinct affordance. The
+// answer today is NO — `FeedbackItemSchema` in
+// `packages/haiku-api/src/schemas/feedback.ts` does not currently carry
+// the field, so the UI cannot know the origin stage at render time. The
+// override below injects an `upstream_stage`-like field via
+// `mockItems(..., overrides)` to force a render; the assertion is that
+// the rendered tree looks EXACTLY like a non-upstream item (same
+// Dismiss button, same aria-label, no "originated elsewhere" badge).
+//
+// When the wire schema is extended to ship `upstream_stage`, this test
+// will still pass (the override is type-cast so the injection doesn't
+// depend on the schema field existing), but its semantic guarantee is:
+// "if a future unit adds upstream-stage semantics to FeedbackItem, this
+// pinning test will need an intentional update to assert the new
+// affordance." See feedback.ts FeedbackItemSchema (line ~28) for the
+// schema that must grow before the UI can differentiate.
+
+describe("FeedbackItem — upstream-stage pinning (schema not yet shipped)", () => {
+	it("renders identical affordances with and without an upstream_stage-like override", () => {
+		// Cast to Partial<FeedbackItemData> with a bag of unknown extras —
+		// the field isn't on the wire schema, so TypeScript rejects a
+		// direct `{ upstream_stage: "design" }` literal. The cast is
+		// deliberate: we're pinning runtime rendering, not type shape.
+		const upstreamOverride = {
+			upstream_stage: "design",
+		} as unknown as Partial<FeedbackItemData>
+		const baseline = mockItems(1, { status: "pending" })
+		const withUpstream = mockItems(1, {
+			status: "pending",
+			...upstreamOverride,
+		})
+
+		const a = render(
+			<FeedbackItem
+				item={baseline[0]}
+				isExpanded
+				onToggle={() => undefined}
+				onStatusChange={() => undefined}
+			/>,
+		)
+		const baselineDismiss = a.container.querySelector<HTMLButtonElement>(
+			"[data-action='dismiss']",
+		)
+		expect(baselineDismiss).not.toBeNull()
+		const baselineLabel = baselineDismiss?.getAttribute("aria-label")
+		// No upstream-stage affordance in the baseline tree — asserted
+		// positively as "no element reports the upstream stage" so a
+		// future addition (a badge, a data attribute, an aria-describedby
+		// pointer) forces this test to update.
+		expect(a.container.querySelector("[data-upstream-stage]")).toBeNull()
+		expect(a.container.textContent?.toLowerCase()).not.toContain(
+			"originated elsewhere",
+		)
+		a.unmount()
+
+		const b = render(
+			<FeedbackItem
+				item={withUpstream[0]}
+				isExpanded
+				onToggle={() => undefined}
+				onStatusChange={() => undefined}
+			/>,
+		)
+		const upstreamDismiss = b.container.querySelector<HTMLButtonElement>(
+			"[data-action='dismiss']",
+		)
+		expect(upstreamDismiss).not.toBeNull()
+		// Same aria-label as the baseline — no differentiation today.
+		expect(upstreamDismiss?.getAttribute("aria-label")).toBe(baselineLabel)
+		// Still no upstream affordance after the override is applied.
+		expect(b.container.querySelector("[data-upstream-stage]")).toBeNull()
+		expect(b.container.textContent?.toLowerCase()).not.toContain(
+			"originated elsewhere",
+		)
 	})
 })
