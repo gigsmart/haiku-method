@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { withAuthQuery } from "../../../api/auth"
 import { Card, SectionHeading } from "../../../components/Card"
 import {
 	type InlineCommentEntry,
@@ -6,6 +7,25 @@ import {
 } from "../../../components/InlineComments"
 import type { OutputArtifact } from "../../../types"
 import { markdownToSimpleHtml } from "./section-helpers"
+
+/**
+ * Tunnel-served asset paths whose responses require the JWT gate
+ * (FB-30). External http/https URLs pass through untouched.
+ */
+const TUNNEL_ASSET_PREFIXES = [
+	"/files/",
+	"/mockups/",
+	"/wireframe/",
+	"/stage-artifacts/",
+	"/question-image/",
+]
+
+function authedAssetUrl(url: string | undefined | null): string {
+	if (!url) return ""
+	return TUNNEL_ASSET_PREFIXES.some((p) => url.startsWith(p))
+		? withAuthQuery(url)
+		: url
+}
 
 /**
  * OutputArtifactsTab — renders the Outputs tab inside the intent review.
@@ -106,7 +126,7 @@ export function OutputArtifactsTab({
 													<SectionHeading>{a.name}</SectionHeading>
 													{a.relativePath && (
 														<a
-															href={a.relativePath}
+															href={authedAssetUrl(a.relativePath)}
 															target="_blank"
 															rel="noopener noreferrer"
 															className="text-sm text-teal-600 dark:text-teal-400 hover:underline"
@@ -125,6 +145,7 @@ export function OutputArtifactsTab({
 										)
 									}
 									if (a.type === "image" && a.relativePath) {
+										const authedPath = authedAssetUrl(a.relativePath)
 										return (
 											<Card
 												key={`oa-${globalIndex}`}
@@ -133,7 +154,7 @@ export function OutputArtifactsTab({
 												<div className="flex items-center justify-between mb-3">
 													<SectionHeading>{a.name}</SectionHeading>
 													<a
-														href={a.relativePath}
+														href={authedPath}
 														target="_blank"
 														rel="noopener noreferrer"
 														className="text-sm text-teal-600 dark:text-teal-400 hover:underline"
@@ -153,7 +174,7 @@ export function OutputArtifactsTab({
 													className="block cursor-pointer"
 												>
 													<img
-														src={a.relativePath}
+														src={authedPath}
 														alt={a.name}
 														className={`border border-stone-200 dark:border-stone-700 rounded-lg transition-all ${
 															expandedImage === a.relativePath
@@ -188,7 +209,7 @@ export function OutputArtifactsTab({
 					aria-label="Expanded image"
 				>
 					<img
-						src={expandedImage}
+						src={authedAssetUrl(expandedImage)}
 						alt="Expanded artifact"
 						className="max-w-full max-h-full object-contain rounded-lg"
 					/>

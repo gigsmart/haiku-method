@@ -27,6 +27,7 @@ import {
 	type RevisitResponse,
 	type SessionPayload,
 } from "haiku-api"
+import { authHeader, getAuthToken } from "./auth"
 
 const FETCH_HEADERS: Record<string, string> = {
 	"bypass-tunnel-reminder": "1",
@@ -112,27 +113,41 @@ export function createDefaultApiClient(): ApiClient {
 	// feedback mutation (POST/PUT/DELETE). The page shell calls
 	// `setSessionId(...)` once it has the id from the URL/session payload.
 	let sessionId: string | null = null
-	const mutationHeaders = (
+
+	// Per-call header builder. Merges in:
+	//   - the session-id header (FB-20: cross-session auth on mutations).
+	//   - the `Authorization: Bearer <jwt>` header (FB-30: tunnel auth on
+	//     every tunnel-reachable route). `authHeader()` is a no-op when no
+	//     token is present (local-only mode without a hash).
+	// Both gates are no-ops when remote review is off.
+	const withAuth = (base: Record<string, string>): Record<string, string> => ({
+		...base,
+		...authHeader(),
+	})
+	const withAuthAndSession = (
 		base: Record<string, string>,
-	): Record<string, string> =>
-		sessionId ? { ...base, [SESSION_HEADER]: sessionId } : base
+	): Record<string, string> => {
+		const next = withAuth(base)
+		return sessionId ? { ...next, [SESSION_HEADER]: sessionId } : next
+	}
+
 	return {
 		async fetchSession(sessionId) {
 			const res = await fetch(paths.session(sessionId), {
-				headers: FETCH_HEADERS,
+				headers: withAuth(FETCH_HEADERS),
 			})
 			return parseJsonOrThrow<SessionPayload>(res)
 		},
 		async fetchReviewCurrent() {
 			const res = await fetch(paths.reviewCurrent(), {
-				headers: FETCH_HEADERS,
+				headers: withAuth(FETCH_HEADERS),
 			})
 			return parseJsonOrThrow<ReviewCurrentPayload>(res)
 		},
 		async submitDecision(sessionId, body) {
 			const res = await fetch(paths.reviewDecide(sessionId), {
 				method: "POST",
-				headers: JSON_HEADERS,
+				headers: withAuth(JSON_HEADERS),
 				body: JSON.stringify(body),
 				keepalive: true,
 			})
@@ -141,7 +156,7 @@ export function createDefaultApiClient(): ApiClient {
 		async submitAnswer(sessionId, body) {
 			const res = await fetch(paths.questionAnswer(sessionId), {
 				method: "POST",
-				headers: JSON_HEADERS,
+				headers: withAuth(JSON_HEADERS),
 				body: JSON.stringify(body),
 				keepalive: true,
 			})
@@ -150,7 +165,7 @@ export function createDefaultApiClient(): ApiClient {
 		async submitDirection(sessionId, body) {
 			const res = await fetch(paths.directionSelect(sessionId), {
 				method: "POST",
-				headers: JSON_HEADERS,
+				headers: withAuth(JSON_HEADERS),
 				body: JSON.stringify(body),
 				keepalive: true,
 			})
@@ -159,7 +174,7 @@ export function createDefaultApiClient(): ApiClient {
 		async submitRevisit(sessionId, body) {
 			const res = await fetch(paths.revisit(sessionId), {
 				method: "POST",
-				headers: JSON_HEADERS,
+				headers: withAuth(JSON_HEADERS),
 				body: JSON.stringify(body),
 				keepalive: true,
 			})
@@ -170,7 +185,7 @@ export function createDefaultApiClient(): ApiClient {
 				const qs = status ? `?status=${encodeURIComponent(status)}` : ""
 				const res = await fetch(
 					`${paths.feedbackList(encodeURIComponent(intent), encodeURIComponent(stage))}${qs}`,
-					{ headers: FETCH_HEADERS },
+					{ headers: withAuth(FETCH_HEADERS) },
 				)
 				return parseJsonOrThrow<FeedbackListResponse>(res)
 			},
@@ -182,7 +197,7 @@ export function createDefaultApiClient(): ApiClient {
 					),
 					{
 						method: "POST",
-						headers: mutationHeaders(JSON_HEADERS),
+						headers: withAuthAndSession(JSON_HEADERS),
 						body: JSON.stringify(body),
 					},
 				)
@@ -197,7 +212,7 @@ export function createDefaultApiClient(): ApiClient {
 					),
 					{
 						method: "PUT",
-						headers: mutationHeaders(JSON_HEADERS),
+						headers: withAuthAndSession(JSON_HEADERS),
 						body: JSON.stringify(body),
 					},
 				)
@@ -210,7 +225,7 @@ export function createDefaultApiClient(): ApiClient {
 						encodeURIComponent(stage),
 						encodeURIComponent(id),
 					),
-					{ method: "DELETE", headers: mutationHeaders(FETCH_HEADERS) },
+					{ method: "DELETE", headers: withAuthAndSession(FETCH_HEADERS) },
 				)
 				return parseJsonOrThrow<FeedbackDeleteResponse>(res)
 			},
@@ -226,9 +241,16 @@ export function createDefaultApiClient(): ApiClient {
 				return null
 			}
 			const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
+			// Browsers can't attach custom headers on the WebSocket upgrade,
+			// so the tunnel-auth JWT rides in the query string. In local mode
+			// `getAuthToken()` returns null and we fall back to an unauth'd
+			// URL — the server-side gate is also a no-op there.
+			const token = getAuthToken()
+			const basePath = paths.wsSession(sessionId)
+			const suffix = token ? `?t=${encodeURIComponent(token)}` : ""
 			try {
 				return new WebSocket(
-					`${protocol}//${window.location.host}${paths.wsSession(sessionId)}`,
+					`${protocol}//${window.location.host}${basePath}${suffix}`,
 				)
 			} catch {
 				return null

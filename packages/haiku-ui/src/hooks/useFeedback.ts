@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
-import { useApiClient } from "../api/context"
+import { authHeader } from "../api/auth"
 import { SESSION_HEADER } from "../api/client"
+import { useApiClient } from "../api/context"
 import type { FeedbackItemData, FeedbackListResponse } from "../types"
 
 const FETCH_HEADERS = { "bypass-tunnel-reminder": "1" }
@@ -10,12 +11,24 @@ const FETCH_HEADERS = { "bypass-tunnel-reminder": "1" }
  * registered. The server requires this header on POST/PUT/DELETE feedback
  * mutations when remote review is enabled (tunnel live) — see
  * `verifyFeedbackMutationAuth` in `packages/haiku/src/http.ts`.
+ *
+ * Also attaches the tunnel-auth `Authorization: Bearer <jwt>` header
+ * (FB-30) — no-op when no token is present (local-only mode).
  */
 function mutationHeaders(
 	sessionId: string | null,
 	base: Record<string, string>,
 ): Record<string, string> {
-	return sessionId ? { ...base, [SESSION_HEADER]: sessionId } : base
+	const next = { ...base, ...authHeader() }
+	return sessionId ? { ...next, [SESSION_HEADER]: sessionId } : next
+}
+
+/**
+ * Tunnel-auth-only headers — used on GET reads. Pairs with the server's
+ * `requireTunnelAuth` gate when remote review is live.
+ */
+function readHeaders(base: Record<string, string>): Record<string, string> {
+	return { ...base, ...authHeader() }
 }
 
 export function useFeedback(intent: string | null, stage: string | null) {
@@ -33,7 +46,7 @@ export function useFeedback(intent: string | null, stage: string | null) {
 				const qs = statusFilter ? `?status=${statusFilter}` : ""
 				const res = await fetch(
 					`/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}${qs}`,
-					{ headers: FETCH_HEADERS },
+					{ headers: readHeaders(FETCH_HEADERS) },
 				)
 				if (!res.ok) {
 					const body = await res.json().catch(() => ({}))
