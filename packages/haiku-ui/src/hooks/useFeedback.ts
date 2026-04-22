@@ -89,6 +89,10 @@ export function useFeedback(intent: string | null, stage: string | null) {
 				throw new Error(errBody.error || `HTTP ${res.status}`)
 			}
 			const result = await res.json()
+			// v1: refetch on create — response doesn't project the full item
+			// (see FB-47 fix rationale). Update and delete use optimistic
+			// splices below; create stays on refetch until the POST response
+			// is extended to echo the projected FeedbackItem.
 			await fetchFeedback()
 			return result
 		},
@@ -118,10 +122,30 @@ export function useFeedback(intent: string | null, stage: string | null) {
 				throw new Error(errBody.error || `HTTP ${res.status}`)
 			}
 			const result = await res.json()
-			await fetchFeedback()
+			// FB-47: optimistic splice instead of full-list refetch.
+			// The request body carries the new status / closed_by values and
+			// the path identifies the target item, so the client has
+			// everything it needs to reconcile without a follow-up GET.
+			setItems((prev) =>
+				prev.map((item) =>
+					item.feedback_id === feedbackId
+						? {
+								...item,
+								...(fields.status !== undefined
+									? {
+											status: fields.status as FeedbackItemData["status"],
+										}
+									: {}),
+								...(fields.closed_by !== undefined
+									? { closed_by: fields.closed_by }
+									: {}),
+							}
+						: item,
+				),
+			)
 			return result
 		},
-		[intent, stage, fetchFeedback, apiClient],
+		[intent, stage, apiClient],
 	)
 
 	const deleteFeedback = useCallback(
@@ -140,10 +164,13 @@ export function useFeedback(intent: string | null, stage: string | null) {
 				throw new Error(errBody.error || `HTTP ${res.status}`)
 			}
 			const result = await res.json()
-			await fetchFeedback()
+			// FB-47: optimistic filter instead of full-list refetch. The id
+			// on the request path is authoritative, so the client knows
+			// exactly which row to drop without a follow-up GET.
+			setItems((prev) => prev.filter((item) => item.feedback_id !== feedbackId))
 			return result
 		},
-		[intent, stage, fetchFeedback, apiClient],
+		[intent, stage, apiClient],
 	)
 
 	return {
