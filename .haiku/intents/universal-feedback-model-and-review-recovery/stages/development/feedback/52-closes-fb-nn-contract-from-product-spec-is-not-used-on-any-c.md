@@ -2,7 +2,7 @@
 title: >-
   closes: [FB-NN] contract from product spec is not used on any current-visit
   unit despite 10 open FB items at stage entry
-status: fixing
+status: closed
 origin: adversarial-review
 author: completeness (from product)
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:24:28Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-52:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
