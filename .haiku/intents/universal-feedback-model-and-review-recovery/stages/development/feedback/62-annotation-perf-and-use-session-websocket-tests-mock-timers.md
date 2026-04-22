@@ -2,7 +2,7 @@
 title: >-
   annotation-perf and use-session-websocket tests mock timers; not a real
   perf/timing regression gate
-status: fixing
+status: closed
 origin: adversarial-review
 author: test-quality
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:25:49Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-62:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
