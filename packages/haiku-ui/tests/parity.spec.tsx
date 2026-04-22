@@ -152,9 +152,46 @@ describe("DOM parity — rendered app matches committed snapshot per fixture", (
 
 			const rendered = normalizeDomSnapshot(container.innerHTML)
 
-			// Sanity: the SPA actually rendered something non-trivial. An empty
-			// string or a bare error message would mean the mock didn't wire up.
-			expect(rendered.length).toBeGreaterThan(16)
+			// Body-content sanity: every fixture must render its actual payload,
+			// not a shell-only error state. Replaces the previous `length > 16`
+			// check, which any non-trivial DOM would pass — including a
+			// silently-broken render that would be baked into the snapshot
+			// baseline by `-u` regeneration.
+			if (fx.name === "review") {
+				const r = session as ReviewSessionPayload
+				if (r.intent?.title) {
+					expect(rendered).toContain(escapeHtml(r.intent.title as string))
+				}
+				for (const unit of r.units ?? []) {
+					const slug = (unit as { slug?: string }).slug
+					if (slug) {
+						expect(rendered).toContain(escapeHtml(slug))
+					}
+				}
+			} else if (fx.name === "question") {
+				const q = session as QuestionSessionPayload
+				if (q.title) {
+					expect(rendered).toContain(escapeHtml(q.title))
+				}
+				const firstQuestion = q.questions?.[0]?.question
+				if (firstQuestion) {
+					expect(rendered).toContain(escapeHtml(firstQuestion))
+				}
+			} else if (fx.name === "direction") {
+				const d = session as DirectionSessionPayload
+				if (d.title) {
+					expect(rendered).toContain(escapeHtml(d.title))
+				}
+				const firstArchetype = d.archetypes?.[0]?.name
+				if (firstArchetype) {
+					expect(rendered).toContain(escapeHtml(firstArchetype))
+				}
+			}
+			// Negative guard: the rendered DOM must NOT be an error state.
+			// A shell-only render that silently collapses to
+			// `<div>Failed to load…</div>` would still pass the shell-marker
+			// checks below; this guard catches that regardless of shell.
+			expect(rendered).not.toMatch(/error|failed to load/i)
 
 			// Fixture-specific structural assertions — these are the no-
 			// regression guarantees. If a future refactor removes the header,
