@@ -216,6 +216,20 @@
 					"requirePresence": true,
 					"scope": ["packages/haiku-ui/src/components/Tabs.tsx"],
 					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-weak-teal-text-white",
+					"description": "FB-71 stage-wide regression guard — any `bg-teal-(100|200|300|400|500|600)` class paired with `text-white` on the same element fails WCAG AA (4.5:1). Canonical passing teal + white combinations are `bg-teal-700` (5.47:1) or `bg-teal-800` (7.26:1). Applied across the entire haiku-ui source so a new colored button or badge cannot silently reintroduce the FB-55 / FB-58 gap the per-component bans already catch. Matches either ordering within the same class attribute.",
+					"pattern": "bg-teal-(100|200|300|400|500|600)\\b[^\"'`]*\\btext-white\\b|text-white\\b[^\"'`]*\\bbg-teal-(100|200|300|400|500|600)\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-weak-emerald-text-white",
+					"description": "FB-71 stage-wide regression guard — any `bg-emerald-(100|200|300|400|500|600)` paired with `text-white` on the same element fails WCAG AA (emerald-400 + white = 1.63:1 — FB-61; emerald-600 + white = 3.85:1). Canonical fix is `bg-emerald-700` text-white (5.10:1).",
+					"pattern": "bg-emerald-(100|200|300|400|500|600)\\b[^\"'`]*\\btext-white\\b|text-white\\b[^\"'`]*\\bbg-emerald-(100|200|300|400|500|600)\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
 				}
 			]
 		}
