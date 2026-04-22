@@ -221,6 +221,36 @@ describe("FeedbackItem — canonical verbs", () => {
 		// onDelete. Without the handler, no Delete button appears.
 		expect(queryByText("Delete")).toBeNull()
 	})
+
+	it("Delete button on closed/rejected carries data-action=\"delete\" + aria-label=\"Delete feedback {id}\"", () => {
+		// Lock in the contract shape downstream audit tooling relies on.
+		// data-action is the hook stable selector for E2E + keyboard-nav
+		// tests; aria-label follows the DESIGN-BRIEF §2 screen-reader table
+		// pattern ("{verb} feedback {id}"). Together they make the "Delete
+		// is NOT banned; it's the terminal destructive action" contract
+		// (FeedbackItem.tsx:1-22 docstring + DESIGN-TOKENS §2.6) mechanically
+		// verifiable — guarding against future drift that caused FB-51.
+		const items = mockItems(3)
+		const { container } = render(
+			<FeedbackItem
+				item={{
+					...items[2],
+					status: "closed",
+					feedback_id: "FB-42",
+				}}
+				isExpanded
+				onToggle={() => undefined}
+				onStatusChange={() => undefined}
+				onDelete={() => undefined}
+			/>,
+		)
+		const del = container.querySelector<HTMLButtonElement>(
+			"button[data-action='delete']",
+		)
+		expect(del).not.toBeNull()
+		expect(del?.textContent?.trim()).toBe("Delete")
+		expect(del?.getAttribute("aria-label")).toBe("Delete feedback FB-42")
+	})
 })
 
 // ── aria-expanded + focus preservation + live-region announcement ───────────
