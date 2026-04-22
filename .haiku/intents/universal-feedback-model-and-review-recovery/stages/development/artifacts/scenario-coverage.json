@@ -1,6 +1,6 @@
 {
-  "recorded_at": "2026-04-22T02:52:21.691Z",
-  "head": "e77a68f1f68298d2a02c6f447a683429ec0fb35c",
+  "recorded_at": "2026-04-22T02:58:13.302Z",
+  "head": "adcc9a51f70049f81a17ceb281e270ea2720b47b",
   "total_scenarios": 151,
   "mapped": 132,
   "unmapped": 19,
@@ -9,7 +9,7 @@
     "backend_tests": 1020,
     "backend_baseline": 477,
     "backend_disk": 543,
-    "frontend_tests": 336,
+    "frontend_tests": 343,
     "yaml_features": 6
   },
   "by_feature": {
