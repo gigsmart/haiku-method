@@ -1,24 +1,15 @@
 {
   "stage": "development",
-  "status": "completed",
+  "status": "active",
   "phase": "gate",
   "started_at": null,
-  "completed_at": "2026-04-22T03:44:49Z",
-  "gate_entered_at": "2026-04-22T03:41:48Z",
-  "gate_outcome": "advanced",
+  "completed_at": null,
+  "gate_entered_at": "2026-04-22T13:08:33Z",
+  "gate_outcome": null,
   "visits": 1,
   "elaboration_turns": 2,
   "pre_review_dispatched": true,
   "pre_review_dispatched_at": "2026-04-21T03:07:22Z",
   "pre_review_reviewers_acknowledged": true,
-  "pre_review_reviewers_acknowledged_at": "2026-04-21T03:24:11Z",
-  "iterations": [
-    {
-      "index": 1,
-      "started_at": "2026-04-22T03:44:49Z",
-      "completed_at": "2026-04-22T03:44:49Z",
-      "trigger": "initial",
-      "result": "advanced"
-    }
-  ]
+  "pre_review_reviewers_acknowledged_at": "2026-04-21T03:24:11Z"
 }

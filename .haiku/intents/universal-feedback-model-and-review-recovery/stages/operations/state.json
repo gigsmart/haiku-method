@@ -6,5 +6,6 @@
   "completed_at": null,
   "gate_entered_at": null,
   "gate_outcome": null,
-  "visits": 0
+  "visits": 0,
+  "elaboration_turns": 1
 }
