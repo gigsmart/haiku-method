@@ -101,6 +101,7 @@ export function Tabs({ groupId, tabs }: Props) {
 						id={`panel-${groupId}-${tab.id}`}
 						aria-labelledby={`tab-${groupId}-${tab.id}`}
 						hidden={!isActive || tab.disabled}
+						tabIndex={isActive && !tab.disabled ? 0 : -1}
 						className={focusRingClass}
 					>
 						{isActive && tab.content}
