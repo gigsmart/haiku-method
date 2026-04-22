@@ -22,7 +22,7 @@
 
 import { MarkdownViewer } from "@haiku/shared"
 import DOMPurify from "dompurify"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Card, SectionHeading } from "../../../components/Card"
 import { type TabDef, Tabs } from "../../../components/Tabs"
 import type { ParsedUnit } from "../../../parsed"
@@ -138,6 +138,8 @@ export function StageReview({
 	onHighlightRequestId,
 	onHighlightConsumed,
 }: StageReviewProps): React.ReactElement {
+	const [activeTab, setActiveTab] = useState<string>("overview")
+
 	const units = (session.units ?? []).filter(
 		(u) => (u.frontmatter.stage ?? "") === stageName,
 	)
@@ -147,14 +149,28 @@ export function StageReview({
 	const outputArtifacts = (session.output_artifacts ?? []).filter(
 		(a) => a.stage === stageName,
 	)
+	// Intent-level knowledge files apply to every stage (per the
+	// H·AI·K·U data model — `.haiku/intents/{slug}/knowledge/`). We merge
+	// them with stage-scoped artifacts so stages that produce no new
+	// discovery still surface the ambient knowledge reviewers need.
+	const intentKnowledge = session.knowledge_files ?? []
 
-	const knowledgeVMs: ArtifactViewModel[] = stageArtifacts.map((a) => ({
-		name: a.name,
-		kind: inferKind(a.name),
-		summary: firstLine(a.content),
-		body: a.content,
-		mime: inferMime(a.name),
-	}))
+	const knowledgeVMs: ArtifactViewModel[] = [
+		...stageArtifacts.map((a) => ({
+			name: a.name,
+			kind: inferKind(a.name),
+			summary: firstLine(a.content),
+			body: a.content,
+			mime: inferMime(a.name),
+		})),
+		...intentKnowledge.map((k) => ({
+			name: k.name,
+			kind: inferKind(k.name),
+			summary: firstLine(k.content),
+			body: k.content,
+			mime: inferMime(k.name),
+		})),
+	]
 	const outputVMs: ArtifactViewModel[] = outputArtifacts.map((a) => ({
 		name: a.name,
 		kind: inferOutputKind(a),
@@ -206,6 +222,22 @@ export function StageReview({
 	const stageSummary = resolveStageSummary(session, stageName)
 	const seen = useSeenTracker(sessionId)
 
+	// Condensed Overview rows request navigation to the Units / Knowledge /
+	// Outputs tab + expand the target card. We jump the tab here, then push
+	// a pending expand request down to the list components which scroll +
+	// flash the card into view.
+	const [pendingNav, setPendingNav] = useState<{
+		tab: "units" | "knowledge" | "outputs"
+		name: string
+	} | null>(null)
+	const navigateTo = useCallback(
+		(tab: "units" | "knowledge" | "outputs", name: string) => {
+			setActiveTab(tab)
+			setPendingNav({ tab, name })
+		},
+		[],
+	)
+
 	const tabs: TabDef[] = [
 		{
 			id: "overview",
@@ -222,6 +254,7 @@ export function StageReview({
 					feedbackByOutput={feedbackByOutput}
 					seen={seen}
 					stageId={stageName}
+					onNavigate={navigateTo}
 				/>
 			),
 		},
@@ -238,6 +271,8 @@ export function StageReview({
 					highlightRequestId={onHighlightRequestId ?? null}
 					onHighlightConsumed={onHighlightConsumed}
 					feedback={feedback}
+					navTargetName={pendingNav?.tab === "units" ? pendingNav.name : null}
+					onNavConsumed={() => setPendingNav(null)}
 				/>
 			),
 		},
@@ -255,6 +290,10 @@ export function StageReview({
 					highlightRequestId={onHighlightRequestId ?? null}
 					onHighlightConsumed={onHighlightConsumed}
 					feedback={feedback}
+					navTargetName={
+						pendingNav?.tab === "knowledge" ? pendingNav.name : null
+					}
+					onNavConsumed={() => setPendingNav(null)}
 				/>
 			),
 		},
@@ -272,12 +311,23 @@ export function StageReview({
 					highlightRequestId={onHighlightRequestId ?? null}
 					onHighlightConsumed={onHighlightConsumed}
 					feedback={feedback}
+					navTargetName={
+						pendingNav?.tab === "outputs" ? pendingNav.name : null
+					}
+					onNavConsumed={() => setPendingNav(null)}
 				/>
 			),
 		},
 	]
 
-	return <Tabs groupId={`stage-${stageName}`} tabs={tabs} />
+	return (
+		<Tabs
+			groupId={`stage-${stageName}`}
+			tabs={tabs}
+			activeId={activeTab}
+			onActiveChange={setActiveTab}
+		/>
+	)
 }
 
 function OverviewTab({
@@ -291,6 +341,7 @@ function OverviewTab({
 	feedbackByOutput,
 	seen,
 	stageId,
+	onNavigate,
 }: {
 	stageName: string
 	stageSummary: string | null
@@ -302,6 +353,7 @@ function OverviewTab({
 	feedbackByOutput: Map<string, FeedbackItemData[]>
 	seen: ReturnType<typeof useSeenTracker>
 	stageId: string
+	onNavigate: (tab: "units" | "knowledge" | "outputs", name: string) => void
 }) {
 	return (
 		<div className="space-y-4">
@@ -331,12 +383,17 @@ function OverviewTab({
 								unit={u}
 								feedback={feedbackByUnit.get(u.slug) ?? []}
 								state={seen.state("unit", stageId, u.slug, shaOf(u))}
+								onClick={() => onNavigate("units", u.slug)}
 							/>
 						))}
 						{units.length > 5 && (
-							<p className="text-xs text-center text-teal-600 dark:text-teal-400 mt-3">
+							<button
+								type="button"
+								onClick={() => onNavigate("units", units[5]?.slug ?? "")}
+								className="block w-full text-xs text-center text-teal-600 dark:text-teal-400 hover:underline mt-3"
+							>
 								+ {units.length - 5} more — view all in Units tab
-							</p>
+							</button>
 						)}
 					</div>
 				</Card>
@@ -355,12 +412,19 @@ function OverviewTab({
 									feedback={feedbackByKnowledge.get(a.name) ?? []}
 									iconKind="knowledge"
 									state={seen.state("knowledge", stageId, a.name, shaOf(a))}
+									onClick={() => onNavigate("knowledge", a.name)}
 								/>
 							))}
 							{knowledge.length > 5 && (
-								<p className="text-xs text-center text-teal-600 dark:text-teal-400 mt-2">
+								<button
+									type="button"
+									onClick={() =>
+										onNavigate("knowledge", knowledge[5]?.name ?? "")
+									}
+									className="block w-full text-xs text-center text-teal-600 dark:text-teal-400 hover:underline mt-2"
+								>
 									+ {knowledge.length - 5} more
-								</p>
+								</button>
 							)}
 						</div>
 					</Card>
@@ -378,12 +442,19 @@ function OverviewTab({
 									feedback={feedbackByOutput.get(a.name) ?? []}
 									iconKind="output"
 									state={seen.state("output", stageId, a.name, shaOf(a))}
+									onClick={() => onNavigate("outputs", a.name)}
 								/>
 							))}
 							{outputs.length > 5 && (
-								<p className="text-xs text-center text-teal-600 dark:text-teal-400 mt-2">
+								<button
+									type="button"
+									onClick={() =>
+										onNavigate("outputs", outputs[5]?.name ?? "")
+									}
+									className="block w-full text-xs text-center text-teal-600 dark:text-teal-400 hover:underline mt-2"
+								>
 									+ {outputs.length - 5} more
-								</p>
+								</button>
 							)}
 						</div>
 					</Card>
@@ -449,6 +520,8 @@ function UnitsTab({
 	highlightRequestId,
 	onHighlightConsumed,
 	feedback,
+	navTargetName,
+	onNavConsumed,
 }: {
 	units: ParsedUnit[]
 	feedbackByUnit: Map<string, FeedbackItemData[]>
@@ -457,6 +530,8 @@ function UnitsTab({
 	highlightRequestId: string | null
 	onHighlightConsumed?: () => void
 	feedback: FeedbackItemData[]
+	navTargetName: string | null
+	onNavConsumed?: () => void
 }) {
 	const [forceExpandId, setForceExpandId] = useState<string | null>(null)
 
@@ -474,6 +549,16 @@ function UnitsTab({
 			onHighlightConsumed?.()
 		}, 40)
 	}, [highlightRequestId, feedback, onHighlightConsumed])
+
+	// Overview-row click → navigate + scroll + flash.
+	useEffect(() => {
+		if (!navTargetName) return
+		setForceExpandId(navTargetName)
+		setTimeout(() => {
+			scrollAndFlash(`[data-unit-card="${CSS.escape(navTargetName)}"]`)
+			onNavConsumed?.()
+		}, 60)
+	}, [navTargetName, onNavConsumed])
 
 	const seenCount = units.filter(
 		(u) => seen.state("unit", stageId, u.slug, shaOf(u)) === "seen",
@@ -655,16 +740,20 @@ function CondensedUnitRow({
 	unit,
 	feedback,
 	state,
+	onClick,
 }: {
 	index: number
 	unit: ParsedUnit
 	feedback: FeedbackItemData[]
 	state: SeenState
+	onClick?: () => void
 }) {
 	const fm = unit.frontmatter
 	return (
-		<div
-			className={`flex items-center gap-3 px-3 py-2 rounded-lg bg-stone-50 dark:bg-stone-800/50 border ${seenBorderClass(state)}`}
+		<button
+			type="button"
+			onClick={onClick}
+			className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg bg-stone-50 dark:bg-stone-800/50 border ${seenBorderClass(state)} hover:border-teal-400 dark:hover:border-teal-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900`}
 		>
 			<span className="shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 text-xs font-bold font-mono">
 				{String(index + 1).padStart(2, "0")}
@@ -685,7 +774,7 @@ function CondensedUnitRow({
 			>
 				{fm.status ?? "unknown"}
 			</span>
-		</div>
+		</button>
 	)
 }
 
@@ -698,6 +787,8 @@ function ArtifactsTab({
 	highlightRequestId,
 	onHighlightConsumed,
 	feedback,
+	navTargetName,
+	onNavConsumed,
 }: {
 	kind: ArtifactKind & ("knowledge" | "output")
 	artifacts: ArtifactViewModel[]
@@ -707,6 +798,8 @@ function ArtifactsTab({
 	highlightRequestId: string | null
 	onHighlightConsumed?: () => void
 	feedback: FeedbackItemData[]
+	navTargetName: string | null
+	onNavConsumed?: () => void
 }) {
 	const [forceExpandName, setForceExpandName] = useState<string | null>(null)
 
@@ -729,6 +822,16 @@ function ArtifactsTab({
 			onHighlightConsumed?.()
 		}, 40)
 	}, [highlightRequestId, feedback, kind, onHighlightConsumed])
+
+	// Overview-row click → navigate + scroll + flash.
+	useEffect(() => {
+		if (!navTargetName) return
+		setForceExpandName(navTargetName)
+		setTimeout(() => {
+			scrollAndFlash(`[data-artifact-card="${CSS.escape(navTargetName)}"]`)
+			onNavConsumed?.()
+		}, 60)
+	}, [navTargetName, onNavConsumed])
 
 	const seenCount = artifacts.filter(
 		(a) => seen.state(kind, stageId, a.name, shaOf(a)) === "seen",
@@ -878,9 +981,16 @@ function ArtifactCard({
 							{artifact.body}
 						</MarkdownViewer>
 					) : artifact.mime === "html" ? (
+						// Agent-emitted HTML mockups/wireframes typically self-load
+						// styling via <script src="cdn.tailwindcss.com"> — that
+						// requires `allow-scripts`. We deliberately exclude
+						// `allow-same-origin` so the iframe runs in an opaque
+						// origin (no access to parent DOM, cookies, localStorage,
+						// or same-origin fetches). This matches the canonical
+						// mockup preview contract (review-ui-mockup.html §renderArtifactPreview).
 						<iframe
 							srcDoc={artifact.body}
-							sandbox="allow-same-origin"
+							sandbox="allow-scripts"
 							title={artifact.name}
 							className="w-full h-96 border border-stone-200 dark:border-stone-800 rounded-md bg-white"
 						/>
@@ -921,12 +1031,14 @@ function CondensedArtifactRow({
 	feedback,
 	iconKind,
 	state,
+	onClick,
 }: {
 	name: string
 	kind: string
 	feedback: FeedbackItemData[]
 	iconKind: "knowledge" | "output"
 	state: SeenState
+	onClick?: () => void
 }) {
 	const iconCls = iconKind === "knowledge" ? "text-sky-500" : "text-violet-500"
 	const icon = iconKind === "knowledge" ? "\u{1F9E0}" : "\u{1F4E6}"
@@ -934,8 +1046,10 @@ function CondensedArtifactRow({
 		KIND_BADGE[kind.toLowerCase()] ??
 		"bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300 border-stone-200 dark:border-stone-700"
 	return (
-		<div
-			className={`flex items-center gap-2 px-3 py-2 rounded-lg bg-stone-50 dark:bg-stone-800/50 border ${seenBorderClass(state)}`}
+		<button
+			type="button"
+			onClick={onClick}
+			className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg bg-stone-50 dark:bg-stone-800/50 border ${seenBorderClass(state)} hover:border-teal-400 dark:hover:border-teal-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900`}
 		>
 			<span className={`shrink-0 ${iconCls}`} aria-hidden="true">
 				{icon}
@@ -951,12 +1065,12 @@ function CondensedArtifactRow({
 			</span>
 			{feedback.length > 0 && (
 				<span
-					className={`shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${feedbackBadgeColor(feedback[0].status)}`}
+					className={`shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${feedback[0].status === "pending" ? "bg-amber-500 text-white" : feedback[0].status === "addressed" ? "bg-blue-500 text-white" : "bg-stone-400 text-white"}`}
 				>
 					{feedback.length}
 				</span>
 			)}
-		</div>
+		</button>
 	)
 }
 

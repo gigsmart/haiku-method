@@ -86,6 +86,54 @@ function gateBadgeCopy(
 	}
 }
 
+/**
+ * Derive the "what phase/gate is active for this stage right now" label.
+ * The FSM exposes `phase` on stage_state; we map it to the canonical
+ * mockup's gate-phase nouns: "Final Review Gate" when the stage is at
+ * its close-out review, "In Review" for mid-review, etc.
+ */
+function phaseBadgeCopy(
+	phase: string | undefined,
+	stageStatus: string | undefined,
+): { label: string; classes: string } | null {
+	if (stageStatus === "completed") {
+		return {
+			label: "All Gates Closed",
+			classes:
+				"bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300",
+		}
+	}
+	if (phase === "gate") {
+		return {
+			label: "Final Review Gate",
+			classes:
+				"bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-300 dark:border-amber-700",
+		}
+	}
+	if (phase === "review") {
+		return {
+			label: "In Review",
+			classes:
+				"bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+		}
+	}
+	if (phase === "execute") {
+		return {
+			label: "Executing",
+			classes:
+				"bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
+		}
+	}
+	if (phase === "elaborate") {
+		return {
+			label: "Elaborating",
+			classes:
+				"bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
+		}
+	}
+	return null
+}
+
 function MobileFeedbackSection({
 	intentSlug,
 	activeStage,
@@ -272,6 +320,9 @@ export function ReviewPage({
 								? "current"
 								: (stageStates[selectedStage ?? ""]?.status ?? "pending")
 						}
+						stagePhase={
+							stageStates[selectedStage ?? ""]?.phase ?? null
+						}
 						intentTitle={session.intent?.title}
 						gateBadge={gateBadge}
 					/>
@@ -314,11 +365,13 @@ export function ReviewPage({
 function StageBanner({
 	stageName,
 	stageStatus,
+	stagePhase,
 	intentTitle,
 	gateBadge,
 }: {
 	stageName: string
 	stageStatus: string
+	stagePhase: string | null
 	intentTitle?: string
 	gateBadge: { label: string; classes: string }
 }): React.ReactElement {
@@ -343,6 +396,7 @@ function StageBanner({
 						pillClasses: "bg-stone-600 text-white",
 						label: "upcoming",
 					}
+	const phasePill = phaseBadgeCopy(stagePhase ?? undefined, stageStatus)
 	return (
 		<div
 			data-testid="review-stage-banner"
@@ -360,10 +414,17 @@ function StageBanner({
 					<p className="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400 leading-none">
 						Stage
 					</p>
-					<div className="flex items-center gap-2 mt-1">
+					<div className="flex items-center gap-2 mt-1 flex-wrap">
 						<h1 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-tight capitalize">
 							{stageName}
 						</h1>
+						{phasePill && (
+							<span
+								className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${phasePill.classes}`}
+							>
+								{phasePill.label}
+							</span>
+						)}
 						<span
 							className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${gateBadge.classes}`}
 						>

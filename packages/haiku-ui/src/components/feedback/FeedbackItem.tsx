@@ -21,6 +21,7 @@
  * Callers own the state update; we own the announcement + focus repair.
  */
 
+import { MarkdownViewer } from "@haiku/shared"
 import {
 	forwardRef,
 	useCallback,
@@ -39,6 +40,17 @@ import {
 	statusBorderLeft,
 	visitCounterClasses,
 } from "./tokens"
+
+/**
+ * Feedback body content is authored in markdown (review subagents,
+ * external PR/MR bodies, user-visual dialog pasting rich text). Render
+ * via the same MarkdownViewer the rest of the review UI uses so code
+ * blocks, lists, and links come through — not as a wall of text with
+ * whitespace-pre-wrap.
+ */
+function FeedbackBody({ body }: { body: string }): React.ReactElement {
+	return <MarkdownViewer id="feedback-body">{body}</MarkdownViewer>
+}
 
 export interface FeedbackItemProps {
 	item: FeedbackItemData
@@ -211,9 +223,9 @@ export const FeedbackItem = forwardRef<HTMLDivElement, FeedbackItemProps>(
 				</p>
 				{isExpanded && (
 					<div className="mt-2">
-						<p className="text-xs text-stone-700 dark:text-stone-300 whitespace-pre-wrap">
-							{item.body}
-						</p>
+						<div className="text-xs text-stone-700 dark:text-stone-300 feedback-markdown prose prose-stone prose-sm dark:prose-invert max-w-none">
+							<FeedbackBody body={item.body} />
+						</div>
 						{item.closed_by && (
 							<p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
 								Closed by: {item.closed_by}

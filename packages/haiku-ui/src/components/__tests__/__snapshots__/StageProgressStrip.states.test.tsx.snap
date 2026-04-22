@@ -138,7 +138,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
           <button
             aria-current="step"
             aria-label="Stage product, current"
-            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-default"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
             data-stage="product"
             title="product (current)"
             type="button"
@@ -996,7 +996,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
           <button
             aria-current="step"
             aria-label="Stage product, current"
-            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-default"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
             data-stage="product"
             title="product (current)"
             type="button"
@@ -1279,7 +1279,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
           <button
             aria-current="step"
             aria-label="Stage product, current"
-            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-default"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
             data-stage="product"
             title="product (current)"
             type="button"

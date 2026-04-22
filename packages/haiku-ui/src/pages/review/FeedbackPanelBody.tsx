@@ -47,11 +47,12 @@ export function FeedbackPanelBody({
 					onFilter={setActiveStatus}
 				/>
 			</div>
-			{/* Scroll container is full-width (scrollbar sits at the sidebar's
-			    right edge). Horizontal padding lives on the list so cards span
-			    edge-to-edge minus the intended gutter, and expanded cards
-			    never get clipped by a narrower scroll viewport. */}
-			<div className="flex-1 overflow-y-auto px-3 py-3">
+			{/* The FeedbackList owns its own scroll: the virtualized branch
+			    uses react-window's built-in scroll; the plain <ul> branch
+			    sets `h-full overflow-y-auto` directly so it fills the
+			    flex-1 parent. Keeping `overflow-hidden` on this wrapper
+			    prevents double-scrollbars when virtualization kicks in. */}
+			<div className="flex-1 min-h-0 overflow-hidden">
 				<FeedbackList
 					items={filtered}
 					isLoading={loading}
@@ -59,6 +60,7 @@ export function FeedbackPanelBody({
 					onRetry={onRetry}
 					onStatusChange={onStatusChange}
 					onDelete={onDelete}
+					className="px-3 py-3"
 				/>
 			</div>
 		</div>

@@ -31,7 +31,10 @@ import { useFeedbackListKeyboardNav } from "./useFeedbackListKeyboardNav"
 
 export const VIRTUALIZE_THRESHOLD = 50
 
-export const DEFAULT_LIST_HEIGHT = 600
+// Default height for the virtualized list when no explicit height is
+// provided. Larger than the original 600 so typical laptop viewports
+// don't feel cramped; callers that want to tighten can pass `height`.
+export const DEFAULT_LIST_HEIGHT = 1200
 export const DEFAULT_ITEM_SIZE = 88
 
 export interface FeedbackListProps {
@@ -217,7 +220,7 @@ export function FeedbackList({
 				data-testid="feedback-list"
 				data-state="default"
 				data-virtualized="true"
-				className={className}
+				className={`h-full ${className ?? ""}`}
 			>
 				<FixedSizeList
 					height={height}
@@ -239,7 +242,7 @@ export function FeedbackList({
 			data-testid="feedback-list"
 			data-state="default"
 			data-virtualized="false"
-			className={`space-y-2 ${className ?? ""}`}
+			className={`h-full overflow-y-auto space-y-2 ${className ?? ""}`}
 		>
 			{items.map((item, index) => {
 				const isExpanded = expandedId === item.feedback_id

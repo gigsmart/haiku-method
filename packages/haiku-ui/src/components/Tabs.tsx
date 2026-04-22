@@ -2,6 +2,7 @@ import {
 	type KeyboardEvent,
 	type ReactNode,
 	useCallback,
+	useEffect,
 	useRef,
 	useState,
 } from "react"
@@ -17,11 +18,24 @@ export interface TabDef {
 interface Props {
 	groupId: string
 	tabs: TabDef[]
+	/** Optional controlled active-tab id. When provided, the component
+	 *  syncs its internal state whenever this changes so callers can
+	 *  programmatically switch tabs (e.g. overview row click → Units
+	 *  tab). Omit for uncontrolled behavior. */
+	activeId?: string
+	onActiveChange?: (id: string) => void
 }
 
-export function Tabs({ groupId, tabs }: Props) {
+export function Tabs({ groupId, tabs, activeId: controlledActiveId, onActiveChange }: Props) {
 	const enabledTabs = tabs.filter((t) => !t.disabled)
-	const [activeId, setActiveId] = useState(enabledTabs[0]?.id ?? "")
+	const [activeId, setActiveId] = useState(
+		controlledActiveId ?? enabledTabs[0]?.id ?? "",
+	)
+	useEffect(() => {
+		if (controlledActiveId && controlledActiveId !== activeId) {
+			setActiveId(controlledActiveId)
+		}
+	}, [controlledActiveId, activeId])
 	const tabRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
 
 	const setRef = useCallback(
@@ -35,6 +49,7 @@ export function Tabs({ groupId, tabs }: Props) {
 	function activate(id: string) {
 		setActiveId(id)
 		tabRefs.current.get(id)?.focus()
+		onActiveChange?.(id)
 	}
 
 	function handleKeyDown(e: KeyboardEvent) {

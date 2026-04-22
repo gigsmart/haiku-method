@@ -49,7 +49,10 @@ export function StageProgressStrip({
 					const isCompleted = stage.status === "completed"
 					const isFuture = !(isCurrent || isCompleted)
 					const hasVisits = (stage.visits ?? 0) > 0
-					const isClickable = isCompleted || (isFuture && hasVisits)
+					// Current stage is always clickable so a reviewer who navigates
+					// away to an earlier stage can always return home.
+					const isClickable =
+						isCompleted || isCurrent || (isFuture && hasVisits)
 					const pending = stage.pendingCount ?? 0
 					const stageNumber = i + 1
 
