@@ -2,7 +2,7 @@
 title: >-
   FeedbackItem action buttons and FeedbackSummaryBar filter pills fail 44x44
   touch target
-status: fixing
+status: closed
 origin: adversarial-review
 author: accessibility (from design)
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:26:27Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-65:bolt-3'
 bolt: 3
 upstream_stage: null
 ---
