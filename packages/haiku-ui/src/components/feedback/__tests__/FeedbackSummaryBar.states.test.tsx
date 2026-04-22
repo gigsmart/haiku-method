@@ -7,10 +7,19 @@
  */
 
 import { cleanup, fireEvent, render } from "@testing-library/react"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest"
+import { injectCanonicalTouchTargetCss } from "../../../a11y/__tests__/touch-target-css"
 import { FeedbackSummaryBar } from "../FeedbackSummaryBar"
 import { type FeedbackStatus, TOKEN_HASH } from "../tokens"
 import { mockItems } from "./mockItems"
+
+// FB-65: inject the canonical `.touch-target` CSS so `getComputedStyle` can
+// resolve min-height/min-width against the shipped rule (jsdom has no layout
+// engine). The 44×44 assertion below rides on this — regression in
+// `index.css` (rule removed, value below 44) → that test fails.
+beforeAll(() => {
+	injectCanonicalTouchTargetCss("feedback-summary-bar-touch-target-css")
+})
 
 afterEach(() => {
 	cleanup()
@@ -117,5 +126,40 @@ describe("FeedbackSummaryBar — state matrix", () => {
 		if (!pending) throw new Error("pending button missing")
 		fireEvent.click(pending)
 		expect(onFilter).toHaveBeenCalledWith(null)
+	})
+})
+
+// ── FB-65: filter pills meet WCAG 2.5.5 (AAA) 44×44 touch target ───────────
+//
+// Previously the pills rendered ~80×24 — below the 44 floor on every
+// status. The fix landed `touchTargetClass` (canonical `.touch-target` rule
+// in `src/index.css`) on each button. This test locks the contract
+// mechanically via `getComputedStyle(...).minHeight|minWidth >= 44` rather
+// than only the class-string snapshot. Pattern mirrors
+// `AgentFeedbackToggle.test.tsx:165-180` (same `injectCanonicalTouchTargetCss`
+// path, same dual-assert for min-* plus classList).
+
+describe("FeedbackSummaryBar — filter pills meet 44×44", () => {
+	it("every rendered filter pill exposes min-height ≥ 44px and min-width ≥ 44px", () => {
+		// Items spanning every visible status so all four pills paint.
+		const items = mockItems(20)
+		const { container } = render(
+			<FeedbackSummaryBar
+				items={items}
+				activeStatus={null}
+				onFilter={() => undefined}
+			/>,
+		)
+		const pills = container.querySelectorAll<HTMLButtonElement>(
+			"button[data-status]",
+		)
+		// Four visible statuses — pending, addressed, closed, rejected.
+		expect(pills.length).toBe(4)
+		for (const pill of pills) {
+			const style = getComputedStyle(pill)
+			expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(44)
+			expect(parseFloat(style.minWidth)).toBeGreaterThanOrEqual(44)
+			expect(pill.classList.contains("touch-target")).toBe(true)
+		}
 	})
 })

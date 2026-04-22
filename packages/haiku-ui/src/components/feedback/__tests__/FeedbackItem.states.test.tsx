@@ -24,12 +24,22 @@
 
 import { act, cleanup, fireEvent, render } from "@testing-library/react"
 import { useState } from "react"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest"
 import { LiveRegionShell, POLITE_REGION_ID } from "../../../a11y"
+import { injectCanonicalTouchTargetCss } from "../../../a11y/__tests__/touch-target-css"
 import type { FeedbackItemData } from "../../../types"
 import { FeedbackItem } from "../FeedbackItem"
 import { type FeedbackStatus, TOKEN_HASH } from "../tokens"
 import { mockItems } from "./mockItems"
+
+// FB-65: inject the canonical `.touch-target` CSS (loaded from the real
+// shipped `src/index.css`) so `getComputedStyle` resolves min-height and
+// min-width against the production rule. A regression in `index.css` —
+// e.g. removing the rule, shrinking the 44px value — fails the 44×44
+// assertions in the "action buttons meet 44×44" block below.
+beforeAll(() => {
+	injectCanonicalTouchTargetCss("feedback-item-touch-target-css")
+})
 
 afterEach(() => {
 	cleanup()
@@ -787,5 +797,93 @@ describe("FeedbackItem — upstream-stage pinning (schema not yet shipped)", () 
 		expect(b.container.textContent?.toLowerCase()).not.toContain(
 			"originated elsewhere",
 		)
+	})
+})
+
+// ── FB-65: action buttons meet WCAG 2.5.5 (AAA) 44×44 touch target ─────────
+//
+// Before the fix, the ACTION_BUTTON_BASE string used `text-xs ... px-2 py-1`
+// alone, producing a ~60×24 visible hit area on every Dismiss / Verify &
+// Close / Reopen / Delete button — well under the 44 floor and the most
+// repeated controls in the mobile review experience. The fix prefixes
+// `touchTargetClass` (the canonical `.touch-target` rule in `src/index.css`)
+// to the base. This block pins that contract via `getComputedStyle`
+// min-height/min-width plus `classList.contains("touch-target")`, so a
+// future edit that drops the class OR shrinks the CSS value fails here.
+//
+// Pattern mirrors AgentFeedbackToggle.test.tsx:165-180 — same
+// injectCanonicalTouchTargetCss helper, same dual assertion.
+
+describe("FeedbackItem — action buttons meet 44×44", () => {
+	function assertActionButtons(
+		container: HTMLElement,
+		expectedActions: ReadonlyArray<string>,
+	): void {
+		for (const action of expectedActions) {
+			const btn = container.querySelector<HTMLButtonElement>(
+				`button[data-action='${action}']`,
+			)
+			if (!btn) throw new Error(`expected data-action='${action}' button`)
+			const style = getComputedStyle(btn)
+			expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(44)
+			expect(parseFloat(style.minWidth)).toBeGreaterThanOrEqual(44)
+			expect(btn.classList.contains("touch-target")).toBe(true)
+		}
+	}
+
+	it("pending — Dismiss button meets 44×44", () => {
+		const items = mockItems(1, { status: "pending" })
+		const { container } = render(
+			<FeedbackItem
+				item={items[0]}
+				isExpanded
+				onToggle={() => undefined}
+				onStatusChange={() => undefined}
+				onDelete={() => undefined}
+			/>,
+		)
+		assertActionButtons(container, ["dismiss"])
+	})
+
+	it("addressed — Verify & Close and Reopen buttons meet 44×44", () => {
+		const items = mockItems(1, { status: "addressed" })
+		const { container } = render(
+			<FeedbackItem
+				item={items[0]}
+				isExpanded
+				onToggle={() => undefined}
+				onStatusChange={() => undefined}
+				onDelete={() => undefined}
+			/>,
+		)
+		assertActionButtons(container, ["verify-close", "reopen"])
+	})
+
+	it("closed — Reopen and Delete buttons meet 44×44", () => {
+		const items = mockItems(1, { status: "closed" })
+		const { container } = render(
+			<FeedbackItem
+				item={items[0]}
+				isExpanded
+				onToggle={() => undefined}
+				onStatusChange={() => undefined}
+				onDelete={() => undefined}
+			/>,
+		)
+		assertActionButtons(container, ["reopen", "delete"])
+	})
+
+	it("rejected — Reopen and Delete buttons meet 44×44", () => {
+		const items = mockItems(1, { status: "rejected" })
+		const { container } = render(
+			<FeedbackItem
+				item={items[0]}
+				isExpanded
+				onToggle={() => undefined}
+				onStatusChange={() => undefined}
+				onDelete={() => undefined}
+			/>,
+		)
+		assertActionButtons(container, ["reopen", "delete"])
 	})
 })
