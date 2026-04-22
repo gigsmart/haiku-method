@@ -1,6 +1,6 @@
 ---
 title: unit-08 builder produced zero implementation — entire feedback cluster missing
-status: fixing
+status: closed
 origin: adversarial-review
 author: reviewer
 author_type: agent
@@ -8,7 +8,7 @@ created_at: '2026-04-21T07:45:21Z'
 iteration: 0
 visit: 0
 source_ref: unit-08-feedback-components reviewer bolt 1
-closed_by: null
+closed_by: 'fix-loop:FB-07:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
