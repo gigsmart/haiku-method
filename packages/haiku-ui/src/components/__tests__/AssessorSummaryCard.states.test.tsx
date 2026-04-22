@@ -7,11 +7,22 @@
  */
 
 import { cleanup, render } from "@testing-library/react"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { AssessorSummaryCard } from "../AssessorSummaryCard"
+
+// Pin "now" so the `ranAt` → "ran 10h ago" label in the snapshot is
+// deterministic. Without this, the snapshot drifts as wall-clock time
+// advances relative to the hard-coded `ranAt` Date in the test body.
+const FROZEN_NOW = new Date("2026-04-21T22:00:00Z")
+
+beforeEach(() => {
+	vi.useFakeTimers()
+	vi.setSystemTime(FROZEN_NOW)
+})
 
 afterEach(() => {
 	cleanup()
+	vi.useRealTimers()
 })
 
 const CLEAN = {
