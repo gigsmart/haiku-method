@@ -441,3 +441,43 @@ Both supplement artifacts are tracked in HEAD and contain `Closes: [FB-39]`.
 The supplements replace the need for in-unit edits (blocked by
 `guard-fsm-fields` on `status: completed` unit files) and satisfy the
 finding's required-remedy clause at stage scope.
+
+## Feedback-assessor verification (bolt 2)
+
+Independently verified the finding-required scope now exists at stage scope.
+Read the two sidecar supplements on disk (not the summary) and mapped each of
+FB-39's five named gaps to a concrete completion criterion:
+
+| FB-39 gap | feature:line | Lives in | Criterion anchor |
+|---|---|---|---|
+| Approve-with-pending confirmation | 130-138 | `unit-07-coverage-supplement.md` §1 | Two-click confirm OR `role="alertdialog"` modal; 11-step RTL test with `submitDecision` call expectations |
+| Reject agent-authored feedback | 150-156 | `unit-08-coverage-supplement.md` §1 | Status-scoped action row; `Dismiss` → `onStatusChange(id, "closed")`; RTL assertions 5-8 |
+| Close human-authored feedback | 157-162 | `unit-08-coverage-supplement.md` §1 | `Verify & Close` mapped to human author_type; RTL assertions 6-8 |
+| Real-time status propagation | 119-125 | `unit-08-coverage-supplement.md` §2 | Visibility-gated polling of `GET /api/feedback/...`; 5s default cadence; `vi.useFakeTimers()` RTL test |
+| Sort order within visit groups | 167-178 | `unit-08-coverage-supplement.md` §3 | `(status_rank, -created_at)` with stable order; RTL test with exact fixture and expected id order |
+| Comments lost on tab close (non-feature) | 223-230 | `unit-07-coverage-supplement.md` §2 | Named as known-absent v1 contract; no positive-persistence criterion |
+
+Verified each supplement contains `Closes: [FB-39]` in its header:
+
+```
+grep -c "Closes: \[FB-39\]" .../unit-07-coverage-supplement.md  -> 1
+grep -c "Closes: \[FB-39\]" .../unit-08-coverage-supplement.md  -> 1
+```
+
+FB-39 is a completeness finding — the mandate is "every user-facing flow has
+defined happy path, error states, and edge cases" and the remedy is to "add
+completion criteria (with specific RTL assertions, endpoint expectations,
+and/or audit-banned-patterns coverage)" citing the product-stage scenarios
+each closes. The two supplements deliver exactly that: RTL assertions,
+endpoint expectations, visibility/polling contracts, canonical-verb mappings,
+sort-rank formulas, and the `Closes: [FB-39]` cross-references the remedy
+clause asks for. A test author consuming the stage artifacts (unit bodies +
+sidecar supplements — the idiomatic stage-scope spec in this stage) now has a
+deterministic checklist for the five previously-uncovered scenarios.
+
+Implementation + test delivery is owned by the parallel fix chains on the
+same surfaces (FB-14, FB-47, FB-65, FB-66) per the builder's delivery note.
+FB-39's own scope is the completeness of the stage-scope behavioral spec,
+which is closed.
+
+Closing FB-39.
