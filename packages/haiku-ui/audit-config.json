@@ -110,10 +110,10 @@
 				},
 				{
 					"id": "banned-pin-tabindex-negative",
-					"description": "tabindex=\"-1\" banned on AnnotationCanvas pin markers — unit-13 regression guard for the 'pin-markers-at-tabindex-negative-one' class of bug. Pin <button>s MUST carry tabindex=\"0\".",
+					"description": "tabindex=\"-1\" banned on AnnotationCanvas pin markers — unit-13 regression guard for the 'pin-markers-at-tabindex-negative-one' class of bug. Pin <button>s MUST carry tabindex=\"0\". Scope retargeted to runtime canvas after FB-11 cutover deleted the orphaned pages/review/AnnotationCanvas.tsx.",
 					"pattern": "tabindex=[\"']-1[\"']",
 					"scope": [
-						"packages/haiku-ui/src/pages/review/AnnotationCanvas.tsx"
+						"packages/haiku-ui/src/components/AnnotationCanvas.tsx"
 					],
 					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
 				},

@@ -19,7 +19,7 @@ import type { ApiClient } from "../../../api/client"
 import sessionFixture from "../../../../test-fixtures/review-session-full.json"
 import feedbackFixture from "../../../../test-fixtures/review-feedback-full.json"
 import { ReviewPage } from "../ReviewPage"
-import type { ReviewPageSessionData } from "../../../components/ReviewPage"
+import type { ReviewPageSessionData } from "../shared/session-data"
 import type { FeedbackItemData } from "../../../types"
 
 type FeedbackFixture = { items: FeedbackItemData[] }

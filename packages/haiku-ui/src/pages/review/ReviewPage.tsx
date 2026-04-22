@@ -28,25 +28,23 @@
  * responsive-parity test can render both branches deterministically — see
  * unit-07 tactical plan §7.
  *
- * The `IntentReview` / `UnitReview` leaf views live in the legacy
- * `components/ReviewPage.tsx`; `ArtifactsPane` delegates to them. The
- * legacy comment-composer + sidebar-footer block stays in
- * `components/ReviewSidebar.tsx` — we do NOT rewrite it in this unit. The
- * top-level `ReviewPage` export from the legacy file re-exports THIS
- * component so existing imports keep working (see components/ReviewPage.tsx).
+ * The `IntentReview` / `UnitReview` leaf views live under
+ * `pages/review/intent/` and `pages/review/unit/`; `ArtifactsPane`
+ * delegates to them. Shared leaves (`RereviewBanner`,
+ * `ReviewPageSessionData`) live under `pages/review/shared/`. There is no
+ * legacy `components/ReviewPage.tsx` re-export shim — the monolith was
+ * deleted as part of the FB-11 / FB-22 / FB-27 cutover. The legacy
+ * comment-composer + sidebar-footer block stays in
+ * `components/ReviewSidebar.tsx` — we do NOT rewrite it in this unit.
  */
 
 import { useCallback, useRef, useState } from "react"
 import type { AnnotationPin } from "../../components/AnnotationCanvas"
-import type { InlineCommentEntry } from "../../components/InlineComments"
 import {
 	FeedbackFloatingButton,
 	FeedbackSheet,
 } from "../../components/feedback"
-import {
-	type ReviewPageSessionData,
-	RereviewBanner,
-} from "../../components/ReviewPage"
+import type { InlineCommentEntry } from "../../components/InlineComments"
 import { ReviewContextHeader } from "../../components/ReviewContextHeader"
 import { StageProgressStrip } from "../../components/StageProgressStrip"
 import type { ReviewAnnotations } from "../../types"
@@ -54,11 +52,13 @@ import { ArtifactsPane } from "./ArtifactsPane"
 import { FeedbackPanelBody } from "./FeedbackPanelBody"
 import { FeedbackSidebar } from "./FeedbackSidebar"
 import { FooterBar } from "./FooterBar"
+import { RereviewBanner } from "./shared/RereviewBanner"
+import type { ReviewPageSessionData } from "./shared/session-data"
 import { useFeedbackSidebarController } from "./useFeedbackSidebarController"
 import { useIsMobile } from "./useIsMobile"
 
-// Re-export legacy type so old imports from ./ReviewPage keep resolving.
-export type { ReviewPageSessionData } from "../../components/ReviewPage"
+// Re-export the session-data type for callers that import it from the page module.
+export type { ReviewPageSessionData } from "./shared/session-data"
 
 export interface ReviewPageProps {
 	session: ReviewPageSessionData

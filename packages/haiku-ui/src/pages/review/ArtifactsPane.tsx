@@ -1,28 +1,25 @@
 /**
  * ArtifactsPane — left-column composition of the review page.
  *
- * Delegates to the legacy `IntentReview` / `UnitReview` leaf views which
+ * Delegates to the `IntentReview` / `UnitReview` leaf views which
  * own the card/tab rendering for stage artifacts, mockups, wireframes,
- * success criteria, and annotation canvas integration. This unit does
- * not rewrite those views — the tactical plan §14 is explicit that the
- * ~1400-LOC monolith stays in place; only the top-level composition
- * responsibility moves.
+ * success criteria, and annotation canvas integration. The leaf views
+ * were migrated out of the legacy `components/ReviewPage.tsx` monolith
+ * into `pages/review/intent/` and `pages/review/unit/` as part of the
+ * FB-11 / FB-22 / FB-27 cutover.
  *
  * Annotation pin integration: `onPinsChange` bubbles up to the parent
- * `ReviewPage`, which owns the annotations state (see `useAnnotations`-
- * style ref pattern in the legacy component). Unit-13 can reshape the
- * canvas internals without touching this pane — the callsite is
- * prop-driven.
+ * `ReviewPage`, which owns the annotations state. The callsite is
+ * prop-driven so the canvas internals can be reshaped without touching
+ * this pane.
  */
 
 import type { AnnotationPin } from "../../components/AnnotationCanvas"
 import type { InlineCommentEntry } from "../../components/InlineComments"
-import {
-	IntentReview,
-	type ReviewPageSessionData,
-	UnitReview,
-} from "../../components/ReviewPage"
 import type { ReviewAnnotations } from "../../types"
+import { IntentReview } from "./intent/IntentReview"
+import type { ReviewPageSessionData } from "./shared/session-data"
+import { UnitReview } from "./unit/UnitReview"
 
 export interface ArtifactsPaneProps {
 	session: ReviewPageSessionData
