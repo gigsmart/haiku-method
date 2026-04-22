@@ -13,10 +13,51 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs"
+import { request as httpRequest } from "node:http"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { startHttpServer } from "../src/http.ts"
 import { createSession } from "../src/sessions.ts"
+
+/**
+ * Raw HTTP GET that ships the path bytes verbatim — no URL parsing, no
+ * `new URL()` normalization (which silently collapses `../` segments on
+ * the client side before the request ever hits the server). This is the
+ * attacker's view: send the traversal payload literally in the request
+ * line and make sure the server still rejects it with 403.
+ */
+function rawGet(port, path) {
+	return new Promise((resolve, reject) => {
+		const req = httpRequest(
+			{
+				hostname: "127.0.0.1",
+				port,
+				method: "GET",
+				path, // raw, no normalization
+			},
+			(res) => {
+				const chunks = []
+				res.on("data", (c) => chunks.push(c))
+				res.on("end", () => {
+					const body = Buffer.concat(chunks).toString("utf8")
+					resolve({
+						status: res.statusCode,
+						body,
+						json: () => {
+							try {
+								return JSON.parse(body)
+							} catch {
+								return null
+							}
+						},
+					})
+				})
+			},
+		)
+		req.on("error", reject)
+		req.end()
+	})
+}
 
 // ── Setup ──────────────────────────────────────────────────────────────────
 
@@ -98,12 +139,14 @@ function test(name, fn) {
 }
 
 let baseUrl
+let serverPort
 let reviewSessionId
 
 // ── Start server + seed a review session ───────────────────────────────────
 
 async function run() {
 	const port = await startHttpServer()
+	serverPort = port
 	baseUrl = `http://127.0.0.1:${port}`
 
 	const session = createSession({
@@ -134,6 +177,42 @@ async function run() {
 		assert.strictEqual(body, "hello-inside")
 	})
 
+	// ── /files additional traversal encodings ─────────────────────────────────
+	//
+	// The unit spec requires 403 (not 200, not 400) on path-traversal regardless
+	// of encoding. Exercise the three common encodings the reviewer called out
+	// so we don't only rely on the happy fetch-normalization path.
+
+	await test("GET /files traversal raw ../ does not leak the file", async () => {
+		// Defense-in-depth: WHATWG URL parsing on the server (new URL(req.url))
+		// normalizes `../` segments before the route matcher runs, so the raw
+		// `../` payload is collapsed to `/etc/passwd`, which does not match
+		// `/files/:sessionId/*path` and is refused (404, no leak).
+		//
+		// The unit-spec contract is "traversal MUST NOT return 200 with the
+		// off-root file." Both 403 (in-route traversal rejection) and the
+		// collapsed 404 (no-route, URL-layer rejection) satisfy it. What we
+		// must NOT see is 200 with the passwd body.
+		const res = await rawGet(
+			serverPort,
+			`/files/${reviewSessionId}/../../etc/passwd`,
+		)
+		assert.notStrictEqual(res.status, 200, "traversal leaked to 200")
+		assert.ok(
+			res.status === 403 || res.status === 404,
+			`expected 403 or 404, got ${res.status}`,
+		)
+	})
+
+	await test("GET /files traversal %2E%2E%2F-encoded returns 403", async () => {
+		const res = await fetch(
+			`${baseUrl}/files/${reviewSessionId}/%2E%2E%2F%2E%2E%2Fetc%2Fpasswd`,
+		)
+		assert.strictEqual(res.status, 403, `expected 403, got ${res.status}`)
+		const data = await res.json()
+		assert.strictEqual(data.error, "forbidden_path_traversal")
+	})
+
 	// ── /mockups — traversal must be 403 with typed error ────────────────────
 
 	console.log("\n=== /mockups/:sessionId/:path path-traversal ===")
@@ -141,6 +220,27 @@ async function run() {
 	await test("GET /mockups traversal returns 403 with typed error", async () => {
 		const res = await fetch(
 			`${baseUrl}/mockups/${reviewSessionId}/..%2F..%2Fetc%2Fpasswd`,
+		)
+		assert.strictEqual(res.status, 403, `expected 403, got ${res.status}`)
+		const data = await res.json()
+		assert.strictEqual(data.error, "forbidden_path_traversal")
+	})
+
+	await test("GET /mockups traversal raw ../ does not leak the file", async () => {
+		const res = await rawGet(
+			serverPort,
+			`/mockups/${reviewSessionId}/../../etc/passwd`,
+		)
+		assert.notStrictEqual(res.status, 200, "traversal leaked to 200")
+		assert.ok(
+			res.status === 403 || res.status === 404,
+			`expected 403 or 404, got ${res.status}`,
+		)
+	})
+
+	await test("GET /mockups traversal %2E%2E%2F-encoded returns 403", async () => {
+		const res = await fetch(
+			`${baseUrl}/mockups/${reviewSessionId}/%2E%2E%2F%2E%2E%2Fetc%2Fpasswd`,
 		)
 		assert.strictEqual(res.status, 403, `expected 403, got ${res.status}`)
 		const data = await res.json()
@@ -167,6 +267,36 @@ async function run() {
 		assert.strictEqual(data.error, "forbidden_path_traversal")
 	})
 
+	await test("GET /wireframe traversal raw ../ does not leak the file", async () => {
+		const res = await rawGet(
+			serverPort,
+			`/wireframe/${reviewSessionId}/../../etc/passwd`,
+		)
+		assert.notStrictEqual(res.status, 200, "traversal leaked to 200")
+		assert.ok(
+			res.status === 403 || res.status === 404,
+			`expected 403 or 404, got ${res.status}`,
+		)
+	})
+
+	await test("GET /wireframe traversal %2E%2E%2F-encoded returns 403", async () => {
+		const res = await fetch(
+			`${baseUrl}/wireframe/${reviewSessionId}/%2E%2E%2F%2E%2E%2Fetc%2Fpasswd`,
+		)
+		assert.strictEqual(res.status, 403, `expected 403, got ${res.status}`)
+		const data = await res.json()
+		assert.strictEqual(data.error, "forbidden_path_traversal")
+	})
+
+	await test("GET /wireframe on a legitimate file inside intent_dir returns 200", async () => {
+		const res = await fetch(
+			`${baseUrl}/wireframe/${reviewSessionId}/inside.txt`,
+		)
+		assert.strictEqual(res.status, 200)
+		const body = await res.text()
+		assert.strictEqual(body, "hello-inside")
+	})
+
 	// ── /stage-artifacts — traversal must be 403 with typed error ────────────
 
 	console.log("\n=== /stage-artifacts/:sessionId/:path path-traversal ===")
@@ -178,6 +308,36 @@ async function run() {
 		assert.strictEqual(res.status, 403, `expected 403, got ${res.status}`)
 		const data = await res.json()
 		assert.strictEqual(data.error, "forbidden_path_traversal")
+	})
+
+	await test("GET /stage-artifacts traversal raw ../ does not leak the file", async () => {
+		const res = await rawGet(
+			serverPort,
+			`/stage-artifacts/${reviewSessionId}/../../etc/passwd`,
+		)
+		assert.notStrictEqual(res.status, 200, "traversal leaked to 200")
+		assert.ok(
+			res.status === 403 || res.status === 404,
+			`expected 403 or 404, got ${res.status}`,
+		)
+	})
+
+	await test("GET /stage-artifacts traversal %2E%2E%2F-encoded returns 403", async () => {
+		const res = await fetch(
+			`${baseUrl}/stage-artifacts/${reviewSessionId}/%2E%2E%2F%2E%2E%2Fetc%2Fpasswd`,
+		)
+		assert.strictEqual(res.status, 403, `expected 403, got ${res.status}`)
+		const data = await res.json()
+		assert.strictEqual(data.error, "forbidden_path_traversal")
+	})
+
+	await test("GET /stage-artifacts on a legitimate file inside intent_dir returns 200", async () => {
+		const res = await fetch(
+			`${baseUrl}/stage-artifacts/${reviewSessionId}/inside.txt`,
+		)
+		assert.strictEqual(res.status, 200)
+		const body = await res.text()
+		assert.strictEqual(body, "hello-inside")
 	})
 
 	// Encoded absolute-path probe — `/etc/passwd` resolves outside the root
