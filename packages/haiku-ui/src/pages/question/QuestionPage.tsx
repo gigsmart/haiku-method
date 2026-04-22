@@ -21,13 +21,13 @@
  */
 
 import { MarkdownViewer } from "@haiku/shared"
-import type { QuestionDef, QuestionSessionPayload } from "haiku-api"
+import { paths, type QuestionDef, type QuestionSessionPayload } from "haiku-api"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { focusRingClass, touchTargetClass, useAnnounce } from "../../a11y"
 import { useApiClient } from "../../api/context"
 import { Card, SectionHeading } from "../../components/Card"
 import { SubmitSuccess } from "../../components/SubmitSuccess"
-import { tryCloseTab } from "../../hooks/useSession"
+import { tryCloseTab } from "../../lib/tryCloseTab"
 
 interface Props {
 	session: QuestionSessionPayload
@@ -123,7 +123,7 @@ export function QuestionPage({
 			announce("polite", "Answer submitted")
 			setDone(true)
 			tryCloseTab({
-				url: `/question/${sessionId}/answer`,
+				url: paths.questionAnswer(sessionId),
 				body: { answers: requestAnswers },
 			})
 		} catch (err) {

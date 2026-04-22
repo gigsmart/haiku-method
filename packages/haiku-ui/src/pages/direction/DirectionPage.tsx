@@ -16,14 +16,18 @@
  *   - Submit posts { archetype, parameters } via ApiClient.submitDirection.
  */
 
-import type { DesignArchetypeData, DirectionSessionPayload } from "haiku-api"
+import {
+	type DesignArchetypeData,
+	type DirectionSessionPayload,
+	paths,
+} from "haiku-api"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { focusRingClass, touchTargetClass, useAnnounce } from "../../a11y"
 import { useApiClient } from "../../api/context"
 import { Card, SectionHeading } from "../../components/Card"
 import { Input } from "../../components/primitives"
 import { SubmitSuccess } from "../../components/SubmitSuccess"
-import { tryCloseTab } from "../../hooks/useSession"
+import { tryCloseTab } from "../../lib/tryCloseTab"
 
 interface Props {
 	session: DirectionSessionPayload
@@ -124,7 +128,7 @@ export function DirectionPage({
 			announce("polite", "Direction selected")
 			setDone(true)
 			tryCloseTab({
-				url: `/direction/${sessionId}/select`,
+				url: paths.directionSelect(sessionId),
 				body: {
 					archetype: selectedArchetype,
 					parameters: paramValues,

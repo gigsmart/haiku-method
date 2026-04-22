@@ -1,5 +1,7 @@
+import { paths } from "haiku-api"
 import { useRef, useState } from "react"
-import { submitDecision, tryCloseTab } from "../hooks/useSession"
+import { useApiClient } from "../api/context"
+import { tryCloseTab } from "../lib/tryCloseTab"
 import type { ReviewAnnotations } from "../types"
 import { SubmitSuccess } from "./SubmitSuccess"
 
@@ -57,6 +59,7 @@ export function ReviewSidebar({
 	onGeneralTextChange,
 	onClearDraft,
 }: Props) {
+	const client = useApiClient()
 	const [submitting, setSubmitting] = useState(false)
 	const [showClose, setShowClose] = useState(false)
 	const [error, setError] = useState<string | null>(null)
@@ -66,6 +69,11 @@ export function ReviewSidebar({
 	const [promptForComment, setPromptForComment] = useState(false)
 	const [showApproveConfirm, setShowApproveConfirm] = useState(false)
 	const generalRef = useRef<HTMLTextAreaElement>(null)
+	// `wsRef` is still accepted from the caller but no longer threaded into
+	// decision submission — the typed `ApiClient.submitDecision(...)` is
+	// HTTP-only. The WS-first optimisation is a separate follow-up
+	// (ApiClient.decideViaWs or similar) outside FB-14 scope.
+	void wsRef
 
 	const [showExternalConfirm, setShowExternalConfirm] = useState(false)
 	const hasComments = comments.length > 0 || generalText.trim().length > 0
@@ -100,11 +108,15 @@ export function ReviewSidebar({
 		try {
 			onClearAll()
 			const annotations = getAnnotations()
-			await submitDecision(sessionId, "approved", "", annotations, wsRef)
+			await client.submitDecision(sessionId, {
+				decision: "approved",
+				feedback: "",
+				annotations,
+			})
 			onClearDraft()
 			setShowClose(true)
 			tryCloseTab({
-				url: `/review/${sessionId}/decide`,
+				url: paths.reviewDecide(sessionId),
 				body: { decision: "approved", feedback: "" },
 			})
 		} catch (err) {
@@ -149,17 +161,15 @@ export function ReviewSidebar({
 				.filter((s) => s.length > 0)
 				.join("\n\n")
 
-			await submitDecision(
-				sessionId,
-				"changes_requested",
+			await client.submitDecision(sessionId, {
+				decision: "changes_requested",
 				feedback,
 				annotations,
-				wsRef,
-			)
+			})
 			onClearDraft()
 			setShowClose(true)
 			tryCloseTab({
-				url: `/review/${sessionId}/decide`,
+				url: paths.reviewDecide(sessionId),
 				body: { decision: "changes_requested", feedback },
 			})
 		} catch (err) {
@@ -174,17 +184,15 @@ export function ReviewSidebar({
 		setError(null)
 		try {
 			const annotations = getAnnotations()
-			await submitDecision(
-				sessionId,
-				"external_review",
-				"Submitted for external review. Run /haiku:pickup after approval.",
+			await client.submitDecision(sessionId, {
+				decision: "external_review",
+				feedback: "Submitted for external review. Run /haiku:pickup after approval.",
 				annotations,
-				wsRef,
-			)
+			})
 			onClearDraft()
 			setShowClose(true)
 			tryCloseTab({
-				url: `/review/${sessionId}/decide`,
+				url: paths.reviewDecide(sessionId),
 				body: {
 					decision: "external_review",
 					feedback: "Submitted for external review",
