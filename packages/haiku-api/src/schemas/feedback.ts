@@ -27,16 +27,20 @@ import {
  *  (aliased from the on-disk `id` field by handleFeedbackGet). */
 export const FeedbackItemSchema = z
 	.object({
-		feedback_id: z.string().describe("FB-NN identifier (scoped per stage)"),
-		title: z.string(),
-		body: z.string(),
+		feedback_id: z
+			.string()
+			.max(32)
+			.describe("FB-NN identifier (scoped per stage)"),
+		title: z.string().max(200),
+		body: z.string().max(10_000),
 		status: FeedbackStatusSchema,
 		origin: FeedbackOriginSchema,
 		author: z
 			.string()
+			.max(200)
 			.describe("Free-form author handle (e.g. 'user', 'agent')"),
 		author_type: AuthorTypeSchema,
-		created_at: z.string().describe("ISO-8601 creation timestamp"),
+		created_at: z.string().max(40).describe("ISO-8601 creation timestamp"),
 		visit: z
 			.number()
 			.int()
@@ -44,10 +48,12 @@ export const FeedbackItemSchema = z
 			.describe("Stage-visit counter at creation time"),
 		source_ref: z
 			.string()
+			.max(1_000)
 			.nullable()
 			.describe("Back-reference to origin artifact (e.g. review-agent run id)"),
 		closed_by: z
 			.string()
+			.max(200)
 			.nullable()
 			.describe(
 				"Unit slug whose feedback-assessor hat certified closure, or null while open.",
@@ -86,10 +92,17 @@ export type FeedbackAnchor = z.infer<typeof FeedbackAnchorSchema>
 /** POST /api/feedback/:intent/:stage request body. */
 export const FeedbackCreateRequestSchema = z
 	.object({
-		title: z.string().min(1).max(120),
-		body: z.string().min(1),
+		title: z.string().min(1).max(200),
+		body: z.string().min(1).max(10_000),
 		origin: FeedbackOriginSchema.optional().default("user-visual"),
-		source_ref: z.string().nullable().optional(),
+		author: z
+			.string()
+			.max(200)
+			.optional()
+			.describe(
+				"Optional authorship hint. The server currently overwrites this with the authenticated session author; the field is reserved for future use when the handler begins to honor it.",
+			),
+		source_ref: z.string().max(1_000).nullable().optional(),
 		anchor: FeedbackAnchorSchema.optional(),
 	})
 	.describe("POST /api/feedback/:intent/:stage request body")
@@ -117,7 +130,7 @@ export type FeedbackCreateResponse = z.infer<
 export const FeedbackUpdateRequestSchema = z
 	.object({
 		status: FeedbackStatusSchema.optional(),
-		closed_by: z.string().optional(),
+		closed_by: z.string().max(200).optional(),
 	})
 	.refine((data) => data.status !== undefined || data.closed_by !== undefined, {
 		message: "At least one of 'status' or 'closed_by' must be provided",

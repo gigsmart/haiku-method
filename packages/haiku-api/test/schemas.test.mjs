@@ -292,6 +292,49 @@ describe("schemas/feedback.ts — FeedbackItemSchema", () => {
 	})
 })
 
+describe("schemas/feedback.ts — FeedbackItemSchema string caps", () => {
+	test("accepts max-length title/body/author/source_ref/closed_by", () => {
+		assertValid(FeedbackItemSchema, {
+			...validFeedbackItem,
+			title: "a".repeat(200),
+			body: "b".repeat(10_000),
+			author: "c".repeat(200),
+			source_ref: "d".repeat(1_000),
+			closed_by: "e".repeat(200),
+		})
+	})
+	test("rejects title > 200", () => {
+		assertInvalid(FeedbackItemSchema, {
+			...validFeedbackItem,
+			title: "a".repeat(201),
+		})
+	})
+	test("rejects body > 10_000", () => {
+		assertInvalid(FeedbackItemSchema, {
+			...validFeedbackItem,
+			body: "b".repeat(10_001),
+		})
+	})
+	test("rejects author > 200", () => {
+		assertInvalid(FeedbackItemSchema, {
+			...validFeedbackItem,
+			author: "c".repeat(201),
+		})
+	})
+	test("rejects source_ref > 1_000", () => {
+		assertInvalid(FeedbackItemSchema, {
+			...validFeedbackItem,
+			source_ref: "d".repeat(1_001),
+		})
+	})
+	test("rejects closed_by > 200", () => {
+		assertInvalid(FeedbackItemSchema, {
+			...validFeedbackItem,
+			closed_by: "e".repeat(201),
+		})
+	})
+})
+
 describe("schemas/feedback.ts — FeedbackListResponseSchema", () => {
 	test("parses valid", () => {
 		assertValid(FeedbackListResponseSchema, {
@@ -329,6 +372,43 @@ describe("schemas/feedback.ts — FeedbackCreateRequestSchema", () => {
 	})
 })
 
+describe("schemas/feedback.ts — FeedbackCreateRequestSchema string caps", () => {
+	test("accepts max-length title/body/author/source_ref", () => {
+		assertValid(FeedbackCreateRequestSchema, {
+			title: "a".repeat(200),
+			body: "b".repeat(10_000),
+			author: "c".repeat(200),
+			source_ref: "d".repeat(1_000),
+		})
+	})
+	test("rejects title > 200", () => {
+		assertInvalid(FeedbackCreateRequestSchema, {
+			title: "a".repeat(201),
+			body: "b",
+		})
+	})
+	test("rejects body > 10_000", () => {
+		assertInvalid(FeedbackCreateRequestSchema, {
+			title: "t",
+			body: "b".repeat(10_001),
+		})
+	})
+	test("rejects author > 200", () => {
+		assertInvalid(FeedbackCreateRequestSchema, {
+			title: "t",
+			body: "b",
+			author: "c".repeat(201),
+		})
+	})
+	test("rejects source_ref > 1_000", () => {
+		assertInvalid(FeedbackCreateRequestSchema, {
+			title: "t",
+			body: "b",
+			source_ref: "d".repeat(1_001),
+		})
+	})
+})
+
 describe("schemas/feedback.ts — FeedbackCreateResponseSchema", () => {
 	test("parses valid", () => {
 		assertValid(FeedbackCreateResponseSchema, {
@@ -355,6 +435,19 @@ describe("schemas/feedback.ts — FeedbackUpdateRequestSchema", () => {
 	})
 	test("rejects invalid", () => {
 		assertInvalid(FeedbackUpdateRequestSchema, {})
+	})
+})
+
+describe("schemas/feedback.ts — FeedbackUpdateRequestSchema closed_by cap", () => {
+	test("accepts max-length closed_by", () => {
+		assertValid(FeedbackUpdateRequestSchema, {
+			closed_by: "u".repeat(200),
+		})
+	})
+	test("rejects closed_by > 200", () => {
+		assertInvalid(FeedbackUpdateRequestSchema, {
+			closed_by: "u".repeat(201),
+		})
 	})
 })
 
@@ -664,6 +757,27 @@ describe("schemas/revisit.ts — RevisitReasonSchema", () => {
 	})
 })
 
+describe("schemas/revisit.ts — RevisitReasonSchema string caps", () => {
+	test("accepts max-length title/body", () => {
+		assertValid(RevisitReasonSchema, {
+			title: "t".repeat(200),
+			body: "b".repeat(10_000),
+		})
+	})
+	test("rejects title > 200", () => {
+		assertInvalid(RevisitReasonSchema, {
+			title: "t".repeat(201),
+			body: "b",
+		})
+	})
+	test("rejects body > 10_000", () => {
+		assertInvalid(RevisitReasonSchema, {
+			title: "t",
+			body: "b".repeat(10_001),
+		})
+	})
+})
+
 describe("schemas/revisit.ts — RevisitRequestSchema", () => {
 	test("parses valid (empty)", () => {
 		assertValid(RevisitRequestSchema, {})
@@ -676,6 +790,29 @@ describe("schemas/revisit.ts — RevisitRequestSchema", () => {
 	})
 	test("rejects invalid (stage not a string)", () => {
 		assertInvalid(RevisitRequestSchema, { stage: 5 })
+	})
+})
+
+describe("schemas/revisit.ts — RevisitRequestSchema caps", () => {
+	test("accepts 50 reasons", () => {
+		const reasons = Array.from({ length: 50 }, () => ({
+			title: "t",
+			body: "b",
+		}))
+		assertValid(RevisitRequestSchema, { reasons })
+	})
+	test("rejects 51 reasons", () => {
+		const reasons = Array.from({ length: 51 }, () => ({
+			title: "t",
+			body: "b",
+		}))
+		assertInvalid(RevisitRequestSchema, { reasons })
+	})
+	test("accepts max-length stage", () => {
+		assertValid(RevisitRequestSchema, { stage: "s".repeat(200) })
+	})
+	test("rejects stage > 200", () => {
+		assertInvalid(RevisitRequestSchema, { stage: "s".repeat(201) })
 	})
 })
 

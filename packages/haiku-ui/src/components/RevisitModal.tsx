@@ -31,13 +31,11 @@ import { type ApiClient, defaultApiClient } from "../api/client"
 // ── Client-side validation bounds ─────────────────────────────────────────
 //
 // Unit spec asserts: title ≤ 200, body ≤ 10_000, reasons ≤ 50. The wire
-// schema (packages/haiku-api/src/schemas/revisit.ts) caps title at 120 and
-// has no body/reasons.length cap. The UI enforces the TIGHTER of each:
-//   - title: min(200, 120) = 120 (avoid 400s from the server)
-//   - body:  10_000 (stricter than wire, which is unbounded)
-//   - reasons: 50 (stricter than wire, which is unbounded)
+// schema (packages/haiku-api/src/schemas/revisit.ts) now matches: title
+// .max(200), body .max(10_000), reasons .max(50). The UI mirrors these
+// caps at the edge for inline validation; the wire remains the authority.
 // Rationale lives in unit-11 tactical plan §R1.
-export const UI_TITLE_MAX = 120
+export const UI_TITLE_MAX = 200
 export const UI_BODY_MAX = 10_000
 export const UI_REASONS_MAX = 50
 
