@@ -46,7 +46,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-01
+          Stream handler throws on path-traversal 403 without test coverage
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -98,7 +98,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-01
+          Stream handler throws on path-traversal 403 without test coverage
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -150,7 +150,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-01
+          Stream handler throws on path-traversal 403 without test coverage
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -202,7 +202,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-01
+          Stream handler throws on path-traversal 403 without test coverage
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -219,7 +219,17 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
           <p
             class="text-xs text-stone-700 dark:text-stone-300 whitespace-pre-wrap"
           >
-            Body copy for FB-01. Lorem ipsum dolor sit amet.
+            The handler at \`packages/haiku/src/http.ts:974\` silently rethrows when the client supplies \`..\` in \`path\`.
+
+Repro:
+
+\`\`\`ts
+await fetch('/api/stream?path=../../etc/passwd')
+// expected: 403 Forbidden
+// actual: 500 Internal Server Error
+\`\`\`
+
+Reviewer note: add a regression scenario in \`stream-handler.feature\` covering the 403 branch.
           </p>
           <div
             class="flex gap-1 mt-2 flex-wrap"
@@ -276,7 +286,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-01
+          Stream handler throws on path-traversal 403 without test coverage
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -328,7 +338,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-01
+          Stream handler throws on path-traversal 403 without test coverage
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -392,7 +402,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-02
+          FeedbackSheet escape-close test calls Dialog.close directly
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -452,7 +462,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-02
+          FeedbackSheet escape-close test calls Dialog.close directly
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -512,7 +522,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-02
+          FeedbackSheet escape-close test calls Dialog.close directly
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -572,7 +582,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-02
+          FeedbackSheet escape-close test calls Dialog.close directly
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -589,7 +599,16 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
           <p
             class="text-xs text-stone-700 dark:text-stone-300 whitespace-pre-wrap"
           >
-            Body copy for FB-02. Lorem ipsum dolor sit amet.
+            The test bypasses the browser keyboard path:
+
+- Expected: simulate a real *keydown* of \`Escape\` on the sheet.
+- Actual: calls \`dialog.close()\` imperatively via the **test-only** API.
+  - This sidesteps the \`onOpenChange\` callback we actually ship.
+  - It also hides a real bug where \`autoFocus\` on the primary action     swallows the keystroke in Safari.
+
+See [FeedbackSheet.tsx:88](packages/haiku-ui/src/components/feedback/FeedbackSheet.tsx:88) and compare with the [Radix dialog reference](https://www.radix-ui.com/docs).
+
+_Blocker for external-review gate._
           </p>
           <div
             class="flex gap-1 mt-2 flex-wrap"
@@ -662,7 +681,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-02
+          FeedbackSheet escape-close test calls Dialog.close directly
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -722,7 +741,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-02
+          FeedbackSheet escape-close test calls Dialog.close directly
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -786,7 +805,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-03
+          FeedbackSheet focus-trap regresses on nested Radix Dialog portals when user tabs past the final AnnotationCanvas pindrop
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -846,7 +865,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-03
+          FeedbackSheet focus-trap regresses on nested Radix Dialog portals when user tabs past the final AnnotationCanvas pindrop
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -906,7 +925,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-03
+          FeedbackSheet focus-trap regresses on nested Radix Dialog portals when user tabs past the final AnnotationCanvas pindrop
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -966,7 +985,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-03
+          FeedbackSheet focus-trap regresses on nested Radix Dialog portals when user tabs past the final AnnotationCanvas pindrop
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -983,13 +1002,13 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
           <p
             class="text-xs text-stone-700 dark:text-stone-300 whitespace-pre-wrap"
           >
-            Body copy for FB-03. Lorem ipsum dolor sit amet.
+            Focus-trap unit tests only cover the single-dialog path. The nested case — AnnotationCanvas pin dropdown inside the FeedbackSheet — is untested and breaks on Safari 17.4.
           </p>
           <p
             class="text-xs text-blue-600 dark:text-blue-400 mt-1"
           >
             Closed by: 
-            unit-99-assessor
+            unit-14-ui-gate
           </p>
           <div
             class="flex gap-1 mt-2 flex-wrap"
@@ -1062,7 +1081,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-03
+          FeedbackSheet focus-trap regresses on nested Radix Dialog portals when user tabs past the final AnnotationCanvas pindrop
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -1122,7 +1141,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-03
+          FeedbackSheet focus-trap regresses on nested Radix Dialog portals when user tabs past the final AnnotationCanvas pindrop
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -1186,7 +1205,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-04
+          H·AI·K·U plugin · \`.haiku/intents/*/stages/*/feedback/FB-NN.md\` naming collision 🐞
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -1246,7 +1265,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-04
+          H·AI·K·U plugin · \`.haiku/intents/*/stages/*/feedback/FB-NN.md\` naming collision 🐞
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -1306,7 +1325,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-04
+          H·AI·K·U plugin · \`.haiku/intents/*/stages/*/feedback/FB-NN.md\` naming collision 🐞
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -1366,7 +1385,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-04
+          H·AI·K·U plugin · \`.haiku/intents/*/stages/*/feedback/FB-NN.md\` naming collision 🐞
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -1383,7 +1402,9 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
           <p
             class="text-xs text-stone-700 dark:text-stone-300 whitespace-pre-wrap"
           >
-            Body copy for FB-04. Lorem ipsum dolor sit amet.
+            The fixture generator at \`.haiku/intents/foo/stages/development/\` collides with \`current_visit\` semantics — both systems reserve the \`unit-NN-*\` prefix. See §4 of the migration plan.
+
+Unicode characters in play: H·AI·K·U (U+00B7), 🐞 (U+1F41E), smart quotes “foo”, en-dash –.
           </p>
           <div
             class="flex gap-1 mt-2 flex-wrap"
@@ -1456,7 +1477,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-04
+          H·AI·K·U plugin · \`.haiku/intents/*/stages/*/feedback/FB-NN.md\` naming collision 🐞
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -1516,7 +1537,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-04
+          H·AI·K·U plugin · \`.haiku/intents/*/stages/*/feedback/FB-NN.md\` naming collision 🐞
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"

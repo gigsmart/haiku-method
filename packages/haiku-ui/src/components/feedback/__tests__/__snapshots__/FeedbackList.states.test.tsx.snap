@@ -49,7 +49,7 @@ exports[`FeedbackList — container state matrix > default: renders non-virtuali
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-01
+          Stream handler throws on path-traversal 403 without test coverage
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -109,7 +109,7 @@ exports[`FeedbackList — container state matrix > default: renders non-virtuali
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-02
+          FeedbackSheet escape-close test calls Dialog.close directly
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -169,7 +169,7 @@ exports[`FeedbackList — container state matrix > default: renders non-virtuali
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-03
+          FeedbackSheet focus-trap regresses on nested Radix Dialog portals when user tabs past the final AnnotationCanvas pindrop
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -229,7 +229,7 @@ exports[`FeedbackList — container state matrix > default: renders non-virtuali
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-04
+          H·AI·K·U plugin · \`.haiku/intents/*/stages/*/feedback/FB-NN.md\` naming collision 🐞
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -289,7 +289,7 @@ exports[`FeedbackList — container state matrix > default: renders non-virtuali
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-05
+          Markdown escaping: backticks | pipes * asterisks [brackets] _under_
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -349,7 +349,7 @@ exports[`FeedbackList — container state matrix > default: renders non-virtuali
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-06
+          AnnotationCanvas unbounded ImageData history — memory regression
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -409,7 +409,7 @@ exports[`FeedbackList — container state matrix > default: renders non-virtuali
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-07
+          Stream handler throws on path-traversal 403 without test coverage
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -461,7 +461,7 @@ exports[`FeedbackList — container state matrix > default: renders non-virtuali
         <p
           class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
         >
-          Fixture feedback item FB-08
+          FeedbackSheet escape-close test calls Dialog.close directly
         </p>
         <p
           class="text-xs text-stone-600 dark:text-stone-300"
@@ -512,7 +512,7 @@ exports[`FeedbackList — container state matrix > error: alert role + Retry but
       Boom
     </p>
     <button
-      class="text-xs font-medium px-3 py-1 rounded-md bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-600 dark:hover:bg-teal-700"
+      class="text-xs font-medium px-3 py-1 rounded-md bg-teal-700 text-white hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800"
       type="button"
     >
       Retry
