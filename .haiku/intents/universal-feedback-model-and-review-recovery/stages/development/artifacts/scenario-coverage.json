@@ -1,9 +1,9 @@
 {
-  "recorded_at": "2026-04-22T02:49:09.388Z",
-  "head": "67a3f2fd7840b798d63650eadac43ab54f6f7398",
+  "recorded_at": "2026-04-22T02:50:13.240Z",
+  "head": "60f679261fdb7e90ab2e09bb02beaade1b954f95",
   "total_scenarios": 151,
-  "mapped": 121,
-  "unmapped": 30,
+  "mapped": 124,
+  "unmapped": 27,
   "ignored": 0,
   "corpus_sizes": {
     "backend_tests": 477,
@@ -56,7 +56,7 @@
     },
     "review-ui-feedback.feature": {
       "total": 27,
-      "mapped": 0,
+      "mapped": 3,
       "ignored": 0,
       "unmapped": [
         {
@@ -88,10 +88,6 @@
           "line": 75
         },
         {
-          "title": "PUT /api/feedback/{intent}/{stage}/{id} updates a feedback item",
-          "line": 88
-        },
-        {
           "title": "DELETE /api/feedback/{intent}/{stage}/{id} removes a feedback file",
           "line": 97
         },
@@ -110,14 +106,6 @@
         {
           "title": "Approve without pending feedback proceeds directly",
           "line": 140
-        },
-        {
-          "title": "Reviewer rejects agent-authored feedback via the review UI",
-          "line": 150
-        },
-        {
-          "title": "Reviewer closes human-authored feedback via the review UI",
-          "line": 157
         },
         {
           "title": "Feedback items sorted by status then by created_at within groups",
@@ -229,11 +217,6 @@
     },
     {
       "file": "review-ui-feedback.feature",
-      "line": 88,
-      "title": "PUT /api/feedback/{intent}/{stage}/{id} updates a feedback item"
-    },
-    {
-      "file": "review-ui-feedback.feature",
       "line": 97,
       "title": "DELETE /api/feedback/{intent}/{stage}/{id} removes a feedback file"
     },
@@ -256,16 +239,6 @@
       "file": "review-ui-feedback.feature",
       "line": 140,
       "title": "Approve without pending feedback proceeds directly"
-    },
-    {
-      "file": "review-ui-feedback.feature",
-      "line": 150,
-      "title": "Reviewer rejects agent-authored feedback via the review UI"
-    },
-    {
-      "file": "review-ui-feedback.feature",
-      "line": 157,
-      "title": "Reviewer closes human-authored feedback via the review UI"
     },
     {
       "file": "review-ui-feedback.feature",
@@ -1067,7 +1040,29 @@
         "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
       }
     ],
-    "review-ui-feedback.feature": [],
+    "review-ui-feedback.feature": [
+      {
+        "title": "PUT /api/feedback/{intent}/{stage}/{id} updates a feedback item",
+        "line": 88,
+        "via": "alias-match",
+        "matched_test": "updates status field",
+        "test_source": "backend:feedback.test.mjs"
+      },
+      {
+        "title": "Reviewer rejects agent-authored feedback via the review UI",
+        "line": 150,
+        "via": "alias-match",
+        "matched_test": "rejects agent-authored feedback with reason",
+        "test_source": "backend:feedback.test.mjs"
+      },
+      {
+        "title": "Reviewer closes human-authored feedback via the review UI",
+        "line": 157,
+        "via": "alias-match",
+        "matched_test": "human can close human-authored feedback",
+        "test_source": "backend:feedback.test.mjs"
+      }
+    ],
     "revisit-with-reasons.feature": [
       {
         "title": "Single reason creates one feedback file and rolls back",
