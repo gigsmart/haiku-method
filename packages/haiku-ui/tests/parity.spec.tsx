@@ -30,10 +30,10 @@ import type {
 } from "haiku-api"
 import type { ReactNode } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { App } from "../src/App"
 import type { ApiClient } from "../src/api/client"
 import { ApiClientProvider } from "../src/api/context"
 import { normalizeDomSnapshot } from "./dom-parity-transformer"
+import { RouterHarness } from "./router-harness"
 
 type FixtureRoute = {
 	name: string
@@ -137,12 +137,11 @@ describe("DOM parity — rendered app matches committed snapshot per fixture", (
 			const session = loadFixture(fx.file)
 			const client = makeMockClient(session)
 
-			// Route the SPA. `App` reads `window.location.pathname` at mount.
-			window.history.replaceState({}, "", fx.pathname)
-
+			// Seed the router's memory history at the target path; the
+			// fixture's page module will fetch via the mocked client.
 			const { container } = render(
 				<Wrap client={client}>
-					<App />
+					<RouterHarness initialPath={fx.pathname} />
 				</Wrap>,
 			)
 

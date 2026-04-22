@@ -3,3 +3,6 @@ dist/
 
 # Audit reports (regenerated on every audit run)
 reports/
+
+# TanStack Router — regenerated from src/routes/ on build and in dev-watch.
+src/routeTree.gen.ts

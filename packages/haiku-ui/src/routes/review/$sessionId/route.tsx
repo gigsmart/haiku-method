@@ -1,0 +1,435 @@
+/**
+ * /review/:sessionId — layout route for the full-bleed review shell per
+ * the canonical mockup (`stages/design/artifacts/review-ui-mockup.html`).
+ *
+ * Owns:
+ *   - `useSession` fetch + `useSessionWebSocket` subscription (per-session
+ *     lifecycle). Loading + error + session-type-mismatch states render
+ *     here so child routes see a narrowed session.
+ *   - Document title sync + publishing the sessionId on the ApiClient so
+ *     feedback mutations attach `X-Haiku-Session-Id`.
+ *   - The viewport layout (header + stage-progress strip + sidebar +
+ *     main). Main content is driven by the child route via `<Outlet/>`.
+ *   - Shared ephemeral state (highlight request, annotation scratchpad,
+ *     decision-submitted flag) exposed to children via ReviewRouteContext.
+ *
+ * Child routes:
+ *   - `./index.tsx`                               — redirects to the active stage
+ *   - `./intent.tsx`                              — intent overview pane
+ *   - `./stages/$stage/route.tsx`                 — stage layout
+ *   - `./stages/$stage/index.tsx`                 — overview tab
+ *   - `./stages/$stage/$tab.tsx`                  — units | knowledge | outputs
+ *   - `./stages/$stage/$kind/$name.tsx`           — artifact detail
+ */
+
+import type { ReviewSessionPayload } from "haiku-api"
+import {
+	createFileRoute,
+	Outlet,
+	useNavigate,
+	useRouterState,
+} from "@tanstack/react-router"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Header as HeaderLandmark, Main } from "../../../a11y"
+import { useApiClient } from "../../../api/context"
+import type { AnnotationPin } from "../../../components/AnnotationCanvas"
+import type { InlineCommentEntry } from "../../../components/InlineComments"
+import { StageProgressStrip } from "../../../components/StageProgressStrip"
+import { SubmitSuccess } from "../../../components/SubmitSuccess"
+import { ThemeToggle } from "../../../components/ThemeToggle"
+import {
+	FeedbackFloatingButton,
+	FeedbackSheet,
+} from "../../../components/feedback"
+import { useSession, useSessionWebSocket } from "../../../hooks/useSession"
+import { FeedbackPanelBody } from "../../../pages/review/FeedbackPanelBody"
+import { FeedbackSidebar } from "../../../pages/review/FeedbackSidebar"
+import type { ReviewPageSessionData } from "../../../pages/review/shared/session-data"
+import { useFeedbackSidebarController } from "../../../pages/review/useFeedbackSidebarController"
+import { useIsMobile } from "../../../pages/review/useIsMobile"
+import { usePageTitle } from "../../../shell/PageTitleContext"
+import type { ReviewAnnotations } from "../../../types"
+import {
+	gateBadgeCopy,
+	resolveActiveStage,
+	resolveGateModes,
+} from "./-review-helpers"
+import { ReviewRouteProvider, type ReviewRouteContextValue } from "./-context"
+
+function asReviewPageSession(
+	session: ReviewSessionPayload,
+): ReviewPageSessionData {
+	return session as unknown as ReviewPageSessionData
+}
+
+function LoadingState({ message }: { message: string }) {
+	return (
+		<div className="flex min-h-[60vh] items-center justify-center">
+			<div className="text-center">
+				<div className="mb-3 h-8 w-8 mx-auto animate-spin rounded-full border-2 border-stone-300 border-t-teal-500" />
+				<p className="text-sm text-stone-600 dark:text-stone-300">{message}</p>
+			</div>
+		</div>
+	)
+}
+
+function ErrorState({ error }: { error: string | null }) {
+	return (
+		<div className="flex min-h-[60vh] items-center justify-center">
+			<div className="text-center">
+				<p className="text-lg font-semibold text-red-600 dark:text-red-400">
+					Session not found
+				</p>
+				<p className="mt-1 text-sm text-stone-600 dark:text-stone-300">
+					{error || "The session may have expired."}
+				</p>
+			</div>
+		</div>
+	)
+}
+
+function MobileFeedbackSection({
+	intentSlug,
+	activeStage,
+}: {
+	intentSlug: string | null
+	activeStage: string | null
+}): React.ReactElement {
+	const [sheetOpen, setSheetOpen] = useState(false)
+	const fabRef = useFabRef()
+	const controller = useFeedbackSidebarController(intentSlug, activeStage)
+	const pendingCount = controller.items.filter(
+		(item) => item.status === "pending",
+	).length
+	return (
+		<>
+			<FeedbackFloatingButton
+				ref={fabRef}
+				open={sheetOpen}
+				onToggle={() => setSheetOpen((o) => !o)}
+				count={pendingCount}
+			/>
+			<FeedbackSheet
+				open={sheetOpen}
+				onClose={() => setSheetOpen(false)}
+				triggerRef={fabRef}
+			>
+				<FeedbackPanelBody
+					items={controller.items}
+					loading={controller.loading}
+					error={controller.error}
+					onStatusChange={controller.handleStatusChange}
+					onDelete={controller.handleDelete}
+					onRetry={controller.retry}
+				/>
+			</FeedbackSheet>
+		</>
+	)
+}
+
+function useFabRef() {
+	return useRef<HTMLButtonElement>(null)
+}
+
+function ReviewLayout(): React.ReactElement {
+	const { sessionId } = Route.useParams()
+	const { session, loading, error } = useSession(sessionId)
+	const wsRef = useSessionWebSocket(sessionId)
+	const apiClient = useApiClient()
+
+	// Publish sessionId to the shared ApiClient so feedback mutations
+	// (POST/PUT/DELETE) attach the `X-Haiku-Session-Id` header — the
+	// server rejects them without it when remote review is enabled.
+	useEffect(() => {
+		apiClient.setSessionId(sessionId)
+		return () => {
+			apiClient.setSessionId(null)
+		}
+	}, [apiClient, sessionId])
+
+	const dynamicTitle =
+		session && session.session_type === "review" && session.intent?.title
+			? `Review: ${session.intent.title}`
+			: null
+	usePageTitle(dynamicTitle)
+	useEffect(() => {
+		if (dynamicTitle) document.title = dynamicTitle
+	}, [dynamicTitle])
+
+	if (loading) return <LoadingState message="Loading session..." />
+	if (error || !session) return <ErrorState error={error} />
+	if (session.session_type !== "review") {
+		return <ErrorState error="Session type mismatch (expected review)." />
+	}
+
+	// From here on the session is narrowed; hand off to the concrete
+	// layout component so its hooks can safely depend on session fields.
+	return (
+		<ReviewLayoutLoaded
+			sessionId={sessionId}
+			session={asReviewPageSession(session)}
+			wsRef={wsRef}
+		/>
+	)
+}
+
+function ReviewLayoutLoaded({
+	sessionId,
+	session,
+	wsRef,
+}: {
+	sessionId: string
+	session: ReviewPageSessionData
+	wsRef: React.RefObject<WebSocket | null>
+}): React.ReactElement {
+	const navigate = useNavigate()
+	const routerState = useRouterState()
+
+	// After a successful Approve / External decision render the terminal
+	// success card + try to close the tab. MCP review usually opens via
+	// `window.open`, which permits programmatic close; if it fails
+	// (standalone nav), keep showing SubmitSuccess.
+	const [submittedDecision, setSubmittedDecision] = useState<
+		"approved" | "external" | null
+	>(null)
+	useEffect(() => {
+		if (!submittedDecision) return
+		const id = setTimeout(() => {
+			try {
+				window.close()
+			} catch {
+				/* non-openable tab — SubmitSuccess stays visible */
+			}
+		}, 600)
+		return () => clearTimeout(id)
+	}, [submittedDecision])
+
+	const [highlightFeedbackId, setHighlightFeedbackId] = useState<string | null>(
+		null,
+	)
+	const [inlineComments, setInlineComments] = useState<InlineCommentEntry[]>([])
+	const [pins, setPins] = useState<AnnotationPin[]>([])
+
+	const getAnnotations = useCallback((): ReviewAnnotations | undefined => {
+		const hasAny = pins.length > 0 || inlineComments.length > 0
+		if (!hasAny) return undefined
+		const annotations: ReviewAnnotations = {}
+		if (pins.length > 0) {
+			annotations.pins = pins.map((p) => ({
+				x: Math.round(p.x * 100) / 100,
+				y: Math.round(p.y * 100) / 100,
+				text: p.text,
+			}))
+		}
+		if (inlineComments.length > 0) {
+			annotations.comments = inlineComments.map((c) => ({
+				selectedText: c.selectedText,
+				comment: c.comment,
+				paragraph: c.paragraph,
+			}))
+		}
+		return annotations
+	}, [pins, inlineComments])
+
+	const isMobile = useIsMobile()
+
+	const intentSlug = session.intent_slug ?? session.intent?.slug ?? null
+	const activeStage = resolveActiveStage(session)
+	const gateModes = resolveGateModes(session.gate_type)
+	const gateBadges = gateModes.map(gateBadgeCopy)
+	const studioName =
+		(session.intent?.frontmatter?.studio as string | undefined) ?? null
+	const sessionIdShort = sessionId ? sessionId.slice(0, 8) : ""
+
+	// Which stage is in focus + whether the intent overview is active are
+	// both derived from the URL. The current location's pathname decides;
+	// child routes own the bindings, we only need them here for the
+	// header / stepper / sidebar.
+	const path = routerState.location.pathname
+	const viewingIntent = path.endsWith(`/review/${sessionId}/intent`)
+	const stageMatch = path.match(/\/review\/[^/]+\/stages\/([^/]+)/)
+	const selectedStage = stageMatch?.[1] ?? activeStage
+
+	const stageStates = session.stage_states ?? {}
+	const intentStageOrder =
+		(session.intent?.frontmatter?.stages as string[] | undefined) ?? []
+	const stageStateKeys = Object.keys(stageStates)
+	const orderedStageNames =
+		intentStageOrder.length > 0
+			? intentStageOrder.filter((s) => stageStateKeys.includes(s))
+			: stageStateKeys
+	const stageProgressData = orderedStageNames.map((name) => {
+		const state = stageStates[name] as
+			| { status?: string; visits?: number; pending_feedback?: number }
+			| undefined
+		return {
+			name,
+			status:
+				state?.status === "active"
+					? "current"
+					: (state?.status ?? "pending"),
+			visits: state?.visits ?? 0,
+			pendingCount: state?.pending_feedback ?? 0,
+		}
+	})
+
+	const contextValue: ReviewRouteContextValue = useMemo(
+		() => ({
+			session: session,
+			sessionId,
+			wsRef,
+			activeStage,
+			highlightFeedbackId,
+			setHighlightFeedbackId,
+			submittedDecision,
+			setSubmittedDecision,
+			inlineComments,
+			setInlineComments,
+			pins,
+			setPins,
+			getAnnotations,
+		}),
+		[
+			session,
+			sessionId,
+			wsRef,
+			activeStage,
+			highlightFeedbackId,
+			submittedDecision,
+			inlineComments,
+			pins,
+			getAnnotations,
+		],
+	)
+
+	return (
+		<ReviewRouteProvider value={contextValue}>
+			<div
+				data-testid="review-page-ready"
+				className="h-screen overflow-hidden flex flex-col bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100"
+			>
+				<HeaderLandmark className="shrink-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800">
+					<div className="px-4 sm:px-6 py-3 flex items-center justify-between border-b border-stone-100 dark:border-stone-800/60">
+						<div className="flex items-center gap-3 min-w-0">
+							<span className="text-base font-bold tracking-tight text-stone-900 dark:text-stone-100">
+								H·AI·K·U
+							</span>
+							<span className="text-stone-300 dark:text-stone-600">|</span>
+							<span className="text-sm font-medium text-stone-500 dark:text-stone-400">
+								Review
+							</span>
+							{studioName && (
+								<>
+									<span className="text-stone-300 dark:text-stone-600">·</span>
+									<span className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+										{studioName}
+									</span>
+								</>
+							)}
+							{session.intent?.title && (
+								<>
+									<span className="text-stone-300 dark:text-stone-600">/</span>
+									<button
+										type="button"
+										onClick={() =>
+											navigate({
+												to: "/review/$sessionId/intent",
+												params: { sessionId },
+											})
+										}
+										className={`text-sm font-semibold truncate rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 ${viewingIntent ? "text-teal-700 dark:text-teal-400 underline underline-offset-4" : "text-stone-800 dark:text-stone-100 hover:text-teal-700 dark:hover:text-teal-400"}`}
+										title="View intent overview"
+									>
+										{session.intent.title}
+									</button>
+								</>
+							)}
+							{sessionIdShort && (
+								<>
+									<span className="text-stone-300 dark:text-stone-600">·</span>
+									<span className="text-[11px] font-mono text-stone-500 dark:text-stone-500">
+										session <span>{sessionIdShort}</span>
+									</span>
+								</>
+							)}
+						</div>
+						<div className="flex items-center gap-2 shrink-0">
+							<ThemeToggle />
+						</div>
+					</div>
+					{stageProgressData.length > 0 && (
+						<StageProgressStrip
+							stages={stageProgressData}
+							currentStage={activeStage ?? ""}
+							viewingStage={viewingIntent ? "" : (selectedStage ?? "")}
+							onStageClick={(name) =>
+								navigate({
+									to: "/review/$sessionId/stages/$stage",
+									params: { sessionId, stage: name },
+								})
+							}
+						/>
+					)}
+				</HeaderLandmark>
+
+				<div
+					data-testid="review-split"
+					className="flex-1 flex flex-col xl:flex-row overflow-hidden"
+				>
+					{!isMobile && (
+						<FeedbackSidebar
+							intent={intentSlug}
+							stage={selectedStage}
+							activeStage={activeStage}
+							sessionId={sessionId}
+							intentTitle={session.intent?.title}
+							gateBadges={gateBadges}
+							gateType={session.gate_type}
+							getAnnotations={getAnnotations}
+							onFeedbackItemClick={(id) => setHighlightFeedbackId(id)}
+							onDecisionSuccess={(decision) => {
+								if (decision === "approved" || decision === "external") {
+									setSubmittedDecision(decision)
+								}
+							}}
+						/>
+					)}
+					<Main
+						ariaLabel="Review content"
+						className="flex-1 min-w-0 overflow-y-auto"
+						style={
+							{
+								"--header-height": "5.5rem",
+							} as React.CSSProperties
+						}
+					>
+						{submittedDecision ? (
+							<div className="px-6 lg:px-10 py-10">
+								<SubmitSuccess
+									message={
+										submittedDecision === "approved"
+											? "Review approved — thanks!"
+											: "External review submitted — thanks!"
+									}
+								/>
+							</div>
+						) : (
+							<Outlet />
+						)}
+					</Main>
+				</div>
+
+				{isMobile && (
+					<MobileFeedbackSection
+						intentSlug={intentSlug}
+						activeStage={activeStage}
+					/>
+				)}
+			</div>
+		</ReviewRouteProvider>
+	)
+}
+
+export const Route = createFileRoute("/review/$sessionId")({
+	component: ReviewLayout,
+})

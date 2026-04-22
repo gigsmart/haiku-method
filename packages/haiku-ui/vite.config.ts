@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs"
 import tailwindcss from "@tailwindcss/vite"
+import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
@@ -14,7 +15,22 @@ const pluginVersion = (() => {
 })()
 
 export default defineConfig({
-	plugins: [react(), tailwindcss()],
+	plugins: [
+		// TanStack Router plugin must run BEFORE the React plugin so it can
+		// generate `routeTree.gen.ts` from the `src/routes/` tree before the
+		// React transform reads the app entry. `autoCodeSplitting: true` lets
+		// the plugin split route files into their own chunks at build time;
+		// we still serve a single HTML bundle via the build.rollupOptions
+		// below, but keeping the flag on keeps dev-time HMR fast.
+		tanstackRouter({
+			target: "react",
+			autoCodeSplitting: true,
+			routesDirectory: "./src/routes",
+			generatedRouteTree: "./src/routeTree.gen.ts",
+		}),
+		react(),
+		tailwindcss(),
+	],
 	define: {
 		"import.meta.env.VITE_SENTRY_DSN": JSON.stringify(
 			process.env.SENTRY_DSN_REVIEW_SPA || "",

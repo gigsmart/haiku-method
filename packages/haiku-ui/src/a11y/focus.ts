@@ -161,14 +161,20 @@ export function useFocusTrap(
 		container.addEventListener("keydown", handleKeydown)
 
 		return () => {
-			container.removeEventListener("keydown", handleKeydown)
-			if (priorFocus && document.contains(priorFocus)) {
-				try {
+			// Guard against test-teardown races where React flushes the
+			// passive-effect cleanup after vitest has cleared the jsdom
+			// globals (container / document). Nothing to restore in that
+			// case, and no listener to remove.
+			try {
+				if (!container || typeof document === "undefined" || !document) return
+				container.removeEventListener("keydown", handleKeydown)
+				if (priorFocus && document.contains(priorFocus)) {
 					priorFocus.focus()
-				} catch {
-					// Some elements (detached, non-focusable) can throw in older
-					// environments; swallow defensively.
 				}
+			} catch {
+				// Some elements (detached, non-focusable) can throw in older
+				// environments; swallow defensively so an unmount never
+				// escapes a React effect cleanup.
 			}
 		}
 	}, [enabled, ref])

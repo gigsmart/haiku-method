@@ -22,10 +22,11 @@
 
 import { MarkdownViewer } from "@haiku/shared"
 import DOMPurify from "dompurify"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Card, SectionHeading } from "../../../components/Card"
 import { type TabDef, Tabs } from "../../../components/Tabs"
 import type { ParsedUnit } from "../../../parsed"
+import type { ReviewDetailKind, ReviewTab } from "../shared/stage-tabs"
 import type { FeedbackItemData } from "../../../types"
 import type { ReviewPageSessionData } from "../shared/session-data"
 import {
@@ -45,6 +46,17 @@ export interface StageReviewProps {
 	feedback: FeedbackItemData[]
 	onHighlightRequestId?: string | null
 	onHighlightConsumed?: () => void
+	/** Controlled tab selection — the parent (ReviewPage) owns this so
+	 *  it can mirror tab state to the URL. `undefined` is equivalent to
+	 *  the "overview" default. */
+	tab?: ReviewTab | undefined
+	onTabChange?: (tab: ReviewTab | undefined) => void
+	/** Controlled detail selection — when set, the matching tab renders
+	 *  the single-item focused view. */
+	detail?: { kind: ReviewDetailKind; name: string } | null
+	onDetailChange?: (
+		detail: { kind: ReviewDetailKind; name: string } | null,
+	) => void
 }
 
 const TYPE_BADGE: Record<string, string> = {
@@ -168,8 +180,26 @@ export function StageReview({
 	feedback,
 	onHighlightRequestId,
 	onHighlightConsumed,
+	tab,
+	onTabChange,
+	detail: detailProp,
+	onDetailChange,
 }: StageReviewProps): React.ReactElement {
-	const [activeTab, setActiveTab] = useState<string>("overview")
+	// Controlled-or-uncontrolled tab: when the parent owns the tab (for
+	// URL sync), `tab`/`onTabChange` drive it. When unused, fall back to
+	// local state so tests + standalone uses still work.
+	const [localTab, setLocalTab] = useState<string>(tab ?? "overview")
+	const activeTab = onTabChange !== undefined ? (tab ?? "overview") : localTab
+	const setActiveTab = useCallback(
+		(next: string) => {
+			if (onTabChange !== undefined) {
+				onTabChange(next === "overview" ? undefined : (next as ReviewTab))
+			} else {
+				setLocalTab(next)
+			}
+		},
+		[onTabChange],
+	)
 	// Seen-state scope: intent slug gives cross-session persistence; we
 	// fall back to sessionId only if the intent slug isn't known yet.
 	const seenScopeId = intentSlug ?? sessionId
@@ -260,10 +290,40 @@ export function StageReview({
 	// view with a prev/next stepper instead of the full list. Opening a
 	// condensed row from the overview or a feedback target from the
 	// sidebar drops the reviewer straight into detail for that item.
-	const [detail, setDetail] = useState<{
+	// Controlled variant mirrors the `tab` prop pattern — parent owns
+	// detail state for URL sync when `onDetailChange` is wired.
+	const [localDetail, setLocalDetail] = useState<{
 		tab: "units" | "knowledge" | "outputs"
 		name: string
-	} | null>(null)
+	} | null>(
+		detailProp && onDetailChange === undefined
+			? { tab: detailProp.kind, name: detailProp.name }
+			: null,
+	)
+	const detail =
+		onDetailChange !== undefined
+			? detailProp
+				? { tab: detailProp.kind, name: detailProp.name }
+				: null
+			: localDetail
+	const setDetail = useCallback(
+		(
+			next: {
+				tab: "units" | "knowledge" | "outputs"
+				name: string
+			} | null,
+		) => {
+			if (onDetailChange !== undefined) {
+				onDetailChange(
+					next ? { kind: next.tab as ReviewDetailKind, name: next.name } : null,
+				)
+			} else {
+				setLocalDetail(next)
+			}
+		},
+		[onDetailChange],
+	)
+
 	// Stepper mode — "unseen" cycles only the items that haven't been
 	// marked seen yet, "all" cycles everything. Persisted on the component
 	// instance so switching tabs keeps the same preference.
@@ -274,16 +334,23 @@ export function StageReview({
 			setActiveTab(tab)
 			setDetail({ tab, name })
 		},
-		[],
+		[setActiveTab, setDetail],
 	)
-	const closeDetail = useCallback(() => setDetail(null), [])
+	const closeDetail = useCallback(() => setDetail(null), [setDetail])
 
 	// Reset detail + tab when the reviewer switches stages via the
 	// stepper — detail state is stage-scoped and shouldn't bleed across.
+	// Skip on the initial mount so deep-link URLs (stage+tab+detail) land
+	// on the requested sub-view instead of being reset to overview.
+	const isInitialMountRef = useRef(true)
 	useEffect(() => {
+		if (isInitialMountRef.current) {
+			isInitialMountRef.current = false
+			return
+		}
 		setDetail(null)
 		setActiveTab("overview")
-	}, [stageName])
+	}, [stageName, setActiveTab, setDetail])
 
 	// "Start walkthrough" entry — find the first unseen artifact across
 	// units → knowledge → outputs and open its detail view.

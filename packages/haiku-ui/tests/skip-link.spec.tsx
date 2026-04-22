@@ -16,9 +16,9 @@ import { cleanup, render, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import type { ReviewSessionPayload, SessionPayload } from "haiku-api"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { App } from "../src/App"
 import type { ApiClient } from "../src/api/client"
 import { ApiClientProvider } from "../src/api/context"
+import { RouterHarness } from "./router-harness"
 
 function loadReviewFixture(): ReviewSessionPayload {
 	const raw = readFileSync(
@@ -50,7 +50,6 @@ function makeMockClient(session: SessionPayload): ApiClient {
 describe("Skip link (FB-30 regression guard)", () => {
 	beforeEach(() => {
 		document.body.innerHTML = ""
-		window.history.replaceState({}, "", "/review/test-review-1")
 	})
 
 	afterEach(() => {
@@ -63,7 +62,7 @@ describe("Skip link (FB-30 regression guard)", () => {
 
 		const { container } = render(
 			<ApiClientProvider client={client}>
-				<App />
+				<RouterHarness initialPath="/review/test-review-1" />
 			</ApiClientProvider>,
 		)
 
@@ -107,7 +106,7 @@ describe("Skip link (FB-30 regression guard)", () => {
 
 		const { container } = render(
 			<ApiClientProvider client={client}>
-				<App />
+				<RouterHarness initialPath="/review/test-review-1" />
 			</ApiClientProvider>,
 		)
 
@@ -143,14 +142,19 @@ describe("Skip link (FB-30 regression guard)", () => {
 
 		const { container } = render(
 			<ApiClientProvider client={client}>
-				<App />
+				<RouterHarness initialPath="/review/test-review-1" />
 			</ApiClientProvider>,
 		)
 
-		// Inspect the raw DOM for the first focusable: should be the skip link.
-		const firstLink = container.querySelector("a[href='#main-content']")
-		expect(firstLink).not.toBeNull()
-		expect(firstLink?.textContent).toBe("Skip to main content")
+		// TanStack Router resolves the initial match on the next tick when
+		// driven by an in-memory history, so the skip link from `__root`
+		// may not be in the DOM on the very first microtask. Wait for it.
+		const firstLink = await waitFor(() => {
+			const link = container.querySelector("a[href='#main-content']")
+			if (!link) throw new Error("skip link not rendered yet")
+			return link
+		})
+		expect(firstLink.textContent).toBe("Skip to main content")
 
 		// Wait for the shell to mount past the loading state — the review
 		// shell renders its `<header>` inside ReviewPage (not in the outer
@@ -162,7 +166,7 @@ describe("Skip link (FB-30 regression guard)", () => {
 		})
 		const header = container.querySelector("header")
 		expect(header).not.toBeNull()
-		if (firstLink && header) {
+		if (header) {
 			expect(
 				firstLink.compareDocumentPosition(header) &
 					Node.DOCUMENT_POSITION_FOLLOWING,

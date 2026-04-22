@@ -36,6 +36,7 @@ import { FeedbackPanelBody } from "./FeedbackPanelBody"
 import { FeedbackSidebar } from "./FeedbackSidebar"
 import { RereviewBanner } from "./shared/RereviewBanner"
 import type { ReviewPageSessionData } from "./shared/session-data"
+import type { ReviewDetailKind, ReviewTab } from "./shared/stage-tabs"
 import { StageReview } from "./stage/StageReview"
 import { useFeedbackSidebarController } from "./useFeedbackSidebarController"
 import { useIsMobile } from "./useIsMobile"
@@ -46,6 +47,13 @@ export interface ReviewPageProps {
 	session: ReviewPageSessionData
 	sessionId: string
 	wsRef?: React.RefObject<WebSocket | null>
+	/** Initial stage the stepper lands on. Defaults to the session's
+	 *  active stage. Used by tests that want to mount the page at a
+	 *  specific stage without going through the router. */
+	initialStage?: string
+	initialTab?: ReviewTab
+	initialDetail?: { kind: ReviewDetailKind; name: string } | null
+	initialViewingIntent?: boolean
 }
 
 function resolveActiveStage(session: ReviewPageSessionData): string | null {
@@ -283,6 +291,10 @@ export function ReviewPage({
 	session,
 	sessionId,
 	wsRef,
+	initialStage,
+	initialTab,
+	initialDetail,
+	initialViewingIntent,
 }: ReviewPageProps): React.ReactElement {
 	const intentSlug = session.intent_slug ?? session.intent?.slug ?? null
 	const activeStage = resolveActiveStage(session)
@@ -291,16 +303,21 @@ export function ReviewPage({
 	const isMobile = useIsMobile()
 
 	// Stepper navigation — which stage's content the main pane is showing.
-	// Defaults to the active stage (what the intent is currently on); the
-	// header stepper lets reviewers jump to any visited stage.
+	// Defaults to the active stage (what the intent is currently on).
 	const [selectedStage, setSelectedStage] = useState<string | null>(
-		activeStage,
+		initialStage ?? activeStage,
 	)
 	// When true, the main pane shows an intent-scoped overview (intent.md
-	// rendered + cross-stage summary) instead of a specific stage. Clicking
-	// the intent name in the header breadcrumb flips this on; any stepper
-	// click flips it back off.
-	const [viewingIntent, setViewingIntent] = useState(false)
+	// rendered + cross-stage summary) instead of a specific stage.
+	const [viewingIntent, setViewingIntent] = useState(!!initialViewingIntent)
+	// Stage-internal sub-state. In production the router owns these
+	// (StageContent drives them from URL params); this component keeps
+	// local copies so tests that render ReviewPage directly still work.
+	const [stageTab, setStageTab] = useState<ReviewTab | undefined>(initialTab)
+	const [stageDetail, setStageDetail] = useState<{
+		kind: ReviewDetailKind
+		name: string
+	} | null>(initialDetail ?? null)
 
 	const studioName =
 		(session.intent?.frontmatter?.studio as string | undefined) ?? null
@@ -444,6 +461,11 @@ export function ReviewPage({
 						onStageClick={(name) => {
 							setSelectedStage(name)
 							setViewingIntent(false)
+							// Stepper clicks land on the stage overview — clear any
+							// carry-over tab or detail so the URL matches the bare
+							// `/review/:id/stages/:stage` form.
+							setStageTab(undefined)
+							setStageDetail(null)
 						}}
 					/>
 				)}
@@ -528,6 +550,10 @@ export function ReviewPage({
 									onPinsChange={setPins}
 									highlightFeedbackId={highlightFeedbackId}
 									onHighlightConsumed={() => setHighlightFeedbackId(null)}
+									stageTab={stageTab}
+									stageDetail={stageDetail}
+									onStageTabChange={setStageTab}
+									onStageDetailChange={setStageDetail}
 								/>
 							</div>
 						</>
@@ -645,6 +671,10 @@ function StageScopedContent({
 	onPinsChange,
 	highlightFeedbackId,
 	onHighlightConsumed,
+	stageTab,
+	stageDetail,
+	onStageTabChange,
+	onStageDetailChange,
 }: {
 	session: ReviewPageSessionData
 	sessionId: string
@@ -656,6 +686,12 @@ function StageScopedContent({
 	onPinsChange: (pins: AnnotationPin[]) => void
 	highlightFeedbackId: string | null
 	onHighlightConsumed: () => void
+	stageTab: ReviewTab | undefined
+	stageDetail: { kind: ReviewDetailKind; name: string } | null
+	onStageTabChange: (tab: ReviewTab | undefined) => void
+	onStageDetailChange: (
+		detail: { kind: ReviewDetailKind; name: string } | null,
+	) => void
 }): React.ReactElement {
 	// All feedback for this intent+stage (fetched once per stage).
 	const { items: stageFeedback } = useFeedback(intentSlug, stageName)
@@ -682,6 +718,10 @@ function StageScopedContent({
 			feedback={stageFeedback}
 			onHighlightRequestId={highlightFeedbackId}
 			onHighlightConsumed={onHighlightConsumed}
+			tab={stageTab}
+			detail={stageDetail}
+			onTabChange={onStageTabChange}
+			onDetailChange={onStageDetailChange}
 		/>
 	)
 }

@@ -33,9 +33,9 @@ import axe from "axe-core"
 import type { ReviewCurrentPayload, SessionPayload } from "haiku-api"
 import type { ReactNode } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { App } from "../src/App"
 import type { ApiClient } from "../src/api/client"
 import { ApiClientProvider } from "../src/api/context"
+import { RouterHarness } from "./router-harness"
 
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] as const
 
@@ -230,11 +230,9 @@ describe("Per-page axe-core accessibility — zero violations across WCAG 2 A/AA
 				: null
 			const client = makeMockClient(session)
 
-			window.history.replaceState({}, "", pc.pathname)
-
 			const { container } = render(
 				<Wrap client={client}>
-					<App />
+					<RouterHarness initialPath={pc.pathname} />
 				</Wrap>,
 			)
 

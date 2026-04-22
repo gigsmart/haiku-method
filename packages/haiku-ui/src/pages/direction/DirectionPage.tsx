@@ -155,7 +155,12 @@ export function DirectionPage({
 			if (e.key === "Escape") setPreviewArchetype(null)
 		}
 		document.addEventListener("keydown", onKey)
-		return () => document.removeEventListener("keydown", onKey)
+		return () => {
+			// Deferred cleanup can fire after test teardown nullifies the
+			// jsdom `document` global — guard so it doesn't crash the suite.
+			if (typeof document === "undefined" || !document) return
+			document.removeEventListener("keydown", onKey)
+		}
 	}, [previewArchetype])
 
 	if (done) {
