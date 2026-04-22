@@ -405,3 +405,9 @@ Commit after each logical step to keep history bisectable and limit diff blast r
 - [ ] Every `disabled` button carries `aria-disabled="true"` alongside the native attribute.
 - [ ] `StatusBadge` pending-key renamed to `idle` with back-compat; colors lifted.
 - [ ] Sidebar width drift replaced by `var(--sidebar-width)` / `var(--sidebar-width-xl)` in all 3 sites.
+
+---
+
+## Postscript — 2026-04-21 (FB-18 fix bolt)
+
+Reduced to a single `Input` primitive by FB-18 fix bolt — aspirational primitives (Button/Badge/Card/Chip/Divider) deleted until consumers exist. `Input.tsx` was moved from `packages/haiku-ui/src/components/primitives/Input.tsx` to `packages/haiku-ui/src/components/Input.tsx`; the `primitives/` folder and barrel were dissolved. The only external consumer (`pages/direction/DirectionPage.tsx`) was rewired to import from the new path. Unit-04 deliverables + Scope bullet + completion criterion aligned to the shipped footprint. See feedback file `stages/development/feedback/18-primitives-directory-is-5-6-dead-code-premature-generalizati.md` for rationale. The historical plan body above is preserved verbatim as the record of what bolt 1 intended.
