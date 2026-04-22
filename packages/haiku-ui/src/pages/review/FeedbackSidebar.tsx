@@ -3,16 +3,23 @@
  *
  * Shares its wiring (`useFeedback`, typed `apiClient.feedback.update`,
  * polite/assertive announcements with canonical DESIGN-BRIEF §2 phrasing)
- * with the mobile `FeedbackSheet` via the `useFeedbackSidebarController`
- * hook. Body layout (summary bar over virtualized list) lives in
- * `FeedbackPanelBody`.
+ * with the canonical mobile `FeedbackSheet` (`components/feedback/`) via
+ * the `useFeedbackSidebarController` hook — `ReviewPage` calls the hook
+ * on the mobile branch. Body layout (summary bar over virtualized list)
+ * lives in `FeedbackPanelBody` and is shared by both branches.
  *
  * Reserved slot for unit-09 `AgentFeedbackToggle`: the sidebar currently
  * renders `FeedbackSummaryBar` → `FeedbackList`. Unit-09 inserts a
  * segmented control above the summary bar — no sidebar reshape needed.
  *
  * FB-38: this file used to also host `FeedbackFloatingButton`, `FeedbackSheet`,
- * and the shared hook. Those now live in their own files in this directory.
+ * a shared body helper, and the shared hook. The hook now lives in
+ * `./useFeedbackSidebarController`, the body in `./FeedbackPanelBody`, and
+ * the mobile FAB + Sheet were deleted (FB-12) in favour of the canonical
+ * `components/feedback/{FeedbackFloatingButton, FeedbackSheet}` exports.
+ * This file now has exactly one top-level export — the desktop aside —
+ * matching the one-component-per-file convention of the rest of
+ * `pages/review/`.
  */
 
 import { Aside } from "../../a11y"
