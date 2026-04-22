@@ -1,12 +1,14 @@
 {
-  "recorded_at": "2026-04-22T02:50:13.240Z",
-  "head": "60f679261fdb7e90ab2e09bb02beaade1b954f95",
+  "recorded_at": "2026-04-22T02:52:21.691Z",
+  "head": "e77a68f1f68298d2a02c6f447a683429ec0fb35c",
   "total_scenarios": 151,
-  "mapped": 124,
-  "unmapped": 27,
+  "mapped": 132,
+  "unmapped": 19,
   "ignored": 0,
   "corpus_sizes": {
-    "backend_tests": 477,
+    "backend_tests": 1020,
+    "backend_baseline": 477,
+    "backend_disk": 543,
     "frontend_tests": 336,
     "yaml_features": 6
   },
@@ -56,7 +58,7 @@
     },
     "review-ui-feedback.feature": {
       "total": 27,
-      "mapped": 3,
+      "mapped": 11,
       "ignored": 0,
       "unmapped": [
         {
@@ -80,18 +82,6 @@
           "line": 56
         },
         {
-          "title": "GET /api/feedback/{intent}/{stage} returns existing feedback items",
-          "line": 66
-        },
-        {
-          "title": "POST /api/feedback/{intent}/{stage} creates a feedback file",
-          "line": 75
-        },
-        {
-          "title": "DELETE /api/feedback/{intent}/{stage}/{id} removes a feedback file",
-          "line": 97
-        },
-        {
           "title": "Review UI displays existing feedback from prior visits",
           "line": 107
         },
@@ -112,22 +102,6 @@
           "line": 167
         },
         {
-          "title": "POST /api/feedback with missing title returns 400",
-          "line": 183
-        },
-        {
-          "title": "PUT /api/feedback for non-existent feedback ID returns 404",
-          "line": 191
-        },
-        {
-          "title": "DELETE /api/feedback on a pending item returns 409",
-          "line": 198
-        },
-        {
-          "title": "PUT /api/feedback with invalid status value returns 400",
-          "line": 204
-        },
-        {
           "title": "Review UI submission fails mid-write (partial feedback creation)",
           "line": 210
         },
@@ -142,10 +116,6 @@
         {
           "title": "Reviewer approves with existing pending feedback from prior review agents",
           "line": 239
-        },
-        {
-          "title": "GET /api/feedback for a stage with no feedback directory returns empty array",
-          "line": 249
         },
         {
           "title": "Concurrent review UI sessions writing feedback for the same stage",
@@ -207,21 +177,6 @@
     },
     {
       "file": "review-ui-feedback.feature",
-      "line": 66,
-      "title": "GET /api/feedback/{intent}/{stage} returns existing feedback items"
-    },
-    {
-      "file": "review-ui-feedback.feature",
-      "line": 75,
-      "title": "POST /api/feedback/{intent}/{stage} creates a feedback file"
-    },
-    {
-      "file": "review-ui-feedback.feature",
-      "line": 97,
-      "title": "DELETE /api/feedback/{intent}/{stage}/{id} removes a feedback file"
-    },
-    {
-      "file": "review-ui-feedback.feature",
       "line": 107,
       "title": "Review UI displays existing feedback from prior visits"
     },
@@ -247,26 +202,6 @@
     },
     {
       "file": "review-ui-feedback.feature",
-      "line": 183,
-      "title": "POST /api/feedback with missing title returns 400"
-    },
-    {
-      "file": "review-ui-feedback.feature",
-      "line": 191,
-      "title": "PUT /api/feedback for non-existent feedback ID returns 404"
-    },
-    {
-      "file": "review-ui-feedback.feature",
-      "line": 198,
-      "title": "DELETE /api/feedback on a pending item returns 409"
-    },
-    {
-      "file": "review-ui-feedback.feature",
-      "line": 204,
-      "title": "PUT /api/feedback with invalid status value returns 400"
-    },
-    {
-      "file": "review-ui-feedback.feature",
       "line": 210,
       "title": "Review UI submission fails mid-write (partial feedback creation)"
     },
@@ -284,11 +219,6 @@
       "file": "review-ui-feedback.feature",
       "line": 239,
       "title": "Reviewer approves with existing pending feedback from prior review agents"
-    },
-    {
-      "file": "review-ui-feedback.feature",
-      "line": 249,
-      "title": "GET /api/feedback for a stage with no feedback directory returns empty array"
     },
     {
       "file": "review-ui-feedback.feature",
@@ -1042,25 +972,81 @@
     ],
     "review-ui-feedback.feature": [
       {
+        "title": "GET /api/feedback/{intent}/{stage} returns existing feedback items",
+        "line": 66,
+        "via": "alias-match",
+        "matched_test": "returns all feedback items for a stage",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      },
+      {
+        "title": "POST /api/feedback/{intent}/{stage} creates a feedback file",
+        "line": 75,
+        "via": "alias-match",
+        "matched_test": "creates feedback item and returns 201",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      },
+      {
         "title": "PUT /api/feedback/{intent}/{stage}/{id} updates a feedback item",
         "line": 88,
         "via": "alias-match",
         "matched_test": "updates status field",
-        "test_source": "backend:feedback.test.mjs"
+        "test_source": "backend-baseline:feedback.test.mjs"
+      },
+      {
+        "title": "DELETE /api/feedback/{intent}/{stage}/{id} removes a feedback file",
+        "line": 97,
+        "via": "alias-match",
+        "matched_test": "DELETE returns 200 for non-pending feedback",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
       },
       {
         "title": "Reviewer rejects agent-authored feedback via the review UI",
         "line": 150,
         "via": "alias-match",
         "matched_test": "rejects agent-authored feedback with reason",
-        "test_source": "backend:feedback.test.mjs"
+        "test_source": "backend-baseline:feedback.test.mjs"
       },
       {
         "title": "Reviewer closes human-authored feedback via the review UI",
         "line": 157,
         "via": "alias-match",
         "matched_test": "human can close human-authored feedback",
-        "test_source": "backend:feedback.test.mjs"
+        "test_source": "backend-baseline:feedback.test.mjs"
+      },
+      {
+        "title": "POST /api/feedback with missing title returns 400",
+        "line": 183,
+        "via": "alias-match",
+        "matched_test": "POST returns 400 for missing title",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      },
+      {
+        "title": "PUT /api/feedback for non-existent feedback ID returns 404",
+        "line": 191,
+        "via": "alias-match",
+        "matched_test": "PUT returns 404 for nonexistent feedback id",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      },
+      {
+        "title": "DELETE /api/feedback on a pending item returns 409",
+        "line": 198,
+        "via": "alias-match",
+        "matched_test": "DELETE returns 409 for pending feedback",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      },
+      {
+        "title": "PUT /api/feedback with invalid status value returns 400",
+        "line": 204,
+        "via": "alias-match",
+        "matched_test": "PUT returns 400 for no updatable fields",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      },
+      {
+        "title": "GET /api/feedback for a stage with no feedback directory returns empty array",
+        "line": 249,
+        "via": "alias-match",
+        "matched_test": "returns empty for status=closed when none exist",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
       }
     ],
     "revisit-with-reasons.feature": [
