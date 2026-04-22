@@ -2,7 +2,7 @@
 title: >-
   Skip-link test fakes anchor activation via element.focus() instead of user
   behavior
-status: fixing
+status: closed
 origin: adversarial-review
 author: test-quality
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:24:34Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-54:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
