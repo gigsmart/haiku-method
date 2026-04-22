@@ -198,3 +198,28 @@ the current worktree tree:
 No new code written — the superseding commit (`fea8b9c5`, Lighthouse → axe-core
 replacement) still holds. Handing off to the feedback-assessor (bolt 3) for
 closure confirmation.
+
+## Feedback-assessor verification (bolt 2)
+
+Independently re-ran the four verification commands and confirmed the
+superseding commit `fea8b9c5` still holds on branch
+`haiku/universal-feedback-model-and-review-recovery/development`:
+
+```
+(a) test ! -f packages/haiku-ui/scripts/audit-lighthouse.mjs  -> PASS
+(a2) test ! -f packages/haiku-ui/lighthouserc.json            -> PASS
+(b) ! grep -qE 'lighthouse|@lhci/cli' packages/haiku-ui/package.json -> PASS
+(c) test -f packages/haiku-ui/tests/a11y-pages.spec.tsx       -> PASS
+(c2) grep -qE 'axe-core|axe\.run' packages/haiku-ui/tests/a11y-pages.spec.tsx -> PASS
+```
+
+Finding FB-09 flags an exit-1/NO_FCP defect in a script that no longer exists.
+The unit spec's completion criteria (lines 117–125) were updated in bolt 3 of
+unit-06 to REQUIRE removal of `audit-lighthouse.mjs`, `lighthouserc.json`, and
+the `lighthouse` / `@lhci/cli` deps, with the a11y gate now owned by
+`packages/haiku-ui/tests/a11y-pages.spec.tsx` (axe-core RTL). Unit-06 is
+`status: completed`.
+
+The finding as written is resolved — not by patching the four mitigations
+FB-09 suggested, but by the stronger superseding change that removed the
+failing harness entirely. Closing FB-09.
