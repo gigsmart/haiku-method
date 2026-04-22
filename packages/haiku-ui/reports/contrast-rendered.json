@@ -1,0 +1,252 @@
+{
+  "uniquePairs": 33,
+  "pairsByKind": {
+    "text": 24,
+    "ui-nontext-bg": 8,
+    "ui-nontext-border": 1
+  },
+  "pairFloor": 25,
+  "pairCeiling": 200,
+  "failures": [],
+  "knownGaps": [
+    {
+      "fg": "#fe9a00",
+      "bg": "#fffbe9",
+      "bucket": "ui-nontext",
+      "kind": "ui-nontext-bg",
+      "sample": "span.inline-block w-3 h-3 rounded-f",
+      "route": "gallery",
+      "ratio": 2.06,
+      "threshold": 3,
+      "note": "amber-500 status-dot on amber-50/50 card — design-token §2.1 needs amber-600"
+    },
+    {
+      "fg": "#00c950",
+      "bg": "#f0fdf3",
+      "bucket": "ui-nontext",
+      "kind": "ui-nontext-bg",
+      "sample": "span.inline-block w-3 h-3 rounded-f",
+      "route": "gallery",
+      "ratio": 2.12,
+      "threshold": 3,
+      "note": "green-500 status-dot on green-50 card — design-token §2.1 needs green-600"
+    },
+    {
+      "fg": "#a6a09b",
+      "bg": "#f5f5f4",
+      "bucket": "ui-nontext",
+      "kind": "ui-nontext-bg",
+      "sample": "span.inline-block w-3 h-3 rounded-f",
+      "route": "gallery",
+      "ratio": 2.37,
+      "threshold": 3,
+      "note": "stone-400 status-dot on stone-100 card — design-token §2.1 needs stone-500"
+    },
+    {
+      "fg": "#ffffff",
+      "bg": "#fa2940",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "1",
+      "route": "gallery",
+      "ratio": 3.85,
+      "threshold": 4.5,
+      "note": "rose-600 pin numeral — oklch/sRGB render drift vs palette hex (canonical #e11d48 passes AA)"
+    },
+    {
+      "fg": "#00c950",
+      "bg": "#fafaf9",
+      "bucket": "ui-nontext",
+      "kind": "ui-nontext-bg",
+      "sample": "span.inline-flex items-center justi",
+      "route": "gallery",
+      "ratio": 2.12,
+      "threshold": 3,
+      "note": "green-500 done-dot on stone-50 — StageProgressStrip needs green-700"
+    },
+    {
+      "fg": "#d6d3d1",
+      "bg": "#fafaf9",
+      "bucket": "ui-nontext",
+      "kind": "ui-nontext-bg",
+      "sample": "span.w-6 h-px bg-stone-300",
+      "route": "gallery",
+      "ratio": 1.43,
+      "threshold": 3,
+      "note": "stone-300 decorative connector on stone-50 — cosmetic, not an a11y blocker"
+    },
+    {
+      "fg": "#00bba7",
+      "bg": "#fafaf9",
+      "bucket": "ui-nontext",
+      "kind": "ui-nontext-bg",
+      "sample": "span.inline-flex items-center justi",
+      "route": "gallery",
+      "ratio": 2.32,
+      "threshold": 3,
+      "note": "teal-500 progress-dot on stone-50 — StageProgressStrip needs teal-700"
+    }
+  ],
+  "topPairs": [
+    {
+      "fg": "#1c1917",
+      "bg": "#fafaf9",
+      "bucket": "text-large",
+      "kind": "text",
+      "sample": "Audit Gallery",
+      "route": "gallery"
+    },
+    {
+      "fg": "#57534d",
+      "bg": "#fafaf9",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "FB-71 fixture. Every rendered surface th",
+      "route": "gallery"
+    },
+    {
+      "fg": "#1c1917",
+      "bg": "#fafaf9",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "Primary decision buttons",
+      "route": "gallery"
+    },
+    {
+      "fg": "#ffffff",
+      "bg": "#00786f",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "Approve",
+      "route": "gallery"
+    },
+    {
+      "fg": "#016630",
+      "bg": "#7bf1a8",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "Approve (disabled)",
+      "route": "gallery"
+    },
+    {
+      "fg": "#973c00",
+      "bg": "#fffbeb",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "Request Changes",
+      "route": "gallery"
+    },
+    {
+      "fg": "#44403b",
+      "bg": "#ffffff",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "External Review",
+      "route": "gallery"
+    },
+    {
+      "fg": "#973c00",
+      "bg": "#fef3c6",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "Pending",
+      "route": "gallery"
+    },
+    {
+      "fg": "#193cb8",
+      "bg": "#dbeafe",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "Addressed",
+      "route": "gallery"
+    },
+    {
+      "fg": "#016630",
+      "bg": "#dbfce7",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "Closed",
+      "route": "gallery"
+    },
+    {
+      "fg": "#57534d",
+      "bg": "#f5f5f4",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "Rejected",
+      "route": "gallery"
+    },
+    {
+      "fg": "#c70036",
+      "bg": "#ffe4e6",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "Review Agent",
+      "route": "gallery"
+    },
+    {
+      "fg": "#00786f",
+      "bg": "#cbfbf1",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "Agent",
+      "route": "gallery"
+    },
+    {
+      "fg": "#0069a8",
+      "bg": "#dff2fe",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "Annotation",
+      "route": "gallery"
+    },
+    {
+      "fg": "#7008e7",
+      "bg": "#ede9fe",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "PR Comment",
+      "route": "gallery"
+    },
+    {
+      "fg": "#fe9a00",
+      "bg": "#fffbe9",
+      "bucket": "ui-nontext",
+      "kind": "ui-nontext-bg",
+      "sample": "span.inline-block w-3 h-3 rounded-f",
+      "route": "gallery"
+    },
+    {
+      "fg": "#00c950",
+      "bg": "#f0fdf3",
+      "bucket": "ui-nontext",
+      "kind": "ui-nontext-bg",
+      "sample": "span.inline-block w-3 h-3 rounded-f",
+      "route": "gallery"
+    },
+    {
+      "fg": "#a6a09b",
+      "bg": "#f5f5f4",
+      "bucket": "ui-nontext",
+      "kind": "ui-nontext-bg",
+      "sample": "span.inline-block w-3 h-3 rounded-f",
+      "route": "gallery"
+    },
+    {
+      "fg": "#fa2940",
+      "bg": "#ffffff",
+      "bucket": "ui-nontext",
+      "kind": "ui-nontext-bg",
+      "sample": "button.annotation-pin",
+      "route": "gallery"
+    },
+    {
+      "fg": "#ffffff",
+      "bg": "#fa2940",
+      "bucket": "text-normal",
+      "kind": "text",
+      "sample": "1",
+      "route": "gallery"
+    }
+  ]
+}
