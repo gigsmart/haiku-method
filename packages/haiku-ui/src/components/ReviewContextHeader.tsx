@@ -25,7 +25,7 @@ const gateTypeBadge: Record<string, { label: string; classes: string }> = {
 	auto: {
 		label: "Auto Gate",
 		classes:
-			"bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400",
+			"bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300",
 	},
 }
 

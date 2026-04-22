@@ -30,6 +30,13 @@
 					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
 				},
 				{
+					"id": "banned-stone-400-on-stone-800-dark",
+					"description": "dark:text-stone-400 paired with dark:bg-stone-800 collapses to ~4.4:1 (AA FAIL for body text per DESIGN-TOKENS §1.1a). Lift to dark:text-stone-300 (≥ 10:1).",
+					"pattern": "dark:bg-stone-800\\b[^\"'`]*\\bdark:text-stone-400\\b|dark:text-stone-400\\b[^\"'`]*\\bdark:bg-stone-800\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
 					"id": "banned-opacity-state",
 					"description": "opacity-50|60|70 on interactive/card roots (use token-based disabled per DESIGN-TOKENS §1.7)",
 					"pattern": "\\bopacity-(50|60|70)\\b",
