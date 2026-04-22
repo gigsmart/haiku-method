@@ -27,9 +27,22 @@ function MermaidSvgDiagram({ definition }: Props) {
 	useEffect(() => {
 		if (!(ref.current && definition.trim())) return
 
-		// Load mermaid from CDN dynamically — too large to bundle
+		// Load mermaid from CDN dynamically — too large to bundle.
+		// Pin an exact version and attach Subresource Integrity (SRI) +
+		// crossOrigin so the browser rejects any tampered CDN payload.
+		// To rotate:
+		//   1. Bump MERMAID_VERSION to the intended release.
+		//   2. Regenerate the SRI digest:
+		//      curl -s "https://cdn.jsdelivr.net/npm/mermaid@<version>/dist/mermaid.min.js" \
+		//        | openssl dgst -sha384 -binary | openssl base64 -A
+		//   3. Paste the output after `sha384-` in MERMAID_SRI.
+		const MERMAID_VERSION = "11.4.1"
+		const MERMAID_SRI =
+			"sha384-rbtjAdnIQE/aQJGEgXrVUlMibdfTSa4PQju4HDhN3sR2PmaKFzhEafuePsl9H/9I"
 		const script = document.createElement("script")
-		script.src = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
+		script.src = `https://cdn.jsdelivr.net/npm/mermaid@${MERMAID_VERSION}/dist/mermaid.min.js`
+		script.integrity = MERMAID_SRI
+		script.crossOrigin = "anonymous"
 		script.onload = () => {
 			const mermaid = (
 				window as unknown as {
@@ -41,6 +54,9 @@ function MermaidSvgDiagram({ definition }: Props) {
 			).mermaid
 			mermaid.initialize({
 				startOnLoad: false,
+				// Explicit strict mode: never rely on upstream defaults for
+				// security-sensitive configuration across Mermaid upgrades.
+				securityLevel: "strict",
 				theme: "dark",
 				themeVariables: {
 					primaryColor: "#0d9488", // audit-allow: mermaid themeVariables take raw hex
