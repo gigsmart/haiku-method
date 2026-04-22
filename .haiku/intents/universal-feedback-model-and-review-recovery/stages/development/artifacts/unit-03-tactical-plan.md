@@ -248,7 +248,7 @@ E2. **rAF coalescing unit test** (`packages/haiku-ui/tests/use-session-websocket
 - Session storage, SessionStorage abstraction, or sessions.ts changes.
 - New `.feature` files. Existing specs already cover the behaviours this relocation preserves.
 - Feedback component changes — unit-08.
-- Changing the MCP rename `haiku_feedback` → `haiku_report` (already landed via `unit-03-rename-notes.md` artifact in a prior cycle, different from THIS unit-03 which is UI extraction — naming collision noted; this unit is tracked by the `unit-03-extract-haiku-ui-package.md` filename).
+- Changing the MCP rename `haiku_feedback` → `haiku_report` (already landed via `legacy-rename-haiku-feedback-to-haiku-report.md` artifact in a prior cycle, different from THIS unit-03 which is UI extraction — naming collision resolved by FB-44 rename; this unit is tracked by the `unit-03-extract-haiku-ui-package.md` filename).
 
 ## Completion Criteria Mapping (from unit spec → plan step)
 
