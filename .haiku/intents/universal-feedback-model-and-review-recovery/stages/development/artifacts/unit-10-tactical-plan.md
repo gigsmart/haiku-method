@@ -396,10 +396,13 @@ Test cases (ONE per Completion Criterion):
 
 4. **Escape closes + focus returns to FAB** (CC3a):
    - Render `<Harness initialOpen />`.
-   - `fireEvent.keyDown(document, { key: 'Escape' })` OR `await user.keyboard('{Escape}')`.
-   - Wait for `close` event to process.
-   - `expect(screen.queryByRole('dialog')).not.toBeInTheDocument()` OR `not.toBeVisible()` (if the dialog is still in DOM with `open` attribute removed).
-   - `expect(screen.getByRole('button', { name: /open feedback panel/i })).toHaveFocus()`.
+   - Dispatch a REAL Escape keydown on the dialog root (or `document` if the component listens at document level): `fireEvent.keyDown(sheet, { key: 'Escape', code: 'Escape' })` OR `await user.keyboard('{Escape}')`.
+   - **DO NOT short-circuit by calling `(sheet as HTMLDialogElement).close()` directly.** That path only exercises the `close`-event listener, not the keyboard input path — the test name claims "Escape-driven close" but a direct `.close()` call leaves the Escape binding untested. If the component's Escape handler regresses (handler removed, wrong key, wrong target), the test must fail. See FB-60 for the anti-pattern to avoid.
+   - Because native `<dialog>` fires `cancel` → `close` on Escape automatically in real browsers, and the jsdom polyfill installed in this test file emulates the same chain through the shimmed `close()` method, the component wiring under test is: Escape keydown → native `cancel` (default not prevented) → `dialog.close()` → `close` event → parent `onClose` → FAB focus restore. The test exercises the full chain by dispatching the keydown event only.
+   - jsdom caveat: jsdom 25 does not auto-fire `cancel` on `keydown(Escape)`. If the raw keydown alone does not trip the close path in jsdom, add a component-level `keydown` handler on the dialog that calls `dialog.close()` when `event.key === 'Escape'` — this is a belt-and-suspenders emulation that makes the test deterministic AND matches real-browser behavior. Wire it alongside the existing `click` and `close` listeners in the same `useEffect` so it lives/dies with `open`. In real browsers the handler is redundant with the native `cancel` → `close` path; in jsdom it IS the close path. Document the rationale in a comment.
+   - Wrap the dispatch in `act(() => { ... })` and `await waitFor(...)` before asserting, so React flushes the `setState` triggered by `onClose` and the FAB-focus-restore effect cleanup runs before the assertions.
+   - Assert: `expect(onCloseSpy).toHaveBeenCalled()`, `expect(screen.queryByRole('dialog')).toBeNull()` (the `open` attribute is removed — `getByRole` won't resolve), and `expect(screen.getByRole('button', { name: /open feedback panel/i })).toHaveFocus()`.
+   - Reviewer check: test name and test body must match — if the test name says "Escape-driven close path", the body MUST dispatch an Escape key event. Any comment block that rationalises calling `dialog.close()` in place of the key dispatch is a red flag and must be removed along with the `.close()` call.
 
 5. **Close button closes + focus returns to FAB** (CC3b):
    - Render `<Harness initialOpen />`.
