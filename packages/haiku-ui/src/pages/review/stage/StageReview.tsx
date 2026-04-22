@@ -222,21 +222,27 @@ export function StageReview({
 	const stageSummary = resolveStageSummary(session, stageName)
 	const seen = useSeenTracker(sessionId)
 
-	// Condensed Overview rows request navigation to the Units / Knowledge /
-	// Outputs tab + expand the target card. We jump the tab here, then push
-	// a pending expand request down to the list components which scroll +
-	// flash the card into view.
-	const [pendingNav, setPendingNav] = useState<{
+	// Detail mode: when set, the active tab renders a single-item focused
+	// view with a prev/next stepper instead of the full list. Opening a
+	// condensed row from the overview or a feedback target from the
+	// sidebar drops the reviewer straight into detail for that item.
+	const [detail, setDetail] = useState<{
 		tab: "units" | "knowledge" | "outputs"
 		name: string
 	} | null>(null)
-	const navigateTo = useCallback(
+	// Stepper mode — "unseen" cycles only the items that haven't been
+	// marked seen yet, "all" cycles everything. Persisted on the component
+	// instance so switching tabs keeps the same preference.
+	const [stepperMode, setStepperMode] = useState<"unseen" | "all">("unseen")
+
+	const openDetail = useCallback(
 		(tab: "units" | "knowledge" | "outputs", name: string) => {
 			setActiveTab(tab)
-			setPendingNav({ tab, name })
+			setDetail({ tab, name })
 		},
 		[],
 	)
+	const closeDetail = useCallback(() => setDetail(null), [])
 
 	const tabs: TabDef[] = [
 		{
@@ -254,7 +260,7 @@ export function StageReview({
 					feedbackByOutput={feedbackByOutput}
 					seen={seen}
 					stageId={stageName}
-					onNavigate={navigateTo}
+					onNavigate={openDetail}
 				/>
 			),
 		},
@@ -262,61 +268,95 @@ export function StageReview({
 			id: "units",
 			label: `Units (${units.length})`,
 			disabled: units.length === 0,
-			content: (
-				<UnitsTab
-					units={units}
-					feedbackByUnit={feedbackByUnit}
-					seen={seen}
-					stageId={stageName}
-					highlightRequestId={onHighlightRequestId ?? null}
-					onHighlightConsumed={onHighlightConsumed}
-					feedback={feedback}
-					navTargetName={pendingNav?.tab === "units" ? pendingNav.name : null}
-					onNavConsumed={() => setPendingNav(null)}
-				/>
-			),
+			content:
+				detail?.tab === "units" ? (
+					<UnitDetailView
+						units={units}
+						currentName={detail.name}
+						seen={seen}
+						stageId={stageName}
+						feedbackByUnit={feedbackByUnit}
+						stepperMode={stepperMode}
+						onStepperModeChange={setStepperMode}
+						onBack={closeDetail}
+						onStep={(name) => setDetail({ tab: "units", name })}
+					/>
+				) : (
+					<UnitsTab
+						units={units}
+						feedbackByUnit={feedbackByUnit}
+						seen={seen}
+						stageId={stageName}
+						highlightRequestId={onHighlightRequestId ?? null}
+						onHighlightConsumed={onHighlightConsumed}
+						feedback={feedback}
+						onOpenDetail={(name) => openDetail("units", name)}
+					/>
+				),
 		},
 		{
 			id: "knowledge",
 			label: `Knowledge (${knowledgeVMs.length})`,
 			disabled: knowledgeVMs.length === 0,
-			content: (
-				<ArtifactsTab
-					kind="knowledge"
-					artifacts={knowledgeVMs}
-					feedbackByName={feedbackByKnowledge}
-					seen={seen}
-					stageId={stageName}
-					highlightRequestId={onHighlightRequestId ?? null}
-					onHighlightConsumed={onHighlightConsumed}
-					feedback={feedback}
-					navTargetName={
-						pendingNav?.tab === "knowledge" ? pendingNav.name : null
-					}
-					onNavConsumed={() => setPendingNav(null)}
-				/>
-			),
+			content:
+				detail?.tab === "knowledge" ? (
+					<ArtifactDetailView
+						kind="knowledge"
+						artifacts={knowledgeVMs}
+						currentName={detail.name}
+						seen={seen}
+						stageId={stageName}
+						feedbackByName={feedbackByKnowledge}
+						stepperMode={stepperMode}
+						onStepperModeChange={setStepperMode}
+						onBack={closeDetail}
+						onStep={(name) => setDetail({ tab: "knowledge", name })}
+					/>
+				) : (
+					<ArtifactsTab
+						kind="knowledge"
+						artifacts={knowledgeVMs}
+						feedbackByName={feedbackByKnowledge}
+						seen={seen}
+						stageId={stageName}
+						highlightRequestId={onHighlightRequestId ?? null}
+						onHighlightConsumed={onHighlightConsumed}
+						feedback={feedback}
+						onOpenDetail={(name) => openDetail("knowledge", name)}
+					/>
+				),
 		},
 		{
 			id: "outputs",
 			label: `Outputs (${outputVMs.length})`,
 			disabled: outputVMs.length === 0,
-			content: (
-				<ArtifactsTab
-					kind="output"
-					artifacts={outputVMs}
-					feedbackByName={feedbackByOutput}
-					seen={seen}
-					stageId={stageName}
-					highlightRequestId={onHighlightRequestId ?? null}
-					onHighlightConsumed={onHighlightConsumed}
-					feedback={feedback}
-					navTargetName={
-						pendingNav?.tab === "outputs" ? pendingNav.name : null
-					}
-					onNavConsumed={() => setPendingNav(null)}
-				/>
-			),
+			content:
+				detail?.tab === "outputs" ? (
+					<ArtifactDetailView
+						kind="output"
+						artifacts={outputVMs}
+						currentName={detail.name}
+						seen={seen}
+						stageId={stageName}
+						feedbackByName={feedbackByOutput}
+						stepperMode={stepperMode}
+						onStepperModeChange={setStepperMode}
+						onBack={closeDetail}
+						onStep={(name) => setDetail({ tab: "outputs", name })}
+					/>
+				) : (
+					<ArtifactsTab
+						kind="output"
+						artifacts={outputVMs}
+						feedbackByName={feedbackByOutput}
+						seen={seen}
+						stageId={stageName}
+						highlightRequestId={onHighlightRequestId ?? null}
+						onHighlightConsumed={onHighlightConsumed}
+						feedback={feedback}
+						onOpenDetail={(name) => openDetail("outputs", name)}
+					/>
+				),
 		},
 	]
 
@@ -504,14 +544,6 @@ function SeenCounter({
 	)
 }
 
-function scrollAndFlash(selector: string): void {
-	const el = document.querySelector(selector) as HTMLElement | null
-	if (!el) return
-	el.scrollIntoView({ behavior: "smooth", block: "center" })
-	el.classList.add("unit-flash")
-	setTimeout(() => el.classList.remove("unit-flash"), 1400)
-}
-
 function UnitsTab({
 	units,
 	feedbackByUnit,
@@ -520,8 +552,7 @@ function UnitsTab({
 	highlightRequestId,
 	onHighlightConsumed,
 	feedback,
-	navTargetName,
-	onNavConsumed,
+	onOpenDetail,
 }: {
 	units: ParsedUnit[]
 	feedbackByUnit: Map<string, FeedbackItemData[]>
@@ -530,12 +561,9 @@ function UnitsTab({
 	highlightRequestId: string | null
 	onHighlightConsumed?: () => void
 	feedback: FeedbackItemData[]
-	navTargetName: string | null
-	onNavConsumed?: () => void
+	onOpenDetail: (name: string) => void
 }) {
-	const [forceExpandId, setForceExpandId] = useState<string | null>(null)
-
-	// External highlight request — route to the matching unit.
+	// External highlight request — route to the matching unit's detail.
 	useEffect(() => {
 		if (!highlightRequestId) return
 		const target = feedback.find((f) => f.feedback_id === highlightRequestId)
@@ -543,22 +571,9 @@ function UnitsTab({
 			target as unknown as { target?: { unitName?: string } }
 		)?.target?.unitName
 		if (!unitName) return
-		setForceExpandId(unitName)
-		setTimeout(() => {
-			scrollAndFlash(`[data-unit-card="${CSS.escape(unitName)}"]`)
-			onHighlightConsumed?.()
-		}, 40)
-	}, [highlightRequestId, feedback, onHighlightConsumed])
-
-	// Overview-row click → navigate + scroll + flash.
-	useEffect(() => {
-		if (!navTargetName) return
-		setForceExpandId(navTargetName)
-		setTimeout(() => {
-			scrollAndFlash(`[data-unit-card="${CSS.escape(navTargetName)}"]`)
-			onNavConsumed?.()
-		}, 60)
-	}, [navTargetName, onNavConsumed])
+		onOpenDetail(unitName)
+		onHighlightConsumed?.()
+	}, [highlightRequestId, feedback, onHighlightConsumed, onOpenDetail])
 
 	const seenCount = units.filter(
 		(u) => seen.state("unit", stageId, u.slug, shaOf(u)) === "seen",
@@ -569,10 +584,7 @@ function UnitsTab({
 			(u) => seen.state("unit", stageId, u.slug, shaOf(u)) !== "seen",
 		)
 		if (!next) return
-		setForceExpandId(next.slug)
-		setTimeout(() => {
-			scrollAndFlash(`[data-unit-card="${CSS.escape(next.slug)}"]`)
-		}, 40)
+		onOpenDetail(next.slug)
 	}
 
 	return (
@@ -591,10 +603,7 @@ function UnitsTab({
 						unit={u}
 						feedback={feedbackByUnit.get(u.slug) ?? []}
 						state={seen.state("unit", stageId, u.slug, shaOf(u))}
-						onExpand={() =>
-							seen.markSeen("unit", stageId, u.slug, shaOf(u))
-						}
-						startExpanded={forceExpandId === u.slug}
+						onOpen={() => onOpenDetail(u.slug)}
 					/>
 				))}
 			</div>
@@ -607,20 +616,14 @@ function UnitCard({
 	unit,
 	feedback,
 	state,
-	onExpand,
-	startExpanded,
+	onOpen,
 }: {
 	index: number
 	unit: ParsedUnit
 	feedback: FeedbackItemData[]
 	state: SeenState
-	onExpand: () => void
-	startExpanded?: boolean
+	onOpen: () => void
 }) {
-	const [expanded, setExpanded] = useState(!!startExpanded)
-	useEffect(() => {
-		if (startExpanded) setExpanded(true)
-	}, [startExpanded])
 	const fm = unit.frontmatter as typeof unit.frontmatter & {
 		type?: string
 		description?: string
@@ -636,23 +639,14 @@ function UnitCard({
 			? unit.sections[0].content.split("\n")[0]
 			: "")
 
-	const toggle = (): void => {
-		const next = !expanded
-		setExpanded(next)
-		if (next) onExpand()
-	}
-
 	return (
-		<div
+		<button
+			type="button"
 			data-unit-card={unit.slug}
-			className={`bg-white dark:bg-stone-900 rounded-lg border-2 ${seenBorderClass(state)} overflow-hidden transition-colors`}
+			onClick={onOpen}
+			className={`w-full text-left bg-white dark:bg-stone-900 rounded-lg border-2 ${seenBorderClass(state)} overflow-hidden transition-colors hover:border-teal-400 dark:hover:border-teal-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900`}
 		>
-			<button
-				type="button"
-				onClick={toggle}
-				aria-expanded={expanded}
-				className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors"
-			>
+			<div className="flex items-start gap-3 px-4 py-3">
 				<span className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-300 text-xs font-bold font-mono mt-0.5">
 					{String(index + 1).padStart(2, "0")}
 				</span>
@@ -674,9 +668,7 @@ function UnitCard({
 						{unit.slug}
 					</p>
 					{description && (
-						<p
-							className={`text-xs text-stone-600 dark:text-stone-300 leading-snug mt-1 ${expanded ? "" : "line-clamp-1"}`}
-						>
+						<p className="text-xs text-stone-600 dark:text-stone-300 leading-snug mt-1 line-clamp-1">
 							{description}
 						</p>
 					)}
@@ -706,32 +698,23 @@ function UnitCard({
 						{fm.status ?? "unknown"}
 					</span>
 					<svg
-						className={`w-4 h-4 text-stone-500 transition-transform ${expanded ? "rotate-180" : ""}`}
+						className="w-4 h-4 text-stone-500"
 						fill="none"
 						stroke="currentColor"
 						strokeWidth="2"
 						viewBox="0 0 24 24"
 						aria-hidden="true"
 					>
-						<title>expand</title>
+						<title>open</title>
 						<path
 							strokeLinecap="round"
 							strokeLinejoin="round"
-							d="M19 9l-7 7-7-7"
+							d="M9 5l7 7-7 7"
 						/>
 					</svg>
 				</div>
-			</button>
-			{expanded && (
-				<div className="border-t border-stone-200 dark:border-stone-700 px-4 py-3 space-y-3 bg-stone-50/50 dark:bg-stone-900/50">
-					{unit.rawContent && (
-						<MarkdownViewer id={`unit-${unit.slug}`}>
-							{unit.rawContent}
-						</MarkdownViewer>
-					)}
-				</div>
-			)}
-		</div>
+			</div>
+		</button>
 	)
 }
 
@@ -778,6 +761,424 @@ function CondensedUnitRow({
 	)
 }
 
+/**
+ * StepperBar — top-of-detail-view nav: Back button, Prev/Next arrows,
+ * Unseen/All toggle, and a position counter ("3 of 8"). Shared by unit
+ * and artifact detail views.
+ */
+function StepperBar({
+	label,
+	currentIndex,
+	total,
+	stepperMode,
+	onStepperModeChange,
+	onBack,
+	onPrev,
+	onNext,
+	hasPrev,
+	hasNext,
+}: {
+	label: string
+	currentIndex: number
+	total: number
+	stepperMode: "unseen" | "all"
+	onStepperModeChange: (m: "unseen" | "all") => void
+	onBack: () => void
+	onPrev: () => void
+	onNext: () => void
+	hasPrev: boolean
+	hasNext: boolean
+}) {
+	return (
+		<div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
+			<button
+				type="button"
+				onClick={onBack}
+				className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-700 dark:text-stone-200 hover:text-teal-600 dark:hover:text-teal-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 rounded px-1.5 py-1"
+			>
+				<svg
+					className="w-4 h-4"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="2"
+					viewBox="0 0 24 24"
+					aria-hidden="true"
+				>
+					<title>back</title>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						d="M15 19l-7-7 7-7"
+					/>
+				</svg>
+				Back to {label}
+			</button>
+			<div className="flex items-center gap-2 flex-wrap">
+				<div className="inline-flex rounded-md border border-stone-300 dark:border-stone-600 overflow-hidden text-xs font-semibold">
+					<button
+						type="button"
+						onClick={() => onStepperModeChange("unseen")}
+						className={`px-2.5 py-1 ${stepperMode === "unseen" ? "bg-teal-700 text-white" : "bg-transparent text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"}`}
+					>
+						Unseen
+					</button>
+					<button
+						type="button"
+						onClick={() => onStepperModeChange("all")}
+						className={`px-2.5 py-1 ${stepperMode === "all" ? "bg-teal-700 text-white" : "bg-transparent text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"}`}
+					>
+						All
+					</button>
+				</div>
+				<span className="text-xs font-mono text-stone-600 dark:text-stone-300 tabular-nums">
+					{total > 0 ? `${currentIndex + 1} of ${total}` : "0 of 0"}
+				</span>
+				<button
+					type="button"
+					onClick={onPrev}
+					disabled={!hasPrev}
+					aria-label="Previous item"
+					className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:cursor-not-allowed disabled:text-stone-400 dark:disabled:text-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+				>
+					<svg
+						className="w-4 h-4"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="2"
+						viewBox="0 0 24 24"
+						aria-hidden="true"
+					>
+						<title>prev</title>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							d="M15 19l-7-7 7-7"
+						/>
+					</svg>
+				</button>
+				<button
+					type="button"
+					onClick={onNext}
+					disabled={!hasNext}
+					aria-label="Next item"
+					className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 disabled:cursor-not-allowed disabled:text-stone-400 dark:disabled:text-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+				>
+					<svg
+						className="w-4 h-4"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="2"
+						viewBox="0 0 24 24"
+						aria-hidden="true"
+					>
+						<title>next</title>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							d="M9 5l7 7-7 7"
+						/>
+					</svg>
+				</button>
+			</div>
+		</div>
+	)
+}
+
+/**
+ * UnitDetailView — focused single-unit view with prev/next stepper.
+ * The stepper cycles the filtered list (unseen-only or all based on
+ * `stepperMode`). Entering or stepping marks the unit seen.
+ */
+function UnitDetailView({
+	units,
+	currentName,
+	seen,
+	stageId,
+	feedbackByUnit,
+	stepperMode,
+	onStepperModeChange,
+	onBack,
+	onStep,
+}: {
+	units: ParsedUnit[]
+	currentName: string
+	seen: ReturnType<typeof useSeenTracker>
+	stageId: string
+	feedbackByUnit: Map<string, FeedbackItemData[]>
+	stepperMode: "unseen" | "all"
+	onStepperModeChange: (m: "unseen" | "all") => void
+	onBack: () => void
+	onStep: (name: string) => void
+}) {
+	const current = units.find((u) => u.slug === currentName)
+
+	// Mark seen when entering detail and when the current name changes.
+	useEffect(() => {
+		if (current) seen.markSeen("unit", stageId, current.slug, shaOf(current))
+	}, [current, seen, stageId])
+
+	// Filtered list the stepper cycles through. When the current item is
+	// no longer in the filter (e.g. it was just marked seen while in
+	// Unseen mode), splice it in so prev/next still work from here.
+	const filtered = useMemo(() => {
+		const base =
+			stepperMode === "all"
+				? units
+				: units.filter(
+						(u) =>
+							seen.state("unit", stageId, u.slug, shaOf(u)) !== "seen",
+					)
+		if (current && !base.find((u) => u.slug === current.slug)) {
+			return [...base, current]
+		}
+		return base
+	}, [units, current, stepperMode, seen, stageId])
+
+	const currentIndex = current
+		? filtered.findIndex((u) => u.slug === current.slug)
+		: -1
+	const prev = currentIndex > 0 ? filtered[currentIndex - 1] : null
+	const next =
+		currentIndex >= 0 && currentIndex < filtered.length - 1
+			? filtered[currentIndex + 1]
+			: null
+
+	if (!current) {
+		return (
+			<div className="text-sm text-stone-500 dark:text-stone-400">
+				<button
+					type="button"
+					onClick={onBack}
+					className="text-teal-600 dark:text-teal-400 hover:underline"
+				>
+					← Back to Units
+				</button>
+				<p className="mt-2">Unit not found.</p>
+			</div>
+		)
+	}
+
+	const fm = current.frontmatter as typeof current.frontmatter & {
+		type?: string
+		description?: string
+	}
+	const type = fm.type ?? fm.discipline ?? ""
+	const typeCls = type
+		? (TYPE_BADGE[type.toLowerCase()] ??
+			"bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300 border-stone-200 dark:border-stone-700")
+		: ""
+	const cardFeedback = feedbackByUnit.get(current.slug) ?? []
+
+	return (
+		<>
+			<StepperBar
+				label="Units"
+				currentIndex={currentIndex}
+				total={filtered.length}
+				stepperMode={stepperMode}
+				onStepperModeChange={onStepperModeChange}
+				onBack={onBack}
+				onPrev={() => prev && onStep(prev.slug)}
+				onNext={() => next && onStep(next.slug)}
+				hasPrev={!!prev}
+				hasNext={!!next}
+			/>
+			<div className="bg-white dark:bg-stone-900 rounded-lg border-2 border-stone-200 dark:border-stone-700 overflow-hidden">
+				<div className="flex items-start gap-3 px-4 py-3 border-b border-stone-200 dark:border-stone-700">
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-2 flex-wrap">
+							<h2 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-tight break-words">
+								{current.title || current.slug}
+							</h2>
+							{type && (
+								<span
+									className={`shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider border ${typeCls}`}
+								>
+									{type}
+								</span>
+							)}
+							<span
+								className={`shrink-0 px-1.5 py-0.5 rounded-full text-xs font-semibold ${statusPillClass(fm.status)}`}
+							>
+								{fm.status ?? "unknown"}
+							</span>
+						</div>
+						<p className="text-xs font-mono text-stone-500 dark:text-stone-500 mt-1">
+							{current.slug}
+						</p>
+					</div>
+					{cardFeedback.length > 0 && (
+						<span className="shrink-0 inline-flex items-center gap-0.5">
+							{cardFeedback.slice(0, 3).map((f, i) => (
+								<span
+									key={f.feedback_id}
+									title={f.title}
+									className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${feedbackBadgeColor(f.status)}`}
+								>
+									{i + 1}
+								</span>
+							))}
+							{cardFeedback.length > 3 && (
+								<span className="text-xs font-mono text-stone-500 ml-0.5">
+									+{cardFeedback.length - 3}
+								</span>
+							)}
+						</span>
+					)}
+				</div>
+				<div className="px-4 py-3">
+					{current.rawContent && (
+						<MarkdownViewer id={`unit-${current.slug}`}>
+							{current.rawContent}
+						</MarkdownViewer>
+					)}
+				</div>
+			</div>
+		</>
+	)
+}
+
+/**
+ * ArtifactDetailView — focused single-artifact view with prev/next
+ * stepper. Mirrors UnitDetailView for knowledge and output rows.
+ */
+function ArtifactDetailView({
+	kind,
+	artifacts,
+	currentName,
+	seen,
+	stageId,
+	feedbackByName,
+	stepperMode,
+	onStepperModeChange,
+	onBack,
+	onStep,
+}: {
+	kind: "knowledge" | "output"
+	artifacts: ArtifactViewModel[]
+	currentName: string
+	seen: ReturnType<typeof useSeenTracker>
+	stageId: string
+	feedbackByName: Map<string, FeedbackItemData[]>
+	stepperMode: "unseen" | "all"
+	onStepperModeChange: (m: "unseen" | "all") => void
+	onBack: () => void
+	onStep: (name: string) => void
+}) {
+	const current = artifacts.find((a) => a.name === currentName)
+
+	useEffect(() => {
+		if (current) seen.markSeen(kind, stageId, current.name, shaOf(current))
+	}, [current, seen, stageId, kind])
+
+	const filtered = useMemo(() => {
+		const base =
+			stepperMode === "all"
+				? artifacts
+				: artifacts.filter(
+						(a) =>
+							seen.state(kind, stageId, a.name, shaOf(a)) !== "seen",
+					)
+		if (current && !base.find((a) => a.name === current.name)) {
+			return [...base, current]
+		}
+		return base
+	}, [artifacts, current, stepperMode, seen, stageId, kind])
+
+	const currentIndex = current
+		? filtered.findIndex((a) => a.name === current.name)
+		: -1
+	const prev = currentIndex > 0 ? filtered[currentIndex - 1] : null
+	const next =
+		currentIndex >= 0 && currentIndex < filtered.length - 1
+			? filtered[currentIndex + 1]
+			: null
+
+	const label = kind === "knowledge" ? "Knowledge" : "Outputs"
+	const iconCls = kind === "knowledge" ? "text-sky-500" : "text-violet-500"
+	const icon = kind === "knowledge" ? "\u{1F9E0}" : "\u{1F4E6}"
+
+	if (!current) {
+		return (
+			<div className="text-sm text-stone-500 dark:text-stone-400">
+				<button
+					type="button"
+					onClick={onBack}
+					className="text-teal-600 dark:text-teal-400 hover:underline"
+				>
+					← Back to {label}
+				</button>
+				<p className="mt-2">Artifact not found.</p>
+			</div>
+		)
+	}
+
+	const kindCls =
+		KIND_BADGE[current.kind.toLowerCase()] ??
+		"bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300 border-stone-200 dark:border-stone-700"
+	const artifactFeedback = feedbackByName.get(current.name) ?? []
+
+	return (
+		<>
+			<StepperBar
+				label={label}
+				currentIndex={currentIndex}
+				total={filtered.length}
+				stepperMode={stepperMode}
+				onStepperModeChange={onStepperModeChange}
+				onBack={onBack}
+				onPrev={() => prev && onStep(prev.name)}
+				onNext={() => next && onStep(next.name)}
+				hasPrev={!!prev}
+				hasNext={!!next}
+			/>
+			<div className="bg-white dark:bg-stone-900 rounded-lg border-2 border-stone-200 dark:border-stone-700 overflow-hidden">
+				<div className="flex items-start gap-3 px-4 py-3 border-b border-stone-200 dark:border-stone-700">
+					<span
+						className={`shrink-0 ${iconCls} text-lg leading-none mt-0.5`}
+						aria-hidden="true"
+					>
+						{icon}
+					</span>
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-2 flex-wrap">
+							<h2 className="text-base font-bold text-stone-900 dark:text-stone-100 font-mono break-all">
+								{current.name}
+							</h2>
+							<span
+								className={`shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider border ${kindCls}`}
+							>
+								{current.kind}
+							</span>
+						</div>
+						{current.summary && (
+							<p className="text-xs text-stone-600 dark:text-stone-300 leading-snug mt-1 break-words">
+								{current.summary}
+							</p>
+						)}
+					</div>
+					{artifactFeedback.length > 0 && (
+						<span className="shrink-0 inline-flex items-center gap-0.5">
+							{artifactFeedback.slice(0, 3).map((f, i) => (
+								<span
+									key={f.feedback_id}
+									title={f.title}
+									className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${feedbackBadgeColor(f.status)}`}
+								>
+									{i + 1}
+								</span>
+							))}
+						</span>
+					)}
+				</div>
+				<div className="px-4 py-3">
+					<ArtifactBody kind={kind} artifact={current} />
+				</div>
+			</div>
+		</>
+	)
+}
+
 function ArtifactsTab({
 	kind,
 	artifacts,
@@ -787,8 +1188,7 @@ function ArtifactsTab({
 	highlightRequestId,
 	onHighlightConsumed,
 	feedback,
-	navTargetName,
-	onNavConsumed,
+	onOpenDetail,
 }: {
 	kind: ArtifactKind & ("knowledge" | "output")
 	artifacts: ArtifactViewModel[]
@@ -798,11 +1198,8 @@ function ArtifactsTab({
 	highlightRequestId: string | null
 	onHighlightConsumed?: () => void
 	feedback: FeedbackItemData[]
-	navTargetName: string | null
-	onNavConsumed?: () => void
+	onOpenDetail: (name: string) => void
 }) {
-	const [forceExpandName, setForceExpandName] = useState<string | null>(null)
-
 	useEffect(() => {
 		if (!highlightRequestId) return
 		const target = feedback.find((f) => f.feedback_id === highlightRequestId)
@@ -816,22 +1213,9 @@ function ArtifactsTab({
 			}
 		)?.target?.[kind === "knowledge" ? "knowledgeName" : "outputName"]
 		if (!name) return
-		setForceExpandName(name)
-		setTimeout(() => {
-			scrollAndFlash(`[data-artifact-card="${CSS.escape(name)}"]`)
-			onHighlightConsumed?.()
-		}, 40)
-	}, [highlightRequestId, feedback, kind, onHighlightConsumed])
-
-	// Overview-row click → navigate + scroll + flash.
-	useEffect(() => {
-		if (!navTargetName) return
-		setForceExpandName(navTargetName)
-		setTimeout(() => {
-			scrollAndFlash(`[data-artifact-card="${CSS.escape(navTargetName)}"]`)
-			onNavConsumed?.()
-		}, 60)
-	}, [navTargetName, onNavConsumed])
+		onOpenDetail(name)
+		onHighlightConsumed?.()
+	}, [highlightRequestId, feedback, kind, onHighlightConsumed, onOpenDetail])
 
 	const seenCount = artifacts.filter(
 		(a) => seen.state(kind, stageId, a.name, shaOf(a)) === "seen",
@@ -842,10 +1226,7 @@ function ArtifactsTab({
 			(a) => seen.state(kind, stageId, a.name, shaOf(a)) !== "seen",
 		)
 		if (!next) return
-		setForceExpandName(next.name)
-		setTimeout(() => {
-			scrollAndFlash(`[data-artifact-card="${CSS.escape(next.name)}"]`)
-		}, 40)
+		onOpenDetail(next.name)
 	}
 
 	const label = kind === "knowledge" ? "Knowledge" : "Outputs"
@@ -866,8 +1247,7 @@ function ArtifactsTab({
 						artifact={a}
 						feedback={feedbackByName.get(a.name) ?? []}
 						state={seen.state(kind, stageId, a.name, shaOf(a))}
-						onExpand={() => seen.markSeen(kind, stageId, a.name, shaOf(a))}
-						startExpanded={forceExpandName === a.name}
+						onOpen={() => onOpenDetail(a.name)}
 					/>
 				))}
 			</div>
@@ -880,43 +1260,28 @@ function ArtifactCard({
 	artifact,
 	feedback,
 	state,
-	onExpand,
-	startExpanded,
+	onOpen,
 }: {
 	kind: "knowledge" | "output"
 	artifact: ArtifactViewModel
 	feedback: FeedbackItemData[]
 	state: SeenState
-	onExpand: () => void
-	startExpanded?: boolean
+	onOpen: () => void
 }) {
-	const [expanded, setExpanded] = useState(!!startExpanded)
-	useEffect(() => {
-		if (startExpanded) setExpanded(true)
-	}, [startExpanded])
 	const iconCls = kind === "knowledge" ? "text-sky-500" : "text-violet-500"
 	const icon = kind === "knowledge" ? "\u{1F9E0}" : "\u{1F4E6}"
 	const kindCls =
 		KIND_BADGE[artifact.kind.toLowerCase()] ??
 		"bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300 border-stone-200 dark:border-stone-700"
 
-	const toggle = (): void => {
-		const next = !expanded
-		setExpanded(next)
-		if (next) onExpand()
-	}
-
 	return (
-		<div
+		<button
+			type="button"
 			data-artifact-card={artifact.name}
-			className={`bg-white dark:bg-stone-900 rounded-lg border-2 ${seenBorderClass(state)} overflow-hidden transition-colors`}
+			onClick={onOpen}
+			className={`w-full text-left bg-white dark:bg-stone-900 rounded-lg border-2 ${seenBorderClass(state)} overflow-hidden transition-colors hover:border-teal-400 dark:hover:border-teal-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900`}
 		>
-			<button
-				type="button"
-				onClick={toggle}
-				aria-expanded={expanded}
-				className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-stone-50 dark:hover:bg-stone-800/50 transition-colors"
-			>
+			<div className="flex items-start gap-3 px-4 py-3">
 				<span
 					className={`shrink-0 ${iconCls} text-lg leading-none mt-0.5`}
 					aria-hidden="true"
@@ -936,9 +1301,7 @@ function ArtifactCard({
 						</span>
 					</div>
 					{artifact.summary && (
-						<p
-							className={`text-xs text-stone-600 dark:text-stone-300 leading-snug mt-1 ${expanded ? "" : "line-clamp-1"} break-words`}
-						>
+						<p className="text-xs text-stone-600 dark:text-stone-300 leading-snug mt-1 line-clamp-1 break-words">
 							{artifact.summary}
 						</p>
 					)}
@@ -958,52 +1321,63 @@ function ArtifactCard({
 						</span>
 					)}
 					<svg
-						className={`w-4 h-4 text-stone-500 transition-transform ${expanded ? "rotate-180" : ""}`}
+						className="w-4 h-4 text-stone-500"
 						fill="none"
 						stroke="currentColor"
 						strokeWidth="2"
 						viewBox="0 0 24 24"
 						aria-hidden="true"
 					>
-						<title>expand</title>
+						<title>open</title>
 						<path
 							strokeLinecap="round"
 							strokeLinejoin="round"
-							d="M19 9l-7 7-7-7"
+							d="M9 5l7 7-7 7"
 						/>
 					</svg>
 				</div>
-			</button>
-			{expanded && (
-				<div className="border-t border-stone-200 dark:border-stone-700 bg-stone-50/50 dark:bg-stone-900/50 px-4 py-3">
-					{artifact.mime === "markdown" || artifact.mime === "text" ? (
-						<MarkdownViewer id={`${kind}-${artifact.name}`}>
-							{artifact.body}
-						</MarkdownViewer>
-					) : artifact.mime === "html" ? (
-						// Agent-emitted HTML mockups/wireframes typically self-load
-						// styling via <script src="cdn.tailwindcss.com"> — that
-						// requires `allow-scripts`. We deliberately exclude
-						// `allow-same-origin` so the iframe runs in an opaque
-						// origin (no access to parent DOM, cookies, localStorage,
-						// or same-origin fetches). This matches the canonical
-						// mockup preview contract (review-ui-mockup.html §renderArtifactPreview).
-						<iframe
-							srcDoc={artifact.body}
-							sandbox="allow-scripts"
-							title={artifact.name}
-							className="w-full h-96 border border-stone-200 dark:border-stone-800 rounded-md bg-white"
-						/>
-					) : artifact.mime === "svg" ? (
-						<SvgPreview body={artifact.body} />
-					) : (
-						<pre className="text-xs font-mono text-stone-700 dark:text-stone-300 whitespace-pre-wrap bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-md p-3 max-h-80 overflow-auto">
-							{artifact.body}
-						</pre>
-					)}
-				</div>
-			)}
-		</div>
+			</div>
+		</button>
+	)
+}
+
+/**
+ * ArtifactBody — the rendered preview of an artifact's content,
+ * reused by ArtifactDetailView. Separated out so the card in list
+ * mode can stay tiny (click-to-open) while the detail view embeds
+ * the full preview.
+ */
+function ArtifactBody({
+	kind,
+	artifact,
+}: {
+	kind: "knowledge" | "output"
+	artifact: ArtifactViewModel
+}): React.ReactElement {
+	if (artifact.mime === "markdown" || artifact.mime === "text") {
+		return (
+			<MarkdownViewer id={`${kind}-${artifact.name}`}>
+				{artifact.body}
+			</MarkdownViewer>
+		)
+	}
+	if (artifact.mime === "html") {
+		return (
+			<iframe
+				srcDoc={artifact.body}
+				sandbox="allow-scripts"
+				title={artifact.name}
+				className="w-full h-[60vh] border border-stone-200 dark:border-stone-800 rounded-md bg-white"
+			/>
+		)
+	}
+	if (artifact.mime === "svg") {
+		return <SvgPreview body={artifact.body} />
+	}
+	return (
+		<pre className="text-xs font-mono text-stone-700 dark:text-stone-300 whitespace-pre-wrap bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-md p-3 max-h-[60vh] overflow-auto">
+			{artifact.body}
+		</pre>
 	)
 }
 
