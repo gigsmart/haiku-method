@@ -2,7 +2,7 @@
 title: >-
   unit-01: feedback/revisit schemas drop spec-declared string caps (body ≤
   10_000, title ≤ 200, reasons ≤ 50)
-status: fixing
+status: closed
 origin: adversarial-review
 author: correctness
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:22:42Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-19:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
