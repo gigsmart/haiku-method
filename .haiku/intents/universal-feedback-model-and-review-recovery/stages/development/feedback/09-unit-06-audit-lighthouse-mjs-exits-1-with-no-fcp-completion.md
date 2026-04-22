@@ -11,7 +11,7 @@ iteration: 0
 visit: 0
 source_ref: packages/haiku-ui/scripts/audit-lighthouse.mjs
 closed_by: null
-bolt: 1
+bolt: 2
 upstream_stage: null
 ---
 

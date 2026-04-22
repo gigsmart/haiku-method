@@ -9,7 +9,7 @@ iteration: 0
 visit: 0
 source_ref: unit-02-mcp-consume-haiku-api/reviewer/bolt-2
 closed_by: null
-bolt: 1
+bolt: 2
 upstream_stage: null
 ---
 
