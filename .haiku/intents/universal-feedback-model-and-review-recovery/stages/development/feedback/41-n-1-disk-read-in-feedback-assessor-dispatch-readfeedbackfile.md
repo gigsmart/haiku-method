@@ -2,7 +2,7 @@
 title: >-
   N+1 disk read in feedback-assessor dispatch: readFeedbackFiles called per
   close[]
-status: fixing
+status: closed
 origin: adversarial-review
 author: performance
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:23:48Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-41:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
