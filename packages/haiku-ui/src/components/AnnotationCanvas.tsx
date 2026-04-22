@@ -20,6 +20,9 @@ interface Props {
 	onPinsChange?: (pins: AnnotationPin[]) => void
 }
 
+const MAX_DRAW_HISTORY = 20
+const MAX_CANVAS_DIMENSION = 2048
+
 let _pinIdCounter = 0
 function nextPinId(): string {
 	return `pin-${++_pinIdCounter}-${Date.now()}`
@@ -90,8 +93,14 @@ export function AnnotationCanvas({ imageUrl, onPinsChange }: Props) {
 		const img = imgRef.current
 		const canvas = canvasRef.current
 		if (!(img && canvas)) return
-		canvas.width = img.naturalWidth || img.offsetWidth
-		canvas.height = img.naturalHeight || img.offsetHeight
+		canvas.width = Math.min(
+			img.naturalWidth || img.offsetWidth,
+			MAX_CANVAS_DIMENSION,
+		)
+		canvas.height = Math.min(
+			img.naturalHeight || img.offsetHeight,
+			MAX_CANVAS_DIMENSION,
+		)
 		canvas.style.width = `${img.offsetWidth}px`
 		canvas.style.height = `${img.offsetHeight}px`
 		// Restore drawing
@@ -147,6 +156,9 @@ export function AnnotationCanvas({ imageUrl, onPinsChange }: Props) {
 		drawHistoryRef.current.push(
 			ctx.getImageData(0, 0, canvas.width, canvas.height),
 		)
+		while (drawHistoryRef.current.length > MAX_DRAW_HISTORY) {
+			drawHistoryRef.current.shift()
+		}
 	}
 
 	// Pen drawing

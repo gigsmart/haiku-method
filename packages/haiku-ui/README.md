@@ -47,6 +47,33 @@ The dev server proxies to `:7777` by default. For pure-UI work without a
 backend, stub `ApiClient` via the provider and feed it fixture data from
 `test-fixtures/`.
 
+## Component layering (FB-33)
+
+Shared UI building blocks follow a single layering rule:
+
+- **`@haiku/shared/components`** — the canonical home for cross-surface UI
+  primitives (`CriteriaChecklist`, `MarkdownViewer`, `StatusBadge`,
+  `ProgressBar`, `FileTree`). Platform-agnostic, React peer-depended, consumed
+  by any app surface that renders H·AI·K·U artifacts. If a component could
+  plausibly be rendered by a second surface (review, question, direction,
+  future embed hosts), it belongs here.
+- **`haiku-ui/src/components/`** — app-specific components owned by this SPA
+  only. Review-session orchestration, session-scoped layout, WebSocket-driven
+  panels, feedback UI (`components/feedback/*`). These MUST NOT be
+  re-exported as library surface — they are implementation details of this
+  app.
+
+**Rule:** do not duplicate a `@haiku/shared` component inside
+`haiku-ui/src/components/`. If a shared component needs an app-specific
+variant, either extend it via props, wrap it in a composition component, or
+land the variant in `@haiku/shared` behind a feature flag. Consumers must
+import from `@haiku/shared` — never from a local copy.
+
+`FeedbackStatusBadge` (in `components/feedback/`) is **not** a duplicate of
+`StatusBadge` — it owns a distinct color semantic (amber/blue/green/stone for
+feedback lifecycle) mandated by DESIGN-TOKENS §1.2a. They are intentionally
+separate components with non-overlapping call sites.
+
 ## Tests
 
 - `vitest` — unit tests (rAF coalescing, misc hooks).
