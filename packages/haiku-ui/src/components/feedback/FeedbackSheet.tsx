@@ -245,6 +245,7 @@ export function FeedbackSheet({
 			aria-modal="true"
 			// biome-ignore lint/a11y/noRedundantRoles: Unit-10 completion criterion requires explicit role="dialog" + aria-modal on the sheet root — belt-and-suspenders for axe audits and RTL `getByRole` ergonomics in environments (jsdom, some legacy screen readers) where the implicit <dialog> role is not always surfaced.
 			role="dialog"
+			data-testid="feedback-sheet"
 			className={dialogClassName}
 		>
 			<header className={HEADER_CLASS}>

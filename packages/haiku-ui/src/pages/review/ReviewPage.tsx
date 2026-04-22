@@ -16,8 +16,13 @@
  *   <ReviewContextHeader>
  *   <ArtifactsPane />            — stacked full-width column
  *   <FooterBar />
- *   <FeedbackFloatingButton />   — FAB at fixed bottom-right
- *   <FeedbackSheet />            — placeholder dialog (unit-10 upgrades)
+ *   <FeedbackFloatingButton />   — FAB at fixed bottom-right (canonical
+ *                                  components/feedback export — forwardRef,
+ *                                  `open`/`onToggle`/`count` API)
+ *   <FeedbackSheet />            — canonical <dialog>-based sheet
+ *                                  (components/feedback export — `open`/
+ *                                  `onClose`/`triggerRef` API with
+ *                                  focus-trap, backdrop close, reduced-motion)
  *
  * The responsive branch is driven by `useIsMobile()` (not pure CSS) so the
  * responsive-parity test can render both branches deterministically — see
@@ -31,9 +36,13 @@
  * component so existing imports keep working (see components/ReviewPage.tsx).
  */
 
-import { useCallback, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import type { AnnotationPin } from "../../components/AnnotationCanvas"
 import type { InlineCommentEntry } from "../../components/InlineComments"
+import {
+	FeedbackFloatingButton,
+	FeedbackSheet,
+} from "../../components/feedback"
 import {
 	type ReviewPageSessionData,
 	RereviewBanner,
@@ -42,10 +51,10 @@ import { ReviewContextHeader } from "../../components/ReviewContextHeader"
 import { StageProgressStrip } from "../../components/StageProgressStrip"
 import type { ReviewAnnotations } from "../../types"
 import { ArtifactsPane } from "./ArtifactsPane"
-import { FeedbackFloatingButton } from "./FeedbackFloatingButton"
-import { FeedbackSheet } from "./FeedbackSheet"
+import { FeedbackPanelBody } from "./FeedbackPanelBody"
 import { FeedbackSidebar } from "./FeedbackSidebar"
 import { FooterBar } from "./FooterBar"
+import { useFeedbackSidebarController } from "./useFeedbackSidebarController"
 import { useIsMobile } from "./useIsMobile"
 
 // Re-export legacy type so old imports from ./ReviewPage keep resolving.
@@ -72,6 +81,53 @@ function resolveGateType(
 	return "auto"
 }
 
+/**
+ * MobileFeedbackSection — composes the canonical `FeedbackFloatingButton` +
+ * `FeedbackSheet` (from `components/feedback`) with the shared sidebar
+ * controller so the mobile branch matches the desktop sidebar's wiring (same
+ * `useFeedback` call, same typed-apiClient mutations). Split out as its own
+ * component so the controller hook only runs on the mobile branch — React's
+ * rules-of-hooks prevents conditional hook calls at the page level.
+ */
+function MobileFeedbackSection({
+	intentSlug,
+	activeStage,
+}: {
+	intentSlug: string | null
+	activeStage: string | null
+}): React.ReactElement {
+	const [sheetOpen, setSheetOpen] = useState(false)
+	const fabRef = useRef<HTMLButtonElement>(null)
+	const controller = useFeedbackSidebarController(intentSlug, activeStage)
+	const pendingCount = controller.items.filter(
+		(item) => item.status === "pending",
+	).length
+	return (
+		<>
+			<FeedbackFloatingButton
+				ref={fabRef}
+				open={sheetOpen}
+				onToggle={() => setSheetOpen((o) => !o)}
+				count={pendingCount}
+			/>
+			<FeedbackSheet
+				open={sheetOpen}
+				onClose={() => setSheetOpen(false)}
+				triggerRef={fabRef}
+			>
+				<FeedbackPanelBody
+					items={controller.items}
+					loading={controller.loading}
+					error={controller.error}
+					onStatusChange={controller.handleStatusChange}
+					onDelete={controller.handleDelete}
+					onRetry={controller.retry}
+				/>
+			</FeedbackSheet>
+		</>
+	)
+}
+
 export function ReviewPage({
 	session,
 	sessionId,
@@ -82,7 +138,6 @@ export function ReviewPage({
 	const gateType = resolveGateType(session.gate_type)
 	const reviewType = session.review_type === "unit" ? "stage" : "intent"
 	const isMobile = useIsMobile()
-	const [sheetOpen, setSheetOpen] = useState(false)
 
 	// Annotation state — pins + inline comments captured by the artifacts
 	// pane bubble here. The payload for the review-decision POST reads
@@ -164,19 +219,10 @@ export function ReviewPage({
 				className="mt-6"
 			/>
 			{isMobile && (
-				<>
-					<FeedbackFloatingButton
-						onClick={() => setSheetOpen((o) => !o)}
-						isOpen={sheetOpen}
-					/>
-					<FeedbackSheet
-						intent={intentSlug}
-						stage={activeStage}
-						sessionId={sessionId}
-						isOpen={sheetOpen}
-						onClose={() => setSheetOpen(false)}
-					/>
-				</>
+				<MobileFeedbackSection
+					intentSlug={intentSlug}
+					activeStage={activeStage}
+				/>
 			)}
 		</div>
 	)
