@@ -11,6 +11,10 @@
     "./components": {
       "types": "./src/components/index.ts",
       "default": "./src/components/index.ts"
+    },
+    "./frontmatter": {
+      "types": "./src/frontmatter.ts",
+      "default": "./src/frontmatter.ts"
     }
   },
   "scripts": {

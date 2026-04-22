@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.0",
+    "@haiku/shared": "file:../shared",
     "@modelcontextprotocol/sdk": "^1.28.0",
     "@sentry/node": "^10.47.0",
     "gray-matter": "^4.0.3",

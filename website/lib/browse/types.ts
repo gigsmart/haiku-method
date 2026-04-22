@@ -1,3 +1,7 @@
+import {
+	dedupeFrontmatterKeys,
+	isDuplicateKeyError,
+} from "@haiku/shared/frontmatter"
 import * as Sentry from "@sentry/nextjs"
 import matter from "gray-matter"
 
@@ -42,73 +46,6 @@ export interface BrowseProvider {
 export function parseFrontmatter(raw: string): { data: Record<string, unknown>; content: string } {
 	const parsed = matter(raw)
 	return { data: parsed.data as Record<string, unknown>, content: parsed.content.trim() }
-}
-
-/**
- * Dedupe top-level keys in a YAML frontmatter block, keeping the last occurrence.
- * Operates on the whole file: finds the `---` fenced frontmatter, dedupes inside,
- * returns the reassembled document. If there's no frontmatter, returns the input unchanged.
- */
-function dedupeFrontmatterKeys(raw: string): { text: string; removed: string[] } {
-	const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---(\r?\n[\s\S]*)?$/)
-	if (!m) return { text: raw, removed: [] }
-	const { cleaned, removed } = dedupeTopLevelYamlKeys(m[1])
-	if (removed.length === 0) return { text: raw, removed: [] }
-	return { text: `---\n${cleaned}\n---${m[2] ?? ""}`, removed }
-}
-
-/**
- * Given a YAML block (no fences), return a version where duplicate top-level keys
- * are reduced to their last occurrence. A "section" is a top-level key line plus
- * any following indented/blank lines until the next top-level key.
- */
-function dedupeTopLevelYamlKeys(yaml: string): { cleaned: string; removed: string[] } {
-	const lines = yaml.split(/\r?\n/)
-	type Section = { key: string | null; text: string[] }
-	const sections: Section[] = []
-	let current: Section | null = null
-	for (const line of lines) {
-		const m = line.match(/^([A-Za-z_][A-Za-z0-9_-]*)\s*:/)
-		const isTopLevelKey = m != null && !line.startsWith(" ") && !line.startsWith("\t")
-		if (isTopLevelKey && m) {
-			if (current) sections.push(current)
-			current = { key: m[1], text: [line] }
-		} else if (current) {
-			current.text.push(line)
-		} else {
-			sections.push({ key: null, text: [line] })
-		}
-	}
-	if (current) sections.push(current)
-
-	const lastIdx = new Map<string, number>()
-	const counts = new Map<string, number>()
-	for (let i = 0; i < sections.length; i++) {
-		const k = sections[i].key
-		if (!k) continue
-		lastIdx.set(k, i)
-		counts.set(k, (counts.get(k) ?? 0) + 1)
-	}
-	const removed: string[] = []
-	for (const [k, n] of counts) if (n > 1) removed.push(k)
-
-	const out: string[] = []
-	for (let i = 0; i < sections.length; i++) {
-		const s = sections[i]
-		if (s.key == null) out.push(...s.text)
-		else if (lastIdx.get(s.key) === i) out.push(...s.text)
-	}
-	return { cleaned: out.join("\n"), removed }
-}
-
-// Matches js-yaml v4's "duplicated mapping key" error text (as used by
-// gray-matter). If gray-matter ever swaps YAML parsers or the message
-// changes, the dedupe recovery path in safeParseFrontmatter silently
-// becomes dead — the parser-dedupe test suite in packages/haiku catches
-// the drift since that file uses the same upstream.
-function isDuplicateKeyError(err: unknown): boolean {
-	const msg = err instanceof Error ? err.message : String(err)
-	return /duplicated mapping key/i.test(msg)
 }
 
 /**
