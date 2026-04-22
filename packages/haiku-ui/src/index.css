@@ -405,3 +405,49 @@ dialog.feedback-sheet[open]::backdrop {
 		animation: none;
 	}
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Slim scrollbar — subtle, dark-mode aware. Applied app-wide (body +
+   every overflow region). The default macOS overlay scrollbars are
+   chunky and visually compete with the feedback-card borders in the
+   sidebar; this thin track blends into the chrome while still offering
+   a click target on hover.
+   ───────────────────────────────────────────────────────────────────────── */
+*::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+*::-webkit-scrollbar-track {
+	background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+	background: oklch(0.7 0.005 90 / 0.25); /* stone-400/25 */
+	border-radius: 4px;
+	border: 2px solid transparent;
+	background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+	background: oklch(0.6 0.005 90 / 0.5); /* stone-500/50 */
+	background-clip: padding-box;
+}
+.dark *::-webkit-scrollbar-thumb {
+	background: oklch(0.5 0.005 90 / 0.4); /* stone-600/40 */
+	background-clip: padding-box;
+}
+.dark *::-webkit-scrollbar-thumb:hover {
+	background: oklch(0.65 0.005 90 / 0.6); /* stone-400/60 */
+	background-clip: padding-box;
+}
+*::-webkit-scrollbar-corner {
+	background: transparent;
+}
+/* Firefox — there's no thumb-hover selector, so we use the static color */
+html {
+	scrollbar-width: thin;
+	scrollbar-color: oklch(0.7 0.005 90 / 0.25) transparent;
+}
+.dark html,
+html.dark,
+html.dark * {
+	scrollbar-color: oklch(0.5 0.005 90 / 0.4) transparent;
+}
