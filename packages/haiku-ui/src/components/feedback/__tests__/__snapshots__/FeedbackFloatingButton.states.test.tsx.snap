@@ -10,7 +10,7 @@ exports[`FeedbackFloatingButton — state matrix > renders every documented stat
       aria-expanded="false"
       aria-haspopup="dialog"
       aria-label="Open feedback panel"
-      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
       data-testid="feedback-fab"
       type="button"
     >
@@ -29,7 +29,7 @@ exports[`FeedbackFloatingButton — state matrix > renders every documented stat
       aria-expanded="false"
       aria-haspopup="dialog"
       aria-label="Open feedback panel, 1 pending"
-      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
       data-testid="feedback-fab"
       type="button"
     >
@@ -54,7 +54,7 @@ exports[`FeedbackFloatingButton — state matrix > renders every documented stat
       aria-expanded="false"
       aria-haspopup="dialog"
       aria-label="Open feedback panel, 5 pending"
-      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
       data-testid="feedback-fab"
       type="button"
     >
@@ -79,7 +79,7 @@ exports[`FeedbackFloatingButton — state matrix > renders every documented stat
       aria-expanded="true"
       aria-haspopup="dialog"
       aria-label="Open feedback panel"
-      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
       data-testid="feedback-fab"
       type="button"
     >
@@ -98,7 +98,7 @@ exports[`FeedbackFloatingButton — state matrix > renders every documented stat
       aria-expanded="true"
       aria-haspopup="dialog"
       aria-label="Open feedback panel, 2 pending"
-      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
       data-testid="feedback-fab"
       type="button"
     >
@@ -123,7 +123,7 @@ exports[`FeedbackFloatingButton — state matrix > renders every documented stat
       aria-expanded="false"
       aria-haspopup="dialog"
       aria-label="Open feedback panel"
-      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
       data-testid="feedback-fab"
       type="button"
     >

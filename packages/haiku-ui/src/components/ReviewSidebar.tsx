@@ -316,7 +316,7 @@ export function ReviewSidebar({
 											onEdit(c.id, editText.trim())
 											setEditingId(null)
 										}}
-										className="px-2 py-0.5 text-xs text-white bg-teal-600 hover:bg-teal-700 rounded"
+										className="px-2 py-0.5 text-xs text-white bg-teal-700 hover:bg-teal-800 rounded"
 									>
 										Save
 									</button>
@@ -392,7 +392,7 @@ export function ReviewSidebar({
 						onClick={handleAddGeneral}
 						disabled={!generalText.trim() || submitting}
 						aria-disabled={!generalText.trim() || submitting}
-						className="self-end px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white rounded-lg disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200 disabled:cursor-not-allowed transition-colors"
+						className="self-end px-3 py-1.5 text-xs font-medium bg-teal-700 hover:bg-teal-800 text-white rounded-lg disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200 disabled:cursor-not-allowed transition-colors"
 					>
 						Add
 					</button>
@@ -414,7 +414,7 @@ export function ReviewSidebar({
 							className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:bg-stone-100 disabled:text-stone-600 disabled:border disabled:border-stone-400 dark:disabled:bg-stone-800 dark:disabled:text-stone-300 dark:disabled:border-stone-500 disabled:cursor-not-allowed ${
 								hasComments
 									? "bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-600 dark:text-stone-300"
-									: "bg-teal-600 hover:bg-teal-700 text-white"
+									: "bg-teal-700 hover:bg-teal-800 text-white"
 							}`}
 						>
 							{submitting ? "Submitting\u2026" : "Approve"}
@@ -506,7 +506,7 @@ export function ReviewSidebar({
 								<button
 									type="button"
 									onClick={doApprove}
-									className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
+									className="flex-1 px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold rounded-lg transition-colors"
 								>
 									Approve Anyway
 								</button>

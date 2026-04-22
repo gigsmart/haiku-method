@@ -59,7 +59,7 @@ export interface FeedbackFloatingButtonProps {
 const BASE_BUTTON_CLASSES = [
 	"fixed bottom-4 right-4 z-50",
 	"w-14 h-14 rounded-full",
-	"bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400",
+	"bg-teal-700 hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800",
 	"text-white text-lg",
 	"shadow-lg",
 	"inline-flex items-center justify-center",

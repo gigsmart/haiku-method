@@ -174,7 +174,7 @@ export function FeedbackList({
 					<button
 						type="button"
 						onClick={onRetry}
-						className="text-xs font-medium px-3 py-1 rounded-md bg-teal-600 text-white hover:bg-teal-700 dark:bg-teal-600 dark:hover:bg-teal-700"
+						className="text-xs font-medium px-3 py-1 rounded-md bg-teal-700 text-white hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800"
 					>
 						Retry
 					</button>

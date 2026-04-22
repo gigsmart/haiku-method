@@ -79,12 +79,14 @@ const TOKEN_HEX = {
 	"red-700": "#b91c1c",
 	"red-800": "#991b1b",
 	"rose-100": "#ffe4e6",
+	"rose-600": "#e11d48",
 	"rose-700": "#be123c",
 	"sky-100": "#e0f2fe",
 	"sky-700": "#0369a1",
 	"teal-100": "#ccfbf1",
 	"teal-600": "#0d9488",
 	"teal-700": "#0f766e",
+	"teal-800": "#115e59",
 	"violet-100": "#ede9fe",
 	"violet-700": "#6d28d9",
 }
@@ -216,6 +218,24 @@ const PAIRS = [
 	{ group: "disabled-button", variant: "secondary-dark-text", fg: "stone-300", bg: "stone-800", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
 	{ group: "disabled-button", variant: "primary-green-light", fg: "green-800", bg: "green-300", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
 	{ group: "disabled-button", variant: "primary-amber-light", fg: "amber-900", bg: "amber-300", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+
+	// ── DESIGN-TOKENS §1.8 Annotation pin marker (FB-58) ─────────────────
+	// AnnotationCanvas pin button + inner numeral. Canonical token chain is
+	// bg = --color-annotation-pin-bg (rose-600, index.css:44) + fg = white.
+	// Replaces the pre-FB-11-cutover teal-500 + white pair (2.22:1 FAIL).
+	// Three entries: 1.4.3 numeral contrast, 1.4.11 pin-on-white artifact,
+	// 1.4.11 pin-on-stone-50 artifact. Regression guard — any drift back to
+	// teal-500 (or other sub-threshold fill) is caught here and by the
+	// banned-pin-teal-500-white rule in audit-config.json.
+	{ group: "annotation-pin", variant: "fill-numeral-light", fg: "white", bg: "rose-600", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+	{ group: "annotation-pin", variant: "pin-on-white", fg: "rose-600", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+	{ group: "annotation-pin", variant: "pin-on-stone-50", fg: "rose-600", bg: "stone-50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+
+	// ── DESIGN-TOKENS §1 Primary-action button surfaces (FB-55) ──────────
+	{ group: "primary-button", variant: "enabled-light", fg: "white", bg: "teal-700", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+	{ group: "primary-button", variant: "hover-light",   fg: "white", bg: "teal-800", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+	{ group: "primary-button", variant: "enabled-dark",  fg: "white", bg: "teal-700", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
+	{ group: "primary-button", variant: "hover-dark",    fg: "white", bg: "teal-800", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
 
 	// ── DESIGN-TOKENS §2.4 Visit counter tiers ────────────────────────────
 	{ group: "visit-counter", variant: "tier1-light", fg: "stone-600", bg: "stone-200", sizeBucket: "text-normal", underlyingBg: "#ffffff" },

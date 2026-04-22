@@ -85,7 +85,7 @@ const TRACK_BASE = "relative inline-block w-8 h-4 rounded-full"
 const TRACK_OFF =
 	"bg-stone-300 dark:bg-stone-600 hover:bg-stone-400 dark:hover:bg-stone-500"
 const TRACK_ON =
-	"bg-teal-600 dark:bg-teal-500 hover:bg-teal-700 dark:hover:bg-teal-400"
+	"bg-teal-700 dark:bg-teal-700 hover:bg-teal-800 dark:hover:bg-teal-800"
 const TRACK_DISABLED = "bg-stone-200 dark:bg-stone-700 cursor-not-allowed"
 const THUMB_BASE = "absolute top-0.5 w-3 h-3 rounded-full bg-white shadow"
 

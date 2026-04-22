@@ -259,7 +259,7 @@ export function DirectionPage({
 				type="submit"
 				disabled={submitting || !selectedArchetype}
 				aria-disabled={submitting || !selectedArchetype}
-				className={`w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors ${focusRingClass} disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200 disabled:cursor-not-allowed ${touchTargetClass}`}
+				className={`w-full px-6 py-3 bg-teal-700 hover:bg-teal-800 text-white font-semibold rounded-lg transition-colors ${focusRingClass} disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200 disabled:cursor-not-allowed ${touchTargetClass}`}
 			>
 				{submitting ? "Submitting..." : "Choose This Direction"}
 			</button>

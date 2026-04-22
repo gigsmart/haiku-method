@@ -37,6 +37,27 @@
 					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
 				},
 				{
+					"id": "banned-primary-teal-600-white",
+					"description": "bg-teal-600 paired with text-white on the same element fails WCAG 1.4.3 AA (3.74:1 < 4.5:1). Use bg-teal-700 text-white (5.47:1). See DESIGN-TOKENS §1.1b (FB-55).",
+					"pattern": "bg-teal-600\\b[^\"'`]*\\btext-white\\b|text-white\\b[^\"'`]*\\bbg-teal-600\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-primary-teal-500-white-dark",
+					"description": "dark:bg-teal-500 paired with text-white on the same element collapses to 2.49:1 — below both 3:1 UI-nontext floor and 4.5:1 text floor. Use dark:bg-teal-700 text-white. See DESIGN-TOKENS §1.1b (FB-55).",
+					"pattern": "dark:bg-teal-500\\b[^\"'`]*\\btext-white\\b|text-white\\b[^\"'`]*\\bdark:bg-teal-500\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-pin-teal-500-white",
+					"description": "bg-teal-500 paired with text-white on AnnotationCanvas pin markers = 2.22:1 (WCAG 1.4.3 + 1.4.11 FAIL) per FB-58. Canonical pin fill is the rose-600 token via --color-annotation-pin-bg (see index.css @theme + annotation-pin PAIRS in audit-contrast.mjs). Scoped narrowly to AnnotationCanvas.tsx to avoid false positives on the unrelated focus-ring usages of teal-500 elsewhere.",
+					"pattern": "bg-teal-500\\b[^\"'`]*\\btext-white\\b|text-white\\b[^\"'`]*\\bbg-teal-500\\b",
+					"scope": ["packages/haiku-ui/src/components/AnnotationCanvas.tsx"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
 					"id": "banned-opacity-state",
 					"description": "opacity-50|60|70 on interactive/card roots (use token-based disabled per DESIGN-TOKENS §1.7)",
 					"pattern": "\\bopacity-(50|60|70)\\b",

@@ -293,7 +293,7 @@ export function InlineComments({
 								<button
 									type="button"
 									onClick={handleSaveComment}
-									className="px-3 py-1 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-md transition-colors"
+									className="px-3 py-1 text-xs font-medium text-white bg-teal-700 hover:bg-teal-800 rounded-md transition-colors"
 								>
 									Save
 								</button>
