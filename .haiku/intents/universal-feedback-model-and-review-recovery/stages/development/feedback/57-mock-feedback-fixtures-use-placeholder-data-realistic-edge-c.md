@@ -1,6 +1,6 @@
 ---
 title: Mock feedback fixtures use placeholder data; realistic edge cases are untested
-status: fixing
+status: closed
 origin: adversarial-review
 author: test-quality
 author_type: agent
@@ -8,7 +8,7 @@ created_at: '2026-04-21T20:25:04Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-57:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
