@@ -2,7 +2,7 @@
 title: >-
   unit-06: audit-lighthouse.mjs serves HTML for /assets/*.js → NO_FCP on every
   URL, exits 1
-status: fixing
+status: closed
 origin: adversarial-review
 author: agent
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T13:49:54Z'
 iteration: 0
 visit: 0
 source_ref: unit-06-shell-and-routing/reviewer/bolt-2
-closed_by: null
+closed_by: 'fix-loop:FB-10:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
