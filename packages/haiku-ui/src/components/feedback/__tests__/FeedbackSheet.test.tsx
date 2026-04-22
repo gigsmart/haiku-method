@@ -28,6 +28,7 @@ import {
 	fireEvent,
 	render,
 	screen,
+	waitFor,
 	within,
 } from "@testing-library/react"
 import { useRef, useState } from "react"
@@ -247,20 +248,33 @@ describe("FeedbackSheet — close paths + focus restore (CC3)", () => {
 		expect(screen.queryByRole("dialog")).toBeNull()
 	})
 
-	it("Escape-driven close path dispatches close + restores focus", () => {
+	it("Escape-driven close path dispatches close + restores focus", async () => {
 		const onCloseSpy = vi.fn()
 		render(<Harness initialOpen onCloseSpy={onCloseSpy} />)
 		const sheet = screen.getByRole("dialog", { name: /feedback/i })
-		// In real browsers, Escape fires `cancel` → default close path.
-		// In jsdom, the simplest faithful stand-in is to call dialog.close()
-		// directly (which dispatches the `close` event via the polyfill).
-		// Wrap in act() so React flushes the triggered setState + effect
-		// cleanups (including the FAB-focus restore) before the assertion.
-		act(() => {
-			;(sheet as HTMLDialogElement).close()
+		// FB-60 — dispatch a REAL Escape keydown on the dialog root. This
+		// exercises the full input path the test name claims to cover:
+		//   keydown(Escape) → FeedbackSheet's keydown listener calls
+		//   dialog.close() → `close` event → parent onClose → FAB focus
+		//   restore.
+		//
+		// Do NOT short-circuit by calling `dialog.close()` directly — that
+		// path would still pass even if the Escape key binding regressed
+		// (handler removed, wrong key, wrong target), leaving CC3's
+		// keyboard input path silently untested.
+		//
+		// jsdom caveat: jsdom 25 does not auto-fire `cancel` on keydown, so
+		// the component installs a belt-and-suspenders `keydown` handler
+		// that calls `dialog.close()` on Escape. In real browsers the
+		// native `cancel` → `close` pipeline handles this; in jsdom this
+		// handler IS the close path the test drives.
+		await act(async () => {
+			fireEvent.keyDown(sheet, { key: "Escape", code: "Escape" })
 		})
-		expect(onCloseSpy).toHaveBeenCalled()
-		expect(screen.queryByRole("dialog")).toBeNull()
+		await waitFor(() => {
+			expect(onCloseSpy).toHaveBeenCalled()
+			expect(screen.queryByRole("dialog")).toBeNull()
+		})
 		const fab = screen.getByRole("button", { name: /open feedback panel/i })
 		expect(document.activeElement).toBe(fab)
 	})

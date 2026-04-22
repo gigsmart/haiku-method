@@ -161,6 +161,31 @@ export function FeedbackSheet({
 			}
 		}
 
+		// Escape keydown → close (FB-60).
+		//
+		// Native <dialog> fires `cancel` → `close` on Escape automatically in
+		// real browsers, but jsdom does NOT auto-fire `cancel` on keydown. This
+		// handler is a belt-and-suspenders emulation that:
+		//   - In jsdom, IS the close path the test exercises — dispatching a
+		//     real keydown on the dialog root drives the same `dialog.close()`
+		//     → `close` event → onClose() → FAB focus restore chain the
+		//     platform runs in production.
+		//   - In real browsers, it is redundant with the native cancel/close
+		//     pipeline. Calling `dialog.close()` on an already-closing dialog
+		//     is a no-op once `open` is false (the polyfill and the spec both
+		//     early-return when the attribute is missing), so the double-call
+		//     is safe.
+		// Wired alongside `click` + `close` so it lives and dies with `open`.
+		function handleKeyDown(event: KeyboardEvent): void {
+			if (!dialog) return
+			if (event.key === "Escape") {
+				// Do NOT preventDefault — the native `cancel` default (close)
+				// is the canonical cleanup trigger. In jsdom the native path
+				// no-ops, so we proactively drive close() here.
+				dialog.close()
+			}
+		}
+
 		if (open) {
 			// Guard against InvalidStateError when already open.
 			if (!dialog.open) {
@@ -187,10 +212,12 @@ export function FeedbackSheet({
 
 			dialog.addEventListener("close", handleClose)
 			dialog.addEventListener("click", handleClick)
+			dialog.addEventListener("keydown", handleKeyDown)
 
 			return () => {
 				dialog.removeEventListener("close", handleClose)
 				dialog.removeEventListener("click", handleClick)
+				dialog.removeEventListener("keydown", handleKeyDown)
 				document.documentElement.style.overflow = ""
 				// Restore focus to the FAB. Runs AFTER useFocusTrap's cleanup
 				// (which may have restored focus to a stale priorFocus) because
