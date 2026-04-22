@@ -100,7 +100,7 @@ Bring the other two session-typed pages onto the new design foundation. Both are
 **Direction page:**
 - Renders against `direction-session.json`.
 - Radiogroup is keyboard-navigable; selection updates `aria-checked`.
-- Parameter inputs use canonical primitives (grep in `DirectionPage.tsx` for non-primitive `<input>` tags returns zero).
+- Parameter inputs use the canonical Input component (grep in `DirectionPage.tsx` for non-Input `<input>` tags returns zero).
 - Submit posts the direction + optional comment.
 
 **Shared:**

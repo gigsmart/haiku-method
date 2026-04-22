@@ -25,7 +25,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { focusRingClass, touchTargetClass, useAnnounce } from "../../a11y"
 import { useApiClient } from "../../api/context"
 import { Card, SectionHeading } from "../../components/Card"
-import { Input } from "../../components/primitives"
+import { Input } from "../../components/Input"
 import { SubmitSuccess } from "../../components/SubmitSuccess"
 import { tryCloseTab } from "../../lib/tryCloseTab"
 

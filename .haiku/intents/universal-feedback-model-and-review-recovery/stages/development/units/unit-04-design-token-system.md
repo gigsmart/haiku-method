@@ -45,19 +45,8 @@ outputs:
   - packages/haiku-ui/src/components/StageProgressStrip.tsx
   - packages/haiku-ui/src/components/StatusBadge.tsx
   - packages/haiku-ui/src/components/Tabs.tsx
-  - packages/haiku-ui/src/components/primitives/Badge.tsx
-  - packages/haiku-ui/src/components/primitives/Button.tsx
-  - packages/haiku-ui/src/components/primitives/Card.tsx
-  - packages/haiku-ui/src/components/primitives/Chip.tsx
-  - packages/haiku-ui/src/components/primitives/Divider.tsx
-  - packages/haiku-ui/src/components/primitives/Input.tsx
-  - packages/haiku-ui/src/components/primitives/__tests__/Badge.test.tsx
-  - packages/haiku-ui/src/components/primitives/__tests__/Button.test.tsx
-  - packages/haiku-ui/src/components/primitives/__tests__/Card.test.tsx
-  - packages/haiku-ui/src/components/primitives/__tests__/Chip.test.tsx
-  - packages/haiku-ui/src/components/primitives/__tests__/Divider.test.tsx
-  - packages/haiku-ui/src/components/primitives/__tests__/Input.test.tsx
-  - packages/haiku-ui/src/components/primitives/index.ts
+  - packages/haiku-ui/src/components/Input.tsx
+  - packages/haiku-ui/src/components/__tests__/Input.test.tsx
   - packages/haiku-ui/src/index.css
   - packages/haiku-ui/tailwind.config.ts
   - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
@@ -73,7 +62,7 @@ Implement the token system defined in `knowledge/DESIGN-TOKENS.md` across `packa
 **Token implementation:**
 - `packages/haiku-ui/tailwind.config.ts` — extend palette, radii, shadows, spacing, breakpoints, typography per DESIGN-TOKENS §1. Remove banned colors (raw hex, leftover `gray-*`) from the generated class surface via `safelist` + content allow-list.
 - `packages/haiku-ui/src/index.css` — CSS custom properties for light + dark theme variables; applied via `:root` + `.dark`.
-- `packages/haiku-ui/src/components/primitives/` — `Button`, `Badge`, `Card`, `Chip`, `Divider`, `Input` — typed variants matching DESIGN-TOKENS §2.
+- `packages/haiku-ui/src/components/Input.tsx` — typed Input variant matching DESIGN-TOKENS §2. Other primitives (Button, Badge, Card, Chip, Divider) deferred to a follow-up migration unit once consumers exist (see FB-18).
 - Canonical container tokens:
   - `--sidebar-width: 20rem` (mobile), `--sidebar-width-xl: 24rem` — applied as `w-[var(--sidebar-width)] xl:w-[var(--sidebar-width-xl)]` — replaces all `w-80 xl:w-96` / `lg:w-96` drift.
   - `--content-max: 1400px` → `max-w-[var(--content-max)]` replaces `max-w-[1400px]` literals.
@@ -118,5 +107,5 @@ Implement the token system defined in `knowledge/DESIGN-TOKENS.md` across `packa
 - `node packages/haiku-ui/scripts/audit-contrast.mjs --mode=tokens` exits 0.
 - `node packages/haiku-ui/scripts/audit-banned-patterns.mjs --profile=tokens` exits 0.
 - Grep for the banned patterns in `packages/haiku-ui/src/**/*.{ts,tsx,css}` returns zero hits (exclusions per audit-config.json).
-- Every primitive component has a vitest + RTL test at `packages/haiku-ui/src/components/primitives/__tests__/<name>.test.tsx` asserting variant output + disabled state.
+- Input component has a vitest + RTL test at `packages/haiku-ui/src/components/__tests__/Input.test.tsx` asserting variant output + disabled state.
 - `npx tsc --noEmit` passes.

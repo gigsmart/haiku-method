@@ -2,7 +2,7 @@
 title: >-
   Shell layout + Header use max-w-7xl instead of the canonical --content-max
   (1400px) token
-status: fixing
+status: closed
 origin: adversarial-review
 author: consistency (from design)
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:22:30Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-17:bolt-2'
 bolt: 2
 upstream_stage: null
 ---

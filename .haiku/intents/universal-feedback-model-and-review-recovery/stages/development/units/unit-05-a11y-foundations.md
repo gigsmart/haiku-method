@@ -51,7 +51,6 @@ outputs:
   - packages/haiku-ui/src/a11y/live-regions.tsx
   - packages/haiku-ui/src/a11y/reduced-motion.ts
   - packages/haiku-ui/src/a11y/touch-target.ts
-  - packages/haiku-ui/src/components/primitives/Button.tsx
   - packages/haiku-ui/src/index.css
 completed_at: '2026-04-21T07:25:29Z'
 ---
