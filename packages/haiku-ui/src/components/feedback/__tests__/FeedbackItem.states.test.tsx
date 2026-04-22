@@ -527,6 +527,27 @@ describe("FeedbackItem — forbidden transitions", () => {
 		expect(container.querySelector("[data-action='verify-close']")).toBeNull()
 	})
 
+	it("addressed + expanded does NOT render Dismiss (addressed cannot go directly to rejected)", () => {
+		// FB-66 reviewer asked: "addressed → rejected: can an assessor reject
+		// a previously-addressed finding that was auto-progressed to addressed
+		// by closing a unit?" Answer: NO — the UI exposes only Verify & Close
+		// and Reopen from an addressed item. An assessor who wants to reject
+		// an addressed finding must Reopen it first (back to pending) and
+		// then Dismiss from pending. Pinning this absence forces any future
+		// product decision to add a direct Dismiss-from-addressed path to
+		// consciously delete this test.
+		const items = mockItems(1, { status: "addressed" })
+		const { container } = render(
+			<FeedbackItem
+				item={items[0]}
+				isExpanded
+				onToggle={() => undefined}
+				onStatusChange={() => undefined}
+			/>,
+		)
+		expect(container.querySelector("[data-action='dismiss']")).toBeNull()
+	})
+
 	it("closed + expanded does NOT render Dismiss (closed cannot be re-dismissed to rejected)", () => {
 		const items = mockItems(1, { status: "closed" })
 		const { container } = render(
@@ -538,6 +559,24 @@ describe("FeedbackItem — forbidden transitions", () => {
 			/>,
 		)
 		expect(container.querySelector("[data-action='dismiss']")).toBeNull()
+	})
+
+	it("closed + expanded does NOT render Verify & Close (closed cannot be re-closed)", () => {
+		// Terminal statuses expose only Reopen + (optional) Delete. Pin the
+		// absence of Verify & Close so a regression that leaks the button
+		// into the closed branch (e.g. a refactor that drops the status
+		// guard) is caught per-cell instead of only as a canonical-verbs
+		// snapshot drift.
+		const items = mockItems(1, { status: "closed" })
+		const { container } = render(
+			<FeedbackItem
+				item={items[0]}
+				isExpanded
+				onToggle={() => undefined}
+				onStatusChange={() => undefined}
+			/>,
+		)
+		expect(container.querySelector("[data-action='verify-close']")).toBeNull()
 	})
 
 	it("rejected + expanded does NOT render Dismiss or Verify & Close (Reopen + Delete only)", () => {
@@ -553,6 +592,73 @@ describe("FeedbackItem — forbidden transitions", () => {
 		)
 		expect(container.querySelector("[data-action='dismiss']")).toBeNull()
 		expect(container.querySelector("[data-action='verify-close']")).toBeNull()
+	})
+})
+
+// ── Reopen-from-closed: no confirm dialog (FB-66) ──────────────────────────
+//
+// The reviewer asked: "closed → pending (Reopen) — closed is typically
+// terminal, so reopening should have a warn/confirm. No test."
+//
+// The current product decision is that Reopen is a one-click action — no
+// modal, no AlertDialog, no inline "are you sure?" gate. This test pins
+// that decision so a future product change that ADDS a confirm dialog is
+// forced to update the test (and, by extension, all callers of
+// FeedbackItem that relied on synchronous Reopen). It also closes the
+// reviewer's open question: the answer is "no confirm today; the status
+// transitions synchronously on click."
+//
+// If a future designer argues that Reopen from closed/rejected should
+// warn, they must:
+//   1. Update this test to expect an AlertDialog / confirm button.
+//   2. Update the `transition matrix` test above (closed → pending cell)
+//      to step through the confirm before asserting data-status.
+//   3. Update the stale-reference idempotency test since a confirm
+//      intercepts the click.
+// That's a deliberate, reviewer-visible churn — exactly what we want.
+
+describe("FeedbackItem — Reopen from closed/rejected is not gated by a confirm", () => {
+	it("closed + Reopen: single click moves status to pending, no dialog rendered mid-click", async () => {
+		const { container, queryByRole } = render(
+			<ControllableFeedbackItem initialStatus="closed" />,
+		)
+		const reopen = container.querySelector<HTMLButtonElement>(
+			"[data-action='reopen']",
+		)
+		if (!reopen) throw new Error("reopen button missing on closed item")
+		await act(async () => {
+			fireEvent.click(reopen)
+		})
+		// Invariant 1: status moved to pending on a single click — there's no
+		// intermediate confirm step blocking the transition.
+		const card = container.querySelector<HTMLDivElement>(
+			"[data-testid='feedback-item']",
+		)
+		expect(card?.getAttribute("data-status")).toBe("pending")
+		// Invariant 2: no dialog / alertdialog was mounted during the
+		// transition. If this ever starts failing, the UI has gained a
+		// confirm step and this test needs to be rewritten (intentionally).
+		expect(queryByRole("dialog")).toBeNull()
+		expect(queryByRole("alertdialog")).toBeNull()
+	})
+
+	it("rejected + Reopen: single click moves status to pending, no dialog rendered mid-click", async () => {
+		const { container, queryByRole } = render(
+			<ControllableFeedbackItem initialStatus="rejected" />,
+		)
+		const reopen = container.querySelector<HTMLButtonElement>(
+			"[data-action='reopen']",
+		)
+		if (!reopen) throw new Error("reopen button missing on rejected item")
+		await act(async () => {
+			fireEvent.click(reopen)
+		})
+		const card = container.querySelector<HTMLDivElement>(
+			"[data-testid='feedback-item']",
+		)
+		expect(card?.getAttribute("data-status")).toBe("pending")
+		expect(queryByRole("dialog")).toBeNull()
+		expect(queryByRole("alertdialog")).toBeNull()
 	})
 })
 
