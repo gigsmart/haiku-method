@@ -1,6 +1,6 @@
 ---
 title: useSession.ts exports bypass the typed ApiClient with hardcoded URLs
-status: fixing
+status: closed
 origin: adversarial-review
 author: architecture
 author_type: agent
@@ -8,7 +8,7 @@ created_at: '2026-04-21T20:22:16Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-14:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
