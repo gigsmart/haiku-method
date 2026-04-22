@@ -2,7 +2,7 @@
 title: >-
   unit-06: Lighthouse harness fixture paths use /api/sessions/ (plural) but real
   endpoint is /api/session/ (singular)
-status: fixing
+status: closed
 origin: adversarial-review
 author: reviewer
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T13:18:24Z'
 iteration: 0
 visit: 0
 source_ref: 'packages/haiku-ui/scripts/audit-lighthouse.mjs:45-52'
-closed_by: null
+closed_by: 'fix-loop:FB-08:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
