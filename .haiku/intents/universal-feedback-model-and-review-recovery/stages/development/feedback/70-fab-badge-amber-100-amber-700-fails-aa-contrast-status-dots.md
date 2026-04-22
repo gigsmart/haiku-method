@@ -2,7 +2,7 @@
 title: >-
   FAB badge amber-100/amber-700 fails AA contrast; status dots fail UI floor on
   card backgrounds
-status: fixing
+status: closed
 origin: adversarial-review
 author: accessibility (from design)
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:28:00Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-70:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
