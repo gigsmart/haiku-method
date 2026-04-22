@@ -158,6 +158,21 @@ describe("FeedbackSheet — dialog semantics when open (CC1)", () => {
 		expect(heading).not.toBeNull()
 		expect(heading?.textContent).toBe("Feedback")
 	})
+
+	// FB-34 — CSS selector alignment regression guard.
+	//
+	// `packages/haiku-ui/src/index.css` ships a full block of styling keyed on
+	// `dialog.feedback-sheet` (backdrop, ::backdrop blur, sheet-up animation,
+	// reduced-motion guards, dark-mode background override). If the rendered
+	// root is ever downgraded back to a `<div role="dialog">` the selector
+	// will silently stop matching and those styles become dead CSS. Pin the
+	// tagName + className here so that regression fails loudly.
+	it("renders as a native <dialog class='feedback-sheet'> root (FB-34 alignment)", () => {
+		render(<Harness initialOpen />)
+		const sheet = screen.getByRole("dialog", { name: /feedback/i })
+		expect(sheet.tagName).toBe("DIALOG")
+		expect(sheet.classList.contains("feedback-sheet")).toBe(true)
+	})
 })
 
 // ── CC2a — focus lands on first focusable on open ──────────────────────────

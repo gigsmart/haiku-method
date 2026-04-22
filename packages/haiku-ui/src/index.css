@@ -236,6 +236,16 @@ pre {
 /* ─────────────────────────────────────────────────────────────────────────
    FeedbackSheet — native <dialog> styling (unit-10).
    See stages/development/artifacts/unit-10-tactical-plan.md §C.
+
+   FB-34 alignment: the `dialog.feedback-sheet` selector below is tightly
+   coupled to the React component root rendered by
+   `packages/haiku-ui/src/components/feedback/FeedbackSheet.tsx`, which
+   is a native `<dialog className="feedback-sheet">` — NOT a
+   `<div role="dialog">`. Regression coverage lives in
+   `FeedbackSheet.test.tsx` ("renders as a native <dialog ...> root
+   (FB-34 alignment)"). Do NOT change the selector here without also
+   updating the component root and vice versa; the two MUST move
+   together or the styles silently become dead CSS.
    ───────────────────────────────────────────────────────────────────────── */
 dialog.feedback-sheet {
 	padding: 0;

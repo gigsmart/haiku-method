@@ -11,6 +11,17 @@
  *   - packages/haiku-ui/BROWSER-SUPPORT.md — native <dialog> policy, jsdom
  *     caveats, DESIGN-BRIEF §6 line 838 divergence rationale.
  *
+ * CSS selector alignment (FB-34): the rendered root is a native
+ * `<dialog className="feedback-sheet">`, which is exactly what the
+ * `dialog.feedback-sheet` block in `packages/haiku-ui/src/index.css`
+ * (lines ~240-305) selects. Backdrop, `::backdrop` blur, `sheet-up`
+ * slide-in animation, `backdrop-fade-in`, and the reduced-motion guards
+ * in that block all paint on this element. The previous
+ * `<div role="dialog">` placeholder (which the CSS selectors did NOT
+ * match) has been replaced by this native-dialog implementation — do
+ * NOT regress the root element back to a div without also rewriting
+ * every `dialog.feedback-sheet` selector in index.css.
+ *
  * Architecture:
  *   - The <dialog> element renders unconditionally in the DOM; `open` drives
  *     an imperative `showModal()` / `close()` call in an effect.
