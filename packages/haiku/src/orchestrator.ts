@@ -4956,10 +4956,9 @@ function buildRunInstructions(
 				const closes = (unitFm.closes as string[]) || []
 				const unitOutputs = (unitFm.outputs as string[]) || []
 				const feedbackFiles: Array<{ id: string; file: string }> = []
+				const allFeedback = readFeedbackFiles(slug, stage)
 				for (const fbId of closes) {
-					const found = readFeedbackFiles(slug, stage).find(
-						(f) => f.id === fbId,
-					)
+					const found = allFeedback.find((f) => f.id === fbId)
 					if (found)
 						feedbackFiles.push({
 							id: found.id,
@@ -5508,10 +5507,9 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					const closes = (unitFm.closes as string[]) || []
 					const unitOutputs = (unitFm.outputs as string[]) || []
 					const feedbackFiles: Array<{ id: string; file: string }> = []
+					const allFeedback = readFeedbackFiles(slug, stage)
 					for (const fbId of closes) {
-						const found = readFeedbackFiles(slug, stage).find(
-							(f) => f.id === fbId,
-						)
+						const found = allFeedback.find((f) => f.id === fbId)
 						if (found) {
 							feedbackFiles.push({
 								id: found.id,
