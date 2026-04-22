@@ -1,6 +1,6 @@
 ---
 title: Tabs component tab buttons have no visible focus indicator (WCAG 2.4.7)
-status: fixing
+status: closed
 origin: adversarial-review
 author: accessibility (from design)
 author_type: agent
@@ -8,7 +8,7 @@ created_at: '2026-04-21T20:26:48Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-67:bolt-1'
 bolt: 1
 upstream_stage: null
 ---
