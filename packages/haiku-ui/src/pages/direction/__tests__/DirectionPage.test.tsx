@@ -223,3 +223,182 @@ describe("DirectionPage — submit", () => {
 	// but not transmitted — see DirectionPage.tsx handleSubmit for the TODO.
 	it.todo("submit includes comment when the schema supports it")
 })
+
+describe("DirectionPage — PreviewDialog focus trap (FB-69)", () => {
+	afterEach(() => {
+		cleanup()
+		document.body.innerHTML = ""
+	})
+
+	function openPreviewFor(name: string): HTMLButtonElement {
+		const trigger = screen.getByRole("button", {
+			name: new RegExp(`view full size preview: ${name}`, "i"),
+		}) as HTMLButtonElement
+		trigger.focus()
+		fireEvent.click(trigger)
+		return trigger
+	}
+
+	it("places role='dialog' + aria-modal on the dialog surface (not the backdrop)", async () => {
+		const session = loadFixture("direction-session.json")
+		const { container } = render(
+			<Harness client={makeMockClient()}>
+				<DirectionPage session={session} sessionId={session.session_id} />
+			</Harness>,
+		)
+
+		openPreviewFor("Minimal")
+
+		const dialog = await waitFor(() => {
+			const el = container.querySelector(
+				'[role="dialog"][aria-modal="true"]',
+			) as HTMLElement | null
+			expect(el).toBeTruthy()
+			return el as HTMLElement
+		})
+
+		// The backdrop (the element carrying bg-black/60) must NOT be the dialog
+		// surface — role conflict between interactive click-to-close and the
+		// dialog role is what the reviewer called out.
+		expect(dialog.className).not.toContain("bg-black")
+		const backdrop = container.querySelector(
+			"[aria-hidden='true'].bg-black\\/60",
+		) as HTMLElement | null
+		expect(backdrop).toBeTruthy()
+		expect(backdrop?.getAttribute("role")).toBeNull()
+	})
+
+	it("moves initial focus into the dialog when it opens", async () => {
+		const session = loadFixture("direction-session.json")
+		const { container } = render(
+			<Harness client={makeMockClient()}>
+				<DirectionPage session={session} sessionId={session.session_id} />
+			</Harness>,
+		)
+
+		openPreviewFor("Minimal")
+
+		const dialog = await waitFor(() => {
+			const el = container.querySelector(
+				'[role="dialog"][aria-modal="true"]',
+			) as HTMLElement | null
+			expect(el).toBeTruthy()
+			return el as HTMLElement
+		})
+
+		// Initial focus should land on a tabbable inside the dialog (the close
+		// button is the first tabbable in the surface).
+		await waitFor(() => {
+			const active = document.activeElement as HTMLElement | null
+			expect(active).not.toBeNull()
+			expect(dialog.contains(active)).toBe(true)
+		})
+		expect(
+			(document.activeElement as HTMLElement).getAttribute("aria-label"),
+		).toBe("Dismiss preview")
+	})
+
+	it("traps Tab / Shift+Tab inside the dialog surface", async () => {
+		const session = loadFixture("direction-session.json")
+		const { container } = render(
+			<Harness client={makeMockClient()}>
+				<DirectionPage session={session} sessionId={session.session_id} />
+			</Harness>,
+		)
+
+		openPreviewFor("Minimal")
+
+		const dialog = await waitFor(() => {
+			const el = container.querySelector(
+				'[role="dialog"][aria-modal="true"]',
+			) as HTMLElement | null
+			expect(el).toBeTruthy()
+			return el as HTMLElement
+		})
+
+		// Wait for initial focus landing.
+		await waitFor(() => {
+			expect(dialog.contains(document.activeElement)).toBe(true)
+		})
+
+		// Tab forward — focus should stay inside the dialog.
+		fireEvent.keyDown(dialog, { key: "Tab" })
+		expect(dialog.contains(document.activeElement)).toBe(true)
+
+		// Shift+Tab — also stays inside.
+		fireEvent.keyDown(dialog, { key: "Tab", shiftKey: true })
+		expect(dialog.contains(document.activeElement)).toBe(true)
+	})
+
+	it("restores focus to the invoking button when the dialog closes", async () => {
+		const session = loadFixture("direction-session.json")
+		const { container } = render(
+			<Harness client={makeMockClient()}>
+				<DirectionPage session={session} sessionId={session.session_id} />
+			</Harness>,
+		)
+
+		const trigger = openPreviewFor("Minimal")
+
+		const dialog = await waitFor(() => {
+			const el = container.querySelector(
+				'[role="dialog"][aria-modal="true"]',
+			) as HTMLElement | null
+			expect(el).toBeTruthy()
+			return el as HTMLElement
+		})
+
+		await waitFor(() => {
+			expect(dialog.contains(document.activeElement)).toBe(true)
+		})
+
+		// Close via the in-dialog Close button.
+		const closeBtn = screen.getByRole("button", { name: /dismiss preview/i })
+		fireEvent.click(closeBtn)
+
+		// Dialog unmounts → useFocusTrap cleanup restores focus to the trigger.
+		await waitFor(() => {
+			expect(
+				container.querySelector('[role="dialog"][aria-modal="true"]'),
+			).toBeNull()
+		})
+		await waitFor(() => {
+			expect(document.activeElement).toBe(trigger)
+		})
+	})
+
+	it("closes on Escape and restores focus to the invoker", async () => {
+		const session = loadFixture("direction-session.json")
+		const { container } = render(
+			<Harness client={makeMockClient()}>
+				<DirectionPage session={session} sessionId={session.session_id} />
+			</Harness>,
+		)
+
+		const trigger = openPreviewFor("Bold")
+
+		const dialog = await waitFor(() => {
+			const el = container.querySelector(
+				'[role="dialog"][aria-modal="true"]',
+			) as HTMLElement | null
+			expect(el).toBeTruthy()
+			return el as HTMLElement
+		})
+
+		await waitFor(() => {
+			expect(dialog.contains(document.activeElement)).toBe(true)
+		})
+
+		// Escape is wired at the document level by the parent.
+		fireEvent.keyDown(document, { key: "Escape" })
+
+		await waitFor(() => {
+			expect(
+				container.querySelector('[role="dialog"][aria-modal="true"]'),
+			).toBeNull()
+		})
+		await waitFor(() => {
+			expect(document.activeElement).toBe(trigger)
+		})
+	})
+})

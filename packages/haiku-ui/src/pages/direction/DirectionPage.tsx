@@ -21,8 +21,13 @@ import {
 	type DirectionSessionPayload,
 	paths,
 } from "haiku-api"
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { focusRingClass, touchTargetClass, useAnnounce } from "../../a11y"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+	focusRingClass,
+	touchTargetClass,
+	useAnnounce,
+	useFocusTrap,
+} from "../../a11y"
 import { useApiClient } from "../../api/context"
 import { Card, SectionHeading } from "../../components/Card"
 import { Input } from "../../components/Input"
@@ -388,6 +393,21 @@ function ArchetypeRadiogroup({
 
 // ── Preview dialog (full-size iframe) ───────────────────────────────────────
 
+/**
+ * Modal dialog per WAI-ARIA 1.2 dialog pattern + WCAG 2.1.2:
+ *   - role="dialog" + aria-modal="true" live on the dialog *surface* (inner
+ *     container), not on the backdrop. The backdrop is a sibling with
+ *     aria-hidden="true" that owns the click-to-close affordance — keeping
+ *     the dialog role off an interactive click target avoids the role
+ *     conflict the original implementation carried.
+ *   - useFocusTrap(ref, true) snapshots the invoking element (the "View
+ *     full size" button), moves initial focus to the first tabbable inside
+ *     the dialog (the close button), traps Tab/Shift+Tab inside the dialog
+ *     while open, and restores focus to the invoker on close.
+ *   - Escape is handled by the parent's document-level listener which calls
+ *     onClose, which unmounts this component and triggers the focus-trap
+ *     cleanup (priorFocus restore).
+ */
 function PreviewDialog({
 	archetype,
 	onClose,
@@ -395,22 +415,37 @@ function PreviewDialog({
 	archetype: { name: string; preview_html: string } | null
 	onClose: () => void
 }): React.ReactElement | null {
+	const dialogRef = useRef<HTMLDivElement | null>(null)
+	useFocusTrap(dialogRef, archetype !== null)
+
 	if (!archetype) return null
+	const titleId = "direction-preview-dialog-title"
 	return (
-		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-			onClick={onClose}
-			role="dialog"
-			aria-modal="true"
-			aria-label={`Full size preview: ${archetype.name}`}
-		>
+		<div className="fixed inset-0 z-50 flex items-center justify-center">
+			{/*
+			 * Backdrop — sibling, not the dialog itself. aria-hidden="true" so
+			 * AT skip it; keyboard users dismiss via Escape or the Close button.
+			 * (File-level biome-ignore-all covers noStaticElementInteractions +
+			 * useKeyWithClickEvents for the backdrop click-to-close affordance.)
+			 */}
 			<div
+				aria-hidden="true"
+				className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+				onClick={onClose}
+			/>
+			<div
+				ref={dialogRef}
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby={titleId}
 				className="relative bg-white dark:bg-stone-900 rounded-xl shadow-2xl"
 				style={{ width: "90vw", height: "90vh" }}
-				onClick={(e) => e.stopPropagation()}
 			>
 				<div className="flex items-center justify-between px-4 py-3 border-b border-stone-200 dark:border-stone-700">
-					<h3 className="font-semibold text-stone-900 dark:text-stone-100">
+					<h3
+						id={titleId}
+						className="font-semibold text-stone-900 dark:text-stone-100"
+					>
 						{archetype.name}
 					</h3>
 					<button
