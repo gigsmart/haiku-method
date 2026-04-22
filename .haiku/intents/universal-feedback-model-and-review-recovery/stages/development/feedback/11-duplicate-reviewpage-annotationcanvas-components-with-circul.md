@@ -1,6 +1,6 @@
 ---
 title: Duplicate ReviewPage + AnnotationCanvas components with circular re-export
-status: fixing
+status: closed
 origin: adversarial-review
 author: architecture
 author_type: agent
@@ -8,7 +8,7 @@ created_at: '2026-04-21T20:21:44Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-11:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
