@@ -16,8 +16,10 @@
  *   - `useAnnounce()` no-ops when the `#feedback-live-polite` region isn't
  *     mounted. Every test that touches the live region wraps the toggle
  *     in `<LiveRegionShell />` per live-regions.tsx contract.
- *   - `.touch-target` CSS is injected as a `<style>` tag in `beforeAll`;
- *     mirrors `a11y/__tests__/touch-target.test.tsx`.
+ *   - `.touch-target` CSS is loaded from the canonical `src/index.css` via
+ *     `injectCanonicalTouchTargetCss` and injected as a `<style>` tag in
+ *     `beforeAll`. See FB-40 for the circular-proof fix: the CSS under test
+ *     is the real shipped CSS, not a hand-mirror.
  */
 
 import {
@@ -39,21 +41,15 @@ import {
 } from "vitest"
 import { LiveRegionShell, POLITE_REGION_ID } from "../../../a11y"
 import { installMatchMediaStub } from "../../../a11y/__tests__/matchMedia.stub"
+import { injectCanonicalTouchTargetCss } from "../../../a11y/__tests__/touch-target-css"
 import { AgentFeedbackToggle } from "../AgentFeedbackToggle"
 
 beforeAll(() => {
-	// jsdom has no layout engine — inject the canonical .touch-target CSS so
-	// getComputedStyle resolves min-height/min-width for the touch-target test.
-	const style = document.createElement("style")
-	style.setAttribute("data-test-id", "agent-feedback-toggle-css")
-	style.textContent = `
-		.touch-target {
-			position: relative;
-			min-height: 44px;
-			min-width: 44px;
-		}
-	`
-	document.head.appendChild(style)
+	// jsdom has no layout engine — inject the canonical .touch-target CSS
+	// loaded from the real packages/haiku-ui/src/index.css so
+	// getComputedStyle resolves min-height/min-width against the shipped
+	// rule. Regression in index.css → these tests fail.
+	injectCanonicalTouchTargetCss("agent-feedback-toggle-css")
 })
 
 afterEach(() => {
