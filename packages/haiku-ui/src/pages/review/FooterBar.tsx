@@ -142,7 +142,7 @@ export function FooterBar({
 				onClick={handleApprove}
 				disabled={submitting !== null}
 				data-decision="approved"
-				className={`${touchTargetClass} ${focusRingClass} ${focusRingVariantClasses.approve} inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400 dark:bg-emerald-500 dark:hover:bg-emerald-600`}
+				className={`${touchTargetClass} ${focusRingClass} ${focusRingVariantClasses.approve} inline-flex items-center gap-2 rounded-md bg-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200`}
 			>
 				{pendingApprove ? "Confirm Approve" : DECISION_LABELS.approved}
 			</button>
