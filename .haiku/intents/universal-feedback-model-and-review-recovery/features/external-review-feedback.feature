@@ -135,13 +135,42 @@ Feature: External PR/MR changes-requested detection routes comments through haik
     And "01-initial-review.md" remains in status "addressed"
     And the gate check finds FB-02 pending, triggering another revisit cycle
 
-  Scenario: External gate with compound type [external, ask] and changes-requested
+  # ---------------------------------------------------------------------------
+  # Compound Gate: [external, ask]
+  # ---------------------------------------------------------------------------
+
+  Scenario: Compound [external, ask] — user chose external, changes-requested rolls to elaborate
     Given the stage gate type is "[external, ask]" (compound)
     And the user chose the "external" path
     And the external PR has review state "CHANGES_REQUESTED"
     When the orchestrator detects changes-requested
-    Then a feedback file is created with origin "external-pr"
-    And the FSM rolls to elaborate (same behavior as simple external gate)
+    Then a feedback file is created with origin "external-pr" and status "pending"
+    And the FSM phase is rolled back to "elaborate"
+    And state.json visits is incremented
+    And the "ask" branch of the gate is NOT presented to the user
+    # Pending feedback supersedes the gate regardless of which compound path was chosen.
+
+  Scenario: Compound [external, ask] — ask gate opens after feedback is closed
+    Given the stage gate type is "[external, ask]" (compound)
+    And feedback file "01-external-pr-review.md" was created from a prior CHANGES_REQUESTED
+    And the agent has addressed that feedback and set its status to "closed"
+    And no other feedback is pending
+    When the orchestrator re-enters the gate phase
+    Then the gate review UI opens with gate_type "external,ask"
+    And the user is offered both "Approve" (ask) and "Submit for External Review" (external) options
+    And choosing "Approve" advances the stage via the ask path
+
+  Scenario: Compound [external, ask] — pending feedback blocks ask approval
+    Given the stage gate type is "[external, ask]" (compound)
+    And a feedback file "02-*.md" exists with status "pending" (from any origin)
+    And the external PR has review state "APPROVED"
+    When the orchestrator enters the gate phase
+    Then the pending-feedback check fires BEFORE gate-type branching
+    And the FSM phase is rolled back to "elaborate"
+    And state.json visits is incremented
+    And the "ask" option is NOT presented to the user as an override
+    # Compound gates do NOT let the local human bypass pending feedback.
+    # The user must address the feedback item before the ask gate can open.
 
   Scenario: Session restart between external detection and feedback file write
     Given the orchestrator detected "CHANGES_REQUESTED" but crashed before writing the feedback file

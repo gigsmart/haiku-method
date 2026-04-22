@@ -2,7 +2,7 @@
 title: >-
   FeedbackItem docstring claims "Delete" is banned but the code renders it and
   the audit rule doesn't catch it
-status: fixing
+status: closed
 origin: adversarial-review
 author: consistency (from design)
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:24:20Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-51:bolt-2'
 bolt: 2
 upstream_stage: null
 ---

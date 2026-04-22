@@ -958,3 +958,48 @@ Add directory existence check before `readdirSync` in the feedback writer, and f
 ### 5.5 Backward Compatibility
 
 Existing units have no `closes` field. All code that reads unit frontmatter treats a missing `closes` as `[]`. The field is only validated during additive elaborate mode (`visits > 0`).
+
+## 6. Compound Gate Resolution
+
+The `review:` field on `STAGE.md` may be either a single gate-type string or an array of types. Today the only supported compound composition is `[external, ask]`; other compositions are reserved. This section is the authoritative contract for how compound gates resolve at runtime.
+
+### 6.1 Representation
+
+- **Accepted forms:** `review: auto` · `review: ask` · `review: external` · `review: await` · `review: [external, ask]`.
+- **Internal serialization:** arrays are collapsed to a comma-joined string (`"external,ask"`) via `normalizeReviewType` in `packages/haiku/src/orchestrator.ts`. The orchestrator never splits the string back into an array for branching decisions — branching inspects the string directly (e.g. `type.includes("external")`, `type.includes("ask")`).
+
+### 6.2 Pending-feedback invariant (ordering rule)
+
+The gate-phase handler runs `countPendingFeedback(...)` **before** any gate-type branching. If the count is `> 0`, the handler returns `action: feedback_revisit` and rolls the FSM phase back to `elaborate`, incrementing `state.visits`, regardless of gate type.
+
+This ordering is load-bearing: it is the reason a compound `[external, ask]` gate cannot be used to locally override a pending-feedback rollback. The human `ask` path is NOT an escape hatch for the pending-feedback check. A reviewer who wants to approve a stage with open feedback must first transition that feedback to a non-pending status (`addressed`, `closed`, or `rejected`).
+
+### 6.3 Compound pass-through
+
+When zero feedback is pending and the gate is compound, the handler returns `action: gate_review` with `gate_type: "external,ask"` unchanged. The review UI is responsible for presenting both "Approve" (ask) and "Submit for External Review" (external) options side by side. The user's choice of path is handled entirely in the UI and the downstream action; the orchestrator itself does not pre-select a branch.
+
+### 6.4 Non-git fallback
+
+In environments without git (filesystem-only persistence, detected via `isGitRepo()`), the effective gate strips `external` from compound lists because external review requires a git-hosted PR/MR to sign off. Concretely:
+
+- `[external, ask]` → `ask`
+- `[external]` (compound with only external) → `ask` (safe default — local approval replaces external)
+- `external` (single) → `ask`
+
+The pending-feedback invariant (§6.2) still applies after the fallback: even if the effective gate is `ask`, pending feedback rolls to elaborate.
+
+### 6.5 External changes-requested uniformity
+
+The `external_changes_requested` action is emitted identically for simple `external` and compound `[external, ask]` gates. The feedback file is written with `origin: external-pr`, `status: pending`, and the FSM rolls to elaborate. The compound case does not get a different action type, and the `ask` portion of the compound does NOT fire next — the feedback rollback supersedes it.
+
+### 6.6 Summary of invariants
+
+| Invariant | Description |
+|---|---|
+| **Representation** | `review:` may be string or array; arrays serialize to comma-joined strings internally. |
+| **Ordering** | `countPendingFeedback` runs before gate-type branching; pending feedback always wins. |
+| **Pass-through** | Compound gates with zero pending feedback return `gate_type: "external,ask"` unchanged to the review UI. |
+| **Non-git fallback** | Compound lists containing `external` strip it; `external`-only compound collapses to `ask`. |
+| **External uniformity** | `external_changes_requested` behavior is identical for simple and compound gates. |
+| **No local override** | The `ask` portion of a compound gate does NOT let the local human bypass pending feedback. |
+
