@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 export interface AnnotationPin {
 	x: number // percentage
@@ -45,10 +45,45 @@ export function AnnotationCanvas({ imageUrl, onPinsChange }: Props) {
 		pctY: number
 	} | null>(null)
 	const [pendingPinText, setPendingPinText] = useState("")
+	const [focusedPinId, setFocusedPinId] = useState<string | null>(null)
 	const pendingPinTextareaRef = useRef<HTMLTextAreaElement>(null)
 	const pendingPinRef = useRef<HTMLDivElement>(null)
 	const drawHistoryRef = useRef<ImageData[]>([])
 	const isDrawingRef = useRef(false)
+	const pinButtonsRef = useRef<Map<string, HTMLButtonElement>>(new Map())
+
+	// Sort pin ids by (y, x) ascending. Memoized so arrow-key traversal walks a
+	// stable index rebuilt only when the pin collection changes.
+	const sortedPinIds = useMemo(() => {
+		return [...pins]
+			.sort((a, b) => (a.y !== b.y ? a.y - b.y : a.x - b.x))
+			.map((p) => p.id)
+	}, [pins])
+
+	const focusPin = useCallback((id: string) => {
+		const btn = pinButtonsRef.current.get(id)
+		if (btn) {
+			btn.focus()
+			setFocusedPinId(id)
+		}
+	}, [])
+
+	const moveFocusBy = useCallback(
+		(delta: number) => {
+			if (sortedPinIds.length === 0) return
+			const currentId =
+				focusedPinId && sortedPinIds.includes(focusedPinId)
+					? focusedPinId
+					: sortedPinIds[0]
+			const currentIdx = sortedPinIds.indexOf(currentId)
+			const nextIdx = Math.max(
+				0,
+				Math.min(sortedPinIds.length - 1, currentIdx + delta),
+			)
+			focusPin(sortedPinIds[nextIdx])
+		},
+		[sortedPinIds, focusedPinId, focusPin],
+	)
 
 	// Resize canvas to match image
 	const sizeCanvas = useCallback(() => {
@@ -298,9 +333,26 @@ export function AnnotationCanvas({ imageUrl, onPinsChange }: Props) {
 			</div>
 
 			{/* Canvas area — full width, no sidebar */}
+			{/* biome-ignore lint/a11y/useKeyWithMouseEvents: delegated keydown is for pin traversal, not a substitute for mouse handlers */}
 			<div
 				ref={wrapperRef}
+				role="group"
+				aria-label="Annotation canvas"
+				tabIndex={-1}
 				className="relative inline-block border border-stone-200 dark:border-stone-700 rounded-lg overflow-hidden bg-stone-100 dark:bg-stone-800 cursor-crosshair"
+				onKeyDown={(e) => {
+					// Delegated arrow-key traversal over pin set sorted by (y, x).
+					// Clamps at endpoints; does not wrap.
+					if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+						if (sortedPinIds.length === 0) return
+						e.preventDefault()
+						moveFocusBy(1)
+					} else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+						if (sortedPinIds.length === 0) return
+						e.preventDefault()
+						moveFocusBy(-1)
+					}
+				}}
 			>
 				<img
 					ref={imgRef}
@@ -328,6 +380,10 @@ export function AnnotationCanvas({ imageUrl, onPinsChange }: Props) {
 						<button
 							key={pin.id}
 							type="button"
+							ref={(el) => {
+								if (el) pinButtonsRef.current.set(pin.id, el)
+								else pinButtonsRef.current.delete(pin.id)
+							}}
 							className={`annotation-pin ${activePin === i ? "selected" : ""}`}
 							data-pin-id={pin.id}
 							style={{
@@ -336,6 +392,7 @@ export function AnnotationCanvas({ imageUrl, onPinsChange }: Props) {
 								pointerEvents: "auto",
 							}}
 							aria-label={`Annotation ${i + 1}${pin.text ? `: ${pin.text}` : ""}`}
+							onFocus={() => setFocusedPinId(pin.id)}
 							onClick={(e) => {
 								e.stopPropagation()
 								setActivePin(i)
