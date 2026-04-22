@@ -181,3 +181,20 @@ a regression for all three findings, not an FB-09 concern.
   green under `npx vitest run` for this worktree.
 - Unit-06 stays in `status: completed`.
 - Feedback-assessor marks FB-09 resolved on the next bolt.
+
+## Builder verification (bolt 2)
+
+Ran the four verification commands from the planner's handoff section against
+the current worktree tree:
+
+```
+(a) test ! -f packages/haiku-ui/scripts/audit-lighthouse.mjs  -> PASS
+(a2) test ! -f packages/haiku-ui/lighthouserc.json            -> PASS
+(b) ! grep -qE 'lighthouse|@lhci/cli' packages/haiku-ui/package.json -> PASS
+(c) test -f packages/haiku-ui/tests/a11y-pages.spec.tsx       -> PASS
+(c2) grep -qE 'axe-core|axe\.run' packages/haiku-ui/tests/a11y-pages.spec.tsx -> PASS
+```
+
+No new code written — the superseding commit (`fea8b9c5`, Lighthouse → axe-core
+replacement) still holds. Handing off to the feedback-assessor (bolt 3) for
+closure confirmation.
