@@ -2,7 +2,7 @@
 title: >-
   Unit-numbering collision: unit-NN.md (current visit) vs unit-NN-*.md (older
   visit) refer to different work
-status: fixing
+status: closed
 origin: adversarial-review
 author: completeness (from product)
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:23:58Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-44:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
