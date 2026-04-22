@@ -147,3 +147,22 @@ regressing, not pending.
   green under `npx vitest run` for this worktree.
 - Unit-06 stays in `status: completed`.
 - Feedback-assessor marks FB-10 resolved on the next bolt.
+
+## Builder verification (bolt 2)
+
+Ran the four verification commands from the planner's handoff section against
+the current worktree tree on branch
+`haiku/universal-feedback-model-and-review-recovery/development`:
+
+```
+(a) test ! -f packages/haiku-ui/scripts/audit-lighthouse.mjs  -> PASS
+(a2) test ! -f packages/haiku-ui/lighthouserc.json            -> PASS
+(b) ! grep -qE 'lighthouse|@lhci/cli' packages/haiku-ui/package.json -> PASS
+(c) test -f packages/haiku-ui/tests/a11y-pages.spec.tsx       -> PASS
+(c2) grep -qE 'axe-core|axe\.run' packages/haiku-ui/tests/a11y-pages.spec.tsx -> PASS
+```
+
+No new code written — the superseding commit (`fea8b9c5`, Lighthouse → axe-core
+replacement) still holds. The file FB-10 flags (`audit-lighthouse.mjs`) remains
+absent; the axe-core replacement remains in place. Handing off to the
+feedback-assessor (bolt 3) for closure confirmation.
