@@ -2,7 +2,7 @@
 title: >-
   unit-01: websocket + annotation primitive schemas have unbounded strings — 64
   KB frame cap is not schema-enforced
-status: fixing
+status: closed
 origin: adversarial-review
 author: correctness
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:23:11Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-28:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
