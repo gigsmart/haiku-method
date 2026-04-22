@@ -25,7 +25,7 @@ The feedback title claims 122 scenarios but seven feature files currently hold 1
 
 Three facts compose the gap:
 
-1. **Regression guard ≠ coverage guard.** `capture-test-baseline.mjs` records names for regression detection; `unit-02-crud-companion-tools.md §Completion Criteria` locks in *passes* but makes no claim that every scenario has a test.
+1. **Regression guard ≠ coverage guard.** `capture-test-baseline.mjs` records names for regression detection; `legacy-crud-companion-tools.md §Completion Criteria` (renamed by FB-44) locks in *passes* but makes no claim that every scenario has a test.
 2. **Feature files are read-only specs.** No Cucumber runner exists in the project — the project uses Vitest everywhere (planner verified: `rg "cucumber|@cucumber" package.json packages/*/package.json` returns zero matches). The `features/*.feature` files are acceptance specs referenced by `knowledge/COVERAGE-MAPPING.md` but never executed.
 3. **`COVERAGE-MAPPING.md` is prose, not a gate.** It's a hand-curated human-readable matrix (`knowledge/COVERAGE-MAPPING.md §2`). It does not fail a build on drift — if a new scenario is added to a `.feature` file and no test mentions its title, nothing breaks.
 

@@ -332,8 +332,9 @@ the three new scenarios are present and the replaced one is gone.
 - Writing the actual regression tests in `gate-feedback.test.mjs`. Test
   implementation is tracked by unit-16; the spec-level acceptance criteria
   land in this bolt, the tests land when unit-16 executes.
-- Rewriting or moving `unit-04-gate-feedback-check.md` — it is a
-  historical artifact. Preserve in place.
+- Rewriting or moving `legacy-gate-feedback-check.md` — it is a
+  historical artifact. Preserve in place. (Renamed from
+  `unit-04-gate-feedback-check.md` by FB-44.)
 - Extending `external-review.test.mjs` beyond what the existing test file
   already covers for simple `external` gates. Compound-gate tests belong
   in `gate-feedback.test.mjs` because the feature under test is the gate
