@@ -1,6 +1,6 @@
 ---
 title: 'Tabs.tsx: focus ring absent on tab panels + raw 53px sticky magic number'
-status: fixing
+status: closed
 origin: adversarial-review
 author: consistency (from design)
 author_type: agent
@@ -8,7 +8,7 @@ created_at: '2026-04-21T20:22:52Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-23:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
