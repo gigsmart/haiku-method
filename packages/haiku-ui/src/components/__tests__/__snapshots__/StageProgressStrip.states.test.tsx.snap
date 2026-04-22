@@ -12,12 +12,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="inception (completed)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           inception
         </span>
@@ -26,15 +26,15 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="design (completed)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           design
         </span>
@@ -43,10 +43,10 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
           title="product (current)"
           type="button"
         >
@@ -55,7 +55,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
           />
         </button>
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
         >
           product
         </span>
@@ -64,16 +64,16 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="development (future)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           development
         </span>
@@ -82,16 +82,16 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="review (future)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           review
         </span>
@@ -108,7 +108,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
           title="inception (completed)"
           type="button"
         >
@@ -117,7 +117,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
           />
         </button>
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
         >
           inception
         </span>
@@ -126,15 +126,15 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="design (completed)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           design
         </span>
@@ -143,15 +143,15 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border-2 border-stone-400 dark:border-stone-500 bg-transparent cursor-pointer hover:border-teal-400 dark:hover:border-teal-400"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border-2 border-stone-400 dark:border-stone-500 bg-transparent cursor-pointer hover:border-teal-400 dark:hover:border-teal-400"
           title="product (current)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           product
         </span>
@@ -160,16 +160,16 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="development (future)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           development
         </span>
@@ -178,16 +178,16 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="review (future)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           review
         </span>
@@ -204,12 +204,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="inception (completed)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           inception
         </span>
@@ -218,15 +218,15 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="design (completed)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           design
         </span>
@@ -235,15 +235,15 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="product (completed)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           product
         </span>
@@ -252,15 +252,15 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="development (completed)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           development
         </span>
@@ -269,10 +269,10 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
           title="review (completed)"
           type="button"
         >
@@ -281,7 +281,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
           />
         </button>
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
         >
           review
         </span>
@@ -298,12 +298,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="inception (completed)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           inception
         </span>
@@ -312,15 +312,15 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="design (completed)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           design
         </span>
@@ -329,10 +329,10 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
           title="product (current)"
           type="button"
         >
@@ -341,7 +341,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
           />
         </button>
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
         >
           product
         </span>
@@ -350,16 +350,16 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="development (future)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           development
         </span>
@@ -368,16 +368,16 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="review (future)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           review
         </span>
@@ -394,12 +394,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="inception (completed)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           inception
         </span>
@@ -408,15 +408,15 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="design (completed)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           design
         </span>
@@ -425,10 +425,10 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
           title="product (current)"
           type="button"
         >
@@ -437,7 +437,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
           />
         </button>
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
         >
           product
         </span>
@@ -446,15 +446,15 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border-2 border-stone-400 dark:border-stone-500 bg-transparent cursor-pointer hover:border-teal-400 dark:hover:border-teal-400"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border-2 border-stone-400 dark:border-stone-500 bg-transparent cursor-pointer hover:border-teal-400 dark:hover:border-teal-400"
           title="development (future)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           development
         </span>
@@ -463,16 +463,16 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="review (future)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           review
         </span>
@@ -489,7 +489,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
           title="inception (completed)"
           type="button"
         >
@@ -498,7 +498,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
           />
         </button>
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
         >
           inception
         </span>
@@ -507,15 +507,15 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-teal-400 dark:bg-teal-500"
+          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="design (completed)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           design
         </span>
@@ -524,16 +524,16 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="product (current)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           product
         </span>
@@ -542,16 +542,16 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="development (future)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           development
         </span>
@@ -560,18 +560,62 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 h-[2px] bg-stone-300 dark:bg-stone-600"
+          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="review (future)"
           type="button"
         />
         <span
-          class="hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
           review
+        </span>
+      </div>
+    </div>
+  </div>
+  <div
+    data-cell="disabled"
+  >
+    <div
+      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    >
+      <div
+        class="flex items-center"
+      >
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          title="inception (completed)"
+          type="button"
+        >
+          <span
+            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
+          />
+        </button>
+        <span
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+        >
+          inception
+        </span>
+      </div>
+      <div
+        class="flex items-center"
+      >
+        <div
+          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+        />
+        <button
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          disabled=""
+          title="design (future)"
+          type="button"
+        />
+        <span
+          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+        >
+          design
         </span>
       </div>
     </div>

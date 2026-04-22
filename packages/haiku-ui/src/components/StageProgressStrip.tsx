@@ -1,3 +1,5 @@
+import { focusRingCompactClass } from "../a11y/focus"
+
 interface StageInfo {
 	name: string
 	status: string
@@ -28,13 +30,14 @@ export function StageProgressStrip({
 
 				return (
 					<div key={stage.name} className="flex items-center">
-						{/* Connector line */}
+						{/* Connector line — border-t-2 scales with accessibility zoom
+						    rather than a raw 2px literal. */}
 						{i > 0 && (
 							<div
-								className={`w-6 h-[2px] ${
+								className={`w-6 border-t-2 ${
 									isCompleted || isCurrent
-										? "bg-teal-400 dark:bg-teal-500"
-										: "bg-stone-300 dark:bg-stone-600"
+										? "border-teal-400 dark:border-teal-500"
+										: "border-stone-300 dark:border-stone-600"
 								}`}
 							/>
 						)}
@@ -45,7 +48,7 @@ export function StageProgressStrip({
 							disabled={!(isClickable || isCurrent)}
 							onClick={() => isClickable && onStageClick?.(stage.name)}
 							title={`${stage.name} (${stage.status})`}
-							className={`relative flex items-center justify-center shrink-0 transition-all ${
+							className={`relative flex items-center justify-center shrink-0 transition-all ${focusRingCompactClass} ${
 								isCurrent
 									? "w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
 									: isCompleted
@@ -60,9 +63,11 @@ export function StageProgressStrip({
 							)}
 						</button>
 
-						{/* Stage label (below on larger screens) */}
+						{/* Stage label (below on larger screens).
+						    text-xs (12px) + font-semibold is the named token tier
+						    per DESIGN-TOKENS §1.4 — no bracket magic. */}
 						<span
-							className={`hidden sm:block ml-1 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap ${
+							className={`hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${
 								isCurrent
 									? "text-teal-600 dark:text-teal-400 font-bold"
 									: isCompleted
