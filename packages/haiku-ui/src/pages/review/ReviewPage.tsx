@@ -53,18 +53,35 @@ function resolveActiveStage(session: ReviewPageSessionData): string | null {
 	return active ?? names[0] ?? null
 }
 
-function resolveGateType(
-	gate: string | undefined,
-): "ask" | "external" | "auto" {
-	if (gate?.includes("external")) return "external"
-	if (gate?.includes("ask")) return "ask"
-	return "auto"
+export type GateMode = "ask" | "external" | "auto" | "await"
+
+/**
+ * Parse the raw `gate_type` string into the ordered list of review
+ * mechanisms the gate accepts. H·AI·K·U encodes compound gates as
+ * comma-separated tokens (see orchestrator.ts — "external,ask" means
+ * either a merged PR OR a local approval satisfies the gate). We
+ * preserve order so the banner reads in the same order the stage
+ * author wrote them in STAGE.md.
+ */
+function resolveGateModes(gate: string | undefined): GateMode[] {
+	if (!gate) return ["auto"]
+	const tokens = gate
+		.split(",")
+		.map((t) => t.trim().toLowerCase())
+		.filter(Boolean)
+	const modes: GateMode[] = []
+	for (const t of tokens) {
+		if (t === "ask" || t === "external" || t === "auto" || t === "await") {
+			if (!modes.includes(t)) modes.push(t)
+		}
+	}
+	return modes.length > 0 ? modes : ["auto"]
 }
 
 function gateBadgeCopy(
-	gate: "ask" | "external" | "auto",
+	mode: GateMode,
 ): { label: string; classes: string } {
-	switch (gate) {
+	switch (mode) {
 		case "ask":
 			return {
 				label: "Local Review",
@@ -76,6 +93,12 @@ function gateBadgeCopy(
 				label: "External Review",
 				classes:
 					"bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+			}
+		case "await":
+			return {
+				label: "Awaits Event",
+				classes:
+					"bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
 			}
 		default:
 			return {
@@ -180,8 +203,8 @@ export function ReviewPage({
 }: ReviewPageProps): React.ReactElement {
 	const intentSlug = session.intent_slug ?? session.intent?.slug ?? null
 	const activeStage = resolveActiveStage(session)
-	const gateType = resolveGateType(session.gate_type)
-	const gateBadge = gateBadgeCopy(gateType)
+	const gateModes = resolveGateModes(session.gate_type)
+	const gateBadges = gateModes.map(gateBadgeCopy)
 	const isMobile = useIsMobile()
 
 	// Stepper navigation — which stage's content the main pane is showing.
@@ -295,7 +318,7 @@ export function ReviewPage({
 						activeStage={activeStage}
 						sessionId={sessionId}
 						intentTitle={session.intent?.title}
-						gateBadge={gateBadge}
+						gateBadges={gateBadges}
 						gateType={session.gate_type}
 						getAnnotations={getAnnotations}
 						onFeedbackItemClick={(id) => setHighlightFeedbackId(id)}
@@ -324,7 +347,7 @@ export function ReviewPage({
 							stageStates[selectedStage ?? ""]?.phase ?? null
 						}
 						intentTitle={session.intent?.title}
-						gateBadge={gateBadge}
+						gateBadges={gateBadges}
 					/>
 
 					<div className="px-6 lg:px-10 pb-6">
@@ -367,13 +390,13 @@ function StageBanner({
 	stageStatus,
 	stagePhase,
 	intentTitle,
-	gateBadge,
+	gateBadges,
 }: {
 	stageName: string
 	stageStatus: string
 	stagePhase: string | null
 	intentTitle?: string
-	gateBadge: { label: string; classes: string }
+	gateBadges: Array<{ label: string; classes: string }>
 }): React.ReactElement {
 	const statusPill =
 		stageStatus === "current" || stageStatus === "active"
@@ -425,11 +448,14 @@ function StageBanner({
 								{phasePill.label}
 							</span>
 						)}
-						<span
-							className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${gateBadge.classes}`}
-						>
-							{gateBadge.label}
-						</span>
+						{gateBadges.map((b) => (
+							<span
+								key={b.label}
+								className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${b.classes}`}
+							>
+								{b.label}
+							</span>
+						))}
 					</div>
 				</div>
 				{intentTitle && (

@@ -44,7 +44,7 @@ export interface FeedbackSidebarProps {
 	activeStage?: string | null
 	sessionId: string
 	intentTitle?: string
-	gateBadge?: { label: string; classes: string }
+	gateBadges?: Array<{ label: string; classes: string }>
 	gateType?: string
 	getAnnotations?: () => ReviewAnnotations | undefined
 	onFeedbackItemClick?: (feedbackId: string) => void
@@ -73,7 +73,7 @@ export function FeedbackSidebar({
 	activeStage,
 	sessionId,
 	intentTitle,
-	gateBadge,
+	gateBadges,
 	gateType,
 	getAnnotations,
 	onFeedbackItemClick,
@@ -162,13 +162,14 @@ export function FeedbackSidebar({
 							{isCurrent ? "current" : "viewing"}
 						</span>
 					)}
-					{gateBadge && (
+					{gateBadges?.map((b) => (
 						<span
-							className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${gateBadge.classes}`}
+							key={b.label}
+							className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${b.classes}`}
 						>
-							{gateBadge.label}
+							{b.label}
 						</span>
-					)}
+					))}
 					{intentTitle && (
 						<span className="text-xs text-stone-500 truncate">
 							{intentTitle}
