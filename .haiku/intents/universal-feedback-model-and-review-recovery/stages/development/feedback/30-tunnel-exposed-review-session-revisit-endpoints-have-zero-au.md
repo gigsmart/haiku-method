@@ -1,6 +1,6 @@
 ---
 title: Tunnel-exposed review/session/revisit endpoints have zero authentication
-status: fixing
+status: closed
 origin: adversarial-review
 author: security
 author_type: agent
@@ -8,7 +8,7 @@ created_at: '2026-04-21T20:23:16Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-30:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
