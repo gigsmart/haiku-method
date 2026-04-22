@@ -58,6 +58,20 @@ Any combination in this table MUST NOT appear in `stages/design/artifacts/*.html
 | `bg-green-600/50 text-white/80` (disabled button composite) | — | α-composited effective contrast ≈ 2.6:1 | Use opaque token pair `bg-green-300 text-green-800 dark:bg-green-900/40 dark:text-green-200` |
 | `text-[9px]`, `text-[10px]` on user-facing information | — | fails 1.4.4 Resize Text at 200% | Use `text-xs` (12px) minimum. `text-[11px]` allowed only with `font-semibold`/`font-bold` |
 
+### 1.1b Banned Primary-Action Button Pairs (FB-55, WCAG 2.1 AA)
+
+The `Accent (primary)` row in §1 ships `bg-teal-600` as the token. On text-bearing surfaces (buttons, chips, FAB, active toggle tracks, popover primary actions) paired with `text-white`, the measured contrast is 3.74:1 — below the 4.5:1 floor for normal text. The canonical lift is `bg-teal-700` + `text-white` (5.47:1). Dark-mode surfaces follow the same lift: `dark:bg-teal-700` (not `teal-500` / `teal-600`) + `text-white`.
+
+| Foreground token | Forbidden background tokens | Measured ratio | Required remediation |
+|---|---|---|---|
+| `text-white` | `bg-teal-600` | 3.74:1 | `bg-teal-700` (5.47:1) — hover lifts to `bg-teal-800` (7.58:1) |
+| `text-white` | `dark:bg-teal-500` | 2.49:1 | `dark:bg-teal-700` (5.47:1) — hover `dark:bg-teal-800` |
+| `text-white` | `bg-teal-500` | 2.49:1 | Not used for text surfaces. Reserved for dark-mode icon tint on dark pages only (§1 note line 32 row remains unchanged for `text-teal-*` tokens). |
+
+Enforcement: `scripts/audit-contrast.mjs` PAIRS roster now includes the four `(white, teal-{700,800})` pairs (light + dark × enabled + hover). `audit-config.json` profile `tokens` carries two banned-pattern rules (`banned-primary-teal-600-white`, `banned-primary-teal-500-white-dark`) that forbid the two specific co-occurrences on the same className string under `packages/haiku-ui/src/`.
+
+The `Accent (primary)` row in §1 stays unchanged at the *token* level (`text-teal-600` / `bg-teal-600` — these are generally safe when one is foreground and the other is a light `teal-100` / `teal-900/30` bg — see §1.2 line 68 `in_progress` badge which uses `bg-teal-100 text-teal-700`). The narrow failure is specifically the **white-foreground on teal-6/500 background** combination. §1.1b encodes that, §1 remains the general row.
+
 ### 1.2 Status Badge Colors (Shared StatusBadge)
 
 From `packages/shared/src/components/StatusBadge.tsx` — canonical light/dark token mapping. **The default-case semantic name is `idle`, not `pending`** (see §1.2a). The shared component's literal `default:` branch in the switch still accepts the string `"pending"` today for back-compat with existing callers, but any new caller MUST pass `"idle"` and the component's default case MUST be renamed to `idle` at implementation time. This rename is intentional — it removes the cross-component color-semantics collision with `FeedbackStatusBadge pending` (amber / attention) documented in §1.2a.
