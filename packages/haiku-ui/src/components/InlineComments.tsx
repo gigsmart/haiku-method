@@ -240,8 +240,8 @@ export function InlineComments({
           prose-td:border prose-td:border-stone-300 prose-td:dark:border-stone-600 prose-td:px-3 prose-td:py-1.5
           selection:bg-amber-200 dark:selection:bg-amber-700/50"
 				onMouseUp={handleMouseUp}
-				// biome-ignore lint/security/noDangerouslySetInnerHtml: htmlContent is sanitized markdown-it output from trusted intent docs
-				// audit-allow: htmlContent is sanitized markdown-it output from trusted intent docs
+				// biome-ignore lint/security/noDangerouslySetInnerHtml: htmlContent is DOMPurify-sanitized remark output (see markdownToSimpleHtml in section-helpers.ts)
+				// audit-allow: htmlContent is DOMPurify-sanitized remark output (see markdownToSimpleHtml in section-helpers.ts)
 				dangerouslySetInnerHTML={{ __html: htmlContent }}
 			/>
 

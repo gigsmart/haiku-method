@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify"
 import { remark } from "remark"
 import remarkGfm from "remark-gfm"
 import remarkHtml from "remark-html"
@@ -39,8 +40,27 @@ export function getPreamble(sections: Section[]): string {
 	return preamble?.content ?? ""
 }
 
-/** Simple client-side markdown to HTML using remark.
- *  InlineComments needs raw HTML, so we use remark instead of react-markdown. */
+/**
+ * Simple client-side markdown to HTML using remark, sanitized with DOMPurify.
+ *
+ * InlineComments needs raw HTML (it wires up text-selection handlers against
+ * real DOM nodes), so we can't use react-markdown. But `remark-html` preserves
+ * raw embedded HTML in markdown (`sanitize: false` is the default), which
+ * means anything in the source markdown — `<script>`, `<img onerror>`,
+ * `<iframe>`, event-handler attributes — would flow straight into
+ * `dangerouslySetInnerHTML`. The call sites here include content written by
+ * agents (intent.md, knowledge files, output artifacts) and reviewers, none
+ * of which is a trust boundary we can rely on.
+ *
+ * DOMPurify strips script tags, inline event handlers, `javascript:` URIs,
+ * and other active content, leaving safe markup (headings, paragraphs,
+ * lists, links, code blocks, tables) intact.
+ */
 export function markdownToSimpleHtml(md: string): string {
-	return remark().use(remarkGfm).use(remarkHtml).processSync(md).toString()
+	const rawHtml = remark()
+		.use(remarkGfm)
+		.use(remarkHtml)
+		.processSync(md)
+		.toString()
+	return DOMPurify.sanitize(rawHtml)
 }
