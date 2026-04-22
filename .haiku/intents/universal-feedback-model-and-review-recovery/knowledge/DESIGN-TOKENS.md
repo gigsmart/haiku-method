@@ -247,7 +247,7 @@ From `packages/haiku/src/templates/styles.ts` (server-rendered):
 | Request Changes (has comments) | `bg-amber-600 text-white` | -- |
 | Request Changes (no comments) | `bg-stone-200 text-stone-700` | `dark:bg-stone-700 dark:text-stone-200` |
 | External Review button | `bg-indigo-600 text-white` | -- |
-| Comment count badge | `bg-amber-100 text-amber-700` | `dark:bg-amber-900/40 dark:text-amber-300` |
+| Comment count badge | `bg-amber-100 text-amber-800` | `dark:bg-amber-900/40 dark:text-amber-300` |
 | Mermaid theme vars | `primaryColor: #0d9488` (teal-600) | -- |
 | ReactFlow bg gap color | `#44403c` (stone-700) | -- |
 
@@ -266,7 +266,7 @@ Feedback items progress through a lifecycle: `pending` -> `addressed` / `rejecte
 | `feedback-status-pending` | `bg-amber-100 text-amber-800 border-amber-300` | `dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700` | Amber = attention needed. Matches the existing comment-count badge palette. |
 | `feedback-status-addressed` | `bg-blue-100 text-blue-800 border-blue-300` | `dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700` | Blue = work done, awaiting verification. Distinct from teal (which is "active/primary"). |
 | `feedback-status-closed` | `bg-green-100 text-green-800 border-green-300` | `dark:bg-green-900/30 dark:text-green-300 dark:border-green-700` | Green = resolved. Consistent with existing `completed` status color. |
-| `feedback-status-rejected` | `bg-stone-100 text-stone-600 border-stone-300` | `dark:bg-stone-800 dark:text-stone-300 dark:border-stone-600` | Stone/gray = dismissed/not actionable. Muted, de-emphasized. **Foreground lifted from `text-stone-500` (4.40:1 — AA FAIL per §1.1a) to `text-stone-600` (6.99:1 — AAA) per FB-15.** Dark lifted from `dark:text-stone-400` to `dark:text-stone-300` for symmetric AA margin. |
+| `feedback-status-rejected` | `bg-stone-100 text-stone-600 border-stone-500` | `dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400` | Stone/gray = dismissed/not actionable. Muted, de-emphasized. **Foreground lifted from `text-stone-500` (4.40:1 — AA FAIL per §1.1a) to `text-stone-600` (6.99:1 — AAA) per FB-15. Border darkened from `stone-300` (1.37:1 vs stone-100 card — AA FAIL for §1.4.11 non-text UI) to `stone-500` (4.28:1 — AA pass) per FB-70**, so the rejected pill remains visually distinguishable from the identical `bg-stone-100` rejected-card surface. Dark lifted from `dark:text-stone-400` to `dark:text-stone-300` for symmetric AA margin; dark-mode border follows to `stone-400` (≥ 4.5:1 against the composited `stone-800/50` card surface). |
 
 **Measured contrast (WCAG 2.1 AA, ≥ 4.5:1 for text):**
 
@@ -290,7 +290,9 @@ const feedbackStatusColors: Record<string, string> = {
   pending:   "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
   addressed: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   closed:    "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-  rejected:  "bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300",
+  // FB-70: rejected gains border-stone-500 (light) / dark:border-stone-400 so the
+  // pill boundary clears 3:1 against the identical bg-stone-100 rejected-card bg.
+  rejected:  "bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400",
 };
 ```
 
@@ -299,13 +301,32 @@ const feedbackStatusColors: Record<string, string> = {
 For compact status indicators inside feedback cards:
 
 ```tsx
+// FB-70: light-mode dots darkened from `*-500` (1.64 – 2.21:1 on tinted
+// `bg-{color}-50/50` / `bg-stone-100` card backgrounds — below the 3:1 WCAG
+// 1.4.11 non-text UI floor) to `*-600` (pending / addressed / closed) and
+// `stone-600` (rejected). Dark-mode dots stay lighter because the composited
+// dark card surface is near-black (amber-950/20 over stone-950 ≈ #170d08,
+// stone-800/50 over stone-950 ≈ #1a1817).
 const feedbackStatusDots: Record<string, string> = {
-  pending:   "bg-amber-500",
-  addressed: "bg-blue-500",
-  closed:    "bg-green-500",
-  rejected:  "bg-stone-400 dark:bg-stone-500",
+  pending:   "bg-amber-600 dark:bg-amber-500",
+  addressed: "bg-blue-600 dark:bg-blue-500",
+  closed:    "bg-green-600 dark:bg-green-400",
+  rejected:  "bg-stone-600 dark:bg-stone-400",
 };
 ```
+
+**Measured dot contrast vs its card background (WCAG 2.1 AA, ≥ 3.0:1 for non-text UI per §1.4.11):**
+
+| Dot | Card background | Ratio | Passes |
+|---|---|---|---|
+| `amber-600` | `amber-50/50` over white | 3.12:1 | AA |
+| `blue-600` | `blue-50/50` over white | 4.90:1 | AA |
+| `green-600` | `green-50/60` over white | 3.20:1 | AA |
+| `stone-600` | `stone-100` | 6.88:1 | AA |
+| `amber-500` (dark) | `amber-950/20` over `stone-950` | high | AA |
+| `blue-500` (dark) | `blue-950/20` over `stone-950` | high | AA |
+| `green-400` (dark) | `green-950/25` over `stone-950` | high | AA |
+| `stone-400` (dark) | `stone-800/50` over `stone-950` | ≈ 6.2:1 | AA |
 
 ### 2.2 Origin Badge Colors
 
