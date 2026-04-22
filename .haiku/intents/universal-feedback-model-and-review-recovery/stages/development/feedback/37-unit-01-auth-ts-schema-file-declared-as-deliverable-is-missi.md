@@ -2,7 +2,7 @@
 title: >-
   unit-01: auth.ts schema file declared as deliverable is missing from
   packages/haiku-api/src/schemas/
-status: fixing
+status: closed
 origin: adversarial-review
 author: correctness
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:23:33Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-37:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
