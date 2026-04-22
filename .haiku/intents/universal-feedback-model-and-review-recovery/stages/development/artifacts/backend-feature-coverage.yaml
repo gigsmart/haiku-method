@@ -147,10 +147,13 @@ feedback-crud.feature:
   - scenario: "MCP tool is agent-only — agents cannot delete human-authored feedback"
     covered_by:
       - feedback.test.mjs::MCP delete rejects human-authored feedback (agent context)
-      - http-feedback.test.mjs::human can delete closed human-authored feedback
+      - feedback.test.mjs::human can delete non-pending human-authored feedback
     notes: >-
-      The MCP path blocks agents; the HTTP path allows humans. Both halves
-      of the contract are exercised.
+      The MCP path blocks agents; the same deletion helper, when called
+      in a human context, allows the removal. Both halves of the contract
+      are exercised inside the same feedback.test.mjs suite. HTTP-layer
+      equivalence is enforced elsewhere (http-feedback.test.mjs) but is
+      orthogonal to the feedback-model backend gate this unit owns.
   - scenario: "Git commit failure during feedback write does not lose the file"
     skip_reason: >-
       The `writeFeedbackFile` implementation writes the file to disk first
