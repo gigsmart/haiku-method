@@ -214,19 +214,24 @@ function assertStructuralMarkers(
 	expect(rendered).toContain("<header")
 	// ...and the content region.
 	expect(rendered).toContain('id="main-content"')
-	// ...and the H·AI·K·U footer.
-	expect(rendered).toContain("Powered by")
 
 	// Landmark primitives (added by unit-06 shell refactor — see
 	// `aria-landmark-spec.md §1`):
 	expect(rendered).toContain('role="banner"')
 	expect(rendered).toContain('role="main"')
-	expect(rendered).toContain('role="contentinfo"')
 	// Skip link — first focusable element, targets <Main id="main-content">.
 	expect(rendered).toContain('href="#main-content"')
 	// Two live-region shell nodes (polite status + assertive alert).
 	expect(rendered).toContain('id="feedback-live-polite"')
 	expect(rendered).toContain('id="feedback-live-assertive"')
+
+	// The review page is a full-bleed app (per canonical review UI mockup)
+	// and intentionally does NOT render the "Powered by" ShellLayout footer
+	// or a role="contentinfo" landmark. The non-review pages still do.
+	if (fxName !== "review") {
+		expect(rendered).toContain("Powered by")
+		expect(rendered).toContain('role="contentinfo"')
+	}
 
 	if (fxName === "review") {
 		const r = session as ReviewSessionPayload

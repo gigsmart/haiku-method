@@ -5,935 +5,1811 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
   <div
     data-cell="default"
   >
-    <div
-      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    <nav
+      aria-label="Stage progress"
+      class="px-4 sm:px-6 py-3"
     >
-      <div
-        class="flex items-center"
+      <ol
+        class="flex justify-center items-start gap-0"
       >
-        <button
-          aria-label="Stage inception, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
-          title="inception (completed)"
-          type="button"
+        <li
+          class="w-24"
         >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-white"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            viewBox="0 0 12 12"
+          <button
+            aria-label="Stage inception, completed"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="inception"
+            title="inception (completed)"
+            type="button"
           >
-            <title>
-              completed
-            </title>
-            <polyline
-              points="2 6 5 9 10 3"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40"
+                >
+                  <svg
+                    class="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    viewBox="0 0 24 24"
+                  >
+                    <title>
+                      completed
+                    </title>
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-green-600 dark:text-green-400"
+            >
+              inception
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          inception
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
-        />
-        <button
-          aria-label="Stage design, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
-          title="design (completed)"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-white"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            viewBox="0 0 12 12"
+          <button
+            aria-label="Stage design, completed"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="design"
+            title="design (completed)"
+            type="button"
           >
-            <title>
-              completed
-            </title>
-            <polyline
-              points="2 6 5 9 10 3"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40"
+                >
+                  <svg
+                    class="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    viewBox="0 0 24 24"
+                  >
+                    <title>
+                      completed
+                    </title>
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-gradient-to-r from-green-400 to-teal-400 dark:from-green-700 dark:to-teal-600"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-green-600 dark:text-green-400"
+            >
+              design
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          design
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
-        />
-        <button
-          aria-current="step"
-          aria-label="Stage product, current"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
-          title="product (current)"
-          type="button"
+          <button
+            aria-current="step"
+            aria-label="Stage product, current"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-default"
+            data-stage="product"
+            title="product (current)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-7 h-7 rounded-md rotate-45 bg-teal-500 dark:bg-teal-400 flex items-center justify-center shadow-md ring-4 ring-teal-200 dark:ring-teal-900/50"
+                >
+                  <span
+                    class="text-xs font-bold text-white -rotate-45"
+                  >
+                    3
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-teal-600 dark:text-teal-400"
+            >
+              product
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          <span
-            aria-hidden="true"
-            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
-          />
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+          <button
+            aria-label="Stage development, future"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-not-allowed text-stone-500 dark:text-stone-600"
+            data-stage="development"
+            disabled=""
+            title="development (future)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-300 dark:border-stone-600 flex items-center justify-center"
+                >
+                  <span
+                    class="text-xs font-semibold text-stone-500 dark:text-stone-500"
+                  >
+                    4
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-stone-500 dark:text-stone-400"
+            >
+              development
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          product
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
-        />
-        <button
-          aria-label="Stage development, future"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
-          disabled=""
-          title="development (future)"
-          type="button"
-        />
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
-        >
-          development
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
-        />
-        <button
-          aria-label="Stage review, future"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
-          disabled=""
-          title="review (future)"
-          type="button"
-        />
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
-        >
-          review
-        </span>
-      </div>
-    </div>
+          <button
+            aria-label="Stage review, future"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-not-allowed text-stone-500 dark:text-stone-600"
+            data-stage="review"
+            disabled=""
+            title="review (future)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-300 dark:border-stone-600 flex items-center justify-center"
+                >
+                  <span
+                    class="text-xs font-semibold text-stone-500 dark:text-stone-500"
+                  >
+                    5
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-stone-500 dark:text-stone-400"
+            >
+              review
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+      </ol>
+    </nav>
   </div>
   <div
     data-cell="first-stage-current"
   >
-    <div
-      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    <nav
+      aria-label="Stage progress"
+      class="px-4 sm:px-6 py-3"
     >
-      <div
-        class="flex items-center"
+      <ol
+        class="flex justify-center items-start gap-0"
       >
-        <button
-          aria-current="step"
-          aria-label="Stage inception, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
-          title="inception (completed)"
-          type="button"
+        <li
+          class="w-24"
         >
-          <span
-            aria-hidden="true"
-            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
-          />
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
-        >
-          inception
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
-        />
-        <button
-          aria-label="Stage design, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
-          title="design (completed)"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-white"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            viewBox="0 0 12 12"
+          <button
+            aria-current="step"
+            aria-label="Stage inception, current"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="inception"
+            title="inception (completed)"
+            type="button"
           >
-            <title>
-              completed
-            </title>
-            <polyline
-              points="2 6 5 9 10 3"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-7 h-7 rounded-md rotate-45 bg-teal-500 dark:bg-teal-400 flex items-center justify-center shadow-md ring-4 ring-teal-200 dark:ring-teal-900/50"
+                >
+                  <span
+                    class="text-xs font-bold text-white -rotate-45"
+                  >
+                    1
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-teal-600 dark:text-teal-400"
+            >
+              inception
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          design
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
-        />
-        <button
-          aria-label="Stage product, current"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border-2 border-stone-400 dark:border-stone-500 bg-transparent cursor-pointer hover:border-teal-400 dark:hover:border-teal-400"
-          title="product (current)"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-stone-500 dark:text-stone-400"
-            fill="currentColor"
-            viewBox="0 0 12 12"
+          <button
+            aria-label="Stage design, completed"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="design"
+            title="design (completed)"
+            type="button"
           >
-            <title>
-              visited
-            </title>
-            <polygon
-              points="6 2 10 6 6 10 2 6"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40"
+                >
+                  <svg
+                    class="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    viewBox="0 0 24 24"
+                  >
+                    <title>
+                      completed
+                    </title>
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-green-600 dark:text-green-400"
+            >
+              design
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          product
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
-        />
-        <button
-          aria-label="Stage development, future"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
-          disabled=""
-          title="development (future)"
-          type="button"
-        />
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          <button
+            aria-label="Stage product, visited"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="product"
+            title="product (current)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-400 dark:border-stone-500 flex items-center justify-center hover:border-teal-400 dark:hover:border-teal-400 transition-colors"
+                >
+                  <span
+                    class="text-xs font-semibold text-stone-600 dark:text-stone-400"
+                  >
+                    3
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-stone-500 dark:text-stone-400"
+            >
+              product
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          development
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
-        />
-        <button
-          aria-label="Stage review, future"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
-          disabled=""
-          title="review (future)"
-          type="button"
-        />
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          <button
+            aria-label="Stage development, future"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-not-allowed text-stone-500 dark:text-stone-600"
+            data-stage="development"
+            disabled=""
+            title="development (future)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-300 dark:border-stone-600 flex items-center justify-center"
+                >
+                  <span
+                    class="text-xs font-semibold text-stone-500 dark:text-stone-500"
+                  >
+                    4
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-stone-500 dark:text-stone-400"
+            >
+              development
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          review
-        </span>
-      </div>
-    </div>
+          <button
+            aria-label="Stage review, future"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-not-allowed text-stone-500 dark:text-stone-600"
+            data-stage="review"
+            disabled=""
+            title="review (future)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-300 dark:border-stone-600 flex items-center justify-center"
+                >
+                  <span
+                    class="text-xs font-semibold text-stone-500 dark:text-stone-500"
+                  >
+                    5
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-stone-500 dark:text-stone-400"
+            >
+              review
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+      </ol>
+    </nav>
   </div>
   <div
     data-cell="last-stage-completed"
   >
-    <div
-      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    <nav
+      aria-label="Stage progress"
+      class="px-4 sm:px-6 py-3"
     >
-      <div
-        class="flex items-center"
+      <ol
+        class="flex justify-center items-start gap-0"
       >
-        <button
-          aria-label="Stage inception, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
-          title="inception (completed)"
-          type="button"
+        <li
+          class="w-24"
         >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-white"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            viewBox="0 0 12 12"
+          <button
+            aria-label="Stage inception, completed"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="inception"
+            title="inception (completed)"
+            type="button"
           >
-            <title>
-              completed
-            </title>
-            <polyline
-              points="2 6 5 9 10 3"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40"
+                >
+                  <svg
+                    class="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    viewBox="0 0 24 24"
+                  >
+                    <title>
+                      completed
+                    </title>
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-green-600 dark:text-green-400"
+            >
+              inception
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          inception
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
-        />
-        <button
-          aria-label="Stage design, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
-          title="design (completed)"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-white"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            viewBox="0 0 12 12"
+          <button
+            aria-label="Stage design, completed"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="design"
+            title="design (completed)"
+            type="button"
           >
-            <title>
-              completed
-            </title>
-            <polyline
-              points="2 6 5 9 10 3"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40"
+                >
+                  <svg
+                    class="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    viewBox="0 0 24 24"
+                  >
+                    <title>
+                      completed
+                    </title>
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-green-600 dark:text-green-400"
+            >
+              design
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          design
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
-        />
-        <button
-          aria-label="Stage product, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
-          title="product (completed)"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-white"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            viewBox="0 0 12 12"
+          <button
+            aria-label="Stage product, completed"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="product"
+            title="product (completed)"
+            type="button"
           >
-            <title>
-              completed
-            </title>
-            <polyline
-              points="2 6 5 9 10 3"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40"
+                >
+                  <svg
+                    class="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    viewBox="0 0 24 24"
+                  >
+                    <title>
+                      completed
+                    </title>
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-green-600 dark:text-green-400"
+            >
+              product
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          product
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
-        />
-        <button
-          aria-label="Stage development, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
-          title="development (completed)"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-white"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            viewBox="0 0 12 12"
+          <button
+            aria-label="Stage development, completed"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="development"
+            title="development (completed)"
+            type="button"
           >
-            <title>
-              completed
-            </title>
-            <polyline
-              points="2 6 5 9 10 3"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40"
+                >
+                  <svg
+                    class="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    viewBox="0 0 24 24"
+                  >
+                    <title>
+                      completed
+                    </title>
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-green-600 dark:text-green-400"
+            >
+              development
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          development
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
-        />
-        <button
-          aria-current="step"
-          aria-label="Stage review, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
-          title="review (completed)"
-          type="button"
-        >
-          <span
-            aria-hidden="true"
-            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
-          />
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
-        >
-          review
-        </span>
-      </div>
-    </div>
+          <button
+            aria-current="step"
+            aria-label="Stage review, current"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="review"
+            title="review (completed)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-7 h-7 rounded-md rotate-45 bg-teal-500 dark:bg-teal-400 flex items-center justify-center shadow-md ring-4 ring-teal-200 dark:ring-teal-900/50"
+                >
+                  <span
+                    class="text-xs font-bold text-white -rotate-45"
+                  >
+                    5
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-teal-600 dark:text-teal-400"
+            >
+              review
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+      </ol>
+    </nav>
   </div>
   <div
     data-cell="with-click-handler"
   >
-    <div
-      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    <nav
+      aria-label="Stage progress"
+      class="px-4 sm:px-6 py-3"
     >
-      <div
-        class="flex items-center"
+      <ol
+        class="flex justify-center items-start gap-0"
       >
-        <button
-          aria-label="Stage inception, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
-          title="inception (completed)"
-          type="button"
+        <li
+          class="w-24"
         >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-white"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            viewBox="0 0 12 12"
+          <button
+            aria-label="Stage inception, completed"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="inception"
+            title="inception (completed)"
+            type="button"
           >
-            <title>
-              completed
-            </title>
-            <polyline
-              points="2 6 5 9 10 3"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40"
+                >
+                  <svg
+                    class="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    viewBox="0 0 24 24"
+                  >
+                    <title>
+                      completed
+                    </title>
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-green-600 dark:text-green-400"
+            >
+              inception
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          inception
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
-        />
-        <button
-          aria-label="Stage design, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
-          title="design (completed)"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-white"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            viewBox="0 0 12 12"
+          <button
+            aria-label="Stage design, completed"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="design"
+            title="design (completed)"
+            type="button"
           >
-            <title>
-              completed
-            </title>
-            <polyline
-              points="2 6 5 9 10 3"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40"
+                >
+                  <svg
+                    class="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    viewBox="0 0 24 24"
+                  >
+                    <title>
+                      completed
+                    </title>
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-gradient-to-r from-green-400 to-teal-400 dark:from-green-700 dark:to-teal-600"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-green-600 dark:text-green-400"
+            >
+              design
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          design
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
-        />
-        <button
-          aria-current="step"
-          aria-label="Stage product, current"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
-          title="product (current)"
-          type="button"
+          <button
+            aria-current="step"
+            aria-label="Stage product, current"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-default"
+            data-stage="product"
+            title="product (current)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-7 h-7 rounded-md rotate-45 bg-teal-500 dark:bg-teal-400 flex items-center justify-center shadow-md ring-4 ring-teal-200 dark:ring-teal-900/50"
+                >
+                  <span
+                    class="text-xs font-bold text-white -rotate-45"
+                  >
+                    3
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-teal-600 dark:text-teal-400"
+            >
+              product
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          <span
-            aria-hidden="true"
-            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
-          />
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+          <button
+            aria-label="Stage development, future"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-not-allowed text-stone-500 dark:text-stone-600"
+            data-stage="development"
+            disabled=""
+            title="development (future)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-300 dark:border-stone-600 flex items-center justify-center"
+                >
+                  <span
+                    class="text-xs font-semibold text-stone-500 dark:text-stone-500"
+                  >
+                    4
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-stone-500 dark:text-stone-400"
+            >
+              development
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          product
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
-        />
-        <button
-          aria-label="Stage development, future"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
-          disabled=""
-          title="development (future)"
-          type="button"
-        />
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
-        >
-          development
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
-        />
-        <button
-          aria-label="Stage review, future"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
-          disabled=""
-          title="review (future)"
-          type="button"
-        />
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
-        >
-          review
-        </span>
-      </div>
-    </div>
+          <button
+            aria-label="Stage review, future"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-not-allowed text-stone-500 dark:text-stone-600"
+            data-stage="review"
+            disabled=""
+            title="review (future)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-300 dark:border-stone-600 flex items-center justify-center"
+                >
+                  <span
+                    class="text-xs font-semibold text-stone-500 dark:text-stone-500"
+                  >
+                    5
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-stone-500 dark:text-stone-400"
+            >
+              review
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+      </ol>
+    </nav>
   </div>
   <div
     data-cell="visited-but-not-current"
   >
-    <div
-      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    <nav
+      aria-label="Stage progress"
+      class="px-4 sm:px-6 py-3"
     >
-      <div
-        class="flex items-center"
+      <ol
+        class="flex justify-center items-start gap-0"
       >
-        <button
-          aria-label="Stage inception, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
-          title="inception (completed)"
-          type="button"
+        <li
+          class="w-24"
         >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-white"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            viewBox="0 0 12 12"
+          <button
+            aria-label="Stage inception, completed"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="inception"
+            title="inception (completed)"
+            type="button"
           >
-            <title>
-              completed
-            </title>
-            <polyline
-              points="2 6 5 9 10 3"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40"
+                >
+                  <svg
+                    class="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    viewBox="0 0 24 24"
+                  >
+                    <title>
+                      completed
+                    </title>
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-green-600 dark:text-green-400"
+            >
+              inception
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          inception
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
-        />
-        <button
-          aria-label="Stage design, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
-          title="design (completed)"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-white"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            viewBox="0 0 12 12"
+          <button
+            aria-label="Stage design, completed"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="design"
+            title="design (completed)"
+            type="button"
           >
-            <title>
-              completed
-            </title>
-            <polyline
-              points="2 6 5 9 10 3"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40"
+                >
+                  <svg
+                    class="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    viewBox="0 0 24 24"
+                  >
+                    <title>
+                      completed
+                    </title>
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-gradient-to-r from-green-400 to-teal-400 dark:from-green-700 dark:to-teal-600"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-green-600 dark:text-green-400"
+            >
+              design
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          design
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
-        />
-        <button
-          aria-current="step"
-          aria-label="Stage product, current"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
-          title="product (current)"
-          type="button"
-        >
-          <span
-            aria-hidden="true"
-            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
-          />
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
-        >
-          product
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
-        />
-        <button
-          aria-label="Stage development, future"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border-2 border-stone-400 dark:border-stone-500 bg-transparent cursor-pointer hover:border-teal-400 dark:hover:border-teal-400"
-          title="development (future)"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-stone-500 dark:text-stone-400"
-            fill="currentColor"
-            viewBox="0 0 12 12"
+          <button
+            aria-current="step"
+            aria-label="Stage product, current"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-default"
+            data-stage="product"
+            title="product (current)"
+            type="button"
           >
-            <title>
-              visited
-            </title>
-            <polygon
-              points="6 2 10 6 6 10 2 6"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-7 h-7 rounded-md rotate-45 bg-teal-500 dark:bg-teal-400 flex items-center justify-center shadow-md ring-4 ring-teal-200 dark:ring-teal-900/50"
+                >
+                  <span
+                    class="text-xs font-bold text-white -rotate-45"
+                  >
+                    3
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-teal-600 dark:text-teal-400"
+            >
+              product
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          development
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
-        />
-        <button
-          aria-label="Stage review, future"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
-          disabled=""
-          title="review (future)"
-          type="button"
-        />
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          <button
+            aria-label="Stage development, visited"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="development"
+            title="development (future)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-400 dark:border-stone-500 flex items-center justify-center hover:border-teal-400 dark:hover:border-teal-400 transition-colors"
+                >
+                  <span
+                    class="text-xs font-semibold text-stone-600 dark:text-stone-400"
+                  >
+                    4
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-stone-500 dark:text-stone-400"
+            >
+              development
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          review
-        </span>
-      </div>
-    </div>
+          <button
+            aria-label="Stage review, future"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-not-allowed text-stone-500 dark:text-stone-600"
+            data-stage="review"
+            disabled=""
+            title="review (future)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-300 dark:border-stone-600 flex items-center justify-center"
+                >
+                  <span
+                    class="text-xs font-semibold text-stone-500 dark:text-stone-500"
+                  >
+                    5
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-stone-500 dark:text-stone-400"
+            >
+              review
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+      </ol>
+    </nav>
   </div>
   <div
     data-cell="never-visited"
   >
-    <div
-      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    <nav
+      aria-label="Stage progress"
+      class="px-4 sm:px-6 py-3"
     >
-      <div
-        class="flex items-center"
+      <ol
+        class="flex justify-center items-start gap-0"
       >
-        <button
-          aria-current="step"
-          aria-label="Stage inception, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
-          title="inception (completed)"
-          type="button"
+        <li
+          class="w-24"
         >
-          <span
-            aria-hidden="true"
-            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
-          />
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
-        >
-          inception
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
-        />
-        <button
-          aria-label="Stage design, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
-          title="design (completed)"
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            class="block w-2 h-2 text-white"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2.5"
-            viewBox="0 0 12 12"
+          <button
+            aria-current="step"
+            aria-label="Stage inception, current"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="inception"
+            title="inception (completed)"
+            type="button"
           >
-            <title>
-              completed
-            </title>
-            <polyline
-              points="2 6 5 9 10 3"
-            />
-          </svg>
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-7 h-7 rounded-md rotate-45 bg-teal-500 dark:bg-teal-400 flex items-center justify-center shadow-md ring-4 ring-teal-200 dark:ring-teal-900/50"
+                >
+                  <span
+                    class="text-xs font-bold text-white -rotate-45"
+                  >
+                    1
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-teal-600 dark:text-teal-400"
+            >
+              inception
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          design
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
-        />
-        <button
-          aria-label="Stage product, current"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
-          disabled=""
-          title="product (current)"
-          type="button"
-        />
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          <button
+            aria-label="Stage design, completed"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="design"
+            title="design (completed)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-green-400 dark:bg-green-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm ring-2 ring-green-200 dark:ring-green-900/40"
+                >
+                  <svg
+                    class="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    viewBox="0 0 24 24"
+                  >
+                    <title>
+                      completed
+                    </title>
+                    <path
+                      d="M5 13l4 4L19 7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-green-600 dark:text-green-400"
+            >
+              design
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          product
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
-        />
-        <button
-          aria-label="Stage development, future"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
-          disabled=""
-          title="development (future)"
-          type="button"
-        />
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          <button
+            aria-label="Stage product, future"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-not-allowed text-stone-500 dark:text-stone-600"
+            data-stage="product"
+            disabled=""
+            title="product (current)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-300 dark:border-stone-600 flex items-center justify-center"
+                >
+                  <span
+                    class="text-xs font-semibold text-stone-500 dark:text-stone-500"
+                  >
+                    3
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-stone-500 dark:text-stone-400"
+            >
+              product
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          development
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
-        />
-        <button
-          aria-label="Stage review, future"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
-          disabled=""
-          title="review (future)"
-          type="button"
-        />
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
+          <button
+            aria-label="Stage development, future"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-not-allowed text-stone-500 dark:text-stone-600"
+            data-stage="development"
+            disabled=""
+            title="development (future)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-300 dark:border-stone-600 flex items-center justify-center"
+                >
+                  <span
+                    class="text-xs font-semibold text-stone-500 dark:text-stone-500"
+                  >
+                    4
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-stone-500 dark:text-stone-400"
+            >
+              development
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          review
-        </span>
-      </div>
-    </div>
+          <button
+            aria-label="Stage review, future"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-not-allowed text-stone-500 dark:text-stone-600"
+            data-stage="review"
+            disabled=""
+            title="review (future)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-300 dark:border-stone-600 flex items-center justify-center"
+                >
+                  <span
+                    class="text-xs font-semibold text-stone-500 dark:text-stone-500"
+                  >
+                    5
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-stone-500 dark:text-stone-400"
+            >
+              review
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+      </ol>
+    </nav>
   </div>
   <div
     data-cell="disabled"
   >
-    <div
-      class="flex items-center gap-0 overflow-x-auto py-2 px-1"
+    <nav
+      aria-label="Stage progress"
+      class="px-4 sm:px-6 py-3"
     >
-      <div
-        class="flex items-center"
+      <ol
+        class="flex justify-center items-start gap-0"
       >
-        <button
-          aria-current="step"
-          aria-label="Stage inception, completed"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
-          title="inception (completed)"
-          type="button"
+        <li
+          class="w-24"
         >
-          <span
-            aria-hidden="true"
-            class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
-          />
-        </button>
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-teal-600 dark:text-teal-400 font-bold"
+          <button
+            aria-current="step"
+            aria-label="Stage inception, current"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
+            data-stage="inception"
+            title="inception (completed)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-7 h-7 rounded-md rotate-45 bg-teal-500 dark:bg-teal-400 flex items-center justify-center shadow-md ring-4 ring-teal-200 dark:ring-teal-900/50"
+                >
+                  <span
+                    class="text-xs font-bold text-white -rotate-45"
+                  >
+                    1
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-teal-600 dark:text-teal-400"
+            >
+              inception
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+        <li
+          class="w-24"
         >
-          inception
-        </span>
-      </div>
-      <div
-        class="flex items-center"
-      >
-        <div
-          aria-hidden="true"
-          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
-        />
-        <button
-          aria-label="Stage design, future"
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
-          disabled=""
-          title="design (future)"
-          type="button"
-        />
-        <span
-          class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
-        >
-          design
-        </span>
-      </div>
-    </div>
+          <button
+            aria-label="Stage design, future"
+            class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-not-allowed text-stone-500 dark:text-stone-600"
+            data-stage="design"
+            disabled=""
+            title="design (future)"
+            type="button"
+          >
+            <div
+              class="flex items-center w-full h-10"
+            >
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-stone-300 dark:bg-stone-700"
+              />
+              <div
+                class="relative w-10 h-10 flex items-center justify-center shrink-0 touch-target touch-target--hit-area"
+              >
+                <div
+                  aria-hidden="true"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-300 dark:border-stone-600 flex items-center justify-center"
+                >
+                  <span
+                    class="text-xs font-semibold text-stone-500 dark:text-stone-500"
+                  >
+                    2
+                  </span>
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="flex-1 h-0.5 bg-transparent"
+              />
+            </div>
+            <span
+              class="mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap text-stone-500 dark:text-stone-400"
+            >
+              design
+            </span>
+            <span
+              aria-hidden="true"
+              class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
+            >
+               
+            </span>
+          </button>
+        </li>
+      </ol>
+    </nav>
   </div>
 </div>
 `;

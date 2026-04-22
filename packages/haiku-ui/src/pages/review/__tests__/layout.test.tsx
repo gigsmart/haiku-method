@@ -1,27 +1,15 @@
 /**
- * Structural layout test per unit-07 completion criteria.
+ * Structural layout test for ReviewPage — canonical design mockup
+ * (`stages/design/artifacts/review-ui-mockup.html`).
  *
- * Replaces the previously-specced Playwright visual-regression harness:
- * Playwright and Lighthouse both launch/take-over the developer's Chrome
- * on this machine, which wedges or clobbers an in-use browser. Structural
- * assertions are authored in Vitest + RTL and exercise the same responsive
- * branches mechanically — no browser launcher required.
+ * Asserts:
+ *   - Desktop: full-bleed h-screen flex-col shell, sidebar on the LEFT
+ *     (border-r), composer + decision buttons pinned inside the sidebar,
+ *     no FAB.
+ *   - Mobile: sidebar collapses into FAB + Sheet; main fills width.
  *
  * The branch flip is script-driven via `useIsMobile()` (see
- * `../useIsMobile.ts`), so stubbing `window.matchMedia` in each render is
- * sufficient to deterministically produce the desktop and mobile DOM
- * trees. We assert:
- *
- *  - Desktop (matchMedia(isMobile=false)):
- *      outer split container uses `xl:flex-row`; the
- *      `feedback-sidebar-desktop` element is present; its className
- *      contains the canonical width tokens `w-[var(--sidebar-width)]` and
- *      `xl:w-[var(--sidebar-width-xl)]`; the mobile FAB is NOT rendered.
- *
- *  - Mobile (matchMedia(isMobile=true)):
- *      outer split container uses `flex-col`; the FAB is present;
- *      the desktop sidebar is NOT rendered; the FeedbackSheet dialog
- *      element is present (hidden by default per placeholder semantics).
+ * `../useIsMobile.ts`), so stubbing `window.matchMedia` is sufficient.
  */
 
 import { cleanup, render, screen, waitFor } from "@testing-library/react"
@@ -123,7 +111,6 @@ async function mount(isMobile: boolean): Promise<void> {
 			</>
 		</ApiClientProvider>,
 	)
-	// Ensure the page ready marker is attached before structural assertions.
 	await waitFor(() => {
 		expect(screen.getByTestId("review-page-ready")).toBeTruthy()
 	})
@@ -134,21 +121,31 @@ afterEach(() => {
 	vi.restoreAllMocks()
 })
 
-describe("ReviewPage — structural layout", () => {
-	it("desktop: xl:flex-row split, canonical sidebar width tokens, no FAB", async () => {
+describe("ReviewPage — structural layout (canonical mockup)", () => {
+	it("desktop: full-bleed h-screen shell, sidebar on the LEFT with border-r, composer inside", async () => {
 		await mount(false)
+
+		const root = screen.getByTestId("review-page-ready")
+		const rootClass = root.getAttribute("class") ?? ""
+		expect(rootClass).toContain("h-screen")
+		expect(rootClass).toContain("flex-col")
 
 		const split = screen.getByTestId("review-split")
 		const splitClass = split.getAttribute("class") ?? ""
 		expect(splitClass).toContain("flex")
 		expect(splitClass).toContain("xl:flex-row")
+		expect(splitClass).toContain("overflow-hidden")
 
 		const sidebar = screen.getByTestId("feedback-sidebar-desktop")
 		const sidebarClass = sidebar.getAttribute("class") ?? ""
-		expect(sidebarClass).toContain("w-[var(--sidebar-width)]")
-		expect(sidebarClass).toContain("xl:w-[var(--sidebar-width-xl)]")
+		expect(sidebarClass).toContain("border-r")
 		expect(sidebarClass).toContain("hidden")
 		expect(sidebarClass).toContain("xl:flex")
+
+		// Decision buttons live INSIDE the sidebar (composer + actions pinned
+		// bottom) per the canonical mockup — they are not a page-footer row.
+		const footer = screen.getByTestId("review-footer-bar")
+		expect(sidebar.contains(footer)).toBe(true)
 
 		// Mobile affordances must NOT render in the desktop branch.
 		expect(screen.queryByTestId("feedback-fab")).toBeNull()
@@ -162,11 +159,8 @@ describe("ReviewPage — structural layout", () => {
 		const splitClass = split.getAttribute("class") ?? ""
 		expect(splitClass).toContain("flex-col")
 
-		// Desktop sidebar must NOT render on the mobile branch.
 		expect(screen.queryByTestId("feedback-sidebar-desktop")).toBeNull()
 
-		// FAB replaces the sidebar; the sheet placeholder is in the DOM
-		// (hidden by default — unit-10 layers dialog semantics on top).
 		const fab = screen.getByTestId("feedback-fab")
 		expect(fab.tagName).toBe("BUTTON")
 		const sheet = screen.getByTestId("feedback-sheet")

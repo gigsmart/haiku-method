@@ -49,17 +49,14 @@ export function App(): React.ReactElement {
 function RoutedApp({ route }: { route: ParsedRoute }): React.ReactElement {
 	switch (route.pageType) {
 		case "review":
-			return (
-				<ShellLayout title="Review">
-					<ReviewModule sessionId={route.sessionId} />
-				</ShellLayout>
-			)
+			return <ReviewModule sessionId={route.sessionId} />
 		case "review-current":
 			return (
 				<ShellLayout title="Review">
 					<ReviewCurrentModule />
 				</ShellLayout>
 			)
+
 		case "question":
 			return (
 				<ShellLayout title="Question">

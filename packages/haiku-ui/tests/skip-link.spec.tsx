@@ -137,7 +137,7 @@ describe("Skip link (FB-30 regression guard)", () => {
 		expect(document.activeElement).toBe(main)
 	})
 
-	it("is the first focusable element in DOM order", () => {
+	it("is the first focusable element in DOM order", async () => {
 		const session = loadReviewFixture()
 		const client = makeMockClient(session)
 
@@ -152,7 +152,14 @@ describe("Skip link (FB-30 regression guard)", () => {
 		expect(firstLink).not.toBeNull()
 		expect(firstLink?.textContent).toBe("Skip to main content")
 
-		// And it must come before <header> in document order.
+		// Wait for the shell to mount past the loading state — the review
+		// shell renders its `<header>` inside ReviewPage (not in the outer
+		// App wrapper), so we wait until the page has fully settled before
+		// asserting DOM-order against it.
+		await waitFor(() => {
+			const header = container.querySelector("header")
+			if (!header) throw new Error("header not rendered yet")
+		})
 		const header = container.querySelector("header")
 		expect(header).not.toBeNull()
 		if (firstLink && header) {
