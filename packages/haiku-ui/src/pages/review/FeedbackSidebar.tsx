@@ -48,6 +48,7 @@ export interface FeedbackSidebarProps {
 	gateType?: string
 	getAnnotations?: () => ReviewAnnotations | undefined
 	onFeedbackItemClick?: (feedbackId: string) => void
+	onDecisionSuccess?: (decision: DecisionKind) => void
 	className?: string
 }
 
@@ -77,6 +78,7 @@ export function FeedbackSidebar({
 	gateType,
 	getAnnotations,
 	onFeedbackItemClick,
+	onDecisionSuccess,
 	className,
 }: FeedbackSidebarProps): React.ReactElement {
 	const { items, loading, error, retry, handleStatusChange, handleDelete } =
@@ -109,6 +111,7 @@ export function FeedbackSidebar({
 				})
 				announce("polite", DECISION_ANNOUNCE[decision])
 				setComposerText("")
+				onDecisionSuccess?.(decision)
 			} catch (err) {
 				const message =
 					err instanceof Error ? err.message : "Decision failed to submit"
@@ -117,7 +120,7 @@ export function FeedbackSidebar({
 				setSubmitting(null)
 			}
 		},
-		[announce, client, composerText, getAnnotations, sessionId],
+		[announce, client, composerText, getAnnotations, sessionId, onDecisionSuccess],
 	)
 
 	const handleBodyClick = useCallback(

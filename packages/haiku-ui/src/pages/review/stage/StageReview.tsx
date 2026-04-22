@@ -38,6 +38,9 @@ import {
 export interface StageReviewProps {
 	session: ReviewPageSessionData
 	sessionId: string
+	/** Intent slug — used as the persistent seen-state scope so
+	 *  progress survives MCP restarts. */
+	intentSlug: string | null
 	stageName: string
 	feedback: FeedbackItemData[]
 	onHighlightRequestId?: string | null
@@ -56,6 +59,33 @@ const TYPE_BADGE: Record<string, string> = {
 	docs: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 border-amber-200 dark:border-amber-800",
 	backend:
 		"bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800",
+}
+
+const MODEL_BADGE: Record<string, string> = {
+	opus: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800",
+	sonnet:
+		"bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 border-sky-200 dark:border-sky-800",
+	haiku:
+		"bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 border-teal-200 dark:border-teal-800",
+}
+
+function ModelBadge({ model }: { model: string | undefined }) {
+	if (!model) return null
+	const norm = model.toLowerCase().split(/[-\s]/)[0] // "claude-sonnet-4-6" → "claude", "sonnet" → "sonnet"
+	const key = MODEL_BADGE[norm]
+		? norm
+		: Object.keys(MODEL_BADGE).find((k) => model.toLowerCase().includes(k))
+	const cls =
+		(key && MODEL_BADGE[key]) ??
+		"bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300 border-stone-200 dark:border-stone-700"
+	return (
+		<span
+			className={`shrink-0 px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider border ${cls}`}
+			title={`Model: ${model}`}
+		>
+			{key ?? model}
+		</span>
+	)
 }
 
 const KIND_BADGE: Record<string, string> = {
@@ -133,12 +163,16 @@ interface ArtifactViewModel {
 export function StageReview({
 	session,
 	sessionId,
+	intentSlug,
 	stageName,
 	feedback,
 	onHighlightRequestId,
 	onHighlightConsumed,
 }: StageReviewProps): React.ReactElement {
 	const [activeTab, setActiveTab] = useState<string>("overview")
+	// Seen-state scope: intent slug gives cross-session persistence; we
+	// fall back to sessionId only if the intent slug isn't known yet.
+	const seenScopeId = intentSlug ?? sessionId
 
 	const units = (session.units ?? []).filter(
 		(u) => (u.frontmatter.stage ?? "") === stageName,
@@ -220,7 +254,7 @@ export function StageReview({
 	}, [feedback])
 
 	const stageSummary = resolveStageSummary(session, stageName)
-	const seen = useSeenTracker(sessionId)
+	const seen = useSeenTracker(seenScopeId)
 
 	// Detail mode: when set, the active tab renders a single-item focused
 	// view with a prev/next stepper instead of the full list. Opening a
@@ -701,6 +735,7 @@ function UnitCard({
 	const fm = unit.frontmatter as typeof unit.frontmatter & {
 		type?: string
 		description?: string
+		model?: string
 	}
 	const type = fm.type ?? fm.discipline ?? ""
 	const typeCls = type
@@ -737,6 +772,7 @@ function UnitCard({
 								{type}
 							</span>
 						)}
+						<ModelBadge model={fm.model} />
 					</div>
 					<p className="text-xs font-mono text-stone-500 dark:text-stone-500 truncate mt-0.5">
 						{unit.slug}
@@ -1035,6 +1071,7 @@ function UnitDetailView({
 	const fm = current.frontmatter as typeof current.frontmatter & {
 		type?: string
 		description?: string
+		model?: string
 	}
 	const type = fm.type ?? fm.discipline ?? ""
 	const typeCls = type
@@ -1071,6 +1108,7 @@ function UnitDetailView({
 									{type}
 								</span>
 							)}
+							<ModelBadge model={fm.model} />
 							<span
 								className={`shrink-0 px-1.5 py-0.5 rounded-full text-xs font-semibold ${statusPillClass(fm.status)}`}
 							>

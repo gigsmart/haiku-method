@@ -1,14 +1,20 @@
 /**
- * useSeenTracker — per-session localStorage-backed seen/unseen state for
+ * useSeenTracker — per-intent localStorage-backed seen/unseen state for
  * stage artifacts (units, knowledge, outputs).
  *
- * Canonical mockup contract (`review-ui-mockup.html` §seen-tracking):
- *   - Key schema: `${kind}::${stageId}::${name}` → sha-hash of artifact body
- *   - State: 'seen' | 'unseen' | 'changed'
- *   - Session scope: one bucket per session id so re-review from scratch
- *     starts cold.
+ * Key schema: `${kind}::${stageId}::${name}` → sha-hash of artifact body.
+ * State: 'seen' | 'unseen' | 'changed'.
  *
- * Storage key: `haiku-seen-<sessionId>`.
+ * Scope bump (2026-04-22): the mockup's per-session scope proved wrong in
+ * practice — every MCP restart spawns a fresh session id, so reviewers
+ * lost all their seen state across runs. We key the bucket on the intent
+ * slug instead so progress persists across restarts. The SHA hash of the
+ * artifact body still detects genuine content changes and flips 'seen' →
+ * 'changed' so the reviewer is re-prompted when something was rewritten.
+ *
+ * Storage key: `haiku-seen-<scopeId>` where `scopeId` is typically the
+ * intent slug. Callers that want per-session scope can pass the session
+ * id instead.
  */
 
 import { useCallback, useEffect, useState } from "react"
@@ -37,13 +43,13 @@ export function artifactKey(
 	return `${kind}::${stageId}::${name}`
 }
 
-function storageKey(sessionId: string): string {
-	return `haiku-seen-${sessionId}`
+function storageKey(scopeId: string): string {
+	return `haiku-seen-${scopeId}`
 }
 
-function loadMap(sessionId: string): Record<string, string> {
+function loadMap(scopeId: string): Record<string, string> {
 	try {
-		const raw = localStorage.getItem(storageKey(sessionId))
+		const raw = localStorage.getItem(storageKey(scopeId))
 		if (!raw) return {}
 		const parsed = JSON.parse(raw)
 		if (parsed && typeof parsed === "object") {
@@ -55,9 +61,9 @@ function loadMap(sessionId: string): Record<string, string> {
 	return {}
 }
 
-function saveMap(sessionId: string, map: Record<string, string>): void {
+function saveMap(scopeId: string, map: Record<string, string>): void {
 	try {
-		localStorage.setItem(storageKey(sessionId), JSON.stringify(map))
+		localStorage.setItem(storageKey(scopeId), JSON.stringify(map))
 	} catch {
 		// ignore
 	}
@@ -69,13 +75,18 @@ export interface SeenTracker {
 	reset: () => void
 }
 
-export function useSeenTracker(sessionId: string | null): SeenTracker {
+/**
+ * Track seen/unseen state keyed on a stable scope id. Pass the intent
+ * slug for cross-session persistence (recommended), or a session id for
+ * per-run isolation.
+ */
+export function useSeenTracker(scopeId: string | null): SeenTracker {
 	const [map, setMap] = useState<Record<string, string>>({})
 
 	useEffect(() => {
-		if (!sessionId) return
-		setMap(loadMap(sessionId))
-	}, [sessionId])
+		if (!scopeId) return
+		setMap(loadMap(scopeId))
+	}, [scopeId])
 
 	const state = useCallback(
 		(kind: ArtifactKind, stageId: string, name: string, sha: string): SeenState => {
@@ -90,25 +101,25 @@ export function useSeenTracker(sessionId: string | null): SeenTracker {
 
 	const markSeen = useCallback(
 		(kind: ArtifactKind, stageId: string, name: string, sha: string): void => {
-			if (!sessionId) return
+			if (!scopeId) return
 			setMap((prev) => {
 				const next = { ...prev, [artifactKey(kind, stageId, name)]: sha }
-				saveMap(sessionId, next)
+				saveMap(scopeId, next)
 				return next
 			})
 		},
-		[sessionId],
+		[scopeId],
 	)
 
 	const reset = useCallback((): void => {
-		if (!sessionId) return
+		if (!scopeId) return
 		try {
-			localStorage.removeItem(storageKey(sessionId))
+			localStorage.removeItem(storageKey(scopeId))
 		} catch {
 			// ignore
 		}
 		setMap({})
-	}, [sessionId])
+	}, [scopeId])
 
 	return { state, markSeen, reset }
 }

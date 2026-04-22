@@ -121,6 +121,13 @@ function gateBadgeCopy(
 // so reviewers can see where the stage sits in its own lifecycle.
 export const STAGE_PHASES = ["elaborate", "execute", "review", "gate"] as const
 
+const PHASE_TOOLTIPS: Record<(typeof STAGE_PHASES)[number], string> = {
+	elaborate: "Elaborate — specify the work (hats plan unit files)",
+	execute: "Execute — hats land code and artifacts for each unit",
+	review: "Review — adversarial agents + quality gates",
+	gate: "Gate — final review checkpoint; human or external approval",
+}
+
 function phaseBadgeCopy(
 	phase: string | undefined,
 	stageStatus: string | undefined,
@@ -180,42 +187,48 @@ function PhaseStepper({
 		stageStatus === "completed" || stageStatus === "complete"
 	return (
 		<div
-			className="inline-flex items-center gap-1"
+			className="inline-flex items-center gap-2"
 			aria-label={`Phase ${activeIndex + 1} of ${STAGE_PHASES.length}`}
 		>
-			{STAGE_PHASES.map((p, i) => {
-				const isActive = i === activeIndex && !isStageComplete
-				const isDone = isStageComplete || (activeIndex > i)
-				return (
-					<div
-						key={p}
-						className="flex items-center gap-1"
-						title={`Phase ${i + 1}: ${p}`}
-					>
-						<span
-							className={`inline-block w-2 h-2 rounded-full ${
-								isActive
-									? "bg-amber-500 ring-2 ring-amber-300 dark:ring-amber-700"
-									: isDone
-										? "bg-green-500"
-										: "bg-stone-300 dark:bg-stone-700"
-							}`}
-							aria-hidden="true"
-						/>
-						{i < STAGE_PHASES.length - 1 && (
+			<span className="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400 leading-none">
+				Phase
+			</span>
+			<div className="inline-flex items-center gap-1">
+				{STAGE_PHASES.map((p, i) => {
+					const isActive = i === activeIndex && !isStageComplete
+					const isDone = isStageComplete || activeIndex > i
+					const tooltip = PHASE_TOOLTIPS[p]
+					return (
+						<div
+							key={p}
+							className="flex items-center gap-1"
+							title={tooltip}
+						>
 							<span
-								className={`w-3 h-0.5 ${
-									isDone
-										? "bg-green-400 dark:bg-green-700"
-										: "bg-stone-300 dark:bg-stone-700"
+								className={`inline-block w-2 h-2 rounded-full ${
+									isActive
+										? "bg-amber-500 ring-2 ring-amber-300 dark:ring-amber-700"
+										: isDone
+											? "bg-green-500"
+											: "bg-stone-300 dark:bg-stone-700"
 								}`}
 								aria-hidden="true"
 							/>
-						)}
-					</div>
-				)
-			})}
-			<span className="ml-1 text-xs font-mono text-stone-500 dark:text-stone-400">
+							{i < STAGE_PHASES.length - 1 && (
+								<span
+									className={`w-3 h-0.5 ${
+										isDone
+											? "bg-green-400 dark:bg-green-700"
+											: "bg-stone-300 dark:bg-stone-700"
+									}`}
+									aria-hidden="true"
+								/>
+							)}
+						</div>
+					)
+				})}
+			</div>
+			<span className="text-xs font-mono text-stone-500 dark:text-stone-400">
 				{isStageComplete
 					? "done"
 					: activeIndex >= 0
@@ -626,6 +639,7 @@ function StageScopedContent({
 		<StageReview
 			session={session}
 			sessionId={sessionId}
+			intentSlug={intentSlug}
 			stageName={stageName}
 			feedback={stageFeedback}
 			onHighlightRequestId={highlightFeedbackId}
