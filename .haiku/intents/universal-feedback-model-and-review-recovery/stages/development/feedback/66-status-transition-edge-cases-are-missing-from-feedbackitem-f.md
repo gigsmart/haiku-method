@@ -1,6 +1,6 @@
 ---
 title: Status-transition edge cases are missing from FeedbackItem/FeedbackList tests
-status: fixing
+status: closed
 origin: adversarial-review
 author: test-quality
 author_type: agent
@@ -8,7 +8,7 @@ created_at: '2026-04-21T20:26:34Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-66:bolt-3'
 bolt: 3
 upstream_stage: null
 ---
