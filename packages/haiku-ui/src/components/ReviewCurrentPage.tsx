@@ -172,7 +172,7 @@ export function ReviewCurrentPage({ data }: Props) {
 				</div>
 
 				{/* Feedback sidebar */}
-				<aside className="hidden md:flex w-[var(--sidebar-width)] xl:w-[var(--sidebar-width-xl)] shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex-col bg-white dark:bg-stone-900 border-l border-stone-200 dark:border-stone-700">
+				<aside className="hidden xl:flex w-[var(--sidebar-width)] xl:w-[var(--sidebar-width-xl)] shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex-col bg-white dark:bg-stone-900 border-l border-stone-200 dark:border-stone-700">
 					<FeedbackPanel
 						items={items}
 						loading={loading}

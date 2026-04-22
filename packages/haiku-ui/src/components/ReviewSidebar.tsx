@@ -81,7 +81,7 @@ export function ReviewSidebar({
 	const Wrapper = embedded ? "div" : "aside"
 	const wrapperClass = embedded
 		? "flex flex-col flex-1 min-h-0"
-		: "hidden md:flex w-[var(--sidebar-width)] xl:w-[var(--sidebar-width-xl)] shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex-col bg-white dark:bg-stone-900 border-l border-stone-200 dark:border-stone-700"
+		: "hidden xl:flex w-[var(--sidebar-width)] xl:w-[var(--sidebar-width-xl)] shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex-col bg-white dark:bg-stone-900 border-l border-stone-200 dark:border-stone-700"
 
 	if (showClose) {
 		return (
