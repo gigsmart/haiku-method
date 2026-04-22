@@ -2,7 +2,7 @@
 title: >-
   unit-06: audit-lighthouse.mjs exits 1 with NO_FCP — completion criterion
   "exits 0 with a11y ≥ 0.95" not met
-status: fixing
+status: closed
 origin: adversarial-review
 author: reviewer
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T13:19:02Z'
 iteration: 0
 visit: 0
 source_ref: packages/haiku-ui/scripts/audit-lighthouse.mjs
-closed_by: null
+closed_by: 'fix-loop:FB-09:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
