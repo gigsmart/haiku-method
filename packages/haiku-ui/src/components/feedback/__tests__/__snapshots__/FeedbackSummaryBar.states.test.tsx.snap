@@ -2,7 +2,7 @@
 
 exports[`FeedbackSummaryBar — state matrix > renders (active filter × status) + empty cells (snapshot) 1`] = `
 <div
-  data-token-hash="b576ef1a670ec9d6"
+  data-token-hash="137cde5abcef12d6"
 >
   <div
     data-cell="active-none"
@@ -21,7 +21,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-amber-500"
+          class="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-500"
         />
         <span>
           Pending
@@ -41,7 +41,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-blue-500"
+          class="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-500"
         />
         <span>
           Addressed
@@ -61,7 +61,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-green-500"
+          class="h-2 w-2 rounded-full bg-green-600 dark:bg-green-400"
         />
         <span>
           Closed
@@ -81,7 +81,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-stone-400 dark:bg-stone-500"
+          class="h-2 w-2 rounded-full bg-stone-600 dark:bg-stone-400"
         />
         <span>
           Rejected
@@ -111,7 +111,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-amber-500"
+          class="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-500"
         />
         <span>
           Pending
@@ -131,7 +131,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-blue-500"
+          class="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-500"
         />
         <span>
           Addressed
@@ -151,7 +151,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-green-500"
+          class="h-2 w-2 rounded-full bg-green-600 dark:bg-green-400"
         />
         <span>
           Closed
@@ -171,7 +171,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-stone-400 dark:bg-stone-500"
+          class="h-2 w-2 rounded-full bg-stone-600 dark:bg-stone-400"
         />
         <span>
           Rejected
@@ -201,7 +201,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-amber-500"
+          class="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-500"
         />
         <span>
           Pending
@@ -221,7 +221,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-blue-500"
+          class="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-500"
         />
         <span>
           Addressed
@@ -241,7 +241,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-green-500"
+          class="h-2 w-2 rounded-full bg-green-600 dark:bg-green-400"
         />
         <span>
           Closed
@@ -261,7 +261,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-stone-400 dark:bg-stone-500"
+          class="h-2 w-2 rounded-full bg-stone-600 dark:bg-stone-400"
         />
         <span>
           Rejected
@@ -291,7 +291,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-amber-500"
+          class="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-500"
         />
         <span>
           Pending
@@ -311,7 +311,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-blue-500"
+          class="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-500"
         />
         <span>
           Addressed
@@ -331,7 +331,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-green-500"
+          class="h-2 w-2 rounded-full bg-green-600 dark:bg-green-400"
         />
         <span>
           Closed
@@ -351,7 +351,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-stone-400 dark:bg-stone-500"
+          class="h-2 w-2 rounded-full bg-stone-600 dark:bg-stone-400"
         />
         <span>
           Rejected
@@ -381,7 +381,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-amber-500"
+          class="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-500"
         />
         <span>
           Pending
@@ -401,7 +401,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-blue-500"
+          class="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-500"
         />
         <span>
           Addressed
@@ -421,7 +421,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-green-500"
+          class="h-2 w-2 rounded-full bg-green-600 dark:bg-green-400"
         />
         <span>
           Closed
@@ -441,7 +441,7 @@ exports[`FeedbackSummaryBar — state matrix > renders (active filter × status)
       >
         <span
           aria-hidden="true"
-          class="h-2 w-2 rounded-full bg-stone-400 dark:bg-stone-500"
+          class="h-2 w-2 rounded-full bg-stone-600 dark:bg-stone-400"
         />
         <span>
           Rejected

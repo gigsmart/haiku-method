@@ -2,7 +2,7 @@
 
 exports[`FeedbackStatusBadge — state matrix > renders every (status × {default, error-card}) cell (snapshot) 1`] = `
 <div
-  data-token-hash="b576ef1a670ec9d6"
+  data-token-hash="137cde5abcef12d6"
 >
   <div
     data-cell="default-pending"
@@ -42,7 +42,7 @@ exports[`FeedbackStatusBadge — state matrix > renders every (status × {defaul
   >
     <span
       aria-label="Status: rejected"
-      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"
+      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
       role="img"
     >
       rejected
@@ -90,7 +90,7 @@ exports[`FeedbackStatusBadge — state matrix > renders every (status × {defaul
   >
     <span
       aria-label="Status: rejected"
-      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"
+      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
       role="img"
     >
       rejected

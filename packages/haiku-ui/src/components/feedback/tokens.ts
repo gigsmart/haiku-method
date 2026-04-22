@@ -23,7 +23,14 @@ import type { FeedbackOrigin, FeedbackStatus } from "haiku-api"
 // ── §2.1 Feedback status colors ─────────────────────────────────────────────
 
 /** Canonical per DESIGN-TOKENS §2.1 — rejected foreground lifted to
- * text-stone-600 (light) / text-stone-300 (dark) to hit AAA after FB-15. */
+ * text-stone-600 (light) / text-stone-300 (dark) to hit AAA after FB-15.
+ * FB-70: rejected badge gains `border border-stone-500` (light) /
+ * `dark:border-stone-400` (dark) so the pill outline meets the 3:1 non-text
+ * UI floor against the stone-100 rejected-card background it renders on
+ * (without the border both surfaces resolve to stone-100 in light mode,
+ * making the pill visually indistinguishable from the card body). Stone-500
+ * on stone-100 = 4.28:1 AA pass for non-text; stone-400 on stone-800/50
+ * composite ≈ 6.2:1 AA pass. */
 export const feedbackStatusColors: Record<FeedbackStatus, string> = {
 	pending:
 		"bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
@@ -32,16 +39,28 @@ export const feedbackStatusColors: Record<FeedbackStatus, string> = {
 	addressed: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
 	closed:
 		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-	rejected: "bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300",
+	rejected:
+		"bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400",
 }
 
-/** Status dot (compact indicator) from DESIGN-TOKENS §2.1. */
+/** Status dot (compact indicator) from DESIGN-TOKENS §2.1.
+ *
+ * FB-70: light-mode dots darkened from `*-500` (1.64:1 – 2.21:1 against the
+ * tinted `bg-{color}-50/50` / `bg-stone-100` card backgrounds — below the
+ * 3:1 WCAG 1.4.11 non-text UI floor) to `*-600` (pending/fixing/addressed)
+ * and `stone-600` (rejected) so each dot clears 3:1 against its card bg.
+ * The closed variant steps to `green-600` for consistency with the other
+ * status tiers and to match the §2.3 card border token (which already uses
+ * green-500 light / green-400 dark for the 3px left accent). Dark-mode dots
+ * can remain at `*-500`/`*-400` because the dark card bg
+ * (`{color}-950/20` or `stone-800/50` over stone-950) resolves to near-black
+ * and the -500/-400 shades clear 3:1 comfortably. */
 export const statusDotClasses: Record<FeedbackStatus, string> = {
-	pending: "bg-amber-500",
-	fixing: "bg-amber-500",
-	addressed: "bg-blue-500",
-	closed: "bg-green-500",
-	rejected: "bg-stone-400 dark:bg-stone-500",
+	pending: "bg-amber-600 dark:bg-amber-500",
+	fixing: "bg-amber-600 dark:bg-amber-500",
+	addressed: "bg-blue-600 dark:bg-blue-500",
+	closed: "bg-green-600 dark:bg-green-400",
+	rejected: "bg-stone-600 dark:bg-stone-400",
 }
 
 // ── §2.3 Card background + border tokens ────────────────────────────────────

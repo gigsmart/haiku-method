@@ -59,36 +59,62 @@ const TOKEN_HEX = {
 	"amber-100": "#fef3c7",
 	"amber-200": "#fde68a",
 	"amber-300": "#fcd34d",
+	"amber-400": "#fbbf24",
+	"amber-500": "#f59e0b",
+	"amber-600": "#d97706",
 	"amber-700": "#b45309",
 	"amber-800": "#92400e",
 	"amber-900": "#78350f",
+	"amber-950": "#451a03",
+	"blue-50": "#eff6ff",
 	"blue-100": "#dbeafe",
 	"blue-300": "#93c5fd",
+	"blue-400": "#60a5fa",
+	"blue-500": "#3b82f6",
+	"blue-600": "#2563eb",
 	"blue-700": "#1d4ed8",
 	"blue-800": "#1e40af",
 	"blue-900": "#1e3a8a",
+	"blue-950": "#172554",
+	"green-50": "#f0fdf4",
 	"green-100": "#dcfce7",
 	"green-300": "#86efac",
+	"green-400": "#4ade80",
+	"green-500": "#22c55e",
 	"green-600": "#16a34a",
 	"green-700": "#15803d",
 	"green-800": "#166534",
 	"green-900": "#14532d",
-	"amber-900": "#78350f",
+	"green-950": "#052e16",
 	"red-100": "#fee2e2",
 	"red-200": "#fecaca",
+	"red-300": "#fca5a5",
 	"red-700": "#b91c1c",
 	"red-800": "#991b1b",
+	"red-900": "#7f1d1d",
 	"rose-100": "#ffe4e6",
+	"rose-400": "#fb7185",
+	"rose-500": "#f43f5e",
 	"rose-600": "#e11d48",
 	"rose-700": "#be123c",
+	"rose-900": "#881337",
 	"sky-100": "#e0f2fe",
 	"sky-700": "#0369a1",
 	"teal-100": "#ccfbf1",
+	"teal-400": "#2dd4bf",
+	"teal-500": "#14b8a6",
 	"teal-600": "#0d9488",
 	"teal-700": "#0f766e",
 	"teal-800": "#115e59",
+	"teal-900": "#134e4a",
 	"violet-100": "#ede9fe",
 	"violet-700": "#6d28d9",
+	"emerald-400": "#34d399",
+	"emerald-500": "#10b981",
+	"emerald-600": "#059669",
+	"emerald-700": "#047857",
+	"emerald-800": "#065f46",
+	"emerald-900": "#064e3b",
 }
 
 // α-composite helper: layer hex `fg` at opacity α over hex `bg`. Returns hex.
@@ -247,6 +273,123 @@ const PAIRS = [
 	{ group: "page-text", variant: "meta-on-white", fg: "stone-600", bg: "white", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
 	{ group: "page-text", variant: "meta-on-stone-50", fg: "stone-600", bg: "stone-50", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
 	{ group: "page-text", variant: "meta-on-stone-100", fg: "stone-600", bg: "stone-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+
+	// ── FB-71 roster expansion — surfaces the audit previously missed ─────
+	//
+	// These pairs cover every rendered surface (button, pin, badge, chip,
+	// dot, icon) that appears in the component tree but was not previously
+	// enumerated. Several of these pairs are currently FAILING — each failure
+	// cross-references the specific open finding that owns the remediation.
+	// Once those findings close, the tokens in the component source change
+	// and these entries re-converge on pass. The roster is the regression
+	// guard: if a future change reintroduces a sub-threshold pair, this
+	// audit catches it at exit 1 rather than silently passing.
+	//
+	// Origin badges (§2.2) — dark-mode completions for origins already in light.
+	// Per feedback/tokens.ts: agent dark is `bg-teal-900/30 text-teal-400`.
+	{ group: "origin", variant: "adversarial-dark", fg: "rose-400", bg: "rose-900/30", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
+	{ group: "origin", variant: "agent-dark", fg: "teal-400", bg: "teal-900/30", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
+
+	// FAB count badge — `bg-amber-100 + text-amber-800` at `text-xs font-bold`
+	// (12px bold, treated as text-normal per WCAG "large-text" cutoff of
+	// 14pt/18.66px). FB-70 bolt 2 lifted the light-mode foreground from the
+	// pre-fix `text-amber-700` (3.68:1 AA FAIL) to `text-amber-800` (6.37:1
+	// AA pass), matching the feedback-status pending-light pair. The dark-mode
+	// pair `amber-300 on amber-900/40` was always safe. Any drift back to
+	// `text-amber-700` is caught by both this pair and the banned-pattern
+	// audit (`banned-fab-badge-amber-100-amber-700` in audit-config.json).
+	{ group: "fab-count-badge", variant: "light", fg: "amber-800", bg: "amber-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+	{ group: "fab-count-badge", variant: "dark", fg: "amber-300", bg: "amber-900/40", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
+
+	// Primary-button surface coverage — the `*-teal-*` + white pairings that
+	// are the subject of FB-55. `bg-teal-700` + white is the canonical
+	// passing combination (5.47:1). `bg-teal-600` / `bg-teal-500` + white
+	// are banned via audit-config (regression guard) and scoring below
+	// would fail here too — but those pairs are not expected in production
+	// source so we keep the roster "pass-only" for the primary-button
+	// group. The entries below exercise every production bg-teal shade to
+	// confirm the surface meets AA.
+	{ group: "primary-button", variant: "enabled-light-bg", fg: "white", bg: "teal-700", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+	// Focus ring — DESIGN-TOKENS §34/184 specify `focus:ring-2 ring-teal-500`
+	// with `ring-offset-2` defaulting to white in light mode. teal-500 against
+	// white is 2.49:1 — fails the 3:1 UI-nontext floor. Tracked as a design-
+	// token gap (follow-up to FB-58's focus-ring re-evaluation); the audit
+	// surfaces it as an expected fail rather than gating CI because the fix
+	// requires updating the canonical ring color across the stage.
+	{ group: "primary-button", variant: "focus-ring-on-white", fg: "teal-500", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff", expectedFail: true, expectedFailRef: "design-tokens §34 focus-ring color needs darker shade; tracked separately" },
+	// External-review secondary (amber-300 border token from DESIGN-TOKENS
+	// §1 for "Request Changes"-style surfaces). The border color is
+	// checked against the button's own fill (bg-amber-50), not the page
+	// background — a border is only visible where it meets the element's
+	// fill, so that pairing drives the contrast check. amber-300 on
+	// amber-50 is 1.39:1 — below the 3:1 UI-nontext floor. Canonical
+	// token needs bump to amber-500 (tracked outside FB-71).
+	{ group: "secondary-button", variant: "request-changes-light-border", fg: "amber-300", bg: "amber-50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff", expectedFail: true, expectedFailRef: "design-tokens request-changes border needs amber-500 or darker" },
+	{ group: "secondary-button", variant: "request-changes-light-text", fg: "amber-800", bg: "amber-50", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+
+	// Status-dot UI-nontext contrast (§1.4.11 — 3:1 floor). Dots render as
+	// a colored circle on a status-tinted card background. If the card bg
+	// is a `*-50/50` composite (amber-50 at 50% over white/stone-50), the
+	// composited card surface is lighter than amber-50 alone, shrinking
+	// the delta between dot and bg. These entries cover every dot×card
+	// combination from feedback/tokens.ts `statusDotClasses` + `statusBackground`.
+	// FB-70 bolt 2 darkened the light-mode dots from `*-500` (1.64:1 – 2.21:1
+	// on the tinted card backgrounds — AA FAIL) to `*-600` (pending / fixing /
+	// addressed / closed) and `stone-600` (rejected) so each dot clears 3:1
+	// against its card surface. Dark-mode dots stayed at `*-500`/`*-400`
+	// because the composited dark card (e.g. `amber-950/20` over stone-950)
+	// resolves to near-black and the lighter dots clear 3:1 comfortably.
+	{ group: "status-dot", variant: "pending-on-card-light", fg: "amber-600", bg: "amber-50/50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+	{ group: "status-dot", variant: "pending-on-white", fg: "amber-600", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+	{ group: "status-dot", variant: "addressed-on-card-light", fg: "blue-600", bg: "blue-50/50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+	{ group: "status-dot", variant: "addressed-on-white", fg: "blue-600", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+	{ group: "status-dot", variant: "closed-on-card-light", fg: "green-600", bg: "green-50/60", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+	{ group: "status-dot", variant: "closed-on-white", fg: "green-600", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+	{ group: "status-dot", variant: "rejected-on-card-light", fg: "stone-600", bg: "stone-100", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+	{ group: "status-dot", variant: "rejected-on-white", fg: "stone-600", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+
+	// Status-dot dark-mode UI-nontext (3:1 floor on the dark card surface).
+	{ group: "status-dot", variant: "pending-on-card-dark", fg: "amber-500", bg: "amber-950/20", sizeBucket: "ui-nontext", underlyingBg: TOKEN_HEX["stone-950"] },
+	{ group: "status-dot", variant: "addressed-on-card-dark", fg: "blue-500", bg: "blue-950/20", sizeBucket: "ui-nontext", underlyingBg: TOKEN_HEX["stone-950"] },
+	{ group: "status-dot", variant: "closed-on-card-dark", fg: "green-400", bg: "green-950/25", sizeBucket: "ui-nontext", underlyingBg: TOKEN_HEX["stone-950"] },
+	{ group: "status-dot", variant: "rejected-on-card-dark", fg: "stone-400", bg: "stone-800/50", sizeBucket: "ui-nontext", underlyingBg: TOKEN_HEX["stone-950"] },
+
+	// Status-border-left (3px strip to the left of each feedback card,
+	// DESIGN-TOKENS §2.3 rows 403-406). Must be 3:1 vs the card bg it's
+	// drawn against. All three light-mode entries currently FAIL against
+	// the composited card bg (amber-400 @ 1.64, green-500 @ 2.18,
+	// stone-400 @ 2.31). These are design-token-level gaps that FB-71's
+	// audit surfaces; the fix is to darken the token one step (amber-500
+	// / green-600 / stone-500) — tracked outside FB-71's scope. The ENTRIES
+	// remain in the roster as regression guards so a future change cannot
+	// silently reintroduce the gap.
+	{ group: "status-border", variant: "pending-light", fg: "amber-400", bg: "amber-50/50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff", expectedFail: true, expectedFailRef: "design-tokens §2.3 row 403 border-l-amber-400 needs amber-500" },
+	{ group: "status-border", variant: "closed-light", fg: "green-500", bg: "green-50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff", expectedFail: true, expectedFailRef: "design-tokens §2.3 row 405 border-l-green-500 needs green-600" },
+	{ group: "status-border", variant: "rejected-light", fg: "stone-400", bg: "stone-100", sizeBucket: "ui-nontext", underlyingBg: "#ffffff", expectedFail: true, expectedFailRef: "design-tokens §2.3 row 406 border-l-stone-400 needs stone-500" },
+
+	// Rejected-badge boundary contrast — the rejected status badge
+	// (bg-stone-100 per feedbackStatusColors) overlays the rejected card
+	// surface (bg-stone-100 per statusBackground). FB-70 bolt 2 added an
+	// explicit `border-stone-500` (light) / `border-stone-400` (dark) to the
+	// rejected badge so its outline clears the 3:1 non-text UI floor against
+	// the identical card background. Without the border both surfaces would
+	// be visually indistinguishable (1.0 delta).
+	{ group: "rejected-badge-boundary", variant: "border-on-card-light", fg: "stone-500", bg: "stone-100", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+	{ group: "rejected-badge-boundary", variant: "border-on-card-dark", fg: "stone-400", bg: "stone-800/50", sizeBucket: "ui-nontext", underlyingBg: TOKEN_HEX["stone-950"] },
+
+	// StageProgressStrip dot — `bg-teal-500 dark:bg-teal-400` on the shell
+	// header surface (stone-50 / stone-100). Must pass 3:1 UI-nontext.
+	{ group: "progress-dot", variant: "active-light", fg: "teal-500", bg: "stone-50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+	{ group: "progress-dot", variant: "active-on-white", fg: "teal-500", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+	{ group: "progress-dot", variant: "active-dark", fg: "teal-400", bg: "stone-900", sizeBucket: "ui-nontext", underlyingBg: TOKEN_HEX["stone-950"] },
+
+	// StageProgressStrip focus ring — `focus-visible:ring-2 ring-teal-500`
+	// on stone-50 / stone-900 offset. Must pass 3:1 UI-nontext.
+	{ group: "progress-focus-ring", variant: "light", fg: "teal-500", bg: "stone-50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+
+	// Visit-counter tiers — dark-mode completions.
+	{ group: "visit-counter", variant: "tier2-dark", fg: "amber-300", bg: "amber-900/40", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
+	{ group: "visit-counter", variant: "tier3-dark", fg: "red-300", bg: "red-900/40", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
 ]
 
 function threshold(sizeBucket) {
@@ -254,7 +397,16 @@ function threshold(sizeBucket) {
 }
 
 async function runTokenMode() {
-	const report = { pairs: [], summary: { totalPairs: 0, pass: 0, fail: 0 } }
+	const report = {
+		pairs: [],
+		summary: {
+			totalPairs: 0,
+			pass: 0,
+			fail: 0,
+			expectedFail: 0,
+			unexpectedFail: 0,
+		},
+	}
 	const seen = new Set()
 
 	for (const pair of PAIRS) {
@@ -269,6 +421,15 @@ async function runTokenMode() {
 		}
 		const thr = threshold(pair.sizeBucket)
 		const pass = result.ratio >= thr
+		// FB-71 — `expectedFail` marks pairs that document a known design-token
+		// gap tracked by a separate finding. These pairs remain in the roster
+		// so the contrast of the problematic combination is visible in the
+		// report, but they do not gate the overall audit exit code. A
+		// regression toward an entry that is NOT marked `expectedFail` still
+		// fails the audit at exit 1. When the gap is fixed (by the owning
+		// finding), the `expectedFail` flag is removed and the pair must then
+		// pass on its own merit.
+		const expectedFail = pair.expectedFail === true
 		report.pairs.push({
 			group: pair.group,
 			variant: pair.variant,
@@ -280,23 +441,50 @@ async function runTokenMode() {
 			ratio: Number(result.ratio.toFixed(2)),
 			threshold: thr,
 			pass,
+			expectedFail: expectedFail || undefined,
+			expectedFailRef: pair.expectedFailRef,
 		})
 		report.summary.totalPairs += 1
-		if (pass) report.summary.pass += 1
-		else report.summary.fail += 1
+		if (pass) {
+			report.summary.pass += 1
+		} else if (expectedFail) {
+			report.summary.fail += 1
+			report.summary.expectedFail += 1
+		} else {
+			report.summary.fail += 1
+			report.summary.unexpectedFail += 1
+		}
 	}
 
 	await mkdir(REPORTS_DIR, { recursive: true })
 	const reportPath = path.join(REPORTS_DIR, "contrast-tokens.json")
 	await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`)
 
+	const s = report.summary
 	console.log(
-		`audit-contrast · mode=tokens · ${report.summary.totalPairs} pairs · ${report.summary.pass} pass · ${report.summary.fail} fail`,
+		`audit-contrast · mode=tokens · ${s.totalPairs} pairs · ${s.pass} pass · ${s.fail} fail (${s.expectedFail} expected / ${s.unexpectedFail} regression)`,
 	)
 	console.log(`  report: ${path.relative(process.cwd(), reportPath)}`)
 
-	if (report.summary.fail > 0) {
-		for (const p of report.pairs.filter((p) => !p.pass)) {
+	// Log expected fails first (informational, does not gate exit) so the
+	// reader sees the known gaps and can still spot new regressions below.
+	if (s.expectedFail > 0) {
+		console.log(
+			`  known gaps (expected-fail, tracked elsewhere) — will flip to FAIL once their owning finding closes:`,
+		)
+		for (const p of report.pairs.filter(
+			(p) => !p.pass && p.expectedFail,
+		)) {
+			const refTag = p.expectedFailRef ? ` → ${p.expectedFailRef}` : ""
+			console.log(
+				`    [${p.group}/${p.variant}] ${p.fg} on ${p.bg} — ratio ${p.ratio} < ${p.threshold} (${p.sizeBucket})${refTag}`,
+			)
+		}
+	}
+	if (s.unexpectedFail > 0) {
+		for (const p of report.pairs.filter(
+			(p) => !p.pass && !p.expectedFail,
+		)) {
 			console.error(
 				`  FAIL [${p.group}/${p.variant}] ${p.fg} on ${p.bg} — ratio ${p.ratio} < ${p.threshold} (${p.sizeBucket})`,
 			)
@@ -344,14 +532,191 @@ async function loadInlinedHtml() {
 	return html
 }
 
+// FB-71 — Synthetic gallery served alongside the SPA so the rendered sampler
+// visits fully-populated component surfaces rather than the example-session
+// skeleton state (which paints zero feedback items / pins / decision buttons).
+//
+// This is NOT a product route. It is an audit-only fixture that exercises
+// the class permutations declared by feedback/tokens.ts + DESIGN-TOKENS §1
+// (primary/secondary button palette) + the AnnotationCanvas pin markup +
+// the FAB + FeedbackItem status badges + StageProgressStrip dots. The audit
+// server intercepts the path `/__audit/contrast-gallery` and returns this
+// HTML instead of the SPA bundle.
+function renderAuditGallery() {
+	const btnPrimary =
+		"inline-flex items-center px-4 py-2 text-sm font-semibold rounded-md bg-teal-700 hover:bg-teal-800 text-white shadow-sm disabled:bg-green-300 disabled:text-green-800"
+	const btnSecondary =
+		"inline-flex items-center px-4 py-2 text-sm font-semibold rounded-md border border-stone-300 bg-white text-stone-700 shadow-sm"
+	const btnRequestChanges =
+		"inline-flex items-center px-4 py-2 text-sm font-semibold rounded-md border border-amber-300 bg-amber-50 text-amber-800"
+	const pillPending =
+		"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800"
+	const pillAddressed =
+		"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800"
+	const pillClosed =
+		"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800"
+	const pillRejected =
+		"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600"
+	const originAdversarial =
+		"inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-rose-700"
+	const originAgent =
+		"inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-700"
+	const originVisual =
+		"inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-sky-100 text-sky-700"
+	const originExternal =
+		"inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-100 text-violet-700"
+	const fabBtn =
+		"relative inline-flex items-center justify-center w-14 h-14 rounded-full bg-teal-700 text-white shadow-lg text-lg"
+	const fabBadge =
+		"absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-xs font-bold bg-amber-100 text-amber-700 border-2 border-white"
+	const progressDotActive =
+		"inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-teal-500"
+	const progressDotDone =
+		"inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-green-500"
+	const cardPending =
+		"rounded-lg border border-stone-200 bg-amber-50/50 p-4 shadow-sm"
+	const cardClosed =
+		"rounded-lg border border-stone-200 bg-green-50/60 p-4 shadow-sm"
+	const cardRejected =
+		"rounded-lg border border-stone-200 bg-stone-100 p-4 shadow-sm"
+	return `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>audit gallery</title>__STYLES__</head>
+<body class="bg-stone-50 text-stone-900 p-8 space-y-6">
+  <h1 class="text-2xl font-bold">Audit Gallery</h1>
+  <p class="text-sm text-stone-600">FB-71 fixture. Every rendered surface the contrast audit must cover lives here.</p>
+
+  <section class="space-y-2"><h2 class="text-lg font-semibold">Primary decision buttons</h2>
+    <div class="flex gap-2 flex-wrap">
+      <button class="${btnPrimary}">Approve</button>
+      <button class="${btnPrimary}" disabled>Approve (disabled)</button>
+      <button class="${btnRequestChanges}">Request Changes</button>
+      <button class="${btnSecondary}">External Review</button>
+    </div>
+  </section>
+
+  <section class="space-y-2"><h2 class="text-lg font-semibold">Feedback status badges</h2>
+    <div class="flex gap-2 flex-wrap">
+      <span class="${pillPending}">Pending</span>
+      <span class="${pillAddressed}">Addressed</span>
+      <span class="${pillClosed}">Closed</span>
+      <span class="${pillRejected}">Rejected</span>
+    </div>
+  </section>
+
+  <section class="space-y-2"><h2 class="text-lg font-semibold">Origin badges</h2>
+    <div class="flex gap-2 flex-wrap">
+      <span class="${originAdversarial}">Review Agent</span>
+      <span class="${originAgent}">Agent</span>
+      <span class="${originVisual}">Annotation</span>
+      <span class="${originExternal}">PR Comment</span>
+    </div>
+  </section>
+
+  <section class="space-y-2"><h2 class="text-lg font-semibold">Status dots on card surfaces</h2>
+    <div class="flex gap-4 flex-wrap items-center">
+      <div class="${cardPending} flex items-center gap-2">
+        <span class="inline-block w-3 h-3 rounded-full bg-amber-500" aria-hidden="true"></span>
+        <span class="${pillPending}">Pending</span>
+      </div>
+      <div class="${cardClosed} flex items-center gap-2">
+        <span class="inline-block w-3 h-3 rounded-full bg-green-500" aria-hidden="true"></span>
+        <span class="${pillClosed}">Closed</span>
+      </div>
+      <div class="${cardRejected} flex items-center gap-2">
+        <span class="inline-block w-3 h-3 rounded-full bg-stone-400" aria-hidden="true"></span>
+        <span class="${pillRejected}">Rejected</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="space-y-2"><h2 class="text-lg font-semibold">Annotation pin markers</h2>
+    <div class="relative bg-white p-6 rounded border border-stone-200 min-h-[120px]">
+      <button class="annotation-pin" style="position:absolute;left:32px;top:32px" aria-label="Annotation 1" tabindex="0">
+        <span aria-hidden="true">1</span>
+      </button>
+      <button class="annotation-pin selected" style="position:absolute;left:128px;top:64px" aria-label="Annotation 2" tabindex="0">
+        <span aria-hidden="true">2</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="space-y-2"><h2 class="text-lg font-semibold">FAB + count badge</h2>
+    <div class="relative inline-block">
+      <button class="${fabBtn}" aria-label="Open feedback panel, 3 pending">
+        <span aria-hidden="true">+</span>
+        <span class="${fabBadge}" aria-hidden="true">3</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="space-y-2"><h2 class="text-lg font-semibold">Stage progress strip dots</h2>
+    <div class="flex items-center gap-4 p-2 bg-stone-50 rounded">
+      <span class="${progressDotDone}" aria-hidden="true"></span>
+      <span class="w-6 h-px bg-stone-300" aria-hidden="true"></span>
+      <span class="${progressDotActive}" aria-hidden="true"></span>
+      <span class="w-6 h-px bg-stone-300" aria-hidden="true"></span>
+      <span class="inline-flex w-3.5 h-3.5 rounded-full bg-stone-300" aria-hidden="true"></span>
+    </div>
+  </section>
+
+  <section class="space-y-2"><h2 class="text-lg font-semibold">Visit counters</h2>
+    <div class="flex gap-2 flex-wrap">
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-stone-200 text-stone-600">2 visits</span>
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-amber-200 text-amber-800">4 visits</span>
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-red-200 text-red-800">6 visits</span>
+    </div>
+  </section>
+
+  <section class="space-y-2"><h2 class="text-lg font-semibold">Card body metadata</h2>
+    <div class="${cardPending}">
+      <p class="text-sm text-stone-600">Metadata line created at author status pending card.</p>
+    </div>
+    <div class="${cardClosed}">
+      <p class="text-sm text-stone-600">Metadata line created at author status closed card.</p>
+    </div>
+    <div class="${cardRejected}">
+      <p class="text-sm text-stone-600">Metadata line created at author status rejected card.</p>
+    </div>
+  </section>
+
+</body></html>`
+}
+
+async function loadInlinedGalleryHtml() {
+	const { readFile: rf } = await import("node:fs/promises")
+	const fs = await import("node:fs")
+	const distDir = path.join(PACKAGE_DIR, "dist")
+	// Pull every compiled CSS file out of /dist/assets and inline as <style>.
+	const stylesheets = []
+	if (fs.existsSync(path.join(distDir, "assets"))) {
+		for (const entry of fs.readdirSync(path.join(distDir, "assets"))) {
+			if (entry.endsWith(".css")) {
+				stylesheets.push(
+					`<style>${await rf(path.join(distDir, "assets", entry), "utf8")}</style>`,
+				)
+			}
+		}
+	}
+	return renderAuditGallery().replace("__STYLES__", stylesheets.join("\n"))
+}
+
 async function runRenderedMode() {
 	const BUDGET_MS = 30_000
 	const PAIR_CEILING = 200
+	// FB-71 regression floor — if fewer than this many unique pairs get
+	// sampled, the audit is looking at a skeleton page rather than the real
+	// surface and is falsely passing. The synthetic gallery alone emits
+	// well above this count; the floor catches the empty-fixture regression
+	// class that approved unit-15 with just 5 pairs.
+	const PAIR_FLOOR = 40
 	const distHtmlPath = path.join(PACKAGE_DIR, "dist", "index.html")
 
 	let distHtml
+	let galleryHtml
 	try {
 		distHtml = await loadInlinedHtml()
+		galleryHtml = await loadInlinedGalleryHtml()
 	} catch (err) {
 		console.error(
 			`audit-contrast · mode=rendered · cannot read ${distHtmlPath}. Run \`npm run build\` first.`,
@@ -372,6 +737,7 @@ async function runRenderedMode() {
 	}
 
 	const routes = [
+		{ path: "/__audit/contrast-gallery", label: "gallery" },
 		{ path: "/", label: "home" },
 		{ path: "/review/example-session", label: "review" },
 		{ path: "/question/example-session", label: "question" },
@@ -399,9 +765,17 @@ async function runRenderedMode() {
 
 	// Spin up a tiny local HTTP server so the SPA gets a real origin. The
 	// in-memory hash-based routes can then be toggled via replaceState.
+	// The `/__audit/contrast-gallery` path returns the FB-71 synthetic
+	// gallery instead of the SPA bundle so the sampler sees every
+	// production surface even when example-session fixtures are empty.
 	const http = await import("node:http")
 	const server = http.createServer((req, res) => {
+		const url = req.url || "/"
 		res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" })
+		if (url.startsWith("/__audit/contrast-gallery")) {
+			res.end(galleryHtml)
+			return
+		}
 		res.end(distHtml)
 	})
 	await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve))
@@ -434,12 +808,24 @@ async function runRenderedMode() {
 
 			for (const r of routes) {
 				if (Date.now() - started > BUDGET_MS) break
-				await page.evaluate((href) => {
-					window.history.replaceState({}, "", href)
-					window.dispatchEvent(new PopStateEvent("popstate"))
-				}, r.path)
-				// Give the SPA a tick to render the route.
-				await page.waitForTimeout(300)
+				// The gallery route is a completely different HTML document
+				// served by the audit server; the SPA bundle does not render
+				// it. For every other route we toggle the SPA's in-memory
+				// router via replaceState so the React tree re-renders.
+				if (r.path.startsWith("/__audit/")) {
+					await page.goto(`${baseUrl}${r.path}`, {
+						waitUntil: "networkidle",
+					})
+					await page.waitForTimeout(200)
+				} else {
+					await page.goto(baseUrl, { waitUntil: "networkidle" })
+					await page.evaluate((href) => {
+						window.history.replaceState({}, "", href)
+						window.dispatchEvent(new PopStateEvent("popstate"))
+					}, r.path)
+					// Give the SPA a tick to render the route.
+					await page.waitForTimeout(300)
+				}
 
 				const pairs = await page.evaluate(() => {
 					// Browsers may report computed color as rgb()/rgba() or (since
@@ -500,8 +886,8 @@ async function runRenderedMode() {
 							return null
 						}
 					}
-					function ancestorBg(el) {
-						let node = el
+					function ancestorBg(el, skipSelf = true) {
+						let node = skipSelf ? el.parentElement : el
 						while (node) {
 							const cs = getComputedStyle(node)
 							const bg = cs.backgroundColor
@@ -512,9 +898,26 @@ async function runRenderedMode() {
 						}
 						return "#ffffff"
 					}
+					function elOwnBg(el) {
+						const cs = getComputedStyle(el)
+						const bg = cs.backgroundColor
+						if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+							return toHex(bg)
+						}
+						return null
+					}
 					const out = []
 					const all = document.body.querySelectorAll("*")
 					for (const el of all) {
+						const cs = getComputedStyle(el)
+						const fontSize = Number.parseFloat(cs.fontSize)
+						const fontWeight = Number(cs.fontWeight) || 400
+						const large =
+							fontSize >= 24 ||
+							(fontSize >= 18.66 && fontWeight >= 700)
+
+						// Text pair: element's color on nearest ancestor's bg —
+						// only if the element has a direct text child.
 						let hasText = false
 						let textSample = ""
 						for (const child of el.childNodes) {
@@ -526,18 +929,84 @@ async function runRenderedMode() {
 								}
 							}
 						}
-						if (!hasText) continue
-						const cs = getComputedStyle(el)
-						const fontSize = Number.parseFloat(cs.fontSize)
-						const fontWeight = Number(cs.fontWeight) || 400
-						const large =
-							fontSize >= 24 ||
-							(fontSize >= 18.66 && fontWeight >= 700)
-						const bucket = large ? "text-large" : "text-normal"
-						const fg = toHex(cs.color)
-						const bg = ancestorBg(el)
-						if (!fg || !bg) continue
-						out.push({ fg, bg, bucket, sample: textSample.slice(0, 40) })
+						if (hasText) {
+							const bucket = large ? "text-large" : "text-normal"
+							const fg = toHex(cs.color)
+							const bg = ancestorBg(el)
+							if (fg && bg) {
+								out.push({
+									fg,
+									bg,
+									bucket,
+									kind: "text",
+									sample: textSample.slice(0, 40),
+								})
+							}
+						}
+
+						// FB-71 — UI-nontext pair: element's own background on
+						// its ancestor's background. This catches the
+						// state-indicator dots (statusDotClasses),
+						// StageProgressStrip markers, annotation pin fills,
+						// FAB badge, and status-border-left strips that the
+						// text-only sampler skipped entirely in unit-15.
+						//
+						// Gate by size and shape so we don't spam every
+						// layout div. Target elements that are:
+						//   - small (≤ 40×40px), OR
+						//   - have rounded-full / rounded-sm (dot / pin /
+						//     pill-ish), OR
+						//   - have an explicit aria-hidden attribute (the
+						//     canonical presentation-only indicator pattern).
+						const rect = el.getBoundingClientRect()
+						const isAriaHidden = el.getAttribute("aria-hidden") === "true"
+						const radius = cs.borderRadius || ""
+						const isSmall = rect.width > 0 && rect.width <= 40 && rect.height <= 40
+						const looksLikeIndicator =
+							isSmall ||
+							isAriaHidden ||
+							radius.startsWith("9999") ||
+							radius.includes("50%")
+						if (looksLikeIndicator) {
+							const ownBg = elOwnBg(el)
+							if (ownBg) {
+								const parentBg = ancestorBg(el, true)
+								if (parentBg && ownBg !== parentBg) {
+									out.push({
+										fg: ownBg,
+										bg: parentBg,
+										bucket: "ui-nontext",
+										kind: "ui-nontext-bg",
+										sample:
+											(el.tagName || "").toLowerCase() +
+											(el.className
+												? "." + String(el.className).slice(0, 30)
+												: ""),
+									})
+								}
+							}
+							// Border against ancestor — catches
+							// `border-amber-300` / `border-stone-400` strips.
+							const borderColor = cs.borderLeftColor || cs.borderColor
+							const borderWidth = Number.parseFloat(
+								cs.borderLeftWidth || cs.borderWidth || "0",
+							)
+							if (borderColor && borderWidth >= 1) {
+								const borderHex = toHex(borderColor)
+								const parentBg = ancestorBg(el, true)
+								if (borderHex && parentBg && borderHex !== parentBg) {
+									out.push({
+										fg: borderHex,
+										bg: parentBg,
+										bucket: "ui-nontext",
+										kind: "ui-nontext-border",
+										sample:
+											(el.tagName || "").toLowerCase() +
+											"[border]",
+									})
+								}
+							}
+						}
 					}
 					return out
 				})
@@ -570,11 +1039,21 @@ async function runRenderedMode() {
 
 	await mkdir(REPORTS_DIR, { recursive: true })
 	const reportPath = path.join(REPORTS_DIR, "contrast-rendered.json")
+	// Split sampler output by kind so the report shows whether we're
+	// actually emitting UI-nontext pairs (FB-71 sampler requirement).
+	const pairsByKind = { text: 0, "ui-nontext-bg": 0, "ui-nontext-border": 0 }
+	for (const [, p] of uniquePairs) {
+		const k = p.kind || "text"
+		pairsByKind[k] = (pairsByKind[k] || 0) + 1
+	}
 	await writeFile(
 		reportPath,
 		`${JSON.stringify(
 			{
 				uniquePairs: uniquePairs.size,
+				pairsByKind,
+				pairFloor: PAIR_FLOOR,
+				pairCeiling: PAIR_CEILING,
 				failures,
 				topPairs: [...uniquePairs.values()].slice(0, 20),
 			},
@@ -585,13 +1064,23 @@ async function runRenderedMode() {
 
 	const elapsed = Date.now() - started
 	console.log(
-		`audit-contrast · mode=rendered · ${uniquePairs.size} unique pairs · ${failures.length} fail · ${elapsed}ms`,
+		`audit-contrast · mode=rendered · ${uniquePairs.size} unique pairs (${pairsByKind.text ?? 0} text / ${pairsByKind["ui-nontext-bg"] ?? 0} bg / ${pairsByKind["ui-nontext-border"] ?? 0} border) · ${failures.length} fail · ${elapsed}ms`,
 	)
 	console.log(`  report: ${path.relative(process.cwd(), reportPath)}`)
 
 	if (uniquePairs.size >= PAIR_CEILING) {
 		console.error(
 			`  FAIL unique-pair count ${uniquePairs.size} ≥ ceiling ${PAIR_CEILING} — inline-style explosion regression`,
+		)
+		process.exit(1)
+	}
+	// FB-71 regression floor — if the sampler collected fewer pairs than
+	// this, the audit is looking at an empty/skeleton surface and is
+	// trivially passing. Fail loudly so the next change to the fixture
+	// pipeline or the gallery can't silently collapse coverage again.
+	if (uniquePairs.size < PAIR_FLOOR) {
+		console.error(
+			`  FAIL unique-pair count ${uniquePairs.size} < floor ${PAIR_FLOOR} — skeleton-fixture regression. The audit is not covering real surfaces. Check the synthetic gallery at /__audit/contrast-gallery and the example-session fixtures.`,
 		)
 		process.exit(1)
 	}

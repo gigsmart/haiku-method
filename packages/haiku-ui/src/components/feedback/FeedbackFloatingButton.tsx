@@ -67,12 +67,15 @@ const BASE_BUTTON_CLASSES = [
 	"feedback-fab-pulse",
 ].join(" ")
 
+// FB-70: light-mode text lifted from `text-amber-700` (3.68:1 on amber-100 — AA FAIL
+// for 12px bold) to `text-amber-800` (6.37:1 — AA pass). Dark-mode pair
+// `amber-300 on amber-900/40` already comfortably clears AA.
 const BADGE_CLASSES = [
 	"absolute -top-1 -right-1",
 	"inline-flex items-center justify-center",
 	"min-w-[20px] h-[20px] rounded-full",
 	"text-xs font-bold",
-	"bg-amber-100 text-amber-700",
+	"bg-amber-100 text-amber-800",
 	"dark:bg-amber-900/40 dark:text-amber-300",
 	"border-2 border-white dark:border-stone-900",
 ].join(" ")

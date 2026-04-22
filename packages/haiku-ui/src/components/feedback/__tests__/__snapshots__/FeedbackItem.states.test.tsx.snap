@@ -2,7 +2,7 @@
 
 exports[`FeedbackItem — state matrix > renders every (status × interaction) cell (snapshot with token-hash header) 1`] = `
 <div
-  data-token-hash="b576ef1a670ec9d6"
+  data-token-hash="137cde5abcef12d6"
 >
   <div
     data-status-row="pending"
@@ -1188,7 +1188,7 @@ _Blocker for external-review gate._
           </span>
           <span
             aria-label="Status: rejected"
-            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
             role="img"
           >
             rejected
@@ -1248,7 +1248,7 @@ _Blocker for external-review gate._
           </span>
           <span
             aria-label="Status: rejected"
-            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
             role="img"
           >
             rejected
@@ -1308,7 +1308,7 @@ _Blocker for external-review gate._
           </span>
           <span
             aria-label="Status: rejected"
-            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
             role="img"
           >
             rejected
@@ -1368,7 +1368,7 @@ _Blocker for external-review gate._
           </span>
           <span
             aria-label="Status: rejected"
-            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
             role="img"
           >
             rejected
@@ -1460,7 +1460,7 @@ Unicode characters in play: H·AI·K·U (U+00B7), 🐞 (U+1F41E), smart quotes �
           </span>
           <span
             aria-label="Status: rejected"
-            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
             role="img"
           >
             rejected
@@ -1520,7 +1520,7 @@ Unicode characters in play: H·AI·K·U (U+00B7), 🐞 (U+1F41E), smart quotes �
           </span>
           <span
             aria-label="Status: rejected"
-            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
             role="img"
           >
             rejected

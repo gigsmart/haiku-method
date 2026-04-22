@@ -51,6 +51,13 @@
 					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
 				},
 				{
+					"id": "banned-fab-badge-amber-100-amber-700",
+					"description": "FAB count badge `bg-amber-100 text-amber-700` = 3.68:1 — AA FAIL for 12px bold text per DESIGN-TOKENS §1.1a. Canonical pair is `bg-amber-100 text-amber-800` (6.37:1 AA pass). Scoped narrowly to FeedbackFloatingButton.tsx per FB-70 — the pair is legal elsewhere (e.g. button hover-bg surfaces on white). Matches the token pair in either order.",
+					"pattern": "bg-amber-100\\b[^\"'`]*\\btext-amber-700\\b|text-amber-700\\b[^\"'`]*\\bbg-amber-100\\b",
+					"scope": ["packages/haiku-ui/src/components/feedback/FeedbackFloatingButton.tsx"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
 					"id": "banned-pin-teal-500-white",
 					"description": "bg-teal-500 paired with text-white on AnnotationCanvas pin markers = 2.22:1 (WCAG 1.4.3 + 1.4.11 FAIL) per FB-58. Canonical pin fill is the rose-600 token via --color-annotation-pin-bg (see index.css @theme + annotation-pin PAIRS in audit-contrast.mjs). Scoped narrowly to AnnotationCanvas.tsx to avoid false positives on the unrelated focus-ring usages of teal-500 elsewhere.",
 					"pattern": "bg-teal-500\\b[^\"'`]*\\btext-white\\b|text-white\\b[^\"'`]*\\bbg-teal-500\\b",
