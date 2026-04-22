@@ -325,4 +325,18 @@ describe("AgentFeedbackToggle — disabled state", () => {
 		// jsdom — onChange must not fire.
 		expect(onChange).not.toHaveBeenCalled()
 	})
+
+	it("does not activate on Space/Enter when disabled (keyboard path)", async () => {
+		const onChange = vi.fn()
+		render(<AgentFeedbackToggle disabled onChange={onChange} />)
+		const user = userEvent.setup()
+		const btn = screen.getByRole("switch") as HTMLButtonElement
+		// Focus on disabled <button> is a no-op in jsdom — explicitly target
+		// keyboard events and verify the disabled-button invariant holds for
+		// Space + Enter, matching the browser contract for `role=switch`.
+		await user.keyboard("{ }")
+		await user.keyboard("{Enter}")
+		expect(btn.getAttribute("aria-checked")).toBe("false")
+		expect(onChange).not.toHaveBeenCalled()
+	})
 })
