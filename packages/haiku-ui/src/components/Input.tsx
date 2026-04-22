@@ -31,6 +31,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 			disabled={disabled}
 			aria-disabled={disabled || undefined}
 			aria-invalid={invalid || undefined}
+			data-invalid={invalid || undefined}
 			className={combined}
 		/>
 	)
