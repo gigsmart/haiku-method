@@ -2,7 +2,7 @@
 title: >-
   Three packages name-collide on DOM primitives: @haiku/shared,
   haiku-ui/components, haiku-ui/primitives
-status: fixing
+status: closed
 origin: adversarial-review
 author: architecture
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:23:23Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-33:bolt-2'
 bolt: 2
 upstream_stage: null
 ---
