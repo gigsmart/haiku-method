@@ -7,7 +7,7 @@
  */
 
 import { useMemo } from "react"
-import { focusRingCompactClass } from "../../a11y"
+import { focusRingCompactClass, touchTargetClass } from "../../a11y"
 import type { FeedbackItemData } from "../../types"
 import type { FeedbackStatus } from "./tokens"
 import { statusDotClasses } from "./tokens"
@@ -70,7 +70,8 @@ export function FeedbackSummaryBar({
 				const count = counts[status]
 				const isActive = activeStatus === status
 				const classes = [
-					"inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-full border transition-colors",
+					touchTargetClass,
+					"inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors",
 					isActive
 						? "bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700"
 						: "border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600",

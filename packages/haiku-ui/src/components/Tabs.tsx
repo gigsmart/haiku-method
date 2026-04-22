@@ -5,7 +5,7 @@ import {
 	useRef,
 	useState,
 } from "react"
-import { focusRingClass } from "../a11y"
+import { focusRingClass, touchTargetClass } from "../a11y"
 
 export interface TabDef {
 	id: string
@@ -78,7 +78,7 @@ export function Tabs({ groupId, tabs }: Props) {
 							tabIndex={isActive && !disabled ? 0 : -1}
 							aria-disabled={disabled || undefined}
 							onClick={() => !disabled && activate(tab.id)}
-							className={`${focusRingClass} px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+							className={`${touchTargetClass} ${focusRingClass} inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
 								disabled
 									? "border-transparent text-stone-600 dark:text-stone-300 cursor-not-allowed"
 									: isActive

@@ -28,7 +28,7 @@ import {
 	useMemo,
 	useRef,
 } from "react"
-import { focusRingCompactClass, useAnnounce } from "../../a11y"
+import { focusRingCompactClass, touchTargetClass, useAnnounce } from "../../a11y"
 import type { FeedbackItemData } from "../../types"
 import { FeedbackOriginIcon } from "./FeedbackOriginIcon"
 import { FeedbackStatusBadge } from "./FeedbackStatusBadge"
@@ -54,7 +54,7 @@ export interface FeedbackItemProps {
 }
 
 const ACTION_BUTTON_BASE =
-	"text-xs font-medium px-2 py-1 rounded-md transition-colors " +
+	`${touchTargetClass} inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors ` +
 	focusRingCompactClass
 
 const DISMISS_CLASSES =
