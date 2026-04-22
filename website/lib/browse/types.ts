@@ -82,23 +82,14 @@ function dedupeTopLevelYamlKeys(yaml: string): { cleaned: string; removed: strin
 	if (current) sections.push(current)
 
 	const lastIdx = new Map<string, number>()
+	const counts = new Map<string, number>()
 	for (let i = 0; i < sections.length; i++) {
 		const k = sections[i].key
-		if (k) lastIdx.set(k, i)
+		if (!k) continue
+		lastIdx.set(k, i)
+		counts.set(k, (counts.get(k) ?? 0) + 1)
 	}
-	const seen = new Set<string>()
 	const removed: string[] = []
-	for (const s of sections) {
-		if (!s.key) continue
-		if (seen.has(s.key)) continue
-		seen.add(s.key)
-	}
-	// Track which keys had duplicates so callers can log them
-	const counts = new Map<string, number>()
-	for (const s of sections) {
-		if (!s.key) continue
-		counts.set(s.key, (counts.get(s.key) ?? 0) + 1)
-	}
 	for (const [k, n] of counts) if (n > 1) removed.push(k)
 
 	const out: string[] = []
@@ -110,6 +101,11 @@ function dedupeTopLevelYamlKeys(yaml: string): { cleaned: string; removed: strin
 	return { cleaned: out.join("\n"), removed }
 }
 
+// Matches js-yaml v4's "duplicated mapping key" error text (as used by
+// gray-matter). If gray-matter ever swaps YAML parsers or the message
+// changes, the dedupe recovery path in safeParseFrontmatter silently
+// becomes dead — the parser-dedupe test suite in packages/haiku catches
+// the drift since that file uses the same upstream.
 function isDuplicateKeyError(err: unknown): boolean {
 	const msg = err instanceof Error ? err.message : String(err)
 	return /duplicated mapping key/i.test(msg)
@@ -149,13 +145,20 @@ export function safeParseFrontmatter(
 		}
 		const err = e instanceof Error ? e : new Error(String(e))
 		console.error(`[haiku-browse] Failed to parse frontmatter at ${context.path}:`, err.message)
+		// Send top-level YAML key names only (no values) — frontmatter can contain
+		// user content, team/branch names, or credential-adjacent fields that
+		// shouldn't leave the host environment.
+		const keyMatches = raw.match(/^([A-Za-z_][A-Za-z0-9_-]*):/gm) ?? []
+		const frontmatterKeys = Array.from(
+			new Set(keyMatches.map((k) => k.replace(/:$/, ""))),
+		)
 		Sentry.captureException(err, {
 			tags: { component: "haiku-browse", provider: context.provider, kind: "frontmatter-parse" },
 			extra: {
 				slug: context.slug,
 				branch: context.branch,
 				path: context.path,
-				rawSnippet: raw.slice(0, 500),
+				frontmatterKeys,
 			},
 		})
 		return null

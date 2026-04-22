@@ -59,11 +59,9 @@ function parseHeaders(raw: string): Record<string, string> {
 function resolveEndpoint(): string {
 	const signal = env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT")
 	if (signal) return signal
-	const base =
-		(env("OTEL_EXPORTER_OTLP_ENDPOINT") || "http://localhost:4318").replace(
-			/\/$/,
-			"",
-		)
+	const base = (
+		env("OTEL_EXPORTER_OTLP_ENDPOINT") || "http://localhost:4318"
+	).replace(/\/$/, "")
 	return `${base}/v1/logs`
 }
 
@@ -156,9 +154,14 @@ function helperDebounceMs(): number {
 }
 
 function invokeHelper(path: string): Record<string, string> | null {
-	const result = spawnSync(path, [], {
+	// Split on whitespace so commands like `python3 /path/to/helper.py` work.
+	// Do NOT use shell: true — `otelHeadersHelper` can come from a project-level
+	// .claude/settings.json that anyone with repo write access can edit, so
+	// passing the value through a shell would allow metacharacter injection.
+	const [command, ...args] = path.split(/\s+/).filter(Boolean)
+	if (!command) return null
+	const result = spawnSync(command, args, {
 		encoding: "utf8",
-		shell: true,
 		timeout: 10_000,
 	})
 	if (result.status !== 0) {
@@ -204,13 +207,20 @@ function invokeHelper(path: string): Record<string, string> | null {
 }
 
 function resolveHelperHeaders(): Record<string, string> {
-	const path = resolveOtelHeadersHelperPath()
-	if (!path) return {}
+	// Check the cache before resolving the path. resolveOtelHeadersHelperPath()
+	// reads up to 3 settings files, and emitTelemetry runs on every state
+	// transition — so do the settings lookup only on cache miss.
 	const ttl = helperDebounceMs()
 	if (
-		helperHeadersCache &&
+		helperHeadersCache !== null &&
 		Date.now() - helperHeadersFetchedAt < ttl
 	) {
+		return helperHeadersCache
+	}
+	const path = resolveOtelHeadersHelperPath()
+	if (!path) {
+		helperHeadersCache = {}
+		helperHeadersFetchedAt = Date.now()
 		return helperHeadersCache
 	}
 	const fresh = invokeHelper(path)

@@ -19,7 +19,10 @@ const EXCLUDED_ENTRIES = new Set(["worktrees", "settings.yml"])
  * last occurrence. Returns the rewritten document and the list of keys that had
  * duplicates. If there's no frontmatter or no duplicates, returns the input unchanged.
  */
-function dedupeFrontmatterKeys(raw: string): { text: string; removed: string[] } {
+function dedupeFrontmatterKeys(raw: string): {
+	text: string
+	removed: string[]
+} {
 	const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---(\r?\n[\s\S]*)?$/)
 	if (!m) return { text: raw, removed: [] }
 	const { cleaned, removed } = dedupeTopLevelYamlKeys(m[1])
@@ -70,6 +73,9 @@ function dedupeTopLevelYamlKeys(yamlBlock: string): {
 	return { cleaned: out.join("\n"), removed }
 }
 
+// Matches js-yaml v4's "duplicated mapping key" error text (as used by
+// gray-matter). If gray-matter ever swaps YAML parsers or the message
+// changes, the `parser-dedupe` test suite catches the drift.
 function isDuplicateKeyError(err: unknown): boolean {
 	const msg = err instanceof Error ? err.message : String(err)
 	return /duplicated mapping key/i.test(msg)
