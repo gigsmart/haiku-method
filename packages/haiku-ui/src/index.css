@@ -34,6 +34,39 @@
 	--color-origin-user-bg: oklch(95.17% 0.027 228.25);
 	--color-origin-agent-fg: oklch(44.51% 0.095 188.25);
 	--color-origin-agent-bg: oklch(95.12% 0.04 178.72);
+
+	/* ─── Component color tokens (FB-42) ───
+	   Promoted out of component rules below so a future accent-color swap
+	   is one-line-per-token instead of a hand-patched index.css rewrite.
+	   Canonical source: DESIGN-TOKENS §1.8 Semantic Colors (Named Roles). */
+
+	/* Annotation pin (DESIGN-TOKENS §1.8 "Annotation red" — rose-600). */
+	--color-annotation-pin-bg: oklch(63.52% 0.237 22.75); /* rose-600 */
+	--color-annotation-pin-fg: oklch(100% 0 0); /* white */
+	--color-annotation-pin-selected-outline: oklch(
+		62.3% 0.214 259.81
+	); /* blue-500 */
+
+	/* Inline highlight (DESIGN-TOKENS §1.8 "Inline highlight" — amber-400).
+	   Declared at 1.0 opacity; component rules derive faded states via
+	   color-mix(in oklch, var(--color-highlight), transparent NN%). */
+	--color-highlight: oklch(82.82% 0.189 84.43); /* amber-400 */
+
+	/* Active comment border / hover tint (DESIGN-TOKENS §1.8 "Active comment
+	   border" — blue-500). */
+	--color-comment-active: oklch(62.3% 0.214 259.81); /* blue-500 */
+
+	/* Pulse ring — FeedbackFloatingButton keyframe (teal-600). */
+	--color-pulse-ring: oklch(60.05% 0.118 184.7); /* teal-600 */
+
+	/* Scrim used by <dialog>::backdrop. 50% black by design. */
+	--color-scrim: oklch(0% 0 0 / 0.5);
+
+	/* Drop shadow tint (pin box-shadow). 30% black. */
+	--color-shadow-soft: oklch(0% 0 0 / 0.3);
+
+	/* Dark-mode sheet surface — matches Tailwind stone-900. */
+	--color-sheet-surface-dark: oklch(21.47% 0.006 56.04); /* stone-900 */
 }
 
 /* Canonical container tokens (DESIGN-TOKENS §2.5 + unit-04 spec §Scope).
@@ -135,19 +168,19 @@ pre {
 	width: 24px;
 	height: 24px;
 	border-radius: 50%;
-	background: #e11d48;
-	color: #fff;
+	background: var(--color-annotation-pin-bg);
+	color: var(--color-annotation-pin-fg);
 	font-size: 11px;
 	font-weight: 700;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	transform: translate(-50%, -50%);
-	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+	box-shadow: 0 2px 6px var(--color-shadow-soft);
 	pointer-events: auto;
 	cursor: pointer;
 	z-index: 10;
-	border: 2px solid #fff;
+	border: 2px solid var(--color-annotation-pin-fg);
 	transition: transform 0.1s;
 }
 .annotation-pin:hover {
@@ -162,21 +195,30 @@ pre {
 	}
 }
 .annotation-pin.selected {
-	outline: 2px solid #3b82f6;
+	outline: 2px solid var(--color-annotation-pin-selected-outline);
 	outline-offset: 2px;
 }
 
 /* Inline highlight for comments */
 .inline-highlight {
-	background-color: rgba(251, 191, 36, 0.3);
-	border-bottom: 2px solid rgba(251, 191, 36, 0.7);
+	background-color: color-mix(
+		in oklch,
+		var(--color-highlight),
+		transparent 70%
+	);
+	border-bottom: 2px solid
+		color-mix(in oklch, var(--color-highlight), transparent 30%);
 	cursor: pointer;
 	transition: background-color 0.15s;
 	border-radius: 2px;
 }
 .inline-highlight:hover,
 .inline-highlight.active {
-	background-color: rgba(251, 191, 36, 0.5);
+	background-color: color-mix(
+		in oklch,
+		var(--color-highlight),
+		transparent 50%
+	);
 }
 @media (prefers-reduced-motion: reduce) {
 	.inline-highlight {
@@ -198,11 +240,16 @@ pre {
 .comment-entry.active,
 .margin-comment:hover,
 .margin-comment.active {
-	border-color: #3b82f6;
-	background-color: rgba(59, 130, 246, 0.05);
+	border-color: var(--color-comment-active);
+	background-color: color-mix(
+		in oklch,
+		var(--color-comment-active),
+		transparent 95%
+	);
 }
 .margin-comment {
-	border-left: 3px solid rgba(251, 191, 36, 0.7);
+	border-left: 3px solid
+		color-mix(in oklch, var(--color-highlight), transparent 30%);
 }
 @media (prefers-reduced-motion: reduce) {
 	.comment-entry,
@@ -261,11 +308,11 @@ dialog.feedback-sheet {
 
 /* dark mode — match DESIGN-TOKENS §2.5 bg-stone-900 */
 :where(.dark) dialog.feedback-sheet {
-	background: #1c1917;
+	background: var(--color-sheet-surface-dark);
 }
 
 dialog.feedback-sheet::backdrop {
-	background: rgba(0, 0, 0, 0.5);
+	background: var(--color-scrim);
 	backdrop-filter: blur(2px);
 }
 
@@ -318,10 +365,11 @@ dialog.feedback-sheet[open]::backdrop {
 @keyframes feedback-fab-pulse {
 	0%,
 	100% {
-		box-shadow: 0 0 0 0 rgb(13 148 136 / 0.4);
+		box-shadow: 0 0 0 0
+			color-mix(in oklch, var(--color-pulse-ring), transparent 60%);
 	}
 	50% {
-		box-shadow: 0 0 0 8px rgb(13 148 136 / 0);
+		box-shadow: 0 0 0 8px transparent;
 	}
 }
 .feedback-fab-pulse {

@@ -104,6 +104,48 @@ export const features = {
 /** Review-related configuration. */
 export const review = {
 	siteUrl: str("HAIKU_REVIEW_SITE_URL", "https://haikumethod.ai"),
+	/**
+	 * Origins permitted to make cross-origin requests to the MCP server when
+	 * remote review is enabled. Populate with a comma-separated list of
+	 * explicit origins via `HAIKU_REVIEW_ALLOWED_ORIGINS` (e.g.
+	 * `https://haikumethod.ai,https://staging.haikumethod.ai`). When the env
+	 * var is empty (the default), the effective allow-list collapses to
+	 * `[siteUrl]`, which is the zero-config single-origin path.
+	 *
+	 * NEVER set this to `*` — the MCP server performs mutating actions and a
+	 * wildcard here combined with the session-token-in-URL auth model would
+	 * let any site the reviewer visits cross-origin mutate their state. The
+	 * startup guard in `stripWildcardAllowedOrigins()` logs a warning and
+	 * strips any `*` entry before it can be honored. Changes require a
+	 * process restart because env vars are read once at module load.
+	 */
+	allowedOrigins: str("HAIKU_REVIEW_ALLOWED_ORIGINS", "")
+		.split(",")
+		.map((o) => o.trim())
+		.filter(Boolean),
+}
+
+/**
+ * Defense-in-depth: if the operator set `HAIKU_REVIEW_ALLOWED_ORIGINS=*` (or
+ * included `*` in the CSV), warn loudly and strip it. Wildcard CORS combined
+ * with this server's auth model is the exact attack pattern FB-36 closed.
+ * Call this once at server startup after the config module has loaded.
+ *
+ * Returns the number of wildcard entries that were stripped, primarily for
+ * test assertions.
+ */
+export function stripWildcardAllowedOrigins(): number {
+	const before = review.allowedOrigins.length
+	const cleaned = review.allowedOrigins.filter((o) => o !== "*")
+	const stripped = before - cleaned.length
+	if (stripped > 0) {
+		console.warn(
+			'[haiku] WARN: HAIKU_REVIEW_ALLOWED_ORIGINS contained "*". Ignoring — wildcard CORS is unsafe with this server\'s auth model. Set an explicit allow-list.',
+		)
+		review.allowedOrigins.length = 0
+		review.allowedOrigins.push(...cleaned)
+	}
+	return stripped
 }
 
 /** Auto-update configuration. */

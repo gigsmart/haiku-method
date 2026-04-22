@@ -33,9 +33,10 @@ import {
 	type ZodIssueWire,
 } from "haiku-api"
 import type { ZodTypeAny, z } from "zod"
+import { review } from "./config.js"
 import { ensureOnStageBranch } from "./git-worktree.js"
-import { handleOrchestratorTool } from "./orchestrator.js"
 import { HAIKU_UI_HTML } from "./haiku-ui-html.js"
+import { handleOrchestratorTool } from "./orchestrator.js"
 import type {
 	QuestionAnnotations,
 	QuestionAnswer,
@@ -62,7 +63,12 @@ import {
 	updateFeedbackFile,
 	writeFeedbackFile,
 } from "./state-tools.js"
-import { e2eEncrypt, isE2EActive, isRemoteReviewEnabled } from "./tunnel.js"
+import {
+	e2eEncrypt,
+	isE2EActive,
+	isRemoteReviewEnabled,
+	verifyTunnelJWT,
+} from "./tunnel.js"
 
 // ─── Validation helpers ────────────────────────────────────────────────────
 //
@@ -330,28 +336,71 @@ const MIME_TYPES: Record<string, string> = {
 	".pdf": "application/pdf",
 }
 
-/** Add CORS headers when remote review is enabled */
-function withCors(response: Response): Response {
+/**
+ * Resolve the CORS allow-list for this server. Collapses to `[siteUrl]` when
+ * `HAIKU_REVIEW_ALLOWED_ORIGINS` is unset, so the zero-config happy path
+ * still works. `"*"` entries are stripped by `stripWildcardAllowedOrigins()`
+ * at server startup; a stray one reaching this point is also filtered here
+ * as belt-and-suspenders.
+ */
+function resolveAllowedCorsOrigin(origin: string | null): string | null {
+	if (!origin) return null
+	const configured = review.allowedOrigins.filter((o) => o && o !== "*")
+	const allowList = configured.length > 0 ? configured : [review.siteUrl]
+	// Exact string match only — substring/prefix checks open subdomain
+	// takeover / suffix-bypass attacks. The reviewer always arrives from a
+	// known origin, so exact match is correct.
+	return allowList.includes(origin) ? origin : null
+}
+
+/**
+ * Add CORS headers when remote review is enabled, gated on the request's
+ * `Origin` header matching the allow-list.
+ *
+ * Invariants (FB-36):
+ *   - NEVER emit `Access-Control-Allow-Origin: *`. This server performs
+ *     mutating actions and the auth model (URL-fragment JWT) cannot defend
+ *     against cross-origin abuse if the wildcard is in play.
+ *   - NEVER emit `Access-Control-Allow-Credentials: true`. Credentials
+ *     (cookies, HTTP auth) are not the transport for this session; allowing
+ *     them would re-introduce cross-origin cookie-carrying mutations.
+ *   - Always append `Vary: Origin`, even when the origin is disallowed, so
+ *     shared caches/CDNs treat each origin as a distinct cache entry and do
+ *     not leak one origin's response to another.
+ *   - When the origin is not allowed, emit NO ACAO/ACAM/ACAH/ACEH headers.
+ *     The browser then blocks the cross-origin read. Setting ACAO to `""`
+ *     is unsafe due to legacy browser quirks — omit it entirely.
+ */
+function withCors(response: Response, requestOrigin: string | null): Response {
 	if (!isRemoteReviewEnabled()) return response
 	const headers = new Headers(response.headers)
-	headers.set("Access-Control-Allow-Origin", "*")
-	headers.set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS")
-	// `bypass-tunnel-reminder` is the custom header the SPA sends to skip
-	// loca.lt's interstitial reminder page. `X-Haiku-Session-Id` is the
-	// cross-session auth header required on mutating feedback calls when the
-	// tunnel is live (see `verifyFeedbackMutationAuth`). Custom headers
-	// trigger a CORS preflight and must be explicitly allowed.
-	headers.set(
-		"Access-Control-Allow-Headers",
-		"Content-Type, bypass-tunnel-reminder, X-Haiku-Session-Id",
-	)
-	// `X-E2E-Encrypted` / `X-Original-Content-Type` are read by the SPA's
-	// e2eFetch helper to decide whether to decrypt. Custom response headers
-	// are only visible to cross-origin JS when exposed here.
-	headers.set(
-		"Access-Control-Expose-Headers",
-		"X-E2E-Encrypted, X-Original-Content-Type",
-	)
+	// Append (not set) Vary so any existing Vary header on the response is
+	// preserved. Caches see "Vary: <existing>, Origin" and partition correctly.
+	headers.append("Vary", "Origin")
+	const allowed = resolveAllowedCorsOrigin(requestOrigin)
+	if (allowed) {
+		headers.set("Access-Control-Allow-Origin", allowed)
+		headers.set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS")
+		// `bypass-tunnel-reminder` is the custom header the SPA sends to skip
+		// loca.lt's interstitial reminder page. `X-Haiku-Session-Id` is the
+		// cross-session auth header required on mutating feedback calls when
+		// the tunnel is live (see `verifyFeedbackMutationAuth`). Custom
+		// headers trigger a CORS preflight and must be explicitly allowed.
+		headers.set(
+			"Access-Control-Allow-Headers",
+			"Authorization, Content-Type, bypass-tunnel-reminder, X-Haiku-Session-Id",
+		)
+		// `X-E2E-Encrypted` / `X-Original-Content-Type` are read by the SPA's
+		// e2eFetch helper to decide whether to decrypt. Custom response
+		// headers are only visible to cross-origin JS when exposed here.
+		headers.set(
+			"Access-Control-Expose-Headers",
+			"X-E2E-Encrypted, X-Original-Content-Type",
+		)
+	}
+	// else: disallowed origin (or absent Origin on a same-origin request).
+	// No ACAO/ACAM/ACAH/ACEH headers. Same-origin works without them; cross-
+	// origin is blocked by the browser. Vary: Origin is still set above.
 	return new Response(response.body, {
 		status: response.status,
 		statusText: response.statusText,
@@ -365,6 +414,74 @@ function extractSessionId(path: string): string | null {
 		/\/(?:api\/session|review|question|direction|files|mockups|wireframe|stage-artifacts|question-image)\/([^/]+)/,
 	)
 	return match?.[1] ?? null
+}
+
+/**
+ * Extract the tunnel-auth JWT from a request.
+ *
+ * Resolution order:
+ *   1. `Authorization: Bearer <jwt>` header — used by the typed ApiClient
+ *      for JSON API calls.
+ *   2. `?t=<jwt>` query parameter — used by asset URLs (`<img src>`,
+ *      `<iframe src>`) and the WebSocket upgrade, neither of which can
+ *      attach custom request headers from a browser.
+ *
+ * Returns null if neither is present.
+ */
+function extractTunnelToken(req: Request): string | null {
+	const authz = req.headers.get("authorization")
+	if (authz) {
+		const m = authz.match(/^Bearer\s+(.+)$/i)
+		if (m) {
+			const raw = m[1].trim()
+			if (raw) return raw
+		}
+	}
+	const url = new URL(req.url)
+	const t = url.searchParams.get("t")
+	return t?.trim() || null
+}
+
+/**
+ * Enforce tunnel-JWT auth on a single route when remote review is live.
+ *
+ * - When `isRemoteReviewEnabled()` is false (local MCP, loopback only):
+ *   no-op; returns `{ ok: true }` and the caller proceeds.
+ * - When remote review is on: caller MUST present a token that verifies
+ *   against `EPHEMERAL_SECRET`, is not expired, binds to the currently
+ *   active tunnel URL, and (when `expectedSid` is a string) matches the
+ *   URL's session id. Any failure returns a minimal 401 body — no session
+ *   state leaks on a failed auth.
+ *
+ * This is the authentication layer. Authorization guards (cross-session
+ * / cross-intent — see `verifyFeedbackMutationAuth`) run after this one.
+ */
+function requireTunnelAuth(
+	req: Request,
+	expectedSid: string | null,
+): { ok: true } | { ok: false; response: Response } {
+	if (!isRemoteReviewEnabled()) return { ok: true }
+	const token = extractTunnelToken(req)
+	if (!token) {
+		return {
+			ok: false,
+			response: Response.json(
+				{ error: "unauthorized", reason: "missing_token" },
+				{ status: 401 },
+			),
+		}
+	}
+	const result = verifyTunnelJWT(token, expectedSid)
+	if (!result.ok) {
+		return {
+			ok: false,
+			response: Response.json(
+				{ error: "unauthorized", reason: result.reason },
+				{ status: 401 },
+			),
+		}
+	}
+	return { ok: true }
 }
 
 /**
@@ -932,6 +1049,24 @@ function handleUpgrade(
 		socket.write("HTTP/1.1 404 Not Found\r\n\r\n")
 		socket.destroy()
 		return
+	}
+
+	// Tunnel-auth gate. Browsers cannot attach custom headers to a
+	// WebSocket upgrade, so the JWT rides in `?t=<jwt>` on the upgrade
+	// URL. In local-only mode (no public tunnel) this is a no-op.
+	if (isRemoteReviewEnabled()) {
+		const token = url.searchParams.get("t")?.trim()
+		if (!token) {
+			socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n")
+			socket.destroy()
+			return
+		}
+		const result = verifyTunnelJWT(token, sessionId)
+		if (!result.ok) {
+			socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n")
+			socket.destroy()
+			return
+		}
 	}
 
 	const key = req.headers["sec-websocket-key"]
@@ -1640,8 +1775,12 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	const path = url.pathname
 
 	// CORS preflight (handled before E2E — preflight is plaintext).
-	// The network-layer middleware (see `listenOnPort`) already applies
-	// `withCors` to every response, so returning a bare 204 here is enough.
+	// The network-layer middleware (see `listenOnPort`) applies `withCors`,
+	// which gates ACAO/ACAM/ACAH/ACEH on the request's Origin header. A
+	// disallowed origin gets a bare 204 with no CORS headers, so the browser
+	// blocks the real request — preflight leaks only that the endpoint
+	// exists, not a grant of access. Returning 204 with an empty body is
+	// safe; no mutation, no data.
 	if (req.method === "OPTIONS" && isRemoteReviewEnabled()) {
 		return new Response(null, { status: 204 })
 	}
@@ -1649,28 +1788,38 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	// GET /files/:sessionId/*path — consolidated file serving
 	const filesMatch = path.match(/^\/files\/([^/]+)\/(.+)$/)
 	if (filesMatch && req.method === "GET") {
+		const auth = requireTunnelAuth(req, filesMatch[1])
+		if (!auth.ok) return auth.response
 		return handleFileGet(filesMatch[1], filesMatch[2])
 	}
 
 	// GET /api/session/:sessionId — JSON API for the SPA
 	const apiSessionMatch = path.match(/^\/api\/session\/([^/]+)$/)
 	if (apiSessionMatch && req.method === "GET") {
+		const auth = requireTunnelAuth(req, apiSessionMatch[1])
+		if (!auth.ok) return auth.response
 		return handleSessionApi(apiSessionMatch[1])
 	}
 
 	// HEAD /api/session/:sessionId/heartbeat — client presence ping
 	const heartbeatMatch = path.match(/^\/api\/session\/([^/]+)\/heartbeat$/)
 	if (heartbeatMatch && req.method === "HEAD") {
+		const auth = requireTunnelAuth(req, heartbeatMatch[1])
+		if (!auth.ok) return auth.response
 		const ok = recordHeartbeat(heartbeatMatch[1])
 		return new Response(null, { status: ok ? 200 : 404 })
 	}
 
 	// GET /review/current — always-available review pane (must be before /:sessionId)
+	// SPA shell: no auth gate. The token is in the URL fragment which the
+	// server never sees. The SPA reads it from `window.location.hash` and
+	// attaches it to every subsequent API call.
 	if (path === "/review/current" && req.method === "GET") {
 		return serveSpa()
 	}
 
 	// GET /review/:sessionId
+	// SPA shell: no auth gate (see /review/current above).
 	const reviewMatch = path.match(/^\/review\/([^/]+)$/)
 	if (reviewMatch && req.method === "GET") {
 		return handleReviewGet(reviewMatch[1])
@@ -1679,28 +1828,37 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	// POST /review/:sessionId/decide
 	const decideMatch = path.match(/^\/review\/([^/]+)\/decide$/)
 	if (decideMatch && req.method === "POST") {
+		const auth = requireTunnelAuth(req, decideMatch[1])
+		if (!auth.ok) return auth.response
 		return handleDecidePost(decideMatch[1], req)
 	}
 
 	// GET /mockups/:sessionId/:path
 	const mockupMatch = path.match(/^\/mockups\/([^/]+)\/(.+)$/)
 	if (mockupMatch && req.method === "GET") {
+		const auth = requireTunnelAuth(req, mockupMatch[1])
+		if (!auth.ok) return auth.response
 		return handleMockupGet(mockupMatch[1], mockupMatch[2])
 	}
 
 	// GET /wireframe/:sessionId/:path
 	const wireframeMatch = path.match(/^\/wireframe\/([^/]+)\/(.+)$/)
 	if (wireframeMatch && req.method === "GET") {
+		const auth = requireTunnelAuth(req, wireframeMatch[1])
+		if (!auth.ok) return auth.response
 		return handleWireframeGet(wireframeMatch[1], wireframeMatch[2])
 	}
 
 	// GET /stage-artifacts/:sessionId/:path
 	const stageArtifactMatch = path.match(/^\/stage-artifacts\/([^/]+)\/(.+)$/)
 	if (stageArtifactMatch && req.method === "GET") {
+		const auth = requireTunnelAuth(req, stageArtifactMatch[1])
+		if (!auth.ok) return auth.response
 		return handleStageArtifactGet(stageArtifactMatch[1], stageArtifactMatch[2])
 	}
 
 	// GET /direction/:sessionId
+	// SPA shell: no auth gate.
 	const directionMatch = path.match(/^\/direction\/([^/]+)$/)
 	if (directionMatch && req.method === "GET") {
 		return handleDirectionGet(directionMatch[1])
@@ -1709,12 +1867,16 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	// POST /direction/:sessionId/select
 	const directionSelectMatch = path.match(/^\/direction\/([^/]+)\/select$/)
 	if (directionSelectMatch && req.method === "POST") {
+		const auth = requireTunnelAuth(req, directionSelectMatch[1])
+		if (!auth.ok) return auth.response
 		return handleDirectionSelectPost(directionSelectMatch[1], req)
 	}
 
 	// GET /question-image/:sessionId/:index
 	const questionImageMatch = path.match(/^\/question-image\/([^/]+)\/(\d+)$/)
 	if (questionImageMatch && req.method === "GET") {
+		const auth = requireTunnelAuth(req, questionImageMatch[1])
+		if (!auth.ok) return auth.response
 		return handleQuestionImageGet(
 			questionImageMatch[1],
 			Number.parseInt(questionImageMatch[2], 10),
@@ -1722,6 +1884,7 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	}
 
 	// GET /question/:sessionId
+	// SPA shell: no auth gate.
 	const questionMatch = path.match(/^\/question\/([^/]+)$/)
 	if (questionMatch && req.method === "GET") {
 		return handleQuestionGet(questionMatch[1])
@@ -1730,31 +1893,49 @@ function handleRequest(req: Request): Response | Promise<Response> {
 	// POST /question/:sessionId/answer
 	const questionAnswerMatch = path.match(/^\/question\/([^/]+)\/answer$/)
 	if (questionAnswerMatch && req.method === "POST") {
+		const auth = requireTunnelAuth(req, questionAnswerMatch[1])
+		if (!auth.ok) return auth.response
 		return handleQuestionAnswerPost(questionAnswerMatch[1], req)
 	}
 
 	// ─── Review pane (always-available) ────────────────────────────────
 	// GET /api/review/current — return current active intent state
+	// No session id in the path; pass `expectedSid = null` so any valid
+	// tunnel-bound, unexpired token unlocks the read. This is weaker than
+	// per-session gating but stronger than no gate at all.
 	if (path === "/api/review/current" && req.method === "GET") {
+		const auth = requireTunnelAuth(req, null)
+		if (!auth.ok) return auth.response
 		return handleReviewCurrent()
 	}
 
 	// POST /api/revisit/:sessionId — review UI → FSM rollback
 	const revisitMatch = path.match(/^\/api\/revisit\/([^/]+)$/)
 	if (revisitMatch && req.method === "POST") {
+		const auth = requireTunnelAuth(req, revisitMatch[1])
+		if (!auth.ok) return auth.response
 		return handleRevisitPost(revisitMatch[1], req)
 	}
 
 	// ─── Feedback CRUD ─────────────────────────────────────────────────
+	// Feedback routes are intent-scoped (no :sid in path). Gate on any
+	// valid tunnel-bound token (`expectedSid = null`). Cross-session /
+	// cross-intent authorization still runs inside the mutation guard
+	// (`verifyFeedbackMutationAuth`) on POST/PUT/DELETE — JWT is the
+	// authentication layer, that guard is the authorization layer.
 
 	// GET /api/feedback/:intent/:stage
 	const feedbackGetMatch = path.match(/^\/api\/feedback\/([^/]+)\/([^/]+)$/)
 	if (feedbackGetMatch && req.method === "GET") {
+		const auth = requireTunnelAuth(req, null)
+		if (!auth.ok) return auth.response
 		return handleFeedbackGet(feedbackGetMatch[1], feedbackGetMatch[2], url)
 	}
 
 	// POST /api/feedback/:intent/:stage
 	if (feedbackGetMatch && req.method === "POST") {
+		const auth = requireTunnelAuth(req, null)
+		if (!auth.ok) return auth.response
 		return handleFeedbackPost(feedbackGetMatch[1], feedbackGetMatch[2], req)
 	}
 
@@ -1763,6 +1944,8 @@ function handleRequest(req: Request): Response | Promise<Response> {
 		/^\/api\/feedback\/([^/]+)\/([^/]+)\/([^/]+)$/,
 	)
 	if (feedbackItemMatch && req.method === "PUT") {
+		const auth = requireTunnelAuth(req, null)
+		if (!auth.ok) return auth.response
 		return handleFeedbackPut(
 			feedbackItemMatch[1],
 			feedbackItemMatch[2],
@@ -1773,6 +1956,8 @@ function handleRequest(req: Request): Response | Promise<Response> {
 
 	// DELETE /api/feedback/:intent/:stage/:id
 	if (feedbackItemMatch && req.method === "DELETE") {
+		const auth = requireTunnelAuth(req, null)
+		if (!auth.ok) return auth.response
 		return handleFeedbackDelete(
 			feedbackItemMatch[1],
 			feedbackItemMatch[2],
@@ -1917,9 +2102,16 @@ function listenOnPort(port: number): Promise<void> {
 
 			try {
 				let webResponse = await handleRequest(webRequest)
-				// Network-layer: apply CORS + E2E encryption to all responses
+				// Network-layer: apply CORS + E2E encryption to all responses.
+				// The Origin header is forwarded to withCors so it can emit the
+				// allow-list-matched value (or omit ACAO entirely for
+				// disallowed origins). See withCors for the invariants.
 				const sessionId = extractSessionId(new URL(webRequest.url).pathname)
-				webResponse = await withE2E(withCors(webResponse), sessionId)
+				const requestOrigin = webRequest.headers.get("origin")
+				webResponse = await withE2E(
+					withCors(webResponse, requestOrigin),
+					sessionId,
+				)
 				res.writeHead(
 					webResponse.status,
 					Object.fromEntries(webResponse.headers.entries()),

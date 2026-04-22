@@ -17,6 +17,7 @@ import {
 	startUpdateChecker,
 	stopUpdateChecker,
 } from "./auto-update.js"
+import { stripWildcardAllowedOrigins } from "./config.js"
 import { ensureOnStageBranch } from "./git-worktree.js"
 import { startHttpServer } from "./http.js"
 import {
@@ -1083,6 +1084,12 @@ setElicitInputHandler(async (params) => {
 
 // Start server
 async function main() {
+	// FB-36: strip any `*` from HAIKU_REVIEW_ALLOWED_ORIGINS before the
+	// HTTP layer starts applying CORS. Wildcard CORS on this server is
+	// unsafe because the session-token-in-URL auth cannot defend against
+	// cross-origin abuse when any origin is accepted.
+	stripWildcardAllowedOrigins()
+
 	const transport = new StdioServerTransport()
 	await server.connect(transport)
 	const harnessInfo = isClaudeCode()

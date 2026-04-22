@@ -153,11 +153,10 @@
 				},
 				{
 					"id": "banned-raw-hex",
-					"description": "Raw hex colors banned outside src/index.css (where @theme token definitions live). Tokens must route through tailwind classes. Allow-list via inline `// audit-allow: <reason>` for 3rd-party renderer configs (mermaid, xyflow, canvas 2D).",
+					"description": "Raw hex colors banned in haiku-ui sources. Tokens must route through CSS custom properties (index.css @theme) or Tailwind utilities. Allow-list via inline `// audit-allow: <reason>` for 3rd-party renderer configs (mermaid, xyflow, canvas 2D). FB-42: src/index.css is no longer blanket-excluded — every component-level hex must be promoted to a named token in @theme.",
 					"pattern": "#[0-9a-fA-F]{6}\\b",
 					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx,css}"],
 					"exclude": [
-						"packages/haiku-ui/src/index.css",
 						"**/__tests__/**",
 						"**/__snapshots__/**",
 						"**/*.test.{ts,tsx}",
