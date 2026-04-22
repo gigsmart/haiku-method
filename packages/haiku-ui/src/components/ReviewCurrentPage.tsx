@@ -1,8 +1,12 @@
 import { StatusBadge } from "@haiku/shared"
-import { useCallback } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useFeedback } from "../hooks/useFeedback"
 import type { ReviewCurrentResponse } from "../types"
-import { FeedbackPanel } from "./FeedbackPanel"
+import {
+	FeedbackList,
+	type FeedbackStatus,
+	FeedbackSummaryBar,
+} from "./feedback"
 import { ReviewContextHeader } from "./ReviewContextHeader"
 import { StageProgressStrip } from "./StageProgressStrip"
 
@@ -16,9 +20,15 @@ export function ReviewCurrentPage({ data }: Props) {
 		data.stage,
 	)
 
-	const handleUpdate = useCallback(
-		(feedbackId: string, fields: { status?: string }) => {
-			updateFeedback(feedbackId, fields).catch(() => {})
+	const [activeStatus, setActiveStatus] = useState<FeedbackStatus | null>(null)
+	const filtered = useMemo(() => {
+		if (!activeStatus) return items
+		return items.filter((item) => item.status === activeStatus)
+	}, [items, activeStatus])
+
+	const handleStatusChange = useCallback(
+		(id: string, next: FeedbackStatus): void => {
+			updateFeedback(id, { status: next }).catch(() => {})
 		},
 		[updateFeedback],
 	)
@@ -173,12 +183,23 @@ export function ReviewCurrentPage({ data }: Props) {
 
 				{/* Feedback sidebar */}
 				<aside className="hidden xl:flex w-[var(--sidebar-width)] xl:w-[var(--sidebar-width-xl)] shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex-col bg-white dark:bg-stone-900 border-l border-stone-200 dark:border-stone-700">
-					<FeedbackPanel
-						items={items}
-						loading={loading}
-						onUpdate={handleUpdate}
-						onDelete={handleDelete}
-					/>
+					<div className="flex flex-col flex-1 min-h-0">
+						<div className="shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-700">
+							<FeedbackSummaryBar
+								items={items}
+								activeStatus={activeStatus}
+								onFilter={setActiveStatus}
+							/>
+						</div>
+						<div className="flex-1 overflow-y-auto p-3">
+							<FeedbackList
+								items={filtered}
+								isLoading={loading}
+								onStatusChange={handleStatusChange}
+								onDelete={handleDelete}
+							/>
+						</div>
+					</div>
 				</aside>
 			</div>
 		</div>
