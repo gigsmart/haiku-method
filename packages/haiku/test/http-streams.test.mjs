@@ -351,6 +351,58 @@ async function run() {
 		assert.strictEqual(res.status, 403, `expected 403, got ${res.status}`)
 	})
 
+	// ── Schema-gate wiring verification (FB-15 bolt 3) ────────────────────────
+	//
+	// Unit-01 spec requires that FileServeParamsSchema.safeParse run BEFORE
+	// resolvePathSafe on every file-serve handler. These probes exercise the
+	// literal adversarial fixtures at the wire with raw request lines (no
+	// WHATWG `new URL()` normalization) so the schema check is the thing that
+	// rejects them, not the URL parser. If the schema-gate is wired correctly,
+	// every one returns 403 with `forbidden_path_traversal`. If it is not
+	// wired, null-byte and encoded variants that survive URL parsing will
+	// slip through to `resolvePathSafe`, which may 200-serve-a-directory or
+	// return 404 instead of the strict 403 contract the spec requires.
+	//
+	// NOTE: the bare `.` fixture from the unit-01 list is NOT tested here.
+	// `new URL("http://x/files/abc/.")` collapses the trailing `.` segment
+	// before the route matcher runs, so the schema gate never sees it at
+	// the http layer. Schema-level rejection of `.` is already covered by
+	// packages/haiku-api/test/schemas.test.mjs (FileServeParamsSchema
+	// adversarial-fixture test block) which exercises the refine() directly.
+	console.log("\n=== schema-gate wiring (FB-15) ===")
+
+	// Pre-encoded fixtures — what the attacker actually sends over the wire.
+	// `%00` is the encoded null byte; `%2e` is encoded dot.
+	const wireFixtures = [
+		["%2E%2E%2F", "encoded ../"],
+		["%2Fetc%2Fpasswd", "encoded /etc/passwd"],
+		["foo%00.png", "null-byte fixture foo\\x00.png"],
+		["a%00b", "embedded null byte a\\x00b"],
+	]
+
+	const routes = ["files", "mockups", "wireframe", "stage-artifacts"]
+	for (const route of routes) {
+		for (const [fixture, label] of wireFixtures) {
+			await test(`GET /${route} rejects ${label} with 403 (schema gate)`, async () => {
+				const res = await rawGet(
+					serverPort,
+					`/${route}/${reviewSessionId}/${fixture}`,
+				)
+				assert.strictEqual(
+					res.status,
+					403,
+					`expected 403, got ${res.status} for /${route}/…/${fixture}`,
+				)
+				const data = res.json()
+				assert.strictEqual(
+					data?.error,
+					"forbidden_path_traversal",
+					`expected forbidden_path_traversal, got ${data?.error}`,
+				)
+			})
+		}
+	}
+
 	console.log(`\n${passed} passed, ${failed} failed\n`)
 }
 

@@ -19,6 +19,7 @@ import {
 	type FeedbackListResponse,
 	FeedbackUpdateRequestSchema,
 	type FeedbackUpdateResponse,
+	FileServeParamsSchema,
 	QuestionAnswerRequestSchema,
 	type QuestionAnswerResponse,
 	type ReviewCurrentPayload,
@@ -540,11 +541,32 @@ async function respondWithFile(realPath: string): Promise<Response> {
 	}
 }
 
+/**
+ * Schema-level path refinement gate. Every file-serve handler (/files,
+ * /mockups, /wireframe, /stage-artifacts) runs this BEFORE `resolvePathSafe`
+ * so adversarial fixtures declared in the unit-01 spec
+ * (`['../', '%2e%2e%2f', '/etc/passwd', 'foo\x00.png', '\..\', '.', '',
+ * 'a\0b']`) are rejected at the wire contract, not just by defense-in-depth
+ * in `resolvePathSafe`. Returns a 403 Response on rejection, or `null` when
+ * the path passes schema validation and the caller should continue.
+ */
+function rejectUnsafePathParam(
+	sessionId: string,
+	filePath: string,
+): Response | null {
+	const parsed = FileServeParamsSchema.safeParse({ sessionId, path: filePath })
+	if (parsed.success) return null
+	return Response.json({ error: "forbidden_path_traversal" }, { status: 403 })
+}
+
 /** Consolidated file serving: GET /files/:sessionId/*path */
 async function handleFileGet(
 	sessionId: string,
 	filePath: string,
 ): Promise<Response> {
+	const schemaRejection = rejectUnsafePathParam(sessionId, filePath)
+	if (schemaRejection) return schemaRejection
+
 	const session = getSession(sessionId)
 	if (!session) {
 		return new Response("Session not found", { status: 404 })
@@ -605,6 +627,9 @@ async function handleMockupGet(
 	sessionId: string,
 	filePath: string,
 ): Promise<Response> {
+	const schemaRejection = rejectUnsafePathParam(sessionId, filePath)
+	if (schemaRejection) return schemaRejection
+
 	const session = getSession(sessionId)
 	if (!session || session.session_type !== "review") {
 		return new Response("Session not found", { status: 404 })
@@ -616,6 +641,9 @@ async function handleWireframeGet(
 	sessionId: string,
 	filePath: string,
 ): Promise<Response> {
+	const schemaRejection = rejectUnsafePathParam(sessionId, filePath)
+	if (schemaRejection) return schemaRejection
+
 	const session = getSession(sessionId)
 	if (!session || session.session_type !== "review") {
 		return new Response("Session not found", { status: 404 })
@@ -627,6 +655,9 @@ async function handleStageArtifactGet(
 	sessionId: string,
 	filePath: string,
 ): Promise<Response> {
+	const schemaRejection = rejectUnsafePathParam(sessionId, filePath)
+	if (schemaRejection) return schemaRejection
+
 	const session = getSession(sessionId)
 	if (!session || session.session_type !== "review") {
 		return new Response("Session not found", { status: 404 })
