@@ -72,7 +72,12 @@ function VirtualRow({
 	data,
 }: VirtualRowProps): React.ReactElement {
 	const item = data.items[index]
-	const isExpanded = data.expandedId === item.feedback_id
+	// Cards are always expanded now — the old disclosure hid the body
+	// + action buttons on the first click, which competed with the
+	// parent's delegated jump-to-target handler. Expanded-by-default
+	// surfaces everything up-front and the click still bubbles to the
+	// sidebar's handler for the jump.
+	const isExpanded = true
 	return (
 		// biome-ignore lint/a11y/useSemanticElements: react-window's FixedSizeList renders rows in an inner <div> — we cannot swap this virtualized row to a native <li> without controlling the parent list element (which would require innerElementType=ul across the virtualizer boundary).
 		<div
@@ -87,9 +92,9 @@ function VirtualRow({
 				}}
 				item={item}
 				isExpanded={isExpanded}
-				onToggle={() =>
-					data.setExpandedId(isExpanded ? null : item.feedback_id)
-				}
+				onToggle={() => {
+					/* no-op: cards always expanded */
+				}}
 				onStatusChange={data.onStatusChange}
 				onDelete={data.onDelete}
 			/>
@@ -245,7 +250,10 @@ export function FeedbackList({
 			className={`h-full overflow-y-auto space-y-2 py-3 ${className ?? ""}`}
 		>
 			{items.map((item, index) => {
-				const isExpanded = expandedId === item.feedback_id
+				// Always rendered expanded — see VirtualRow for the
+				// rationale. `expandedId` is kept for the keyboard-nav
+				// hook but no longer gates card body visibility.
+				const isExpanded = true
 				return (
 					<li
 						key={item.feedback_id}
@@ -259,9 +267,9 @@ export function FeedbackList({
 							}}
 							item={item}
 							isExpanded={isExpanded}
-							onToggle={() =>
-								setExpandedId(isExpanded ? null : item.feedback_id)
-							}
+							onToggle={() => {
+								/* no-op: cards always expanded */
+							}}
 							onStatusChange={onStatusChange}
 							onDelete={onDelete}
 						/>

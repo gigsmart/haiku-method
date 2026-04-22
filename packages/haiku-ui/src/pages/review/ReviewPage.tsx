@@ -27,6 +27,7 @@ import {
 } from "../../components/feedback"
 import type { InlineCommentEntry } from "../../components/InlineComments"
 import { StageProgressStrip } from "../../components/StageProgressStrip"
+import { SubmitSuccess } from "../../components/SubmitSuccess"
 import { ThemeToggle } from "../../components/ThemeToggle"
 import { useFeedback } from "../../hooks/useFeedback"
 import type { ReviewAnnotations } from "../../types"
@@ -311,6 +312,28 @@ export function ReviewPage({
 		null,
 	)
 
+	// After a successful Approve / External decision we render the
+	// terminal success card and attempt to close the tab. MCP review
+	// usually opens this via `window.open`, which permits programmatic
+	// close; if it fails (standalone browser nav), we keep showing
+	// `SubmitSuccess` so the user knows to close manually.
+	const [submittedDecision, setSubmittedDecision] = useState<
+		"approved" | "external" | null
+	>(null)
+	useEffect(() => {
+		if (!submittedDecision) return
+		// Give React a beat to render the success card before asking
+		// the browser to close the tab.
+		const id = setTimeout(() => {
+			try {
+				window.close()
+			} catch {
+				/* non-openable tab — SubmitSuccess stays visible */
+			}
+		}, 600)
+		return () => clearTimeout(id)
+	}, [submittedDecision])
+
 	const [inlineComments, setInlineComments] = useState<InlineCommentEntry[]>([])
 	const [pins, setPins] = useState<AnnotationPin[]>([])
 
@@ -441,6 +464,11 @@ export function ReviewPage({
 						gateType={session.gate_type}
 						getAnnotations={getAnnotations}
 						onFeedbackItemClick={(id) => setHighlightFeedbackId(id)}
+						onDecisionSuccess={(decision) => {
+							if (decision === "approved" || decision === "external") {
+								setSubmittedDecision(decision)
+							}
+						}}
 					/>
 				)}
 				<Main
@@ -455,7 +483,17 @@ export function ReviewPage({
 						} as React.CSSProperties
 					}
 				>
-					{viewingIntent ? (
+					{submittedDecision ? (
+						<div className="px-6 lg:px-10 py-10">
+							<SubmitSuccess
+								message={
+									submittedDecision === "approved"
+										? "Review approved — thanks!"
+										: "External review submitted — thanks!"
+								}
+							/>
+						</div>
+					) : viewingIntent ? (
 						<IntentOverviewPane
 							session={session}
 							onBack={() => setViewingIntent(false)}
@@ -662,6 +700,17 @@ function IntentOverviewPane({
 	onBack: () => void
 }): React.ReactElement {
 	const intent = session.intent
+	const stageStates = session.stage_states ?? {}
+	const intentStageOrder =
+		(intent?.frontmatter?.stages as string[] | undefined) ?? []
+	const stageNames =
+		intentStageOrder.length > 0
+			? intentStageOrder.filter((s) => stageStates[s])
+			: Object.keys(stageStates)
+	const units = session.units ?? []
+	const stageArtifacts = session.stage_artifacts ?? []
+	const outputArtifacts = session.output_artifacts ?? []
+
 	return (
 		<>
 			<div className="sticky top-0 z-20 bg-stone-50 dark:bg-stone-950 px-6 lg:px-10 pt-6 pb-3">
@@ -686,8 +735,92 @@ function IntentOverviewPane({
 					</button>
 				</div>
 			</div>
-			<div className="px-6 lg:px-10 pb-6">
+			<div className="px-6 lg:px-10 pb-6 space-y-4">
+				{stageNames.length > 0 && (
+					<div className="bg-white dark:bg-stone-900 rounded-lg border-2 border-stone-200 dark:border-stone-700 px-5 py-4">
+						<p className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500 mb-3">
+							Cross-stage summary
+						</p>
+						<div className="overflow-x-auto">
+							<table className="w-full text-left text-xs">
+								<thead>
+									<tr className="border-b-2 border-stone-200 dark:border-stone-700">
+										<th className="py-2 pr-3 text-stone-600 dark:text-stone-300 uppercase tracking-wider">
+											Stage
+										</th>
+										<th className="py-2 pr-3 text-stone-600 dark:text-stone-300 uppercase tracking-wider">
+											Status
+										</th>
+										<th className="py-2 pr-3 text-stone-600 dark:text-stone-300 uppercase tracking-wider">
+											Phase
+										</th>
+										<th className="py-2 pr-3 text-stone-600 dark:text-stone-300 uppercase tracking-wider text-right">
+											Units
+										</th>
+										<th className="py-2 pr-3 text-stone-600 dark:text-stone-300 uppercase tracking-wider text-right">
+											Knowledge
+										</th>
+										<th className="py-2 text-stone-600 dark:text-stone-300 uppercase tracking-wider text-right">
+											Outputs
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									{stageNames.map((name) => {
+										const s = stageStates[name] as
+											| { status?: string; phase?: string }
+											| undefined
+										const unitCount = units.filter(
+											(u) => (u.frontmatter.stage ?? "") === name,
+										).length
+										const knowledgeCount = stageArtifacts.filter(
+											(a) => a.stage === name,
+										).length
+										const outputCount = outputArtifacts.filter(
+											(a) => a.stage === name,
+										).length
+										const statusColor =
+											s?.status === "active"
+												? "text-teal-600 dark:text-teal-400"
+												: s?.status === "completed"
+													? "text-green-600 dark:text-green-400"
+													: "text-stone-500 dark:text-stone-400"
+										return (
+											<tr
+												key={name}
+												className="border-b border-stone-100 dark:border-stone-800"
+											>
+												<td className="py-2.5 pr-3 font-semibold capitalize text-stone-900 dark:text-stone-100">
+													{name}
+												</td>
+												<td className={`py-2.5 pr-3 font-mono ${statusColor}`}>
+													{s?.status ?? "—"}
+												</td>
+												<td className="py-2.5 pr-3 font-mono text-stone-600 dark:text-stone-300">
+													{s?.phase ?? "—"}
+												</td>
+												<td className="py-2.5 pr-3 text-right font-mono text-stone-600 dark:text-stone-300">
+													{unitCount}
+												</td>
+												<td className="py-2.5 pr-3 text-right font-mono text-stone-600 dark:text-stone-300">
+													{knowledgeCount}
+												</td>
+												<td className="py-2.5 text-right font-mono text-stone-600 dark:text-stone-300">
+													{outputCount}
+												</td>
+											</tr>
+										)
+									})}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				)}
+
 				<div className="bg-white dark:bg-stone-900 rounded-lg border-2 border-stone-200 dark:border-stone-700 px-5 py-4">
+					<p className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500 mb-3">
+						Intent definition
+					</p>
 					{intent?.rawContent ? (
 						<MarkdownViewer id="intent-detail">
 							{intent.rawContent}

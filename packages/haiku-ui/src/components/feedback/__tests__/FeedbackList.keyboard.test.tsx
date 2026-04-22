@@ -28,7 +28,10 @@ function flushRaf(): Promise<void> {
 }
 
 describe("FeedbackList — keyboard navigation", () => {
-	it("ArrowDown from index 0 → 99 lands on the correct item at each step (non-virtualized, 100 items ≤ threshold + 50)", async () => {
+	// Bumped to 15s: now that cards render expanded-by-default (see
+	// FeedbackList.tsx), the 100-item render is heavier and the 99
+	// keydown-plus-rerender cycles push the default 5s timeout.
+	it("ArrowDown from index 0 → 99 lands on the correct item at each step (non-virtualized, 100 items ≤ threshold + 50)", { timeout: 15000 }, async () => {
 		// 100 items is above the default threshold; to exercise the simple
 		// per-item mounted loop we drop the threshold by passing a height
 		// large enough for the virtualized branch to still render everything.
@@ -141,13 +144,19 @@ describe("FeedbackList — keyboard navigation", () => {
 			"[data-feedback-id='FB-01']",
 		) as HTMLElement
 		first.focus()
-		// Default state: not expanded.
-		expect(first.getAttribute("aria-expanded")).toBe("false")
+		// Cards are always rendered expanded now (the old disclosure
+		// pattern hid body + actions until click; expanded-by-default
+		// surfaces both so the card click doesn't compete with the
+		// delegated jump-to-target handler). Enter is still wired —
+		// it just can't flip aria-expanded because the state is
+		// force-true.
+		expect(first.getAttribute("aria-expanded")).toBe("true")
 		await act(async () => {
 			fireEvent.keyDown(listContainer, { key: "Enter" })
 			await flushRaf()
 		})
-		// After Enter, the focused item should toggle expansion.
+		// Enter is a no-op for the disclosure now, but must not
+		// regress to "false".
 		const updated = container.querySelector(
 			"[data-feedback-id='FB-01']",
 		) as HTMLElement
