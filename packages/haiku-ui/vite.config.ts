@@ -24,8 +24,11 @@ export default defineConfig({
 		),
 	},
 	build: {
-		// Inline everything into a single HTML file
-		minify: false,
+		// Inline everything into a single HTML file. Minify via esbuild (Vite
+		// default) — external sourcemaps keep stack traces readable even with
+		// minification on. Flipping this alone is expected to cut the inlined
+		// SPA size by ~40–60% on top of gzip (FB-21).
+		minify: "esbuild",
 		sourcemap: true,
 		cssCodeSplit: false,
 		assetsInlineLimit: Number.POSITIVE_INFINITY,

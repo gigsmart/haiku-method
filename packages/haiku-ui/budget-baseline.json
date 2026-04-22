@@ -1,9 +1,9 @@
 {
-  "createdAt": "2026-04-21T19:55:34.075Z",
-  "gzipBytes": 919137,
+  "createdAt": "2026-04-22T01:48:59.834Z",
+  "gzipBytes": 693403,
   "notes": [
-    "Seed baseline generated on first run of audit-bundle-size.mjs.",
-    "Future runs fail if current gzipBytes > baseline * 1.05.",
-    "Update only via `audit-bundle-size.mjs --update-baseline` (explicit PR)."
+    "Set by `audit-bundle-size.mjs --update-baseline`. Updating this",
+    "file requires an explicit PR — the audit script only writes it",
+    "when this flag is passed."
   ]
 }
