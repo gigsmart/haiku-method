@@ -31,7 +31,13 @@ export function FeedbackPanelBody({
 	onDelete,
 	onRetry,
 }: FeedbackPanelBodyProps): React.ReactElement {
-	const [activeStatus, setActiveStatus] = useState<FeedbackStatus | null>(null)
+	// Default the filter to "pending" — reviewers are here to work through
+	// the open items, not to audit closed/addressed history. Flipping to
+	// "All" / another status via the summary bar stays sticky for the
+	// session.
+	const [activeStatus, setActiveStatus] = useState<FeedbackStatus | null>(
+		"pending",
+	)
 
 	const filtered = useMemo(() => {
 		if (!activeStatus) return items
@@ -60,7 +66,6 @@ export function FeedbackPanelBody({
 					onRetry={onRetry}
 					onStatusChange={onStatusChange}
 					onDelete={onDelete}
-					className="px-3 py-3"
 				/>
 			</div>
 		</div>

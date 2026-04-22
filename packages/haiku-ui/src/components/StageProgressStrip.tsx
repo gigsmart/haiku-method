@@ -11,7 +11,14 @@ interface StageInfo {
 
 interface Props {
 	stages: StageInfo[]
+	/** The FSM-active stage — always rendered as the current/diamond
+	 *  marker, regardless of which stage the reviewer is browsing. */
 	currentStage: string
+	/** Optional: the stage the reviewer is currently VIEWING in the
+	 *  main pane (may differ from `currentStage` after a stepper click).
+	 *  Gets an underline / teal ring so the reviewer knows where they
+	 *  are without losing sight of where the FSM actually sits. */
+	viewingStage?: string
 	onStageClick?: (stageName: string) => void
 }
 
@@ -34,6 +41,7 @@ interface Props {
 export function StageProgressStrip({
 	stages,
 	currentStage,
+	viewingStage,
 	onStageClick,
 }: Props) {
 	if (stages.length === 0) return null
@@ -46,13 +54,15 @@ export function StageProgressStrip({
 			<ol className="flex justify-center items-start gap-0">
 				{stages.map((stage, i) => {
 					const isCurrent = stage.name === currentStage
+					const isViewing = stage.name === (viewingStage ?? currentStage)
 					const isCompleted = stage.status === "completed"
 					const isFuture = !(isCurrent || isCompleted)
 					const hasVisits = (stage.visits ?? 0) > 0
-					// Current stage is always clickable so a reviewer who navigates
-					// away to an earlier stage can always return home.
+					// Every stage the reviewer can reach is clickable — current,
+					// viewing, and any completed / visited-future step. This
+					// preserves "return home" navigation from any viewing state.
 					const isClickable =
-						isCompleted || isCurrent || (isFuture && hasVisits)
+						isCompleted || isCurrent || isViewing || (isFuture && hasVisits)
 					const pending = stage.pendingCount ?? 0
 					const stageNumber = i + 1
 

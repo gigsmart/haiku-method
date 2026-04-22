@@ -17,7 +17,8 @@
  * max-width container. App.tsx renders it directly.
  */
 
-import { useCallback, useRef, useState } from "react"
+import { MarkdownViewer } from "@haiku/shared"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Header as HeaderLandmark, Main } from "../../a11y"
 import type { AnnotationPin } from "../../components/AnnotationCanvas"
 import {
@@ -115,6 +116,11 @@ function gateBadgeCopy(
  * mockup's gate-phase nouns: "Final Review Gate" when the stage is at
  * its close-out review, "In Review" for mid-review, etc.
  */
+// Canonical phase sequence inside a stage (excluding the implicit
+// pre-elaborate seed state). Surfaced as a mini stepper in the banner
+// so reviewers can see where the stage sits in its own lifecycle.
+export const STAGE_PHASES = ["elaborate", "execute", "review", "gate"] as const
+
 function phaseBadgeCopy(
 	phase: string | undefined,
 	stageStatus: string | undefined,
@@ -155,6 +161,69 @@ function phaseBadgeCopy(
 		}
 	}
 	return null
+}
+
+/**
+ * Render a compact phase stepper inline with the stage banner so the
+ * reviewer can see where the stage sits in its own lifecycle
+ * (elaborate → execute → review → gate).
+ */
+function PhaseStepper({
+	phase,
+	stageStatus,
+}: {
+	phase: string | null
+	stageStatus: string
+}): React.ReactElement {
+	const activeIndex = phase ? STAGE_PHASES.indexOf(phase as typeof STAGE_PHASES[number]) : -1
+	const isStageComplete =
+		stageStatus === "completed" || stageStatus === "complete"
+	return (
+		<div
+			className="inline-flex items-center gap-1"
+			aria-label={`Phase ${activeIndex + 1} of ${STAGE_PHASES.length}`}
+		>
+			{STAGE_PHASES.map((p, i) => {
+				const isActive = i === activeIndex && !isStageComplete
+				const isDone = isStageComplete || (activeIndex > i)
+				return (
+					<div
+						key={p}
+						className="flex items-center gap-1"
+						title={`Phase ${i + 1}: ${p}`}
+					>
+						<span
+							className={`inline-block w-2 h-2 rounded-full ${
+								isActive
+									? "bg-amber-500 ring-2 ring-amber-300 dark:ring-amber-700"
+									: isDone
+										? "bg-green-500"
+										: "bg-stone-300 dark:bg-stone-700"
+							}`}
+							aria-hidden="true"
+						/>
+						{i < STAGE_PHASES.length - 1 && (
+							<span
+								className={`w-3 h-0.5 ${
+									isDone
+										? "bg-green-400 dark:bg-green-700"
+										: "bg-stone-300 dark:bg-stone-700"
+								}`}
+								aria-hidden="true"
+							/>
+						)}
+					</div>
+				)
+			})}
+			<span className="ml-1 text-xs font-mono text-stone-500 dark:text-stone-400">
+				{isStageComplete
+					? "done"
+					: activeIndex >= 0
+						? `${activeIndex + 1}/${STAGE_PHASES.length}`
+						: "—"}
+			</span>
+		</div>
+	)
 }
 
 function MobileFeedbackSection({
@@ -213,6 +282,14 @@ export function ReviewPage({
 	const [selectedStage, setSelectedStage] = useState<string | null>(
 		activeStage,
 	)
+	// When true, the main pane shows an intent-scoped overview (intent.md
+	// rendered + cross-stage summary) instead of a specific stage. Clicking
+	// the intent name in the header breadcrumb flips this on; any stepper
+	// click flips it back off.
+	const [viewingIntent, setViewingIntent] = useState(false)
+
+	const studioName =
+		(session.intent?.frontmatter?.studio as string | undefined) ?? null
 
 	// Feedback-card click → scroll-and-flash the target artifact card in
 	// the main pane. One-shot: StageReview calls `onHighlightConsumed` to
@@ -285,6 +362,27 @@ export function ReviewPage({
 						<span className="text-sm font-medium text-stone-500 dark:text-stone-400">
 							Review
 						</span>
+						{studioName && (
+							<>
+								<span className="text-stone-300 dark:text-stone-600">·</span>
+								<span className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+									{studioName}
+								</span>
+							</>
+						)}
+						{session.intent?.title && (
+							<>
+								<span className="text-stone-300 dark:text-stone-600">/</span>
+								<button
+									type="button"
+									onClick={() => setViewingIntent(true)}
+									className={`text-sm font-semibold truncate rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 ${viewingIntent ? "text-teal-700 dark:text-teal-400 underline underline-offset-4" : "text-stone-800 dark:text-stone-100 hover:text-teal-700 dark:hover:text-teal-400"}`}
+									title="View intent overview"
+								>
+									{session.intent.title}
+								</button>
+							</>
+						)}
 						{sessionIdShort && (
 							<>
 								<span className="text-stone-300 dark:text-stone-600">·</span>
@@ -301,8 +399,16 @@ export function ReviewPage({
 				{stageProgressData.length > 0 && (
 					<StageProgressStrip
 						stages={stageProgressData}
-						currentStage={selectedStage ?? activeStage ?? ""}
-						onStageClick={(name) => setSelectedStage(name)}
+						currentStage={activeStage ?? ""}
+						viewingStage={
+							viewingIntent
+								? ""
+								: (selectedStage ?? activeStage ?? "")
+						}
+						onStageClick={(name) => {
+							setSelectedStage(name)
+							setViewingIntent(false)
+						}}
 					/>
 				)}
 			</HeaderLandmark>
@@ -336,37 +442,45 @@ export function ReviewPage({
 						} as React.CSSProperties
 					}
 				>
-					<StageBanner
-						stageName={selectedStage ?? activeStage ?? "review"}
-						stageStatus={
-							selectedStage === activeStage
-								? "current"
-								: (stageStates[selectedStage ?? ""]?.status ?? "pending")
-						}
-						stagePhase={
-							stageStates[selectedStage ?? ""]?.phase ?? null
-						}
-						intentTitle={session.intent?.title}
-						gateBadges={gateBadges}
-					/>
-
-					<div className="px-6 lg:px-10 pb-6">
-						{session.previous_review && (
-							<RereviewBanner snapshot={session.previous_review} />
-						)}
-						<StageScopedContent
+					{viewingIntent ? (
+						<IntentOverviewPane
 							session={session}
-							sessionId={sessionId}
-							stageName={selectedStage ?? activeStage}
-							intentSlug={intentSlug}
-							getAnnotations={getAnnotations}
-							wsRef={wsRef}
-							onInlineCommentsChange={setInlineComments}
-							onPinsChange={setPins}
-							highlightFeedbackId={highlightFeedbackId}
-							onHighlightConsumed={() => setHighlightFeedbackId(null)}
+							onBack={() => setViewingIntent(false)}
 						/>
-					</div>
+					) : (
+						<>
+							<StageBanner
+								stageName={selectedStage ?? activeStage ?? "review"}
+								stageStatus={
+									selectedStage === activeStage
+										? "current"
+										: (stageStates[selectedStage ?? ""]?.status ?? "pending")
+								}
+								stagePhase={
+									stageStates[selectedStage ?? ""]?.phase ?? null
+								}
+								gateBadges={gateBadges}
+							/>
+
+							<div className="px-6 lg:px-10 pb-6">
+								{session.previous_review && (
+									<RereviewBanner snapshot={session.previous_review} />
+								)}
+								<StageScopedContent
+									session={session}
+									sessionId={sessionId}
+									stageName={selectedStage ?? activeStage}
+									intentSlug={intentSlug}
+									getAnnotations={getAnnotations}
+									wsRef={wsRef}
+									onInlineCommentsChange={setInlineComments}
+									onPinsChange={setPins}
+									highlightFeedbackId={highlightFeedbackId}
+									onHighlightConsumed={() => setHighlightFeedbackId(null)}
+								/>
+							</div>
+						</>
+					)}
 				</Main>
 			</div>
 
@@ -389,13 +503,11 @@ function StageBanner({
 	stageName,
 	stageStatus,
 	stagePhase,
-	intentTitle,
 	gateBadges,
 }: {
 	stageName: string
 	stageStatus: string
 	stagePhase: string | null
-	intentTitle?: string
 	gateBadges: Array<{ label: string; classes: string }>
 }): React.ReactElement {
 	const statusPill =
@@ -434,9 +546,12 @@ function StageBanner({
 					{statusPill.label}
 				</span>
 				<div className="flex-1 min-w-0">
-					<p className="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400 leading-none">
-						Stage
-					</p>
+					<div className="flex items-center gap-3 flex-wrap">
+						<p className="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400 leading-none">
+							Stage
+						</p>
+						<PhaseStepper phase={stagePhase} stageStatus={stageStatus} />
+					</div>
 					<div className="flex items-center gap-2 mt-1 flex-wrap">
 						<h1 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-tight capitalize">
 							{stageName}
@@ -458,11 +573,6 @@ function StageBanner({
 						))}
 					</div>
 				</div>
-				{intentTitle && (
-					<p className="hidden sm:block text-xs text-stone-500 dark:text-stone-400 max-w-sm leading-snug">
-						{intentTitle}
-					</p>
-				)}
 			</div>
 		</div>
 	)
@@ -521,5 +631,60 @@ function StageScopedContent({
 			onHighlightRequestId={highlightFeedbackId}
 			onHighlightConsumed={onHighlightConsumed}
 		/>
+	)
+}
+
+
+/**
+ * IntentOverviewPane — cross-stage intent detail view. Renders the
+ * intent.md markdown (problem / solution / goals) plus a quick-jump
+ * strip into each stage. Opened from the header breadcrumb.
+ */
+function IntentOverviewPane({
+	session,
+	onBack,
+}: {
+	session: ReviewPageSessionData
+	onBack: () => void
+}): React.ReactElement {
+	const intent = session.intent
+	return (
+		<>
+			<div className="sticky top-0 z-20 bg-stone-50 dark:bg-stone-950 px-6 lg:px-10 pt-6 pb-3">
+				<div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-teal-200 dark:border-teal-900/60 bg-teal-50 dark:bg-teal-900/20">
+					<span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-700 text-white">
+						intent
+					</span>
+					<div className="flex-1 min-w-0">
+						<p className="text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400 leading-none">
+							Intent
+						</p>
+						<h1 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-tight break-words mt-1">
+							{intent?.title ?? "Intent"}
+						</h1>
+					</div>
+					<button
+						type="button"
+						onClick={onBack}
+						className="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+					>
+						← Back to Stage
+					</button>
+				</div>
+			</div>
+			<div className="px-6 lg:px-10 pb-6">
+				<div className="bg-white dark:bg-stone-900 rounded-lg border-2 border-stone-200 dark:border-stone-700 px-5 py-4">
+					{intent?.rawContent ? (
+						<MarkdownViewer id="intent-detail">
+							{intent.rawContent}
+						</MarkdownViewer>
+					) : (
+						<p className="text-sm text-stone-500 dark:text-stone-400 italic">
+							No intent content available.
+						</p>
+					)}
+				</div>
+			</div>
+		</>
 	)
 }

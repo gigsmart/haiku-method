@@ -120,12 +120,13 @@ describe("ReviewPage — responsive parity", () => {
 				</>
 			</ApiClientProvider>,
 		)
-		// Wait for the feedback list to populate — look for a known feedback
-		// title from the fixture. The `useFeedback` hook resolves async after
-		// fetch; until then FeedbackList shows loading + zero items.
-		const firstItemTitle = items[0].title
+		// Wait for the feedback list to populate — look for the first
+		// PENDING feedback's title (the default filter shows pending
+		// only, so non-pending fixture items are hidden).
+		const firstPendingTitle =
+			items.find((i) => i.status === "pending")?.title ?? items[0].title
 		await waitFor(() => {
-			expect(screen.getAllByText(firstItemTitle).length).toBeGreaterThan(0)
+			expect(screen.getAllByText(firstPendingTitle).length).toBeGreaterThan(0)
 		})
 		const lists = screen.getAllByTestId("feedback-list")
 		const collected: string[] = []
@@ -143,18 +144,19 @@ describe("ReviewPage — responsive parity", () => {
 		const desktop = await renderAndCollect(false)
 		const mobile = await renderAndCollect(true)
 
-		// Every fixture item has a unique title; we assert each appears in both
-		// renders. We don't check ordering of every element — the desktop
-		// branch shows the FeedbackList inside the sidebar, the mobile branch
-		// shows it inside the sheet, and the sheet renders even when closed
-		// for hidden-dialog semantics.
-		expect(desktop.length).toBeGreaterThanOrEqual(items.length)
-		expect(mobile.length).toBeGreaterThanOrEqual(items.length)
+		// The feedback panel defaults to the "pending" filter per FB-NN so
+		// reviewers land on the open items first. This parity test asserts
+		// that the same pending set renders on both branches — desktop
+		// shows it inside the sidebar, mobile shows it inside the sheet
+		// (which renders even when closed for hidden-dialog semantics).
+		const pendingItems = items.filter((i) => i.status === "pending")
+		expect(desktop.length).toBeGreaterThanOrEqual(pendingItems.length)
+		expect(mobile.length).toBeGreaterThanOrEqual(pendingItems.length)
 
 		const desktopSet = new Set(desktop.map((t) => t.replace(/\s+/g, " ")))
 		const mobileSet = new Set(mobile.map((t) => t.replace(/\s+/g, " ")))
 
-		for (const item of items) {
+		for (const item of pendingItems) {
 			const found = [...desktopSet].some((t) => t.includes(item.title))
 			const foundMobile = [...mobileSet].some((t) => t.includes(item.title))
 			expect(found, `desktop missing ${item.feedback_id}`).toBe(true)

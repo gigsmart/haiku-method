@@ -244,6 +244,57 @@ export function StageReview({
 	)
 	const closeDetail = useCallback(() => setDetail(null), [])
 
+	// Reset detail + tab when the reviewer switches stages via the
+	// stepper — detail state is stage-scoped and shouldn't bleed across.
+	useEffect(() => {
+		setDetail(null)
+		setActiveTab("overview")
+	}, [stageName])
+
+	// "Start walkthrough" entry — find the first unseen artifact across
+	// units → knowledge → outputs and open its detail view.
+	const startWalkthrough = useCallback(() => {
+		setStepperMode("unseen")
+		const firstUnseenUnit = units.find(
+			(u) => seen.state("unit", stageName, u.slug, shaOf(u)) !== "seen",
+		)
+		if (firstUnseenUnit) {
+			openDetail("units", firstUnseenUnit.slug)
+			return
+		}
+		const firstUnseenKnowledge = knowledgeVMs.find(
+			(a) => seen.state("knowledge", stageName, a.name, shaOf(a)) !== "seen",
+		)
+		if (firstUnseenKnowledge) {
+			openDetail("knowledge", firstUnseenKnowledge.name)
+			return
+		}
+		const firstUnseenOutput = outputVMs.find(
+			(a) => seen.state("output", stageName, a.name, shaOf(a)) !== "seen",
+		)
+		if (firstUnseenOutput) {
+			openDetail("outputs", firstUnseenOutput.name)
+			return
+		}
+		// Nothing unseen — fall back to opening the first unit's detail
+		// with the stepper in "all" mode so prev/next still walks.
+		if (units[0]) {
+			setStepperMode("all")
+			openDetail("units", units[0].slug)
+		}
+	}, [units, knowledgeVMs, outputVMs, seen, stageName, openDetail])
+
+	const totalUnseen =
+		units.filter(
+			(u) => seen.state("unit", stageName, u.slug, shaOf(u)) !== "seen",
+		).length +
+		knowledgeVMs.filter(
+			(a) => seen.state("knowledge", stageName, a.name, shaOf(a)) !== "seen",
+		).length +
+		outputVMs.filter(
+			(a) => seen.state("output", stageName, a.name, shaOf(a)) !== "seen",
+		).length
+
 	const tabs: TabDef[] = [
 		{
 			id: "overview",
@@ -261,6 +312,8 @@ export function StageReview({
 					seen={seen}
 					stageId={stageName}
 					onNavigate={openDetail}
+					onStartWalkthrough={startWalkthrough}
+					totalUnseen={totalUnseen}
 				/>
 			),
 		},
@@ -382,6 +435,8 @@ function OverviewTab({
 	seen,
 	stageId,
 	onNavigate,
+	onStartWalkthrough,
+	totalUnseen,
 }: {
 	stageName: string
 	stageSummary: string | null
@@ -394,9 +449,28 @@ function OverviewTab({
 	seen: ReturnType<typeof useSeenTracker>
 	stageId: string
 	onNavigate: (tab: "units" | "knowledge" | "outputs", name: string) => void
+	onStartWalkthrough: () => void
+	totalUnseen: number
 }) {
 	return (
 		<div className="space-y-4">
+			<div className="flex items-center justify-between gap-3 flex-wrap">
+				<p className="text-xs text-stone-600 dark:text-stone-300">
+					{totalUnseen > 0
+						? `${totalUnseen} artifact${totalUnseen === 1 ? "" : "s"} still to review in this stage.`
+						: "Everything in this stage has been seen."}
+				</p>
+				<button
+					type="button"
+					onClick={onStartWalkthrough}
+					className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md bg-teal-700 hover:bg-teal-800 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 transition-colors"
+				>
+					{totalUnseen > 0
+						? `Start walkthrough (${totalUnseen}) →`
+						: "Review all →"}
+				</button>
+			</div>
+
 			<Card>
 				<p className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500 mb-1.5">
 					Stage Summary{" "}

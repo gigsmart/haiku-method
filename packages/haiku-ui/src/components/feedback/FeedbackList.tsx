@@ -242,7 +242,7 @@ export function FeedbackList({
 			data-testid="feedback-list"
 			data-state="default"
 			data-virtualized="false"
-			className={`h-full overflow-y-auto space-y-2 ${className ?? ""}`}
+			className={`h-full overflow-y-auto space-y-2 py-3 ${className ?? ""}`}
 		>
 			{items.map((item, index) => {
 				const isExpanded = expandedId === item.feedback_id
@@ -251,6 +251,7 @@ export function FeedbackList({
 						key={item.feedback_id}
 						aria-setsize={items.length}
 						aria-posinset={index + 1}
+						className="px-3"
 					>
 						<FeedbackItem
 							ref={(node) => {
