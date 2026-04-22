@@ -17,6 +17,7 @@ hat_started_at: '2026-04-16T16:59:37Z'
 outputs:
   - stages/security/THREAT-MODEL.md
 completed_at: '2026-04-16T17:00:15Z'
+model: sonnet
 ---
 
 # Threat Model and Security Hardening

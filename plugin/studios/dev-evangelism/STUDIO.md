@@ -3,6 +3,7 @@ name: dev-evangelism
 description: Developer evangelism lifecycle — research, narrative, create, publish, measure
 stages: [research, narrative, create, publish, measure]
 category: content
+default_model: sonnet
 ---
 
 # Developer Evangelism Studio

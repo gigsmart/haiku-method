@@ -55,6 +55,7 @@ outputs:
   - packages/haiku-api/test/schemas.test.mjs
   - packages/haiku-api/tsconfig.json
 completed_at: '2026-04-21T03:46:45Z'
+model: sonnet
 ---
 # Extract haiku-api package
 

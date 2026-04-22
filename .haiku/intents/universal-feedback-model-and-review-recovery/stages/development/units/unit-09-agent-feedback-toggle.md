@@ -39,6 +39,7 @@ outputs:
     packages/haiku-ui/src/components/feedback/__tests__/AgentFeedbackToggle.test.tsx
   - packages/haiku-ui/tests/audit-banned-patterns.test.ts
 completed_at: '2026-04-21T13:02:59Z'
+model: sonnet
 ---
 # AgentFeedbackToggle
 

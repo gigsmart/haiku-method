@@ -40,6 +40,7 @@ outputs:
   - packages/haiku-ui/src/components/feedback/index.ts
   - packages/haiku-ui/src/index.css
 completed_at: '2026-04-21T15:41:11Z'
+model: sonnet
 ---
 # FeedbackSheet — mobile bottom sheet
 

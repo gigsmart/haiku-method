@@ -574,8 +574,9 @@ async function run() {
 	})
 
 	await test("POST body at the cap still accepted (happy path)", async () => {
-		// 100 KiB body — comfortably inside the 128 KiB cap.
-		const fitting = "x".repeat(100 * 1024)
+		// 9 KiB body — comfortably inside the schema's 10,000-char body cap
+		// (the 128 KiB envelope cap fires earlier for truly huge payloads).
+		const fitting = "x".repeat(9 * 1024)
 		const res = await fetch(
 			`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
 			{

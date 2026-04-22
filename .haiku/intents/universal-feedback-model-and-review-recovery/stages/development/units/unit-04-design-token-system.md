@@ -52,6 +52,7 @@ outputs:
   - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
   - packages/haiku-ui/vitest.config.ts
 completed_at: '2026-04-21T06:57:56Z'
+model: sonnet
 ---
 # Design token system
 

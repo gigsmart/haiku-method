@@ -15,6 +15,7 @@ hat_started_at: '2026-04-16T16:40:43Z'
 outputs:
   - stages/operations/ci-validation-report.md
 completed_at: '2026-04-16T16:42:17Z'
+model: sonnet
 ---
 
 # CI Pipeline Validation

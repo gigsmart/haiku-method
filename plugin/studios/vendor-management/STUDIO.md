@@ -3,6 +3,7 @@ name: vendor-management
 description: Vendor evaluation, procurement, and relationship management lifecycle
 stages: [requirements, evaluate, negotiate, onboard, monitor]
 category: back-office
+default_model: sonnet
 ---
 
 # Vendor Management Studio

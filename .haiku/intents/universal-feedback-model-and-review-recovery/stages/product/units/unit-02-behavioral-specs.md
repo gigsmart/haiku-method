@@ -17,6 +17,7 @@ outputs:
   - knowledge/DATA-CONTRACTS.md
   - knowledge/COVERAGE-MAPPING.md
 completed_at: '2026-04-16T14:44:42Z'
+model: sonnet
 ---
 
 # Behavioral Specs in Gherkin

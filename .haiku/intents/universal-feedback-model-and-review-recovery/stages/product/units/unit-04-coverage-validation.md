@@ -20,6 +20,7 @@ outputs:
   - knowledge/IMPLEMENTATION-MAP.md
   - knowledge/COVERAGE-MAPPING.md
 completed_at: '2026-04-16T14:49:28Z'
+model: sonnet
 ---
 
 # Coverage Validation and Gap Closure

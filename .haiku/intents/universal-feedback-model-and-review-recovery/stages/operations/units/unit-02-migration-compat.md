@@ -16,6 +16,7 @@ hat_started_at: '2026-04-16T16:48:58Z'
 outputs:
   - stages/operations/migration-compat-report.md
 completed_at: '2026-04-16T16:49:38Z'
+model: sonnet
 ---
 
 # Migration and Backward Compatibility

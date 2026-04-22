@@ -53,6 +53,7 @@ outputs:
   - packages/haiku-ui/src/a11y/touch-target.ts
   - packages/haiku-ui/src/index.css
 completed_at: '2026-04-21T07:25:29Z'
+model: sonnet
 ---
 # A11y foundations
 

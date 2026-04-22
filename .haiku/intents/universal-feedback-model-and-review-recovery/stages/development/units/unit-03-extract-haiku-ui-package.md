@@ -109,6 +109,7 @@ outputs:
   - stages/development/artifacts/unit-03-review-findings-bolt-2.md
   - plugin/bin/haiku
 completed_at: '2026-04-21T06:19:07Z'
+model: sonnet
 ---
 # Extract haiku-ui package
 

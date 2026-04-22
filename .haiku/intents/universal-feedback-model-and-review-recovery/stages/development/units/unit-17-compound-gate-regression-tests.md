@@ -15,6 +15,7 @@ bolt: 1
 hat: implementer
 closes:
   - FB-56
+model: sonnet
 ---
 
 ## Summary

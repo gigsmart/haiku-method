@@ -15,6 +15,7 @@ inputs:
   - features/external-review-feedback.feature
   - features/revisit-with-reasons.feature
 status: pending
+model: sonnet
 ---
 
 # Backend feedback-model regression gate

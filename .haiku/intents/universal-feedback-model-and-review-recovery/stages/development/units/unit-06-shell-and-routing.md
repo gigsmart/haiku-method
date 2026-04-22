@@ -91,6 +91,7 @@ outputs:
   - packages/haiku-ui/tests/parity.spec.tsx
   - packages/haiku-ui/tests/skip-link.spec.tsx
 completed_at: '2026-04-21T14:59:35Z'
+model: sonnet
 ---
 # Shell and routing refactor
 

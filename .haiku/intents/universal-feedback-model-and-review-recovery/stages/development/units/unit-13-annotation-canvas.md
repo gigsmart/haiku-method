@@ -47,6 +47,7 @@ outputs:
   - packages/haiku-ui/tests/audit-banned-patterns.test.ts
   - stages/development/artifacts/unit-13-review-findings.md
 completed_at: '2026-04-21T19:27:15Z'
+model: sonnet
 ---
 # Annotation canvas UX
 

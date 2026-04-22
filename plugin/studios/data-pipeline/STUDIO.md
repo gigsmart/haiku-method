@@ -3,6 +3,7 @@ name: data-pipeline
 description: Data engineering lifecycle for ETL pipelines, data warehouses, and analytics workflows
 stages: [discovery, extraction, transformation, validation, deployment]
 category: engineering
+default_model: sonnet
 ---
 
 # Data Pipeline Studio

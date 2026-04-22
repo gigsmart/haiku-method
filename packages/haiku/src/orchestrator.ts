@@ -84,6 +84,7 @@ import {
 	filterReviewAgentsByScope,
 	listStudios,
 	readHatDefs,
+	readModelFromPath,
 	readPhaseOverride,
 	readReviewAgentPaths,
 	readStageArtifactDefs,
@@ -4414,6 +4415,34 @@ function emitSubagentDispatchBlock(opts: {
 	)
 }
 
+/**
+ * Resolve the model tier for a review-agent or studio-level fix-hat dispatch.
+ * Cascade: mandate file's own `model:` → stage `default_model:` (when stage is
+ * provided — skip for studio-level review agents) → studio `default_model:`.
+ * Returns undefined when the feature is disabled or nothing is declared, in
+ * which case the subagent inherits the parent model. Without a studio default
+ * this silently escalates every review pass to Opus — hence studios ship with
+ * `default_model: sonnet` so the floor is sonnet, not whatever the parent runs.
+ */
+function resolveReviewAgentModel(opts: {
+	mandatePath: string
+	studio: string
+	stage?: string
+}): ModelTier | undefined {
+	if (!features.modelSelection) return undefined
+	const { mandatePath, studio, stage } = opts
+	const mandateModel = readModelFromPath(mandatePath)
+	const stageDef = stage ? readStageDef(studio, stage) : null
+	const studioData = readStudio(studio)
+	const { model } = resolveModel({
+		unit: undefined,
+		hat: mandateModel,
+		stage: stageDef?.data?.default_model as string | undefined,
+		studio: studioData?.data?.default_model as string | undefined,
+	})
+	return model
+}
+
 function buildInlineSubagentContext(
 	slug: string,
 	stage: string,
@@ -5751,12 +5780,18 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 						`${reviewStep++}. Return only a summary count of how many findings you logged.`,
 					)
 					const prompt = reviewLines.join("\n")
+					const reviewAgentModel = resolveReviewAgentModel({
+						mandatePath,
+						studio,
+						stage,
+					})
 					sections.push(
 						`${emitSubagentDispatchBlock({
 							unit: `review-${stage}`,
 							hat: name,
 							bolt: 1,
 							agentType: "general-purpose",
+							model: reviewAgentModel,
 							promptBody: prompt,
 							heading: `#### Subagent: \`${name}\``,
 						})}\n`,
@@ -5991,12 +6026,17 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					"4. Return only a summary count of how many findings you logged.",
 				]
 				const prompt = reviewLines.join("\n")
+				const studioReviewModel = resolveReviewAgentModel({
+					mandatePath,
+					studio,
+				})
 				sections.push(
 					`${emitSubagentDispatchBlock({
 						unit: `studio-review-${slug}`,
 						hat: name,
 						bolt: 1,
 						agentType: "general-purpose",
+						model: studioReviewModel,
 						promptBody: prompt,
 						heading: `#### Subagent: \`${name}\``,
 					})}\n`,
@@ -6116,12 +6156,16 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 						)
 					}
 
+					const fixHatModel = hatPath
+						? resolveReviewAgentModel({ mandatePath: hatPath, studio })
+						: undefined
 					sections.push(
 						`${emitSubagentDispatchBlock({
 							unit: `intent-fix-${fbId}`,
 							hat,
 							bolt: fixBolt,
 							agentType: "general-purpose",
+							model: fixHatModel,
 							promptBody: promptLines.join("\n"),
 							heading: `#### Subagent: \`${hat}\`${isLast ? " (final — validates closure)" : ""}`,
 						})}\n`,
@@ -6415,8 +6459,16 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					"4. Return findings in the format above. Do NOT call `haiku_feedback` — persistence is not wanted here.",
 				]
 
+				const preReviewModel = resolveReviewAgentModel({
+					mandatePath,
+					studio,
+					stage,
+				})
+				const preModelAttr = preReviewModel
+					? ` model="${preReviewModel}"`
+					: ""
 				sections.push(
-					`#### Subagent: \`${name}\`\n\n<subagent type="general-purpose">\n${reviewLines.join("\n")}\n</subagent>`,
+					`#### Subagent: \`${name}\`\n\n<subagent type="general-purpose"${preModelAttr}>\n${reviewLines.join("\n")}\n</subagent>`,
 				)
 			}
 
@@ -6528,12 +6580,18 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 						`5. For each issue you find, call \`haiku_feedback({ intent: "${slug}", stage: "${stage}", title: "<short title>", body: "<full description>", origin: "adversarial-review", author: "${name}" })\`.`,
 						"6. Return only a summary count of how many findings you logged.",
 					].join("\n")
+					const elabReviewModel = resolveReviewAgentModel({
+						mandatePath,
+						studio,
+						stage,
+					})
 					sections.push(
 						`${emitSubagentDispatchBlock({
 							unit: `review-elab-${stage}`,
 							hat: name,
 							bolt: 1,
 							agentType: "general-purpose",
+							model: elabReviewModel,
 							promptBody: prompt,
 							heading: `#### Subagent: \`${name}\``,
 						})}\n`,

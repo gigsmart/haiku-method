@@ -90,6 +90,7 @@ outputs:
   - packages/haiku-ui/src/components/feedback/useFeedbackListKeyboardNav.ts
   - stages/development/artifacts/unit-08-review-notes.md
 completed_at: '2026-04-21T13:36:40Z'
+model: sonnet
 ---
 # Feedback component cluster
 

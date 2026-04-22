@@ -37,6 +37,7 @@ outputs:
   - packages/haiku-ui/src/index.css
   - packages/haiku-ui/tests/StageProgressStrip.test.tsx
 completed_at: '2026-04-21T13:27:51Z'
+model: sonnet
 ---
 # StageProgressStrip
 

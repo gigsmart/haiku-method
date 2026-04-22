@@ -17,7 +17,24 @@ import {
 export const studioSearchPaths = _studioSearchPaths
 
 import { resolvePluginRoot } from "./config.js"
+import { type ModelTier, sanitizeModel } from "./model-selection.js"
 import { parseFrontmatter } from "./state-tools.js"
+
+/**
+ * Read the `model:` field from a mandate file's frontmatter and sanitize it
+ * to a known ModelTier. Returns undefined if the file doesn't exist, has no
+ * model field, or has an invalid value. Used at review-agent and fix-hat
+ * dispatch sites to pull the declared tier without re-reading the whole file.
+ */
+export function readModelFromPath(path: string): ModelTier | undefined {
+	try {
+		if (!existsSync(path)) return undefined
+		const { data } = parseFrontmatter(readFileSync(path, "utf8"))
+		return sanitizeModel(data.model as string | undefined)
+	} catch {
+		return undefined
+	}
+}
 
 /** Read a studio stage definition file */
 export function readStageDef(

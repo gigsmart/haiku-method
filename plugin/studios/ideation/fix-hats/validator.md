@@ -2,6 +2,7 @@
 name: validator
 studio: ideation
 agent_type: general-purpose
+model: haiku
 ---
 
 **Focus:** Independently verify that the reconciler's fix resolves the intent-scope feedback. You are the terminal hat — the FSM trusts your closure decision.

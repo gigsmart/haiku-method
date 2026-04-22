@@ -4,6 +4,7 @@ slug: gamedev
 description: Lifecycle for games — concept, prototype, production, polish, ship
 stages: [concept, prototype, production, polish, release]
 category: engineering
+default_model: sonnet
 ---
 
 # Game Development

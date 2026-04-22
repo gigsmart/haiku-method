@@ -96,6 +96,7 @@ outputs:
   - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
   - stages/development/artifacts/unit-15-review-findings.md
 completed_at: '2026-04-21T20:18:05Z'
+model: sonnet
 ---
 # Stage-wide audit
 

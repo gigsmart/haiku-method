@@ -67,6 +67,7 @@ outputs:
   - packages/haiku-ui/vitest.config.ts
   - stages/development/artifacts/unit-07-review-findings.md
 completed_at: '2026-04-21T18:51:26Z'
+model: sonnet
 ---
 # Review page — desktop + mobile
 

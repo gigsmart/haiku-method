@@ -49,6 +49,7 @@ outputs:
   - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
   - packages/haiku-ui/tests/a11y-pages.spec.tsx
 completed_at: '2026-04-21T15:43:18Z'
+model: sonnet
 ---
 # Question page + Direction page refactors
 

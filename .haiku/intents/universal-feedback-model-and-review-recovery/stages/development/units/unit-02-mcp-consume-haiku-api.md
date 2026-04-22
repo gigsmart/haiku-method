@@ -103,6 +103,7 @@ outputs:
   - stages/development/artifacts/unit-02-review-findings.md
   - packages/haiku/test/http-streams.test.mjs
 completed_at: '2026-04-21T04:59:02Z'
+model: sonnet
 ---
 # MCP consumes haiku-api
 

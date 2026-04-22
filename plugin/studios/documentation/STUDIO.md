@@ -3,6 +3,7 @@ name: documentation
 description: Technical documentation lifecycle for API docs, guides, runbooks, and knowledge bases
 stages: [audit, outline, draft, review, publish]
 category: engineering
+default_model: sonnet
 ---
 
 # Documentation Studio

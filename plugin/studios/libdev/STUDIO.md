@@ -4,6 +4,7 @@ slug: libdev
 description: Lifecycle for libraries, SDKs, and CLI tools
 stages: [inception, development, security, release]
 category: engineering
+default_model: sonnet
 ---
 
 # Library Development

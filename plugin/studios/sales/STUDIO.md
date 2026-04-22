@@ -3,6 +3,7 @@ name: sales
 description: Sales lifecycle from prospect research through deal close and handoff
 stages: [research, qualification, proposal, negotiation, close]
 category: go-to-market
+default_model: sonnet
 ---
 
 # Sales Studio

@@ -16,6 +16,7 @@ outputs:
   - knowledge/ACCEPTANCE-CRITERIA.md
   - knowledge/COVERAGE-MAPPING.md
 completed_at: '2026-04-16T14:33:56Z'
+model: sonnet
 ---
 
 # Acceptance Criteria and User Stories

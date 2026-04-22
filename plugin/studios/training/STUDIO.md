@@ -3,6 +3,7 @@ name: training
 description: Training program design and delivery lifecycle
 stages: [needs-analysis, design, develop, deliver, evaluate]
 category: back-office
+default_model: sonnet
 ---
 
 # Training Studio
