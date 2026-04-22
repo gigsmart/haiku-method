@@ -47,7 +47,7 @@ check (the canonical rule: **pending-feedback-blocks-gate is orthogonal to
 gate-type and fires first**).
 
 Finally, there is no current-visit development unit owning the compound-gate
-resolution path. `stages/development/artifacts/unit-04-gate-feedback-check.md`
+resolution path. `stages/development/artifacts/legacy-gate-feedback-check.md`
 is a prior-visit implementation-notes artifact and cannot carry acceptance
 criteria for a present-visit unit.
 
@@ -128,7 +128,7 @@ compound type [external, ask] and changes-requested` at feature:138 is
 intentional — Scenario A is its superset with the additional
 "ask-does-not-fire-next" assertion that the current version omits.
 
-### Edit 2 — Promote `artifacts/unit-04-gate-feedback-check.md` into a proper current-visit unit
+### Edit 2 — Promote `artifacts/legacy-gate-feedback-check.md` into a proper current-visit unit
 
 Create a new unit at
 `.haiku/intents/universal-feedback-model-and-review-recovery/stages/development/units/unit-16-compound-gate-regression-tests.md`.
@@ -147,7 +147,7 @@ writing this to match its frontmatter dialect exactly, especially
 ---
 title: Compound [external, ask] gate regression tests
 type: regression
-depends_on: [unit-07-external-review-detection, unit-04-gate-feedback-check]
+depends_on: []  # NOTE (FB-44 rename): legacy-external-review-detection.md and legacy-gate-feedback-check.md are artifact notes, not units — do not list them here
 quality_gates: []
 status: pending
 bolt: 1
@@ -202,9 +202,9 @@ Body sections (in order):
    ```
 6. **References** — link to:
    - `features/external-review-feedback.feature` (Compound Gate section)
-   - `stages/development/artifacts/unit-04-gate-feedback-check.md` (prior-visit
-     implementation notes — preserved as-is, not deleted)
-   - `stages/development/artifacts/unit-07-external-review-detection.md`
+   - `stages/development/artifacts/legacy-gate-feedback-check.md` (prior-visit
+     implementation notes — preserved as-is, not deleted; renamed from `unit-04-gate-feedback-check.md` by FB-44)
+   - `stages/development/artifacts/legacy-external-review-detection.md` (renamed from `unit-07-external-review-detection.md` by FB-44)
    - `knowledge/DATA-CONTRACTS.md` §Compound Gate Resolution (added in Edit 3)
 
 ### Edit 3 — Extend `knowledge/DATA-CONTRACTS.md`
@@ -244,9 +244,9 @@ Edits 1 and 2 verify.
 3. **`.haiku/intents/universal-feedback-model-and-review-recovery/knowledge/DATA-CONTRACTS.md`**
    — append a `## Compound Gate Resolution` section per Edit 3.
 
-No production code changes. No changes to `unit-04-gate-feedback-check.md`
+No production code changes. No changes to `legacy-gate-feedback-check.md`
 (it is a prior-visit artifact — preserved for history, referenced from the
-new unit).
+new unit; renamed from `unit-04-gate-feedback-check.md` by FB-44).
 
 ## Implementation steps (for the builder in bolt 2)
 

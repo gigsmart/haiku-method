@@ -2,7 +2,7 @@
 title: >-
   CORS Access-Control-Allow-Origin: * on tunnel mode enables cross-site request
   attacks
-status: fixing
+status: closed
 origin: adversarial-review
 author: security
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-21T20:23:31Z'
 iteration: 0
 visit: 0
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-36:bolt-2'
 bolt: 2
 upstream_stage: null
 ---

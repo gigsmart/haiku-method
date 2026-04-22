@@ -14,9 +14,9 @@ Closes: [FB-39] (in part — the FooterBar half).
 `guard-fsm-fields` PreToolUse hook blocks any Write/Edit whose projected file
 content matches `^status:\s*completed` on a unit file, so body-only edits to a
 completed unit are rejected by the harness. This stage already mixes in-unit
-criteria with artifact-level criteria (see `unit-02-crud-companion-tools.md`,
-`unit-04-gate-feedback-check.md`, `unit-05-orchestrator-integration.md`,
-`unit-07-external-review-detection.md`) — sidecar supplements are idiomatic
+criteria with artifact-level criteria (see `legacy-crud-companion-tools.md`,
+`legacy-gate-feedback-check.md`, `legacy-orchestrator-integration.md`,
+`legacy-external-review-detection.md`) — sidecar supplements are idiomatic
 here. The behavioral spec for this visit = unit bodies + sidecar artifacts; the
 test author reads both.
 
