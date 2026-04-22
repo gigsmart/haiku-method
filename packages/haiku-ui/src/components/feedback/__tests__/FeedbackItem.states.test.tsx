@@ -11,8 +11,11 @@
  *
  * Covers completion criteria:
  *   - aria-label="Status: {status}" present on every badge instance
- *   - canonical verbs only (Dismiss / Verify & Close / Reopen) — no
- *     Close / Reject / Delete on open items
+ *   - canonical verbs only (Dismiss / Verify & Close / Reopen) — banned
+ *     verbs (Close / Reject / Address / "Re-open") never render. "Delete"
+ *     is NOT banned: it is the terminal destructive action and renders
+ *     only on closed/rejected items when `onDelete` is supplied (per
+ *     FeedbackItem docstring + DESIGN-TOKENS §2.6).
  *   - zero opacity-50|60|70 classes anywhere in the rendered tree
  *   - aria-expanded toggles with the isExpanded prop
  *   - focus preservation after a status transition → card root
@@ -119,10 +122,20 @@ describe("FeedbackItem — state matrix", () => {
 	})
 })
 
-// ── Canonical verb assertions (no banned Close/Reject/Delete on open items) ──
+// ── Canonical verb assertions ──
+//
+// Banned verbs (never render anywhere): Close / Reject / Address / "Re-open"
+// (hyphenated). Audit-enforced via `audit-config.json` rules
+// `banned-button-verb-content` and `banned-button-verb-aria`.
+//
+// "Delete" is NOT banned. Per the FeedbackItem docstring and DESIGN-TOKENS
+// §2.6, it is the terminal destructive action surfaced only on
+// closed/rejected items when the optional `onDelete` handler is supplied.
+// Positive render coverage is asserted below alongside the banned-verb
+// negatives.
 
 describe("FeedbackItem — canonical verbs", () => {
-	it("pending + expanded renders a Dismiss button; no Close / Reject / Delete", () => {
+	it("pending + expanded renders a Dismiss button; no Close / Reject / Delete button", () => {
 		const items = mockItems(1)
 		const { getByText, queryByText } = render(
 			<FeedbackItem
@@ -136,11 +149,12 @@ describe("FeedbackItem — canonical verbs", () => {
 		expect(getByText("Dismiss").tagName).toBe("BUTTON")
 		expect(queryByText("Close")).toBeNull()
 		expect(queryByText("Reject")).toBeNull()
-		// Delete is only allowed on closed/rejected — never on pending.
+		// Delete is NOT banned, but it is scoped to closed/rejected only —
+		// it must never render on a pending item even when onDelete is wired.
 		expect(queryByText("Delete")).toBeNull()
 	})
 
-	it("addressed + expanded renders Verify & Close + Reopen; no bare Close or Reject", () => {
+	it("addressed + expanded renders Verify & Close + Reopen; no bare Close or Reject; no Delete button", () => {
 		const items = mockItems(2)
 		const { getByText, queryByText } = render(
 			<FeedbackItem
@@ -154,9 +168,11 @@ describe("FeedbackItem — canonical verbs", () => {
 		expect(getByText("Verify & Close").tagName).toBe("BUTTON")
 		expect(getByText("Reopen").tagName).toBe("BUTTON")
 		expect(queryByText("Reject")).toBeNull()
+		// Delete is scoped to closed/rejected — never on addressed.
+		expect(queryByText("Delete")).toBeNull()
 	})
 
-	it("closed + expanded renders Reopen (one word, no hyphen)", () => {
+	it("closed + expanded renders Reopen (one word, no hyphen) + Delete when onDelete is supplied", () => {
 		const items = mockItems(3)
 		const { getByText, queryByText } = render(
 			<FeedbackItem
@@ -169,9 +185,12 @@ describe("FeedbackItem — canonical verbs", () => {
 		)
 		expect(getByText("Reopen").tagName).toBe("BUTTON")
 		expect(queryByText("Re-open")).toBeNull()
+		// Delete is the terminal destructive action on closed items —
+		// it MUST render when onDelete is supplied.
+		expect(getByText("Delete").tagName).toBe("BUTTON")
 	})
 
-	it("rejected + expanded renders Reopen", () => {
+	it("rejected + expanded renders Reopen + Delete when onDelete is supplied", () => {
 		const items = mockItems(4)
 		const { getByText } = render(
 			<FeedbackItem
@@ -183,6 +202,24 @@ describe("FeedbackItem — canonical verbs", () => {
 			/>,
 		)
 		expect(getByText("Reopen").tagName).toBe("BUTTON")
+		// Delete is the terminal destructive action on rejected items —
+		// it MUST render when onDelete is supplied.
+		expect(getByText("Delete").tagName).toBe("BUTTON")
+	})
+
+	it("closed + expanded does NOT render Delete when onDelete is omitted", () => {
+		const items = mockItems(3)
+		const { queryByText } = render(
+			<FeedbackItem
+				item={{ ...items[2], status: "closed" }}
+				isExpanded
+				onToggle={() => undefined}
+				onStatusChange={() => undefined}
+			/>,
+		)
+		// Delete is optional — it renders only when the parent wires
+		// onDelete. Without the handler, no Delete button appears.
+		expect(queryByText("Delete")).toBeNull()
 	})
 })
 
