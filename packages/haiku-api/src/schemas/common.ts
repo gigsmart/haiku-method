@@ -49,7 +49,10 @@ export const PinSchema = z
 	.object({
 		x: z.number().describe("Pin x-coordinate (0..1 relative to canvas width)"),
 		y: z.number().describe("Pin y-coordinate (0..1 relative to canvas height)"),
-		text: z.string().describe("Pin comment body"),
+		text: z
+			.string()
+			.max(1_000)
+			.describe("Pin comment body (capped at 1,000 chars)"),
 	})
 	.describe("Screenshot pin annotation")
 export type Pin = z.infer<typeof PinSchema>
@@ -59,8 +62,12 @@ export const InlineCommentSchema = z
 	.object({
 		selectedText: z
 			.string()
-			.describe("Highlighted text the comment anchors to"),
-		comment: z.string().describe("Comment body"),
+			.max(2_000)
+			.describe("Highlighted text the comment anchors to (capped at 2,000 chars)"),
+		comment: z
+			.string()
+			.max(10_000)
+			.describe("Comment body (capped at 10,000 chars)"),
 		paragraph: z
 			.number()
 			.describe("Zero-based paragraph index inside the reviewed artifact"),
@@ -73,8 +80,11 @@ export const ReviewAnnotationsSchema = z
 	.object({
 		screenshot: z
 			.string()
+			.max(65_536)
 			.optional()
-			.describe("Base64-encoded PNG of annotated canvas"),
+			.describe(
+				"Base64-encoded PNG of annotated canvas (capped at 65,536 chars — matches WS frame cap)",
+			),
 		pins: z.array(PinSchema).optional(),
 		comments: z.array(InlineCommentSchema).optional(),
 	})

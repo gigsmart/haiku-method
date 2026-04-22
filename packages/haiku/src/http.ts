@@ -27,6 +27,7 @@ import {
 	RevisitRequestSchema,
 	type RevisitResponse,
 	type ValidationError,
+	WS_MAX_FRAME_BYTES,
 	WsClientMessageSchema,
 	type WsServerMessage,
 	type ZodIssueWire,
@@ -651,8 +652,9 @@ async function handleDirectionSelectPost(
 
 const WS_MAGIC = "258EAFA5-E914-47DA-95CA-C5AB5DC85B11"
 
-/** Per-frame cap. Frames over this get closed with code 1009 (Message Too Big). */
-const WS_MAX_FRAME_BYTES = 64 * 1024
+// Per-frame cap. Frames over this get closed with code 1009 (Message Too Big).
+// The canonical constant lives in `haiku-api`'s websocket schema so that the
+// socket-layer close and the schema-level `.superRefine` share one number.
 
 /** Per-connection frame rate cap (messages/second). Configurable via env. */
 const WS_RATE_LIMIT_PER_SEC = Number.parseInt(

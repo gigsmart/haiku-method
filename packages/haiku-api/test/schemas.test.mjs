@@ -43,10 +43,14 @@ import {
 	SessionPayloadSchema,
 	SessionStatusSchema,
 	SessionTypeSchema,
+	WS_MAX_FRAME_BYTES,
 	WsAckMessageSchema,
+	WsAnswerMessageSchema,
 	// websocket
 	WsClientMessageSchema,
+	WsDecideMessageSchema,
 	WsErrorMessageSchema,
+	WsSelectMessageSchema,
 	WsServerMessageSchema,
 	WsSessionUpdateMessageSchema,
 } from "../dist/index.js"
@@ -140,6 +144,50 @@ describe("schemas/common.ts — QuestionAnnotationsSchema", () => {
 	})
 	test("rejects invalid", () => {
 		assertInvalid(QuestionAnnotationsSchema, { comments: "string" })
+	})
+})
+
+// ─── Cap-boundary coverage for annotation primitives (FB-28) ────────────
+
+describe("schemas/common.ts — PinSchema text cap", () => {
+	test("accepts max-length text (1,000 chars)", () => {
+		assertValid(PinSchema, { x: 0, y: 0, text: "a".repeat(1_000) })
+	})
+	test("rejects text > 1,000 chars", () => {
+		assertInvalid(PinSchema, { x: 0, y: 0, text: "a".repeat(1_001) })
+	})
+})
+
+describe("schemas/common.ts — InlineCommentSchema caps", () => {
+	test("accepts max-length selectedText (2,000) + comment (10,000)", () => {
+		assertValid(InlineCommentSchema, {
+			selectedText: "s".repeat(2_000),
+			comment: "c".repeat(10_000),
+			paragraph: 0,
+		})
+	})
+	test("rejects selectedText > 2,000 chars", () => {
+		assertInvalid(InlineCommentSchema, {
+			selectedText: "s".repeat(2_001),
+			comment: "c",
+			paragraph: 0,
+		})
+	})
+	test("rejects comment > 10,000 chars", () => {
+		assertInvalid(InlineCommentSchema, {
+			selectedText: "s",
+			comment: "c".repeat(10_001),
+			paragraph: 0,
+		})
+	})
+})
+
+describe("schemas/common.ts — ReviewAnnotationsSchema screenshot cap", () => {
+	test("accepts max-length screenshot (65,536 chars)", () => {
+		assertValid(ReviewAnnotationsSchema, { screenshot: "s".repeat(65_536) })
+	})
+	test("rejects screenshot > 65,536 chars", () => {
+		assertInvalid(ReviewAnnotationsSchema, { screenshot: "s".repeat(65_537) })
 	})
 })
 
@@ -722,6 +770,232 @@ describe("schemas/websocket.ts — individual envelope schemas", () => {
 			type: "session-update",
 			session_id: 123,
 			status: "pending",
+		})
+	})
+})
+
+// ─── Cap-boundary coverage for WS envelopes (FB-28) ─────────────────────
+
+describe("schemas/websocket.ts — WS_MAX_FRAME_BYTES constant", () => {
+	test("equals 65,536 (matches socket-layer cap)", () => {
+		if (WS_MAX_FRAME_BYTES !== 65_536) {
+			throw new Error(`WS_MAX_FRAME_BYTES drift: ${WS_MAX_FRAME_BYTES}`)
+		}
+	})
+})
+
+describe("schemas/websocket.ts — WsDecideMessageSchema caps", () => {
+	test("accepts max-length decision (32) + feedback (10,000)", () => {
+		assertValid(WsDecideMessageSchema, {
+			type: "decide",
+			decision: "a".repeat(32),
+			feedback: "f".repeat(10_000),
+		})
+	})
+	test("rejects decision > 32", () => {
+		assertInvalid(WsDecideMessageSchema, {
+			type: "decide",
+			decision: "a".repeat(33),
+		})
+	})
+	test("rejects feedback > 10,000", () => {
+		assertInvalid(WsDecideMessageSchema, {
+			type: "decide",
+			decision: "approved",
+			feedback: "f".repeat(10_001),
+		})
+	})
+})
+
+describe("schemas/websocket.ts — WsAnswerMessageSchema feedback cap", () => {
+	test("accepts max-length feedback (10,000)", () => {
+		assertValid(WsAnswerMessageSchema, {
+			type: "answer",
+			answers: [],
+			feedback: "f".repeat(10_000),
+		})
+	})
+	test("rejects feedback > 10,000", () => {
+		assertInvalid(WsAnswerMessageSchema, {
+			type: "answer",
+			answers: [],
+			feedback: "f".repeat(10_001),
+		})
+	})
+})
+
+describe("schemas/websocket.ts — WsSelectMessageSchema caps", () => {
+	test("accepts max-length archetype (64) + comments (10,000) + nested annotation caps", () => {
+		assertValid(WsSelectMessageSchema, {
+			type: "select",
+			archetype: "a".repeat(64),
+			parameters: {},
+			comments: "c".repeat(10_000),
+			annotations: {
+				screenshot: "s".repeat(65_536),
+				pins: [{ x: 0, y: 0, text: "p".repeat(1_000) }],
+			},
+		})
+	})
+	test("rejects archetype > 64", () => {
+		assertInvalid(WsSelectMessageSchema, {
+			type: "select",
+			archetype: "a".repeat(65),
+			parameters: {},
+		})
+	})
+	test("rejects comments > 10,000", () => {
+		assertInvalid(WsSelectMessageSchema, {
+			type: "select",
+			archetype: "a",
+			parameters: {},
+			comments: "c".repeat(10_001),
+		})
+	})
+	test("rejects annotations.pins[].text > 1,000", () => {
+		assertInvalid(WsSelectMessageSchema, {
+			type: "select",
+			archetype: "a",
+			parameters: {},
+			annotations: { pins: [{ x: 0, y: 0, text: "p".repeat(1_001) }] },
+		})
+	})
+	test("rejects annotations.screenshot > 65,536", () => {
+		assertInvalid(WsSelectMessageSchema, {
+			type: "select",
+			archetype: "a",
+			parameters: {},
+			annotations: { screenshot: "s".repeat(65_537) },
+		})
+	})
+})
+
+describe("schemas/websocket.ts — WsAckMessageSchema caps", () => {
+	test("accepts max-length decision (32) + feedback (10,000)", () => {
+		assertValid(WsAckMessageSchema, {
+			type: "ack",
+			ok: true,
+			decision: "a".repeat(32),
+			feedback: "f".repeat(10_000),
+		})
+	})
+	test("rejects decision > 32", () => {
+		assertInvalid(WsAckMessageSchema, {
+			type: "ack",
+			ok: true,
+			decision: "a".repeat(33),
+		})
+	})
+	test("rejects feedback > 10,000", () => {
+		assertInvalid(WsAckMessageSchema, {
+			type: "ack",
+			ok: true,
+			feedback: "f".repeat(10_001),
+		})
+	})
+})
+
+describe("schemas/websocket.ts — WsErrorMessageSchema error cap", () => {
+	test("accepts max-length error (500)", () => {
+		assertValid(WsErrorMessageSchema, {
+			type: "error",
+			error: "e".repeat(500),
+		})
+	})
+	test("rejects error > 500", () => {
+		assertInvalid(WsErrorMessageSchema, {
+			type: "error",
+			error: "e".repeat(501),
+		})
+	})
+})
+
+describe("schemas/websocket.ts — WsSessionUpdateMessageSchema caps", () => {
+	test("accepts max-length session_id (64) + status (32) + decision (32) + feedback (10,000)", () => {
+		assertValid(WsSessionUpdateMessageSchema, {
+			type: "session-update",
+			session_id: "s".repeat(64),
+			status: "t".repeat(32),
+			decision: "d".repeat(32),
+			feedback: "f".repeat(10_000),
+		})
+	})
+	test("rejects session_id > 64", () => {
+		assertInvalid(WsSessionUpdateMessageSchema, {
+			type: "session-update",
+			session_id: "s".repeat(65),
+			status: "pending",
+		})
+	})
+	test("rejects status > 32", () => {
+		assertInvalid(WsSessionUpdateMessageSchema, {
+			type: "session-update",
+			session_id: "s",
+			status: "t".repeat(33),
+		})
+	})
+})
+
+// ─── Frame-size superRefine boundary (FB-28) ────────────────────────────
+
+describe("schemas/websocket.ts — WsClientMessageSchema frame-size refine", () => {
+	test("accepts payload at exactly the frame-size cap (screenshot-padded)", () => {
+		// Build a decide payload whose serialized size lands at exactly
+		// WS_MAX_FRAME_BYTES. Use annotations.screenshot as the padding
+		// knob; it is capped at 65,536 chars (same as the frame cap), so
+		// the per-field cap and the frame cap fire at the same boundary.
+		const shellBase = {
+			type: "decide",
+			decision: "approved",
+			annotations: { screenshot: "" },
+		}
+		const shellSize = JSON.stringify(shellBase).length
+		const padLen = WS_MAX_FRAME_BYTES - shellSize
+		const payload = {
+			...shellBase,
+			annotations: { screenshot: "x".repeat(padLen) },
+		}
+		if (JSON.stringify(payload).length !== WS_MAX_FRAME_BYTES) {
+			throw new Error(
+				`boundary payload size drift: ${JSON.stringify(payload).length}`,
+			)
+		}
+		assertValid(WsClientMessageSchema, payload)
+	})
+
+	test("rejects payload whose serialized size > frame cap via pin array overflow", () => {
+		// Pins array has no length cap; PinSchema.text is capped at 1,000.
+		// 100 pins × ~1,030 bytes each ≈ ~103 KB — exceeds the 64 KB frame
+		// cap without tripping any per-field cap, exercising the superRefine.
+		const pins = Array.from({ length: 100 }, () => ({
+			x: 0,
+			y: 0,
+			text: "x".repeat(1_000),
+		}))
+		const payload = {
+			type: "decide",
+			decision: "approved",
+			annotations: { pins },
+		}
+		if (JSON.stringify(payload).length <= WS_MAX_FRAME_BYTES) {
+			throw new Error(
+				`frame-overflow test payload too small: ${JSON.stringify(payload).length}`,
+			)
+		}
+		assertInvalid(WsClientMessageSchema, payload)
+	})
+})
+
+describe("schemas/websocket.ts — WsServerMessageSchema frame-size refine", () => {
+	test("accepts well-formed frame whose size is under the cap", () => {
+		// Server envelopes have no unbounded-array escape hatch once field
+		// caps are installed — a lone server frame cannot exceed the 64 KB
+		// frame cap. This test verifies the refine is installed (doesn't
+		// reject the happy path) by round-tripping a maximum-size ack.
+		assertValid(WsServerMessageSchema, {
+			type: "ack",
+			ok: true,
+			feedback: "f".repeat(10_000),
 		})
 	})
 })
