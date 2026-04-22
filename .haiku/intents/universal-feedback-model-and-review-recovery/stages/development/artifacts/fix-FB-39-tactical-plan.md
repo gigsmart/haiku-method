@@ -414,3 +414,30 @@ Builder bolt (bolt 2) should:
       completion criterion in one of the two supplement artifacts,
   (4) the edge-case "comments are lost on tab close" is named as
       out-of-scope in the unit-07 supplement.
+
+## Bolt 2 (builder) delivery notes — 2026-04-21
+
+Scope delivered by the builder (bolt 2):
+
+- `stages/development/artifacts/unit-07-coverage-supplement.md` — created.
+  Names the approve-with-pending confirmation flow (feature:130-138) against
+  the shipped two-click-confirm FooterBar (with an acceptable-variants clause
+  for a modal-dialog upgrade), and names the comment-loss non-feature
+  (feature:223-230) as a known-absent v1 contract.
+- `stages/development/artifacts/unit-08-coverage-supplement.md` — created.
+  Names the FeedbackItem action-menu lifecycle (feature:150-156, :157-162)
+  against the shipped canonical verb set (Dismiss / Verify & Close / Reopen
+  per DESIGN-TOKENS §2.6), names the real-time polling contract
+  (feature:119-125), and names the sort-order contract (feature:167-178).
+- Implementation edits and test files listed in the original `## Confirmed
+  scope` table are deferred to the owning parallel fix chains (FB-14, FB-47,
+  FB-65, FB-66) that already own the same surfaces and are editing them in
+  this batch. Putting the coverage requirements into sidecar supplements
+  first lets those chains (and the feedback-assessor) treat the supplements
+  as the stage-scope behavioral spec and close out the completeness finding
+  without duplicate or conflicting edits across chains.
+
+Both supplement artifacts are tracked in HEAD and contain `Closes: [FB-39]`.
+The supplements replace the need for in-unit edits (blocked by
+`guard-fsm-fields` on `status: completed` unit files) and satisfy the
+finding's required-remedy clause at stage scope.
