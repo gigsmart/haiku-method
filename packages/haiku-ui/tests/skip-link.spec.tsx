@@ -85,14 +85,55 @@ describe("Skip link (FB-30 regression guard)", () => {
 		expect(active?.getAttribute("href")).toBe("#main-content")
 		expect(active?.textContent).toBe("Skip to main content")
 
-		// Activating the skip link should move focus to <main id="main-content">
-		// (the Main landmark primitive sets tabIndex={-1} to allow programmatic
-		// focus). We simulate anchor activation by directly invoking focus() on
-		// the target — `user.click` on an anchor in jsdom does not execute the
-		// default hash-navigation side effect that moves focus.
+		// Activating the skip link must both (a) navigate to #main-content and
+		// (b) move focus to the <main> landmark. We exercise the real user
+		// activation path with `user.click` rather than calling `.focus()` on
+		// the target, so this test faithfully guards the full skip-link
+		// behavior — if the anchor is swapped for a non-link element, or if
+		// the activation handler regresses, this test fails.
+		const link = active as HTMLAnchorElement
 		const main = container.querySelector("#main-content") as HTMLElement | null
 		expect(main).not.toBeNull()
-		main?.focus()
+
+		await user.click(link)
+
+		expect(window.location.hash).toBe("#main-content")
+		expect(document.activeElement).toBe(main)
+	})
+
+	it("moves focus to <main> when activated via keyboard Enter", async () => {
+		const session = loadReviewFixture()
+		const client = makeMockClient(session)
+
+		const { container } = render(
+			<ApiClientProvider client={client}>
+				<App />
+			</ApiClientProvider>,
+		)
+
+		await waitFor(
+			() => {
+				const main = container.querySelector("#main-content")
+				if (!main) throw new Error("main-content not rendered yet")
+			},
+			{ timeout: 2000 },
+		)
+
+		const user = userEvent.setup()
+		await user.tab()
+
+		const active = document.activeElement as HTMLElement | null
+		expect(active?.tagName).toBe("A")
+		expect(active?.getAttribute("href")).toBe("#main-content")
+
+		const main = container.querySelector("#main-content") as HTMLElement | null
+		expect(main).not.toBeNull()
+
+		// Pressing Enter on the focused anchor must activate it just like a
+		// mouse click — this is required for keyboard-only users.
+		await user.keyboard("{Enter}")
+
+		expect(window.location.hash).toBe("#main-content")
 		expect(document.activeElement).toBe(main)
 	})
 
