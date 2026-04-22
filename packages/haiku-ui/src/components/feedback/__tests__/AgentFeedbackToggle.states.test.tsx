@@ -31,18 +31,10 @@ describe("AgentFeedbackToggle — state matrix", () => {
 					<AgentFeedbackToggle checked={true} count={3} onChange={() => {}} />
 				</div>
 				<div data-cell="disabled-off">
-					<AgentFeedbackToggle
-						checked={false}
-						disabled
-						onChange={() => {}}
-					/>
+					<AgentFeedbackToggle checked={false} disabled onChange={() => {}} />
 				</div>
 				<div data-cell="disabled-on">
-					<AgentFeedbackToggle
-						checked={true}
-						disabled
-						onChange={() => {}}
-					/>
+					<AgentFeedbackToggle checked={true} disabled onChange={() => {}} />
 				</div>
 			</div>,
 		)
