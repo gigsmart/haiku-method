@@ -1,15 +1,27 @@
 /**
- * Verifies useSessionWebSocket batches bursty `session-update` frames:
- * 100 frames in a tight loop collapse to exactly one onUpdate callback
- * per animation frame.
+ * Verifies useSessionWebSocket batches bursty `session-update` frames under
+ * **real** `requestAnimationFrame` timing (jsdom's polyfill — not mocked).
+ *
+ * Tier: relative-regression gate (jsdom perf tier). This test proves the
+ * hook's `rafRef !== null` coalescing branch actually fires and re-arms
+ * across real frames — not just that a manual drain flushes once. A future
+ * regression that e.g. calls `onUpdate` per-message synchronously will
+ * inflate the coalescing count and fail this test.
+ *
+ * NOT a real-browser paint guarantee; real-browser perf budgets are a
+ * follow-up (Vitest browser mode). See `tests/perf/README.md` for the tier
+ * contract and the out-of-scope work.
+ *
+ * Ref: FB-62 —
+ * `.haiku/intents/universal-feedback-model-and-review-recovery/stages/development/feedback/62-annotation-perf-and-use-session-websocket-tests-mock-timers.md`.
  */
 
 import { act, render } from "@testing-library/react"
 import { useEffect } from "react"
 import { describe, expect, it, vi } from "vitest"
-import type { ApiClient } from "../src/api/client"
-import { ApiClientProvider } from "../src/api/context"
-import { useSessionWebSocket } from "../src/hooks/useSessionWebSocket"
+import type { ApiClient } from "../../src/api/client"
+import { ApiClientProvider } from "../../src/api/context"
+import { useSessionWebSocket } from "../../src/hooks/useSessionWebSocket"
 
 class FakeWebSocket {
 	static OPEN = 1
@@ -67,22 +79,21 @@ function Harness({
 	return null
 }
 
-describe("useSessionWebSocket rAF coalescing", () => {
-	it("collapses 100 bursty session-update frames to a single onUpdate call per frame", async () => {
+/**
+ * Await exactly one real `requestAnimationFrame` tick under jsdom. No spy,
+ * no manual queue — the hook's scheduled callback fires on the polyfill's
+ * own schedule.
+ */
+async function flushOneFrame(): Promise<void> {
+	return new Promise<void>((resolve) => {
+		requestAnimationFrame(() => resolve())
+	})
+}
+
+describe("useSessionWebSocket rAF coalescing (real rAF)", () => {
+	it("collapses bursty session-update frames to one onUpdate per real rAF frame and re-arms across frames", async () => {
 		const ws = new FakeWebSocket()
 		const client = makeClient(ws)
-
-		let rafCallbacks: FrameRequestCallback[] = []
-		const rafSpy = vi
-			.spyOn(globalThis, "requestAnimationFrame")
-			.mockImplementation((cb: FrameRequestCallback) => {
-				rafCallbacks.push(cb)
-				return rafCallbacks.length
-			})
-		const cafSpy = vi
-			.spyOn(globalThis, "cancelAnimationFrame")
-			.mockImplementation(() => undefined)
-
 		const onUpdate = vi.fn()
 
 		render(
@@ -91,30 +102,50 @@ describe("useSessionWebSocket rAF coalescing", () => {
 			</ApiClientProvider>,
 		)
 
-		// Dispatch 100 updates synchronously — all in one frame window.
+		// Burst 1 — dispatch 100 updates synchronously before any rAF can fire.
 		await act(async () => {
 			for (let i = 0; i < 100; i++) {
 				ws.dispatchSessionUpdate({ status: `tick-${i}` })
 			}
 		})
 
-		// rAF should have been scheduled ONCE for the burst.
-		expect(rafSpy).toHaveBeenCalledTimes(1)
+		// Before the frame fires, no onUpdate has been invoked — the hook is
+		// waiting for the scheduled rAF.
 		expect(onUpdate).not.toHaveBeenCalled()
 
-		// Flush the scheduled rAF callback.
+		// Advance one real rAF tick and let React settle.
 		await act(async () => {
-			const cbs = rafCallbacks
-			rafCallbacks = []
-			for (const cb of cbs) cb(performance.now())
+			await flushOneFrame()
 		})
 
-		// Exactly one onUpdate call, carrying the LAST payload (tick-99).
+		// The burst of 100 synchronous dispatches collapsed to exactly ONE
+		// onUpdate call carrying the LAST payload.
 		expect(onUpdate).toHaveBeenCalledTimes(1)
 		const first = onUpdate.mock.calls[0][0] as { status: string }
 		expect(first.status).toBe("tick-99")
 
-		rafSpy.mockRestore()
-		cafSpy.mockRestore()
+		// Burst 2 — dispatch another 50 updates. If the hook's rAF is NOT
+		// re-armed after the first frame fires, either these will never fire
+		// (stuck) or they will all fire synchronously (broken coalescing).
+		// Real rAF proves the "reuse scheduled rAF, reset on frame fire" path.
+		await act(async () => {
+			for (let i = 100; i < 150; i++) {
+				ws.dispatchSessionUpdate({ status: `tick-${i}` })
+			}
+		})
+
+		// Still only the first burst's call — the second rAF has not fired yet.
+		expect(onUpdate).toHaveBeenCalledTimes(1)
+
+		// Advance one more real rAF tick.
+		await act(async () => {
+			await flushOneFrame()
+		})
+
+		// Now exactly TWO onUpdate calls — one per burst — and the second
+		// carries the last payload of burst 2.
+		expect(onUpdate).toHaveBeenCalledTimes(2)
+		const second = onUpdate.mock.calls[1][0] as { status: string }
+		expect(second.status).toBe("tick-149")
 	})
 })

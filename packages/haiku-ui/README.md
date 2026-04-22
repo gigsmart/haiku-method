@@ -29,8 +29,9 @@ See `packages/haiku-api/` for the OpenAPI route table and Zod schemas. The
 `useSessionWebSocket` coalesces `session-update` frames via
 `requestAnimationFrame`: bursty WS traffic (up to hundreds of frames per
 second) collapses to one React render per animation frame. See
-`tests/use-session-websocket.test.tsx` for the coverage (100 frames → 1
-render).
+`tests/perf/use-session-websocket.test.tsx` for the coverage (two
+consecutive bursts + real-rAF flushes → 2 renders; see
+`tests/perf/README.md` for the perf tier contract).
 
 ## Running locally against a mock backend
 

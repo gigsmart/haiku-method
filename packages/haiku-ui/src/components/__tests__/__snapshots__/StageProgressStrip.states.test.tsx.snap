@@ -12,10 +12,29 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          aria-label="Stage inception, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="inception (completed)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-white"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              completed
+            </title>
+            <polyline
+              points="2 6 5 9 10 3"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -26,13 +45,33 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          aria-label="Stage design, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="design (completed)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-white"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              completed
+            </title>
+            <polyline
+              points="2 6 5 9 10 3"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -43,14 +82,18 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          aria-current="step"
+          aria-label="Stage product, current"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
           title="product (current)"
           type="button"
         >
           <span
+            aria-hidden="true"
             class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
           />
         </button>
@@ -64,10 +107,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          aria-label="Stage development, future"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="development (future)"
           type="button"
@@ -82,10 +127,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          aria-label="Stage review, future"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="review (future)"
           type="button"
@@ -108,11 +155,14 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          aria-current="step"
+          aria-label="Stage inception, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
           title="inception (completed)"
           type="button"
         >
           <span
+            aria-hidden="true"
             class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
           />
         </button>
@@ -126,13 +176,33 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          aria-label="Stage design, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="design (completed)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-white"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              completed
+            </title>
+            <polyline
+              points="2 6 5 9 10 3"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -143,13 +213,29 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border-2 border-stone-400 dark:border-stone-500 bg-transparent cursor-pointer hover:border-teal-400 dark:hover:border-teal-400"
+          aria-label="Stage product, current"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border-2 border-stone-400 dark:border-stone-500 bg-transparent cursor-pointer hover:border-teal-400 dark:hover:border-teal-400"
           title="product (current)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-stone-500 dark:text-stone-400"
+            fill="currentColor"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              visited
+            </title>
+            <polygon
+              points="6 2 10 6 6 10 2 6"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -160,10 +246,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          aria-label="Stage development, future"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="development (future)"
           type="button"
@@ -178,10 +266,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          aria-label="Stage review, future"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="review (future)"
           type="button"
@@ -204,10 +294,29 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          aria-label="Stage inception, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="inception (completed)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-white"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              completed
+            </title>
+            <polyline
+              points="2 6 5 9 10 3"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -218,13 +327,33 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          aria-label="Stage design, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="design (completed)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-white"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              completed
+            </title>
+            <polyline
+              points="2 6 5 9 10 3"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -235,13 +364,33 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          aria-label="Stage product, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="product (completed)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-white"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              completed
+            </title>
+            <polyline
+              points="2 6 5 9 10 3"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -252,13 +401,33 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          aria-label="Stage development, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="development (completed)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-white"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              completed
+            </title>
+            <polyline
+              points="2 6 5 9 10 3"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -269,14 +438,18 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          aria-current="step"
+          aria-label="Stage review, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
           title="review (completed)"
           type="button"
         >
           <span
+            aria-hidden="true"
             class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
           />
         </button>
@@ -298,10 +471,29 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          aria-label="Stage inception, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="inception (completed)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-white"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              completed
+            </title>
+            <polyline
+              points="2 6 5 9 10 3"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -312,13 +504,33 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          aria-label="Stage design, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="design (completed)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-white"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              completed
+            </title>
+            <polyline
+              points="2 6 5 9 10 3"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -329,14 +541,18 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          aria-current="step"
+          aria-label="Stage product, current"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
           title="product (current)"
           type="button"
         >
           <span
+            aria-hidden="true"
             class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
           />
         </button>
@@ -350,10 +566,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          aria-label="Stage development, future"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="development (future)"
           type="button"
@@ -368,10 +586,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          aria-label="Stage review, future"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="review (future)"
           type="button"
@@ -394,10 +614,29 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          aria-label="Stage inception, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="inception (completed)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-white"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              completed
+            </title>
+            <polyline
+              points="2 6 5 9 10 3"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -408,13 +647,33 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          aria-label="Stage design, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="design (completed)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-white"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              completed
+            </title>
+            <polyline
+              points="2 6 5 9 10 3"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -425,14 +684,18 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          aria-current="step"
+          aria-label="Stage product, current"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
           title="product (current)"
           type="button"
         >
           <span
+            aria-hidden="true"
             class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
           />
         </button>
@@ -446,13 +709,29 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border-2 border-stone-400 dark:border-stone-500 bg-transparent cursor-pointer hover:border-teal-400 dark:hover:border-teal-400"
+          aria-label="Stage development, future"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border-2 border-stone-400 dark:border-stone-500 bg-transparent cursor-pointer hover:border-teal-400 dark:hover:border-teal-400"
           title="development (future)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-stone-500 dark:text-stone-400"
+            fill="currentColor"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              visited
+            </title>
+            <polygon
+              points="6 2 10 6 6 10 2 6"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -463,10 +742,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          aria-label="Stage review, future"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="review (future)"
           type="button"
@@ -489,11 +770,14 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          aria-current="step"
+          aria-label="Stage inception, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
           title="inception (completed)"
           type="button"
         >
           <span
+            aria-hidden="true"
             class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
           />
         </button>
@@ -507,13 +791,33 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-teal-400 dark:border-teal-500"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-solid border-teal-400 dark:border-teal-500"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
+          aria-label="Stage design, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full bg-teal-500 dark:bg-teal-400 cursor-pointer hover:scale-125"
           title="design (completed)"
           type="button"
-        />
+        >
+          <svg
+            aria-hidden="true"
+            class="block w-2 h-2 text-white"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            viewBox="0 0 12 12"
+          >
+            <title>
+              completed
+            </title>
+            <polyline
+              points="2 6 5 9 10 3"
+            />
+          </svg>
+        </button>
         <span
           class="hidden sm:block ml-1 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-stone-600 dark:text-stone-300"
         >
@@ -524,10 +828,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          aria-label="Stage product, current"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="product (current)"
           type="button"
@@ -542,10 +848,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          aria-label="Stage development, future"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="development (future)"
           type="button"
@@ -560,10 +868,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          aria-label="Stage review, future"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="review (future)"
           type="button"
@@ -586,11 +896,14 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
+          aria-current="step"
+          aria-label="Stage inception, completed"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-5 h-5 rotate-45 rounded-sm bg-teal-500 dark:bg-teal-400 shadow-sm cursor-default"
           title="inception (completed)"
           type="button"
         >
           <span
+            aria-hidden="true"
             class="block w-1.5 h-1.5 bg-white rounded-full -rotate-45"
           />
         </button>
@@ -604,10 +917,12 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
         class="flex items-center"
       >
         <div
-          class="w-6 border-t-2 border-stone-300 dark:border-stone-600"
+          aria-hidden="true"
+          class="w-6 border-t-2 border-dashed border-stone-300 dark:border-stone-600"
         />
         <button
-          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
+          aria-label="Stage design, future"
+          class="relative flex items-center justify-center shrink-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 touch-target touch-target--hit-area w-3.5 h-3.5 rounded-full border border-stone-300 dark:border-stone-600 bg-transparent cursor-not-allowed"
           disabled=""
           title="design (future)"
           type="button"
