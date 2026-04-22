@@ -216,6 +216,7 @@ function QuestionCarousel({
 }): React.ReactElement {
 	const [active, setActive] = useState(0)
 	const regionRef = useRef<HTMLDivElement | null>(null)
+	const announce = useAnnounce()
 
 	useEffect(() => {
 		if (active >= images.length) {
@@ -223,14 +224,21 @@ function QuestionCarousel({
 		}
 	}, [active, images.length])
 
+	// Announce slide change via the global polite live region ONLY on user
+	// action. Per ARIA APG §carousel + FB-73, the slide-count message must not
+	// live inside an always-mounted aria-live span (which re-fires on every
+	// React render) and must not duplicate the `aria-current` announcement on
+	// the slide itself. `announce()` writes to #feedback-live-polite outside
+	// the rotating content and fires exactly once per user-initiated step.
 	const go = useCallback(
 		(delta: number) => {
 			setActive((prev) => {
 				const next = (prev + delta + images.length) % images.length
+				announce("polite", `Image ${next + 1} of ${images.length}`)
 				return next
 			})
 		},
-		[images.length],
+		[images.length, announce],
 	)
 
 	function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
@@ -251,32 +259,9 @@ function QuestionCarousel({
 				onKeyDown={handleKeyDown}
 				images={images}
 				active={active}
+				onPrev={() => go(-1)}
+				onNext={() => go(1)}
 			/>
-
-			<div className="mt-3 flex items-center justify-between">
-				<button
-					type="button"
-					onClick={() => go(-1)}
-					aria-label="Previous image"
-					className={`px-3 py-2 rounded-lg border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${focusRingClass} ${touchTargetClass}`}
-				>
-					&larr;
-				</button>
-				<span
-					className="text-sm text-stone-700 dark:text-stone-200"
-					aria-live="polite"
-				>
-					Image {active + 1} of {images.length}
-				</span>
-				<button
-					type="button"
-					onClick={() => go(1)}
-					aria-label="Next image"
-					className={`px-3 py-2 rounded-lg border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${focusRingClass} ${touchTargetClass}`}
-				>
-					&rarr;
-				</button>
-			</div>
 		</Card>
 	)
 }
@@ -288,6 +273,8 @@ interface CarouselRegionProps {
 	onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void
 	images: string[]
 	active: number
+	onPrev: () => void
+	onNext: () => void
 }
 
 function CarouselRegion({
@@ -295,7 +282,12 @@ function CarouselRegion({
 	onKeyDown,
 	images,
 	active,
+	onPrev,
+	onNext,
 }: CarouselRegionProps): React.ReactElement {
+	// Per FB-73, Prev/Next controls live INSIDE the role="region" container
+	// so a keyboard user who reaches the region also reaches the controls,
+	// and so SRs describing the carousel find the rotation controls within.
 	return (
 		<div
 			ref={regionRef}
@@ -317,6 +309,28 @@ function CarouselRegion({
 					/>
 				))}
 			</div>
+
+			<div className="mt-3 flex items-center justify-between">
+				<button
+					type="button"
+					onClick={onPrev}
+					aria-label="Previous image"
+					className={`px-3 py-2 rounded-lg border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${focusRingClass} ${touchTargetClass}`}
+				>
+					&larr;
+				</button>
+				<span className="text-sm text-stone-700 dark:text-stone-200">
+					Image {active + 1} of {images.length}
+				</span>
+				<button
+					type="button"
+					onClick={onNext}
+					aria-label="Next image"
+					className={`px-3 py-2 rounded-lg border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${focusRingClass} ${touchTargetClass}`}
+				>
+					&rarr;
+				</button>
+			</div>
 		</div>
 	)
 }
@@ -334,11 +348,15 @@ function CarouselSlide({
 	total,
 	isActive,
 }: CarouselSlideProps): React.ReactElement {
+	// Inactive slides are hidden via display:none (`.hidden`) AND
+	// `aria-hidden="true"` — some SRs buffer display:none content differently,
+	// so the explicit aria-hidden keeps SR behavior consistent (FB-73).
 	return (
 		<div
 			aria-roledescription="slide"
 			aria-label={`Image ${index + 1} of ${total}`}
 			aria-current={isActive ? "true" : undefined}
+			aria-hidden={isActive ? undefined : "true"}
 			className={isActive ? "block" : "hidden"}
 		>
 			<img
