@@ -397,15 +397,35 @@ describe("schemas/feedback.ts — FeedbackDeleteResponseSchema", () => {
 //                that render rendered artifacts.
 
 describe("schemas/files.ts — FileServeParamsSchema", () => {
-	test("parses valid", () => {
+	test("parses valid relative path", () => {
 		assertValid(FileServeParamsSchema, {
 			sessionId: "00000000-0000-0000-0000-000000000000",
 			path: "artifacts/foo.html",
 		})
 	})
-	test("rejects invalid", () => {
-		assertInvalid(FileServeParamsSchema, { sessionId: "", path: "" })
-	})
+
+	// Unit-01 spec completion criterion
+	// (unit-01-extract-haiku-api-package.md:109): every fixture in this list
+	// must fail safeParse. Do NOT drop any; the reviewer asserts the full list.
+	const adversarialFixtures = [
+		"../",
+		"%2e%2e%2f",
+		"/etc/passwd",
+		"foo\x00.png",
+		"\\..\\",
+		".",
+		"",
+		"a\0b",
+	]
+
+	for (const fixture of adversarialFixtures) {
+		test(`rejects adversarial path: ${JSON.stringify(fixture)}`, () => {
+			assertInvalid(FileServeParamsSchema, {
+				sessionId: "00000000-0000-0000-0000-000000000000",
+				path: fixture,
+			})
+		})
+	}
 })
 
 describe("schemas/files.ts — QuestionImageParamsSchema", () => {
