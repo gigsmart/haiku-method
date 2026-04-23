@@ -1,6 +1,6 @@
 ---
 title: 'assessor-summary-card: Yep'
-status: pending
+status: rejected
 origin: user-visual
 author: user
 author_type: human
@@ -17,4 +17,3 @@ attachment: 23-assessor-summary-card-yep.png
 Yep
 
 ![annotation](/api/feedback-attachment/universal-feedback-model-and-review-recovery/design/23-assessor-summary-card-yep.png)
-
