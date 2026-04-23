@@ -1,6 +1,6 @@
 ---
 title: 'annotation-popover-states: Broken'
-status: pending
+status: rejected
 origin: user-visual
 author: user
 author_type: human
@@ -17,4 +17,3 @@ attachment: 18-annotation-popover-states-broken.png
 Broken
 
 ![annotation](./18-annotation-popover-states-broken.png)
-
