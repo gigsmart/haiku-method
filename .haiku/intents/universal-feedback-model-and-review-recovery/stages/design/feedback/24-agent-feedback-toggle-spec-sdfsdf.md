@@ -1,6 +1,6 @@
 ---
 title: 'agent-feedback-toggle-spec: sdfsdf'
-status: pending
+status: rejected
 origin: user-visual
 author: user
 author_type: human
@@ -17,4 +17,3 @@ attachment: 24-agent-feedback-toggle-spec-sdfsdf.png
 sdfsdf
 
 ![annotation](/api/feedback-attachment/universal-feedback-model-and-review-recovery/design/24-agent-feedback-toggle-spec-sdfsdf.png)
-
