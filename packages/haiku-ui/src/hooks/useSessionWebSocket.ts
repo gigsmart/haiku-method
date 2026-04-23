@@ -24,6 +24,17 @@ import { useApiClient } from "../api/context"
 
 export interface UseSessionWebSocketOptions {
 	onUpdate?: (msg: WsSessionUpdateMessage) => void
+	/** Fires once the session is detected as ended — either because the
+	 *  server closed our active WebSocket or because a polling-fallback
+	 *  probe of `/api/session/:id` came back 404. Consumers use it to
+	 *  transition into a "session ended" terminal state (e.g. a
+	 *  dismiss-and-close overlay). The WS is the primary signal; poll is
+	 *  the safety net for environments where WS fails to upgrade or the
+	 *  close frame is lost on the wire. */
+	onServerClose?: () => void
+	/** Session-status polling interval (ms). Defaults to 5s. Pass 0 to
+	 *  disable the polling fallback (not recommended outside tests). */
+	pollIntervalMs?: number
 }
 
 export function useSessionWebSocket(
@@ -34,24 +45,84 @@ export function useSessionWebSocket(
 	const pendingRef = useRef<WsSessionUpdateMessage | null>(null)
 	const rafRef = useRef<number | null>(null)
 	const onUpdateRef = useRef(options.onUpdate)
+	const onServerCloseRef = useRef(options.onServerClose)
 	const client = useApiClient()
 
-	// Keep the latest onUpdate in a ref so the effect doesn't re-open the WS
-	// when the callback identity changes.
+	// Keep the latest callbacks in refs so the effect doesn't re-open
+	// the WS when the callback identities change.
 	useEffect(() => {
 		onUpdateRef.current = options.onUpdate
 	}, [options.onUpdate])
+	useEffect(() => {
+		onServerCloseRef.current = options.onServerClose
+	}, [options.onServerClose])
 
 	useEffect(() => {
+		// Terminal-detection strategy: WS-primary, poll-fallback.
+		//
+		// - WS opens + receives the server's `session-ended` hint frame or
+		//   a close frame → `onServerClose` fires immediately.
+		// - WS never connects (403/404/CSP/CORS/etc.) → poll /api/session/:id
+		//   every `pollIntervalMs`; a 404 triggers `onServerClose`.
+		// - WS connects then drops without a clean close (network blip) →
+		//   the poll confirms via 404.
+		//
+		// `serverCloseFired` guards against double-firing when both channels
+		// race to detect the same end-of-session.
+		let closedByCleanup = false
+		let hadOpen = false
+		let serverCloseFired = false
+		const fireServerClose = () => {
+			if (serverCloseFired) return
+			serverCloseFired = true
+			onServerCloseRef.current?.()
+		}
+
+		// Poll fallback — runs regardless of WS state; low-rate so it's
+		// cheap. Disabled when `pollIntervalMs` is 0.
+		const pollInterval = options.pollIntervalMs ?? 5000
+		let pollTimer: ReturnType<typeof setTimeout> | null = null
+		const scheduleNextPoll = () => {
+			if (closedByCleanup || serverCloseFired || pollInterval <= 0) return
+			pollTimer = setTimeout(runPoll, pollInterval)
+		}
+		const runPoll = async () => {
+			if (closedByCleanup || serverCloseFired) return
+			try {
+				const res = await fetch(`/api/session/${encodeURIComponent(sessionId)}`)
+				if (closedByCleanup || serverCloseFired) return
+				if (res.status === 404) {
+					fireServerClose()
+					return
+				}
+			} catch {
+				// Network error — retry next cycle. Don't fire session-end
+				// on transient fetch failures; we'd rather under-trigger
+				// than spuriously close a working session.
+			}
+			scheduleNextPoll()
+		}
+		scheduleNextPoll()
+
 		const ws = client.openWebSocket(sessionId)
-		if (!ws) return
+		if (!ws) {
+			// No WS at all — poll is the only signal. Return the same
+			// cleanup shape so the poll-fallback shuts down on unmount.
+			return () => {
+				closedByCleanup = true
+				if (pollTimer !== null) clearTimeout(pollTimer)
+			}
+		}
 
 		ws.onopen = () => {
-			// connected
+			hadOpen = true
 		}
 
 		ws.onclose = () => {
 			if (wsRef.current === ws) wsRef.current = null
+			// A former-open that closed = server drop. Connection failure
+			// (never opened) won't trigger here; poll catches that case.
+			if (!closedByCleanup && hadOpen) fireServerClose()
 		}
 
 		ws.onerror = () => {
@@ -86,6 +157,8 @@ export function useSessionWebSocket(
 		wsRef.current = ws
 
 		return () => {
+			closedByCleanup = true
+			if (pollTimer !== null) clearTimeout(pollTimer)
 			if (rafRef.current !== null) {
 				cancelAnimationFrame(rafRef.current)
 				rafRef.current = null

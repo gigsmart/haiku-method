@@ -1,114 +1,77 @@
 /**
- * RevisitModal — native-semantics confirmation dialog for revisiting an earlier
- * stage. Collects 1..N reasons (title + body), validates each via Zod against
- * stricter-than-wire bounds (see unit-11 tactical plan §R1), and POSTs the
- * resulting `RevisitRequest` to `/api/revisit/:sessionId` through the typed
- * `ApiClient` contract.
+ * RevisitModal — confirmation dialog for handing a stack of pending
+ * feedback items back to the agent. In the stacked-comments model the
+ * pending feedback IS the payload: each item was authored deliberately
+ * with its own resolution hint (or left null for agent triage). This
+ * dialog is a final "you're about to hand these off" confirmation, not
+ * a second data-entry form.
  *
- * A11y contract (per unit-05 focus-trap primitive + revisit-modal-spec.html):
- *   - Root: `role="dialog" aria-modal="true" aria-labelledby` + a stable,
- *     component-scoped id token so nested multi-instance usages don't collide.
- *   - Focus trap via the canonical `useFocusTrap` hook.
- *   - Focus lands on the first reason's title input on open (acceptance
- *     criterion). Restore-focus-to-trigger is handled by `useFocusTrap`.
- *   - Escape, backdrop click, and Cancel all dismiss and return focus.
- *   - Inline errors render per `revisit-modal-states.html` error state.
- *   - Submit failure surfaces a `role="alert"` banner — modal stays open.
+ * The agent then triages any item whose `resolution` is null, then
+ * routes each finding to the right resolver:
+ *   - question         → feedback_answer (agent replies, no code delta)
+ *   - inline_fix       → one fix_hats bolt against the single finding
+ *   - stage_revisit    → rolls the stage back to elaborate
+ *   - upstream_rewind  → surfaces to human (cross-stage finding)
  *
- * Scope boundaries (see unit-11 spec "Out of scope"):
- *   - The feedback-assessor fix-loop logic is MCP-side and does not live here.
- *   - Mounting this modal into ReviewPage is another unit's job.
+ * "Revisit" is one of four possible outcomes, not the default, so the
+ * copy intentionally says "Send to agent" rather than "Confirm revisit."
+ *
+ * A11y contract preserved from the earlier form-based revision:
+ *   - `role="dialog" aria-modal="true"` with labelled header
+ *   - Escape / backdrop / Cancel all dismiss
+ *   - Focus trap via the canonical `useFocusTrap`
+ *   - Submit failure surfaces a `role="alert"` banner — modal stays open
  */
 
 import { useEffect, useId, useRef, useState } from "react"
-import { z } from "zod"
-import type { RevisitReason, RevisitRequest, RevisitResponse } from "haiku-api"
+import type { RevisitRequest, RevisitResponse } from "haiku-api"
 import { focusRingClass, focusRingVariantClasses } from "../a11y/focus"
 import { useFocusTrap } from "../a11y/focus"
 import { touchTargetClass } from "../a11y/touch-target"
 import { type ApiClient, defaultApiClient } from "../api/client"
+import type { FeedbackItemData } from "../types"
 
-// ── Client-side validation bounds ─────────────────────────────────────────
-//
-// Unit spec asserts: title ≤ 200, body ≤ 10_000, reasons ≤ 50. The wire
-// schema (packages/haiku-api/src/schemas/revisit.ts) now matches: title
-// .max(200), body .max(10_000), reasons .max(50). The UI mirrors these
-// caps at the edge for inline validation; the wire remains the authority.
-// Rationale lives in unit-11 tactical plan §R1.
-export const UI_TITLE_MAX = 200
-export const UI_BODY_MAX = 10_000
+/** Legacy export — the "max reasons per revisit" cap from the form era.
+ *  Still consumed by tests + by the server schema; kept as a constant so
+ *  callers that import it (if any) don't break. */
 export const UI_REASONS_MAX = 50
 
-const UiReasonSchema = z.object({
-	title: z
-		.string()
-		.min(1, "Title required")
-		.max(UI_TITLE_MAX, `Title must be ≤ ${UI_TITLE_MAX} characters`),
-	body: z
-		.string()
-		.min(1, "Body required")
-		.max(
-			UI_BODY_MAX,
-			`Body must be ≤ ${UI_BODY_MAX.toLocaleString()} characters`,
-		),
-})
-
-const UiRevisitSchema = z.object({
-	reasons: z
-		.array(UiReasonSchema)
-		.min(1, "At least one reason required")
-		.max(UI_REASONS_MAX, `At most ${UI_REASONS_MAX} reasons`),
-})
-
-interface ReasonDraft {
+interface PendingSummary {
 	id: string
 	title: string
-	body: string
+	origin: string
+	resolution: string | null
 }
 
-interface ReasonErrors {
-	title?: string
-	body?: string
+function labelForResolution(resolution: string | null): string {
+	switch (resolution) {
+		case "question":
+			return "Question · wants a reply"
+		case "inline_fix":
+			return "Inline fix"
+		case "stage_revisit":
+			return "Stage revisit"
+		case "upstream_rewind":
+			return "Upstream rewind"
+		default:
+			return "Agent will triage"
+	}
 }
 
 export interface RevisitModalProps {
-	/** Session id — becomes the `:sessionId` path parameter for the POST. */
 	sessionId: string
-	/** Whether the dialog is mounted + visible. */
 	open: boolean
-	/** Invoked on every dismiss path (Escape, backdrop, Cancel, successful submit). */
 	onClose: () => void
-	/** Optional success callback — called after a 200 response and before `onClose()`. */
 	onSuccess?: (response: RevisitResponse) => void
-	/** Optional stage override forwarded to the orchestrator. */
 	targetStage?: string
-	/** Optional ApiClient override (tests inject a mock; production uses `defaultApiClient`). */
+	/** Pending feedback items currently on the stage — they ARE the
+	 *  reasons, so we just list them and confirm. Empty / missing is
+	 *  valid (the agent still has typed composer-blob feedback from the
+	 *  legacy path if someone types into the approve button's feedback
+	 *  field), but in the new flow the submit button should be disabled
+	 *  when this is empty. */
+	pendingItems?: ReadonlyArray<FeedbackItemData>
 	apiClient?: ApiClient
-}
-
-function createDraft(): ReasonDraft {
-	// `crypto.randomUUID` is available in jsdom 25 + all evergreen browsers. If
-	// future targets lack it, swap to a tiny counter; not worth a polyfill dep today.
-	return {
-		id:
-			typeof crypto !== "undefined" && "randomUUID" in crypto
-				? crypto.randomUUID()
-				: `r-${Math.random().toString(36).slice(2)}-${Date.now()}`,
-		title: "",
-		body: "",
-	}
-}
-
-function validateReason(draft: ReasonDraft): ReasonErrors {
-	const result = UiReasonSchema.safeParse({ title: draft.title, body: draft.body })
-	if (result.success) return {}
-	const errors: ReasonErrors = {}
-	for (const issue of result.error.issues) {
-		const key = issue.path[0]
-		if (key === "title" && !errors.title) errors.title = issue.message
-		if (key === "body" && !errors.body) errors.body = issue.message
-	}
-	return errors
 }
 
 export function RevisitModal({
@@ -117,16 +80,15 @@ export function RevisitModal({
 	onClose,
 	onSuccess,
 	targetStage,
+	pendingItems,
 	apiClient = defaultApiClient,
 }: RevisitModalProps): React.ReactElement | null {
 	const dialogRef = useRef<HTMLDivElement>(null)
-	const firstTitleInputRef = useRef<HTMLInputElement | null>(null)
+	const firstButtonRef = useRef<HTMLButtonElement | null>(null)
 
 	const titleId = useId()
 	const descId = useId()
-	const formErrorId = useId()
 
-	const [reasons, setReasons] = useState<ReasonDraft[]>(() => [createDraft()])
 	const [submitting, setSubmitting] = useState(false)
 	const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -146,85 +108,40 @@ export function RevisitModal({
 		return () => document.removeEventListener("keydown", onKey)
 	}, [open, onClose])
 
-	// Focus-first-input override — useFocusTrap focuses the first tabbable
-	// child (the close button). Spec requires focus on the first reason input.
-	// Effect declaration order matters: this fires AFTER the trap's effect
-	// (they're in the same commit), so the override is deterministic without
-	// needing rAF deferrals. Doing this synchronously also keeps jsdom +
-	// userEvent.type timing clean — a deferred rAF can steal focus mid-type.
+	// Focus the primary submit button on open so ⌘↵ / Enter fires the
+	// confirm without hunting for the mouse.
 	useEffect(() => {
 		if (!open) return
-		firstTitleInputRef.current?.focus()
+		firstButtonRef.current?.focus()
 	}, [open])
 
-	// Reset local state when the modal closes to avoid stale drafts on reopen.
-	// Only reset when transitioning open → closed externally (not on every render).
+	// Reset local state when the modal closes.
 	useEffect(() => {
 		if (open) return
-		setReasons([createDraft()])
 		setSubmitting(false)
 		setSubmitError(null)
 	}, [open])
 
 	if (!open) return null
 
-	// Per-reason validation — runs on every render so inline errors are live.
-	const reasonErrors: ReasonErrors[] = reasons.map(validateReason)
-	const formValidation = UiRevisitSchema.safeParse({
-		reasons: reasons.map((r) => ({ title: r.title, body: r.body })),
-	})
-	const formValid = formValidation.success
-	const formLevelError = formValidation.success
-		? null
-		: (() => {
-				// Surface only TOP-LEVEL reasons-array errors (too few / too many).
-				// Per-reason errors are rendered inline beside the affected input.
-				for (const issue of formValidation.error.issues) {
-					if (issue.path.length === 1 && issue.path[0] === "reasons") {
-						return issue.message
-					}
-					if (
-						issue.path.length === 0 ||
-						(issue.path.length >= 1 && issue.path[0] !== "reasons")
-					) {
-						// Defensive — no other top-level fields today.
-						return issue.message
-					}
-				}
-				return null
-		  })()
+	const items: PendingSummary[] = (pendingItems ?? []).map((i) => ({
+		id: i.feedback_id,
+		title: i.title,
+		origin: i.origin,
+		resolution: (i.resolution ?? null) as string | null,
+	}))
+	const canSubmit = items.length > 0 && !submitting
 
-	function updateReason(index: number, patch: Partial<ReasonDraft>): void {
-		setReasons((prev) =>
-			prev.map((r, i) => (i === index ? { ...r, ...patch } : r)),
-		)
-	}
-
-	function addReason(): void {
-		setReasons((prev) => {
-			if (prev.length >= UI_REASONS_MAX) return prev
-			return [...prev, createDraft()]
-		})
-	}
-
-	function removeReason(id: string): void {
-		setReasons((prev) => {
-			if (prev.length <= 1) return prev
-			return prev.filter((r) => r.id !== id)
-		})
-	}
-
-	async function handleSubmit(e?: React.FormEvent): Promise<void> {
-		e?.preventDefault()
-		if (!formValid || submitting) return
+	async function handleSubmit(): Promise<void> {
+		if (submitting) return
 		setSubmitting(true)
 		setSubmitError(null)
+		// Empty `reasons` — the pending feedback items on disk are the
+		// payload. The server's revisit handler + the orchestrator's
+		// post-revisit routing pick up each item's `resolution` and
+		// dispatch it per the resolver table above.
 		const payload: RevisitRequest = {
 			...(targetStage ? { stage: targetStage } : {}),
-			reasons: reasons.map<RevisitReason>((r) => ({
-				title: r.title,
-				body: r.body,
-			})),
 		}
 		try {
 			const response = await apiClient.submitRevisit(sessionId, payload)
@@ -236,23 +153,16 @@ export function RevisitModal({
 		}
 	}
 
-	const addDisabled = reasons.length >= UI_REASONS_MAX
-
 	return (
 		<div
-			// Backdrop. The visual scrim is decorative, but we can't set
-			// aria-hidden on this wrapper because it wraps the dialog too —
-			// aria-hidden cascades and would remove the dialog from the a11y tree.
-			// Clicks that originate on the backdrop itself (not inside the dialog)
-			// dismiss; the dialog body stops propagation to prevent false hits.
 			data-testid="revisit-modal-backdrop"
 			className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
 			onMouseDown={(e) => {
 				if (e.target === e.currentTarget) onClose()
 			}}
 		>
-			{/* biome-ignore lint/a11y/noStaticElementInteractions: dialog click handler stops propagation; the keyboard path is handled via document-level Escape + the focus trap. */}
-			{/* biome-ignore lint/a11y/useKeyWithClickEvents: same rationale — click is for event-boundary containment only, not an activation affordance. */}
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: click handlers are event-boundary containment, keyboard path is document-level Escape + focus trap. */}
+			{/* biome-ignore lint/a11y/useKeyWithClickEvents: same. */}
 			<div
 				ref={dialogRef}
 				role="dialog"
@@ -260,27 +170,22 @@ export function RevisitModal({
 				aria-labelledby={titleId}
 				aria-describedby={descId}
 				className="w-full max-w-md bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 overflow-hidden flex flex-col max-h-[90vh]"
-				onMouseDown={(e) => {
-					e.stopPropagation()
-				}}
-				onClick={(e) => {
-					e.stopPropagation()
-				}}
+				onMouseDown={(e) => e.stopPropagation()}
+				onClick={(e) => e.stopPropagation()}
 			>
-				{/* Header */}
 				<div className="flex items-start justify-between gap-3 px-4 py-3 border-b border-stone-200 dark:border-stone-700">
 					<div className="flex items-center gap-2 min-w-0">
 						<span
 							aria-hidden="true"
-							className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-bold"
+							className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 text-xs font-bold"
 						>
-							↩
+							↗
 						</span>
 						<h2
 							id={titleId}
 							className="text-base font-bold text-stone-900 dark:text-stone-100 truncate"
 						>
-							Confirm revisit
+							Send feedback to agent
 						</h2>
 					</div>
 					<button
@@ -295,136 +200,48 @@ export function RevisitModal({
 					</button>
 				</div>
 
-				{/* Body */}
-				<form
-					onSubmit={handleSubmit}
-					className="flex-1 overflow-y-auto px-4 py-3 space-y-3"
-				>
-					<p
-						id={descId}
-						className="text-xs text-stone-600 dark:text-stone-300"
-					>
-						Record one or more reasons for revisiting. Each becomes a feedback
-						item before the stage rolls back.
+				<div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+					<p id={descId} className="text-xs text-stone-600 dark:text-stone-300">
+						The agent will triage each item and pick a resolution path —
+						reply, inline fix, stage revisit, or upstream rewind. Items you
+						routed explicitly will keep your choice.
 					</p>
 
-					{reasons.map((reason, index) => {
-						const errors = reasonErrors[index] ?? {}
-						const titleErrId = `${reason.id}-title-err`
-						const bodyErrId = `${reason.id}-body-err`
-						return (
-							<fieldset
-								key={reason.id}
-								className="rounded-md border border-stone-200 dark:border-stone-700 p-3 space-y-2"
-							>
-								<legend className="text-xs font-semibold text-stone-600 dark:text-stone-300 px-1">
-									Reason {index + 1}
-								</legend>
-								<div className="space-y-1">
-									<label
-										htmlFor={`${reason.id}-title`}
-										className="block text-xs font-semibold text-stone-700 dark:text-stone-300"
-									>
-										Title
-									</label>
-									<input
-										id={`${reason.id}-title`}
-										ref={index === 0 ? firstTitleInputRef : undefined}
-										type="text"
-										value={reason.title}
-										onChange={(e) =>
-											updateReason(index, { title: e.target.value })
-										}
-										aria-invalid={errors.title ? "true" : undefined}
-										aria-describedby={errors.title ? titleErrId : undefined}
-										className={`w-full px-3 py-2 text-sm rounded-md border bg-white dark:bg-stone-950 text-stone-900 dark:text-stone-100 ${
-											errors.title
-												? "border-red-400 dark:border-red-700"
-												: "border-stone-300 dark:border-stone-600"
-										} ${focusRingClass}`}
-									/>
-									{errors.title && (
-										<p
-											id={titleErrId}
-											className="text-xs text-red-700 dark:text-red-300 mt-1"
-										>
-											{errors.title}
-										</p>
-									)}
-								</div>
-								<div className="space-y-1">
-									<label
-										htmlFor={`${reason.id}-body`}
-										className="block text-xs font-semibold text-stone-700 dark:text-stone-300"
-									>
-										Body
-									</label>
-									<textarea
-										id={`${reason.id}-body`}
-										rows={3}
-										value={reason.body}
-										onChange={(e) =>
-											updateReason(index, { body: e.target.value })
-										}
-										aria-invalid={errors.body ? "true" : undefined}
-										aria-describedby={errors.body ? bodyErrId : undefined}
-										className={`w-full px-3 py-2 text-sm rounded-md border bg-white dark:bg-stone-950 text-stone-900 dark:text-stone-100 ${
-											errors.body
-												? "border-red-400 dark:border-red-700"
-												: "border-stone-300 dark:border-stone-600"
-										} ${focusRingClass}`}
-									/>
-									{errors.body && (
-										<p
-											id={bodyErrId}
-											className="text-xs text-red-700 dark:text-red-300 mt-1"
-										>
-											{errors.body}
-										</p>
-									)}
-								</div>
-								{reasons.length > 1 && (
-									<div className="flex justify-end">
-										<button
-											type="button"
-											onClick={() => removeReason(reason.id)}
-											aria-label={`Remove reason ${index + 1}`}
-											className={`text-xs font-medium text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-stone-100 ${focusRingClass} rounded-md px-2 py-1`}
-										>
-											Remove
-										</button>
-									</div>
-								)}
-							</fieldset>
-						)
-					})}
-
-					<div className="flex items-center justify-between gap-2">
-						<button
-							type="button"
-							onClick={addReason}
-							disabled={addDisabled}
-							aria-disabled={addDisabled || undefined}
-							className={`text-xs font-semibold rounded-md px-3 py-1.5 ${focusRingClass} ${
-								addDisabled
-									? "bg-stone-100 text-stone-600 border border-stone-400 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-500 cursor-not-allowed"
-									: "bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 dark:hover:bg-stone-600 text-stone-800 dark:text-stone-100"
-							}`}
-						>
-							+ Add another reason
-						</button>
-						<span className="text-xs text-stone-600 dark:text-stone-300">
-							{reasons.length} / {UI_REASONS_MAX}
-						</span>
-					</div>
-
-					{formLevelError && (
-						<p
-							id={formErrorId}
-							className="text-xs text-red-700 dark:text-red-300"
-						>
-							{formLevelError}
+					{items.length === 0 ? (
+						<p className="text-xs italic text-stone-500 dark:text-stone-400">
+							No pending feedback on this stage. Add a comment first, then
+							Send.
 						</p>
+					) : (
+						<ul
+							aria-label="Pending feedback items"
+							className="space-y-2"
+						>
+							{items.map((it) => (
+								<li
+									key={it.id}
+									className="rounded-md border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/40 px-3 py-2"
+								>
+									<div className="flex items-center justify-between gap-2 flex-wrap">
+										<span className="text-xs font-semibold text-stone-900 dark:text-stone-100">
+											{it.id}
+										</span>
+										<span
+											className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${
+												it.resolution
+													? "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
+													: "bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-200"
+											}`}
+										>
+											{labelForResolution(it.resolution)}
+										</span>
+									</div>
+									<p className="mt-1 text-xs text-stone-700 dark:text-stone-200 [overflow-wrap:anywhere]">
+										{it.title}
+									</p>
+								</li>
+							))}
+						</ul>
 					)}
 
 					{submitError && (
@@ -435,9 +252,8 @@ export function RevisitModal({
 							{submitError}
 						</div>
 					)}
-				</form>
+				</div>
 
-				{/* Footer */}
 				<div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-stone-200 dark:border-stone-700">
 					<button
 						type="button"
@@ -447,20 +263,24 @@ export function RevisitModal({
 						Cancel
 					</button>
 					<button
+						ref={firstButtonRef}
 						type="button"
 						onClick={() => {
 							void handleSubmit()
 						}}
-						disabled={!formValid || submitting}
-						aria-disabled={!formValid || submitting || undefined}
-						aria-describedby={formLevelError ? formErrorId : undefined}
+						disabled={!canSubmit}
+						aria-disabled={!canSubmit || undefined}
 						className={`px-3 py-1.5 text-xs font-semibold rounded-md ${focusRingVariantClasses.requestChanges} ${
-							!formValid || submitting
-								? "bg-green-300 text-green-800 dark:bg-green-900/40 dark:text-green-200 cursor-not-allowed"
-								: "bg-amber-600 hover:bg-amber-700 text-white"
+							!canSubmit
+								? "bg-stone-200 text-stone-500 dark:bg-stone-700 dark:text-stone-400 cursor-not-allowed"
+								: "bg-teal-700 hover:bg-teal-800 text-white"
 						}`}
 					>
-						{submitting ? "Submitting…" : "Confirm revisit"}
+						{submitting
+							? "Sending…"
+							: items.length > 0
+								? `Send ${items.length} item${items.length === 1 ? "" : "s"} to agent`
+								: "Send to agent"}
 					</button>
 				</div>
 			</div>

@@ -38,6 +38,7 @@ import { RereviewBanner } from "./shared/RereviewBanner"
 import type { ReviewPageSessionData } from "./shared/session-data"
 import type { ReviewDetailKind, ReviewTab } from "./shared/stage-tabs"
 import { StageReview } from "./stage/StageReview"
+import { FeedbackProvider } from "../../hooks/FeedbackContext"
 import { useFeedbackSidebarController } from "./useFeedbackSidebarController"
 import { useIsMobile } from "./useIsMobile"
 
@@ -248,16 +249,10 @@ function PhaseStepper({
 	)
 }
 
-function MobileFeedbackSection({
-	intentSlug,
-	activeStage,
-}: {
-	intentSlug: string | null
-	activeStage: string | null
-}): React.ReactElement {
+function MobileFeedbackSection(): React.ReactElement {
 	const [sheetOpen, setSheetOpen] = useState(false)
 	const fabRef = useRef<HTMLButtonElement>(null)
-	const controller = useFeedbackSidebarController(intentSlug, activeStage)
+	const controller = useFeedbackSidebarController()
 	const pendingCount = controller.items.filter(
 		(item) => item.status === "pending",
 	).length
@@ -281,6 +276,9 @@ function MobileFeedbackSection({
 					onStatusChange={controller.handleStatusChange}
 					onDelete={controller.handleDelete}
 					onRetry={controller.retry}
+					onReply={controller.handleReply}
+					busyIds={controller.busyIds}
+					creating={controller.creating}
 				/>
 			</FeedbackSheet>
 		</>
@@ -401,6 +399,7 @@ export function ReviewPage({
 	const sessionIdShort = sessionId ? sessionId.slice(0, 8) : ""
 
 	return (
+		<FeedbackProvider intent={intentSlug} stage={selectedStage}>
 		<div
 			data-testid="review-page-ready"
 			className="h-screen overflow-hidden flex flex-col bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100"
@@ -477,7 +476,6 @@ export function ReviewPage({
 			>
 				{!isMobile && (
 					<FeedbackSidebar
-						intent={intentSlug}
 						stage={selectedStage ?? activeStage}
 						activeStage={activeStage}
 						sessionId={sessionId}
@@ -561,13 +559,9 @@ export function ReviewPage({
 				</Main>
 			</div>
 
-			{isMobile && (
-				<MobileFeedbackSection
-					intentSlug={intentSlug}
-					activeStage={activeStage}
-				/>
-			)}
+			{isMobile && <MobileFeedbackSection />}
 		</div>
+		</FeedbackProvider>
 	)
 }
 

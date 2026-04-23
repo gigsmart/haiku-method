@@ -21,7 +21,7 @@ import {
 	orchestratorToolDefs,
 	runNext,
 } from "../src/orchestrator.ts"
-import { readJson, writeJson } from "../src/state-tools.ts"
+import { readJson, writeFeedbackFile, writeJson } from "../src/state-tools.ts"
 
 // ── Setup ──────────────────────────────────────────────────────────────────
 
@@ -485,7 +485,7 @@ try {
 		assert.strictEqual(state.elaboration_turns, 3)
 	})
 
-	test("feedback items include summary info in pending_items", () => {
+	test("human-authored pending feedback routes to gate_review (not feedback_revisit)", () => {
 		const { projDir, intentDirPath, slug } = createProject(
 			"gate-fb-summaries",
 			{
@@ -507,13 +507,92 @@ try {
 		process.chdir(projDir)
 		const result = runNext(slug)
 
-		assert.strictEqual(result.action, "feedback_revisit")
-		assert.strictEqual(result.pending_items.length, 2)
-		assert.strictEqual(result.pending_items[0].feedback_id, "FB-01")
-		assert.strictEqual(result.pending_items[0].origin, "adversarial-review")
-		assert.strictEqual(result.pending_items[0].author, "security-agent")
-		assert.strictEqual(result.pending_items[1].feedback_id, "FB-02")
-		assert.strictEqual(result.pending_items[1].origin, "user-visual")
+		// Resolution-aware routing: when any pending item is
+		// human-authored with no explicit `resolution`, the FSM must
+		// open the review UI rather than auto-firing the fix loop. The
+		// reviewer triages each item (pick a resolution or leave for
+		// agent triage), then explicitly clicks "Send to agent" which
+		// fires haiku_revisit → feedback_dispatch / stage revisit.
+		assert.strictEqual(result.action, "gate_review")
+		assert.strictEqual(result.stage, "plan")
+	})
+
+	test("pure agent-authored pending feedback still auto-dispatches fix loop (no human interrupt)", () => {
+		const { projDir, intentDirPath, slug } = createProject(
+			"gate-fb-agent-only",
+			{
+				active_stage: "plan",
+				stageConfig: {
+					plan: { review: "auto", hats: ["builder", "feedback-assessor"] },
+				},
+			},
+		)
+		createStageState(intentDirPath, "plan", { phase: "gate" })
+		// Add a fix_hats entry on the STAGE.md so the fix-loop path is
+		// available when the gate sees pending agent findings.
+		const stagePath = join(
+			projDir,
+			".haiku",
+			"studios",
+			"test-studio",
+			"stages",
+			"plan",
+			"STAGE.md",
+		)
+		const stageContent = readFileSync(stagePath, "utf8")
+		writeFileSync(
+			stagePath,
+			stageContent.replace(
+				"hats: [builder, feedback-assessor]",
+				"hats: [builder, feedback-assessor]\nfix_hats: [builder, feedback-assessor]",
+			),
+		)
+		mkdirSync(join(projDir, ".haiku", "studios", "test-studio", "stages", "plan", "hats"), {
+			recursive: true,
+		})
+		writeFileSync(
+			join(
+				projDir,
+				".haiku",
+				"studios",
+				"test-studio",
+				"stages",
+				"plan",
+				"hats",
+				"builder.md",
+			),
+			"---\nname: builder\n---\nBuild stuff.\n",
+		)
+		writeFileSync(
+			join(
+				projDir,
+				".haiku",
+				"studios",
+				"test-studio",
+				"stages",
+				"plan",
+				"hats",
+				"feedback-assessor.md",
+			),
+			"---\nname: feedback-assessor\n---\nAssess fixes.\n",
+		)
+
+		createFeedbackFile(intentDirPath, slug, "plan", "Adversarial finding 1", {
+			origin: "adversarial-review",
+			author: "security-agent",
+		})
+		createFeedbackFile(intentDirPath, slug, "plan", "Adversarial finding 2", {
+			origin: "studio-review",
+			author: "perf-agent",
+		})
+
+		process.chdir(projDir)
+		const result = runNext(slug)
+
+		// All items are agent-authored → legacy fix-loop contract
+		// stands. The FSM dispatches without human intervention.
+		assert.strictEqual(result.action, "review_fix")
+		assert.strictEqual(result.items.length, 2)
 	})
 
 	// =========================================================================
@@ -939,18 +1018,17 @@ try {
 		writeJson(statePath, state)
 
 		const gateResult = runNext(slug)
-		// Either the gate rolls back to elaborate (normal path) or loop
-		// detection fires because the iteration signature from haiku_revisit
-		// matches what we see here — both are correct "gate is blocked"
-		// responses. Accept either action.
+		// Resolution-aware routing: reasons written by haiku_revisit carry
+		// `resolution: stage_revisit`, so run_next auto-dispatches the
+		// rollback on the next gate pass (no intermediate prose). Accept
+		// either the auto-revisit action or the escalate branch (when the
+		// iteration-signature loop detector fires).
 		assert.ok(
-			gateResult.action === "feedback_revisit" ||
+			gateResult.action === "revisited" ||
+				gateResult.action === "feedback_revisit" ||
 				gateResult.action === "escalate",
-			`Expected feedback_revisit or escalate, got: ${gateResult.action}`,
+			`Expected revisited, feedback_revisit, or escalate, got: ${gateResult.action}`,
 		)
-		if (gateResult.action === "feedback_revisit") {
-			assert.strictEqual(gateResult.pending_count, 2)
-		}
 	})
 
 	await test("addressed revisit feedback does not block gate", async () => {
@@ -1243,6 +1321,171 @@ Plan from upstream stage is wrong.`,
 		assert.strictEqual(result.upstream_items[0].feedback_id, "FB-01")
 		assert.strictEqual(result.upstream_items[0].upstream_stage, "plan")
 	})
+
+	// =========================================================================
+	// haiku_revisit: resolution-aware routing
+	// =========================================================================
+
+	console.log("\n=== haiku_revisit: resolution-aware routing ===")
+
+	await test(
+		"no reasons + pending feedback with mixed resolutions routes through revisit()",
+		async () => {
+			const { projDir, intentDirPath, slug } = createProject(
+				"revisit-route-mixed",
+				{ active_stage: "plan" },
+			)
+			createStageState(intentDirPath, "plan", { phase: "execute" })
+			process.chdir(projDir)
+			// One explicit stage_revisit item → forces the safe-default path.
+			writeFeedbackFile(slug, "plan", {
+				title: "Full rework needed",
+				body: "The elaboration missed a requirement.",
+				origin: "user-chat",
+				author: "user",
+				resolution: "stage_revisit",
+			})
+			// One question — by itself would dispatch, but the stage_revisit
+			// item above makes this a rollback path.
+			writeFeedbackFile(slug, "plan", {
+				title: "Why did you pick this pattern?",
+				body: "Just curious.",
+				origin: "user-question",
+				author: "user",
+				resolution: "question",
+			})
+
+			const result = await handleOrchestratorTool("haiku_revisit", {
+				intent: slug,
+			})
+			assert.ok(
+				!result.isError,
+				`Expected success, got: ${result.content[0].text}`,
+			)
+			const parsed = JSON.parse(result.content[0].text)
+			// Any stage_revisit (or null) pending item makes the revisit
+			// action fall through to the normal rollback path.
+			assert.ok(
+				parsed.action === "revisit" ||
+					parsed.action === "revisited" ||
+					parsed.action === "error",
+				`Expected revisit/revisited/error, got ${parsed.action}`,
+			)
+			// Not a feedback_dispatch — the safe default wins when any
+			// item wants a stage revisit.
+			assert.notStrictEqual(parsed.action, "feedback_dispatch")
+		},
+	)
+
+	await test(
+		"no reasons + pending feedback all non-revisit resolutions returns feedback_dispatch",
+		async () => {
+			const { projDir, intentDirPath, slug } = createProject(
+				"revisit-route-dispatch",
+				{ active_stage: "plan" },
+			)
+			createStageState(intentDirPath, "plan", { phase: "execute" })
+			process.chdir(projDir)
+			writeFeedbackFile(slug, "plan", {
+				title: "Why this pattern?",
+				body: "Asking for context.",
+				origin: "user-question",
+				author: "user",
+				resolution: "question",
+			})
+			writeFeedbackFile(slug, "plan", {
+				title: "Rename helper",
+				body: "Rename utils/foo to utils/bar.",
+				origin: "user-chat",
+				author: "user",
+				resolution: "inline_fix",
+			})
+			writeFeedbackFile(slug, "plan", {
+				title: "Upstream contract wrong",
+				body: "The prior stage's schema doesn't match.",
+				origin: "user-chat",
+				author: "user",
+				resolution: "upstream_rewind",
+			})
+
+			const result = await handleOrchestratorTool("haiku_revisit", {
+				intent: slug,
+			})
+			assert.ok(
+				!result.isError,
+				`Expected success, got: ${result.content[0].text}`,
+			)
+			const parsed = JSON.parse(result.content[0].text)
+			assert.strictEqual(parsed.action, "feedback_dispatch")
+			assert.strictEqual(parsed.counts.questions, 1)
+			assert.strictEqual(parsed.counts.inline_fixes, 1)
+			assert.strictEqual(parsed.counts.upstream_rewinds, 1)
+			assert.ok(parsed.message.includes("Reply to questions"))
+			assert.ok(parsed.message.includes("Inline fixes"))
+			assert.ok(parsed.message.includes("Upstream rewinds"))
+			// Stage state must be untouched — the dispatch path doesn't roll
+			// back.
+			const state = readJson(
+				join(intentDirPath, "stages", "plan", "state.json"),
+			)
+			assert.strictEqual(state.phase, "execute")
+		},
+	)
+
+	await test(
+		"no reasons + no pending feedback still returns revisit_needs_reasons stopgap",
+		async () => {
+			const { projDir, intentDirPath, slug } = createProject(
+				"revisit-no-feedback-stopgap",
+				{ active_stage: "plan" },
+			)
+			createStageState(intentDirPath, "plan", { phase: "execute" })
+			process.chdir(projDir)
+
+			const result = await handleOrchestratorTool("haiku_revisit", {
+				intent: slug,
+			})
+			const parsed = JSON.parse(result.content[0].text)
+			assert.strictEqual(parsed.action, "revisit_needs_reasons")
+		},
+	)
+
+	await test(
+		"no reasons + pending feedback with null resolution routes to feedback_dispatch (needsTriage)",
+		async () => {
+			const { projDir, intentDirPath, slug } = createProject(
+				"revisit-null-resolution",
+				{ active_stage: "plan" },
+			)
+			createStageState(intentDirPath, "plan", { phase: "execute" })
+			process.chdir(projDir)
+			// No resolution → agent triages during dispatch. Silent
+			// defaulting to stage_revisit was the rollback footgun; now
+			// null items go into the needs_triage bucket.
+			writeFeedbackFile(slug, "plan", {
+				title: "Untagged comment",
+				body: "I didn't pick a resolution.",
+				origin: "user-chat",
+				author: "user",
+			})
+
+			const result = await handleOrchestratorTool("haiku_revisit", {
+				intent: slug,
+			})
+			const parsed = JSON.parse(result.content[0].text)
+			assert.strictEqual(parsed.action, "feedback_dispatch")
+			assert.strictEqual(parsed.counts.needs_triage, 1)
+			assert.strictEqual(parsed.counts.questions, 0)
+			assert.strictEqual(parsed.counts.inline_fixes, 0)
+			assert.strictEqual(parsed.counts.upstream_rewinds, 0)
+			assert.ok(parsed.message.includes("Triage"))
+			// Stage state must be untouched — dispatch path doesn't roll.
+			const state = readJson(
+				join(intentDirPath, "stages", "plan", "state.json"),
+			)
+			assert.strictEqual(state.phase, "execute")
+		},
+	)
 
 	// ── Cleanup ───────────────────────────────────────────────────────────────
 

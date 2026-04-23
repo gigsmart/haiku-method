@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events"
+import { newSessionId } from "./session-id.js"
 
 const sessionEvents = new EventEmitter()
 // Prevent warnings when many sessions are active concurrently
@@ -84,23 +85,49 @@ export function notifySessionUpdate(sessionId: string): void {
 
 /**
  * Await a session status change. Resolves when notifySessionUpdate is called
- * for the given session, or rejects on timeout.
+ * for the given session, rejects on timeout, or rejects if `signal` aborts.
+ *
+ * Signal support is how tool cancellation propagates — when the MCP
+ * client cancels an in-flight tool call, its abort signal fires; the
+ * handler's finally block needs to unwind promptly so the session can
+ * be cleaned up. Without signal support the handler would spin inside
+ * this promise for the full 30-minute timeout.
  */
 export function waitForSession(
 	sessionId: string,
 	timeoutMs: number = 30 * 60 * 1000,
+	signal?: AbortSignal,
 ): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const timer = setTimeout(() => {
 			sessionEvents.removeListener(`session:${sessionId}`, handler)
+			signal?.removeEventListener("abort", onAbort)
 			reject(new Error("Session timeout"))
 		}, timeoutMs)
 
 		function handler() {
 			clearTimeout(timer)
+			signal?.removeEventListener("abort", onAbort)
 			resolve()
 		}
 
+		function onAbort() {
+			clearTimeout(timer)
+			sessionEvents.removeListener(`session:${sessionId}`, handler)
+			reject(
+				new Error(
+					`Session wait aborted${signal?.reason ? `: ${String(signal.reason)}` : ""}`,
+				),
+			)
+		}
+
+		if (signal?.aborted) {
+			clearTimeout(timer)
+			reject(new Error("Session wait aborted before start"))
+			return
+		}
+
+		signal?.addEventListener("abort", onAbort, { once: true })
 		sessionEvents.once(`session:${sessionId}`, handler)
 	})
 }
@@ -304,7 +331,7 @@ export function createSession(
 	>,
 ): ReviewSession {
 	evictSessions()
-	const session_id = crypto.randomUUID()
+	const session_id = newSessionId()
 	const session: ReviewSession = {
 		...params,
 		session_type: "review",
@@ -325,7 +352,7 @@ export function createQuestionSession(
 	> & { imagePaths?: string[] },
 ): QuestionSession {
 	evictSessions()
-	const session_id = crypto.randomUUID()
+	const session_id = newSessionId()
 	const session: QuestionSession = {
 		...params,
 		session_type: "question",
@@ -347,7 +374,7 @@ export function createDesignDirectionSession(
 	>,
 ): DesignDirectionSession {
 	evictSessions()
-	const session_id = crypto.randomUUID()
+	const session_id = newSessionId()
 	const session: DesignDirectionSession = {
 		...params,
 		session_type: "design_direction",
@@ -364,6 +391,20 @@ export function getSession(
 	sessionId: string,
 ): ReviewSession | QuestionSession | DesignDirectionSession | undefined {
 	return sessions.get(sessionId)
+}
+
+/**
+ * Drop a session from the in-memory registry. Callers should use this
+ * when the session's purpose is complete (tool call returned, user
+ * abandoned the review, MCP process shutting down) so subsequent
+ * `getSession` lookups return 404 and the SPA's polling fallback
+ * transitions to the session-ended overlay on reload.
+ */
+export function deleteSession(sessionId: string): boolean {
+	const had = sessions.delete(sessionId)
+	sessionCreatedAt.delete(sessionId)
+	clearHeartbeat(sessionId)
+	return had
 }
 
 export function updateSession(

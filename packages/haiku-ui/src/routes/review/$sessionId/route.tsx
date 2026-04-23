@@ -34,6 +34,7 @@ import { Header as HeaderLandmark, Main } from "../../../a11y"
 import { useApiClient } from "../../../api/context"
 import type { AnnotationPin } from "../../../components/AnnotationCanvas"
 import type { InlineCommentEntry } from "../../../components/InlineComments"
+import { SessionEndedOverlay } from "../../../components/SessionEndedOverlay"
 import { StageProgressStrip } from "../../../components/StageProgressStrip"
 import { SubmitSuccess } from "../../../components/SubmitSuccess"
 import { ThemeToggle } from "../../../components/ThemeToggle"
@@ -41,6 +42,7 @@ import {
 	FeedbackFloatingButton,
 	FeedbackSheet,
 } from "../../../components/feedback"
+import { FeedbackProvider } from "../../../hooks/FeedbackContext"
 import { useSession, useSessionWebSocket } from "../../../hooks/useSession"
 import { FeedbackPanelBody } from "../../../pages/review/FeedbackPanelBody"
 import { FeedbackSidebar } from "../../../pages/review/FeedbackSidebar"
@@ -88,16 +90,10 @@ function ErrorState({ error }: { error: string | null }) {
 	)
 }
 
-function MobileFeedbackSection({
-	intentSlug,
-	activeStage,
-}: {
-	intentSlug: string | null
-	activeStage: string | null
-}): React.ReactElement {
+function MobileFeedbackSection(): React.ReactElement {
 	const [sheetOpen, setSheetOpen] = useState(false)
 	const fabRef = useFabRef()
-	const controller = useFeedbackSidebarController(intentSlug, activeStage)
+	const controller = useFeedbackSidebarController()
 	const pendingCount = controller.items.filter(
 		(item) => item.status === "pending",
 	).length
@@ -121,6 +117,9 @@ function MobileFeedbackSection({
 					onStatusChange={controller.handleStatusChange}
 					onDelete={controller.handleDelete}
 					onRetry={controller.retry}
+					onReply={controller.handleReply}
+					busyIds={controller.busyIds}
+					creating={controller.creating}
 				/>
 			</FeedbackSheet>
 		</>
@@ -133,8 +132,11 @@ function useFabRef() {
 
 function ReviewLayout(): React.ReactElement {
 	const { sessionId } = Route.useParams()
-	const { session, loading, error } = useSession(sessionId)
-	const wsRef = useSessionWebSocket(sessionId)
+	const { session, loading, error, notFound } = useSession(sessionId)
+	const [sessionEnded, setSessionEnded] = useState(false)
+	const wsRef = useSessionWebSocket(sessionId, {
+		onServerClose: () => setSessionEnded(true),
+	})
 	const apiClient = useApiClient()
 
 	// Publish sessionId to the shared ApiClient so feedback mutations
@@ -155,6 +157,24 @@ function ReviewLayout(): React.ReactElement {
 	useEffect(() => {
 		if (dynamicTitle) document.title = dynamicTitle
 	}, [dynamicTitle])
+
+	// Session-ended terminal state wins over everything else:
+	//   - `sessionEnded` — WS closed mid-review (or poll detected 404)
+	//   - `notFound`     — reload of a stale tab; server no longer has
+	//                      the session (MCP restarted, TTL evicted, etc.)
+	// In both cases the page is read-only and the reviewer should get
+	// the dismiss-and-close overlay rather than the raw error surface.
+	if (sessionEnded || notFound) {
+		return (
+			<SessionEndedOverlay
+				reason={
+					notFound
+						? "This review session no longer exists — it may have already been decided or expired."
+						: undefined
+				}
+			/>
+		)
+	}
 
 	if (loading) return <LoadingState message="Loading session..." />
 	if (error || !session) return <ErrorState error={error} />
@@ -304,6 +324,7 @@ function ReviewLayoutLoaded({
 
 	return (
 		<ReviewRouteProvider value={contextValue}>
+		<FeedbackProvider intent={intentSlug} stage={selectedStage}>
 			<div
 				data-testid="review-page-ready"
 				className="h-screen overflow-hidden flex flex-col bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100"
@@ -378,7 +399,6 @@ function ReviewLayoutLoaded({
 				>
 					{!isMobile && (
 						<FeedbackSidebar
-							intent={intentSlug}
 							stage={selectedStage}
 							activeStage={activeStage}
 							sessionId={sessionId}
@@ -419,13 +439,9 @@ function ReviewLayoutLoaded({
 					</Main>
 				</div>
 
-				{isMobile && (
-					<MobileFeedbackSection
-						intentSlug={intentSlug}
-						activeStage={activeStage}
-					/>
-				)}
+				{isMobile && <MobileFeedbackSection />}
 			</div>
+		</FeedbackProvider>
 		</ReviewRouteProvider>
 	)
 }

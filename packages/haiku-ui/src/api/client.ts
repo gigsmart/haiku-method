@@ -38,18 +38,30 @@ const JSON_HEADERS: Record<string, string> = {
 	...FETCH_HEADERS,
 }
 
-/**
- * Name of the cross-session auth header the server requires on feedback
- * mutations (POST/PUT/DELETE `/api/feedback/...`). Server-side verification
- * lives in `verifyFeedbackMutationAuth` (packages/haiku/src/http.ts) — when
- * remote review is enabled (tunnel live), absence of this header is a 401.
- */
-export const SESSION_HEADER = "X-Haiku-Session-Id"
+// Cross-session auth on feedback mutations used to ride in an explicit
+// `X-Haiku-Session-Id` header. The server now extracts the session id
+// from the tunnel-auth JWT's `sid` claim in `verifyFeedbackMutationAuth`,
+// so the header is no longer sent or accepted. The bearer token is the
+// only source of session identity on mutation routes.
+
+/** Error thrown by `parseJsonOrThrow` so callers can branch on HTTP
+ *  status (e.g. treat 404 as "session ended" rather than a generic
+ *  fetch failure). Plain `Error` subclass — any code relying on
+ *  `instanceof Error` or `err.message` keeps working. */
+export class ApiError extends Error {
+	constructor(
+		message: string,
+		readonly status: number,
+	) {
+		super(message)
+		this.name = "ApiError"
+	}
+}
 
 async function parseJsonOrThrow<T>(res: Response): Promise<T> {
 	if (!res.ok) {
 		const body = (await res.json().catch(() => ({}))) as { error?: string }
-		throw new Error(body.error || `HTTP ${res.status}`)
+		throw new ApiError(body.error || `HTTP ${res.status}`, res.status)
 	}
 	return (await res.json()) as T
 }
@@ -109,27 +121,21 @@ export interface ApiClient {
 }
 
 export function createDefaultApiClient(): ApiClient {
-	// Closure-held sessionId — gets attached as `X-Haiku-Session-Id` on every
-	// feedback mutation (POST/PUT/DELETE). The page shell calls
-	// `setSessionId(...)` once it has the id from the URL/session payload.
+	// Closure-held sessionId — surfaced back to callers via `getSessionId`
+	// so components that need it (WebSocket URL, session-bound display)
+	// can read it. No longer sent as a header; the tunnel-auth JWT's
+	// `sid` claim is the server's source of truth on mutations.
 	let sessionId: string | null = null
 
-	// Per-call header builder. Merges in:
-	//   - the session-id header (FB-20: cross-session auth on mutations).
-	//   - the `Authorization: Bearer <jwt>` header (FB-30: tunnel auth on
-	//     every tunnel-reachable route). `authHeader()` is a no-op when no
-	//     token is present (local-only mode without a hash).
-	// Both gates are no-ops when remote review is off.
+	// Per-call header builder. Merges in the `Authorization: Bearer <jwt>`
+	// header (FB-30: tunnel auth on every tunnel-reachable route).
+	// `authHeader()` is a no-op when no token is present (local-only
+	// mode without a hash); the gate is likewise a no-op there.
 	const withAuth = (base: Record<string, string>): Record<string, string> => ({
 		...base,
 		...authHeader(),
 	})
-	const withAuthAndSession = (
-		base: Record<string, string>,
-	): Record<string, string> => {
-		const next = withAuth(base)
-		return sessionId ? { ...next, [SESSION_HEADER]: sessionId } : next
-	}
+	const withAuthAndSession = withAuth
 
 	return {
 		async fetchSession(sessionId) {

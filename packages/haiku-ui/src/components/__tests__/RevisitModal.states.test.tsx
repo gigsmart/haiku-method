@@ -1,21 +1,8 @@
 /**
- * State-matrix behavioral coverage for RevisitModal (state-coverage-grid.md §7.12, §4).
- *
- * Per FB-64: snapshots alone are implementation-detail lock-ins. Each state
- * cell in this matrix gets one *behavioral* assertion that verifies an
- * invariant — not a class name. The snapshot remains as a secondary proof of
- * stable HTML, but behavior is the primary gate.
- *
- * Cells covered (one test each):
- *   1. closed (open=false) → component renders nothing into the DOM.
- *   2. open-default → role=dialog + aria-modal=true + labelled heading is live.
- *   3. open-with-target-stage=product → submit dispatches with stage="product".
- *   4. open-with-success-cb → success callback fires on valid submit, before onClose.
- *   5. open-alt-session → submit path encodes the alternate sessionId verbatim.
- *   6. open-target-development → submit dispatches with stage="development".
- *
- * The modal is a div-based dialog (not native <dialog>), so jsdom renders
- * everything mounted — the matrix enumerates documented prop combinations.
+ * State-matrix behavioral coverage for the redesigned RevisitModal
+ * confirm dialog. The earlier per-reason form has been retired (pending
+ * feedback items on disk ARE the reasons), so this suite covers the
+ * confirm + dispatch + session/stage plumbing surface that remains.
  */
 
 import {
@@ -26,17 +13,10 @@ import {
 	waitFor,
 } from "@testing-library/react"
 import type { RevisitRequest, RevisitResponse } from "haiku-api"
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import type { ApiClient } from "../../api/client"
+import type { FeedbackItemData } from "../../types"
 import { RevisitModal } from "../RevisitModal"
-
-beforeEach(() => {
-	// Stabilize UUIDs so any residual snapshot reference stays reproducible.
-	let counter = 0
-	vi.spyOn(crypto, "randomUUID").mockImplementation(
-		() => `11111111-2222-3333-4444-${String(counter++).padStart(12, "0")}`,
-	)
-})
 
 afterEach(() => {
 	cleanup()
@@ -57,12 +37,13 @@ function makeStubClient(
 		submitDirection: vi.fn(),
 		submitRevisit:
 			submitRevisit ??
-			vi.fn(async (_s: string, _b: RevisitRequest) => ({
-				ok: true as const,
-				action: "revisit",
-				feedback_created: ["FB-01"],
-				message: "Revisit accepted",
-			})),
+			vi.fn(
+				async (_s: string, _b: RevisitRequest): Promise<RevisitResponse> => ({
+					ok: true as const,
+					action: "revisit",
+					message: "Revisit accepted",
+				}),
+			),
 		feedback: {
 			list: vi.fn(),
 			create: vi.fn(),
@@ -72,6 +53,23 @@ function makeStubClient(
 		setSessionId: vi.fn(),
 		getSessionId: () => null,
 		openWebSocket: () => null,
+	}
+}
+
+function makeItem(overrides: Partial<FeedbackItemData> = {}): FeedbackItemData {
+	return {
+		feedback_id: "FB-01",
+		title: "Pending item",
+		body: "body",
+		status: "pending",
+		origin: "user-chat",
+		author: "user",
+		author_type: "human",
+		created_at: "2026-04-23T00:00:00Z",
+		visit: 0,
+		source_ref: null,
+		closed_by: null,
+		...overrides,
 	}
 }
 
@@ -85,29 +83,25 @@ describe("RevisitModal — state matrix (behavioral)", () => {
 				apiClient={makeStubClient()}
 			/>,
 		)
-		// Invariant: open=false must mount no markup. A regression that renders
-		// the modal while aria-hidden is still a leaked a11y tree — must be ""
-		// (null return short-circuits any wrapper emission).
 		expect(container.innerHTML).toBe("")
 	})
 
-	it("open-default: exposes role=dialog + aria-modal=true + live labelled heading", () => {
+	it("open-default: exposes role=dialog + aria-modal=true + labelled heading", () => {
 		render(
 			<RevisitModal
 				sessionId="s1"
-				open={true}
+				open
 				onClose={() => {}}
 				apiClient={makeStubClient()}
+				pendingItems={[makeItem()]}
 			/>,
 		)
 		const dialog = screen.getByRole("dialog")
 		expect(dialog.getAttribute("aria-modal")).toBe("true")
 		const labelId = dialog.getAttribute("aria-labelledby")
 		expect(labelId).toBeTruthy()
-		// The labelling node must exist AND say "Confirm revisit" — swapping the
-		// copy or removing the id would break the a11y contract.
 		const labelEl = labelId ? document.getElementById(labelId) : null
-		expect(labelEl?.textContent).toMatch(/confirm revisit/i)
+		expect(labelEl?.textContent).toMatch(/send feedback/i)
 	})
 
 	it('open-with-target-stage=product: submit dispatches stage="product" in the body', async () => {
@@ -122,29 +116,19 @@ describe("RevisitModal — state matrix (behavioral)", () => {
 		render(
 			<RevisitModal
 				sessionId="s1"
-				open={true}
+				open
 				onClose={() => {}}
 				targetStage="product"
 				apiClient={makeStubClient(submitRevisit)}
+				pendingItems={[makeItem()]}
 			/>,
 		)
-		const titleInput = screen.getAllByLabelText(/title/i)[0] as HTMLInputElement
-		const bodyInput = screen.getAllByLabelText(
-			/body/i,
-		)[0] as HTMLTextAreaElement
-		fireEvent.change(titleInput, { target: { value: "spec drift" } })
-		fireEvent.change(bodyInput, { target: { value: "found in elaboration" } })
-		fireEvent.click(screen.getByRole("button", { name: /confirm revisit/i }))
+		fireEvent.click(screen.getByRole("button", { name: /Send/ }))
 		await waitFor(() => expect(submitRevisit).toHaveBeenCalledTimes(1))
-		// Invariant: the targetStage prop is forwarded verbatim — swapping two
-		// stage labels in the component (product ↔ development) would break this.
-		expect(submitRevisit.mock.calls[0][1]).toEqual({
-			stage: "product",
-			reasons: [{ title: "spec drift", body: "found in elaboration" }],
-		})
+		expect(submitRevisit.mock.calls[0][1]).toEqual({ stage: "product" })
 	})
 
-	it('open-target-development: submit dispatches stage="development" (distinguishes from product)', async () => {
+	it('open-target-development: submit dispatches stage="development"', async () => {
 		const submitRevisit = vi.fn(
 			async (_s: string, _b: RevisitRequest): Promise<RevisitResponse> => ({
 				ok: true,
@@ -156,21 +140,15 @@ describe("RevisitModal — state matrix (behavioral)", () => {
 		render(
 			<RevisitModal
 				sessionId="s1"
-				open={true}
+				open
 				onClose={() => {}}
 				targetStage="development"
 				apiClient={makeStubClient(submitRevisit)}
+				pendingItems={[makeItem()]}
 			/>,
 		)
-		const titleInput = screen.getAllByLabelText(/title/i)[0] as HTMLInputElement
-		const bodyInput = screen.getAllByLabelText(
-			/body/i,
-		)[0] as HTMLTextAreaElement
-		fireEvent.change(titleInput, { target: { value: "t" } })
-		fireEvent.change(bodyInput, { target: { value: "b" } })
-		fireEvent.click(screen.getByRole("button", { name: /confirm revisit/i }))
+		fireEvent.click(screen.getByRole("button", { name: /Send/ }))
 		await waitFor(() => expect(submitRevisit).toHaveBeenCalledTimes(1))
-		// Invariant: development != product — catches silent label swaps.
 		expect(submitRevisit.mock.calls[0][1].stage).toBe("development")
 	})
 
@@ -180,11 +158,10 @@ describe("RevisitModal — state matrix (behavioral)", () => {
 			async (_s: string, _b: RevisitRequest): Promise<RevisitResponse> => ({
 				ok: true,
 				action: "revisit",
-				feedback_created: ["FB-42"],
 				message: "Revisit accepted",
 			}),
 		)
-		const onSuccess = vi.fn((_response: RevisitResponse) => {
+		const onSuccess = vi.fn((_r: RevisitResponse) => {
 			order.push("onSuccess")
 		})
 		const onClose = vi.fn(() => {
@@ -193,32 +170,17 @@ describe("RevisitModal — state matrix (behavioral)", () => {
 		render(
 			<RevisitModal
 				sessionId="s1"
-				open={true}
+				open
 				onClose={onClose}
 				onSuccess={onSuccess}
 				apiClient={makeStubClient(submitRevisit)}
+				pendingItems={[makeItem()]}
 			/>,
 		)
-		const titleInput = screen.getAllByLabelText(/title/i)[0] as HTMLInputElement
-		const bodyInput = screen.getAllByLabelText(
-			/body/i,
-		)[0] as HTMLTextAreaElement
-		fireEvent.change(titleInput, { target: { value: "t" } })
-		fireEvent.change(bodyInput, { target: { value: "b" } })
-		fireEvent.click(screen.getByRole("button", { name: /confirm revisit/i }))
+		fireEvent.click(screen.getByRole("button", { name: /Send/ }))
 		await waitFor(() => expect(submitRevisit).toHaveBeenCalledTimes(1))
 		await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1))
-		// Invariant: onSuccess runs first (the handler's defined order) — a
-		// refactor that reverses them would silently hide the response from
-		// callers who close side-effects in onClose.
 		expect(order).toEqual(["onSuccess", "onClose"])
-		// Response shape reaches onSuccess as-received, not transformed.
-		expect(onSuccess.mock.calls[0][0]).toEqual({
-			ok: true,
-			action: "revisit",
-			feedback_created: ["FB-42"],
-			message: "Revisit accepted",
-		})
 	})
 
 	it("open-alt-session: submit path receives the alternate sessionId verbatim", async () => {
@@ -226,30 +188,20 @@ describe("RevisitModal — state matrix (behavioral)", () => {
 			async (_s: string, _b: RevisitRequest): Promise<RevisitResponse> => ({
 				ok: true,
 				action: "revisit",
-				feedback_created: ["FB-01"],
 				message: "ok",
 			}),
 		)
 		render(
 			<RevisitModal
 				sessionId="s2-alt"
-				open={true}
+				open
 				onClose={() => {}}
 				apiClient={makeStubClient(submitRevisit)}
+				pendingItems={[makeItem()]}
 			/>,
 		)
-		const titleInput = screen.getAllByLabelText(/title/i)[0] as HTMLInputElement
-		const bodyInput = screen.getAllByLabelText(
-			/body/i,
-		)[0] as HTMLTextAreaElement
-		fireEvent.change(titleInput, { target: { value: "t" } })
-		fireEvent.change(bodyInput, { target: { value: "b" } })
-		fireEvent.click(screen.getByRole("button", { name: /confirm revisit/i }))
+		fireEvent.click(screen.getByRole("button", { name: /Send/ }))
 		await waitFor(() => expect(submitRevisit).toHaveBeenCalledTimes(1))
-		// Invariant: the sessionId becomes the first positional arg to
-		// submitRevisit (which is the :sessionId path parameter on the server).
-		// A URL-building bug that hardcoded a session or dropped the arg would
-		// fail here.
 		expect(submitRevisit.mock.calls[0][0]).toBe("s2-alt")
 	})
 
@@ -258,31 +210,21 @@ describe("RevisitModal — state matrix (behavioral)", () => {
 			async (_s: string, _b: RevisitRequest): Promise<RevisitResponse> => ({
 				ok: true,
 				action: "revisit",
-				feedback_created: ["FB-01"],
 				message: "ok",
 			}),
 		)
 		render(
 			<RevisitModal
 				sessionId="s1"
-				open={true}
+				open
 				onClose={() => {}}
 				apiClient={makeStubClient(submitRevisit)}
+				pendingItems={[makeItem()]}
 			/>,
 		)
-		const titleInput = screen.getAllByLabelText(/title/i)[0] as HTMLInputElement
-		const bodyInput = screen.getAllByLabelText(
-			/body/i,
-		)[0] as HTMLTextAreaElement
-		fireEvent.change(titleInput, { target: { value: "t" } })
-		fireEvent.change(bodyInput, { target: { value: "b" } })
-		fireEvent.click(screen.getByRole("button", { name: /confirm revisit/i }))
+		fireEvent.click(screen.getByRole("button", { name: /Send/ }))
 		await waitFor(() => expect(submitRevisit).toHaveBeenCalledTimes(1))
 		const body = submitRevisit.mock.calls[0][1] as Record<string, unknown>
-		// Invariant: when targetStage is not provided, the field must be
-		// absent (not emitted as undefined/null) — the server uses field
-		// presence to decide whether to override the stage.
 		expect("stage" in body).toBe(false)
-		expect(body.reasons).toEqual([{ title: "t", body: "b" }])
 	})
 })

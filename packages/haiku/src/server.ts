@@ -19,7 +19,7 @@ import {
 } from "./auto-update.js"
 import { stripWildcardAllowedOrigins } from "./config.js"
 import { ensureOnStageBranch } from "./git-worktree.js"
-import { startHttpServer } from "./http.js"
+import { closeSessionConnection, startHttpServer } from "./http.js"
 import {
 	buildDAG,
 	parseAllUnits,
@@ -47,6 +47,7 @@ import {
 	createDesignDirectionSession,
 	createQuestionSession,
 	createSession,
+	deleteSession,
 	getPreviousReviewSnapshot,
 	getSession,
 	hasPresenceLost,
@@ -189,6 +190,56 @@ if (!isClaudeCode()) {
 	const caps = getCapabilities()
 	if (caps.mcpPrompts) {
 		registerSkillPrompts()
+	}
+}
+
+/**
+ * Launch the OS default browser at `url`. Best-effort — a failure HERE
+ * never advances a review gate on its own (the caller still `await`s
+ * `waitForSession` which either hears a real decision or times out),
+ * but we log loudly so the reviewer has a visible URL they can paste
+ * manually. The previous implementation swallowed all three failure
+ * modes (sync throw, async 'error', non-zero exit) silently, which
+ * left the FSM "waiting quietly" with no UI hint anywhere.
+ *
+ * `label` lands in log lines so operators can tell which surface
+ * tried to open — review gate, question, direction, or the always-on
+ * review pane.
+ */
+function launchBrowserBestEffort(url: string, label: string): void {
+	console.error(
+		`[haiku] ${label} ready → ${url}\n` +
+			`         Share this URL with the reviewer if the browser didn't auto-open.`,
+	)
+	const cmd =
+		process.platform === "darwin" ? ["open", url] : ["xdg-open", url]
+	try {
+		const child = spawn(cmd[0], cmd.slice(1), {
+			stdio: "ignore",
+			detached: true,
+		})
+		child.unref()
+		child.on("error", (err) => {
+			console.error(
+				`[haiku] Browser launcher ${cmd[0]} failed: ${err.message}. Paste ${url} into a browser to continue.`,
+			)
+		})
+		child.on("exit", (code, signal) => {
+			if (code !== null && code !== 0) {
+				console.error(
+					`[haiku] Browser launcher ${cmd[0]} exited with code ${code}. Paste ${url} into a browser to continue.`,
+				)
+			}
+			if (signal) {
+				console.error(
+					`[haiku] Browser launcher ${cmd[0]} terminated by signal ${signal}. Paste ${url} into a browser to continue.`,
+				)
+			}
+		})
+	} catch (err) {
+		console.error(
+			`[haiku] Browser launcher threw synchronously: ${err instanceof Error ? err.message : String(err)}. Paste ${url} into a browser to continue.`,
+		)
 	}
 }
 
@@ -418,11 +469,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 })
 
 // Call tools — wrapped to trigger hot-swap after response when an update is staged
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
 	let result: Awaited<ReturnType<typeof handleToolCall>>
 	try {
-		result = await handleToolCall(request)
+		result = await handleToolCall(request, extra?.signal)
 	} catch (err) {
+		// User cancellation is not a crash — when Claude Code escapes a
+		// tool call it fires `notifications/cancelled`, the SDK aborts
+		// the signal, and the handler throws out. That's a normal
+		// lifecycle event; don't spam Sentry with it and don't write a
+		// crash file. Just rethrow so the SDK can suppress the response.
+		if (extra?.signal?.aborted) {
+			throw err
+		}
 		// The MCP SDK's request dispatch catches thrown errors and returns
 		// them as JSON-RPC InternalError responses, which means they never
 		// reach main().catch — and therefore never hit Sentry. Report here
@@ -495,9 +554,62 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	return result
 })
 
-async function handleToolCall(request: {
-	params: { name: string; arguments?: Record<string, unknown> }
-}) {
+/**
+ * Close the session's WebSocket when the given AbortSignal fires.
+ * Used by every tool handler that creates an interactive session so
+ * the SPA sees an immediate `SessionEndedOverlay` if the user cancels
+ * the originating MCP tool call.
+ */
+const SESSION_CANCEL_LOG = "/tmp/haiku-session-cancel.log"
+
+function logCancel(msg: string): void {
+	try {
+		const { appendFileSync } = require("node:fs") as typeof import("node:fs")
+		appendFileSync(SESSION_CANCEL_LOG, `${new Date().toISOString()} ${msg}\n`)
+	} catch {
+		/* best-effort — don't crash the tool handler over a log write */
+	}
+	process.stderr.write(`[haiku-mcp] ${msg}\n`)
+}
+
+function bindSessionCancellation(
+	sessionId: string,
+	signal: AbortSignal | undefined,
+): void {
+	if (!signal) {
+		logCancel(
+			`bindSessionCancellation(${sessionId}): no signal passed — cancel will not fire`,
+		)
+		return
+	}
+	logCancel(
+		`bindSessionCancellation(${sessionId}): signal attached, aborted=${signal.aborted}`,
+	)
+	if (signal.aborted) {
+		logCancel(
+			`bindSessionCancellation(${sessionId}): signal was already aborted, closing immediately`,
+		)
+		closeSessionConnection(sessionId, "tool call cancelled")
+		return
+	}
+	signal.addEventListener(
+		"abort",
+		() => {
+			logCancel(
+				`abort fired for session ${sessionId} — closing WS (reason: ${signal.reason})`,
+			)
+			closeSessionConnection(sessionId, "tool call cancelled")
+		},
+		{ once: true },
+	)
+}
+
+async function handleToolCall(
+	request: {
+		params: { name: string; arguments?: Record<string, unknown> }
+	},
+	signal?: AbortSignal,
+) {
 	const { name, arguments: args } = request.params
 
 	// Orchestration tools (async — gate_ask blocks until user reviews)
@@ -510,7 +622,11 @@ async function handleToolCall(request: {
 		name === "haiku_intent_archive" ||
 		name === "haiku_intent_unarchive"
 	) {
-		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
+		return handleOrchestratorTool(
+			name,
+			(args ?? {}) as Record<string, unknown>,
+			signal,
+		)
 	}
 
 	// Report tool — submit user feedback/bug reports to Sentry
@@ -552,15 +668,7 @@ async function handleToolCall(request: {
 	if (name === "haiku_review" && (args as Record<string, unknown>)?.open_pane) {
 		const port = await startHttpServer()
 		const reviewUrl = `http://127.0.0.1:${port}/review/current`
-		try {
-			const cmd =
-				process.platform === "darwin"
-					? ["open", reviewUrl]
-					: ["xdg-open", reviewUrl]
-			spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
-		} catch {
-			/* */
-		}
+		launchBrowserBestEffort(reviewUrl, "Review pane")
 		return {
 			content: [
 				{
@@ -610,6 +718,7 @@ async function handleToolCall(request: {
 			imageBaseDirs,
 			html: "",
 		})
+		bindSessionCancellation(session.session_id, signal)
 
 		// Build image URLs for the template (served via /question-image/:sessionId/:index)
 		const imageUrls = imagePaths.map(
@@ -635,21 +744,12 @@ async function handleToolCall(request: {
 			questionUrl = `http://127.0.0.1:${port}/question/${session.session_id}`
 		}
 
-		// Open browser
-		try {
-			const cmd =
-				process.platform === "darwin"
-					? ["open", questionUrl]
-					: ["xdg-open", questionUrl]
-			spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
-		} catch (err) {
-			console.error("Failed to open browser:", err)
-		}
+		launchBrowserBestEffort(questionUrl, "Question session")
 
 		// Block until the user submits their answers (event-based, no polling)
 		const MAX_WAIT_Q = 30 * 60 * 1000 // 30 minutes
 		try {
-			await waitForSession(session.session_id, MAX_WAIT_Q)
+			await waitForSession(session.session_id, MAX_WAIT_Q, signal)
 		} catch {
 			return {
 				content: [
@@ -765,6 +865,7 @@ async function handleToolCall(request: {
 			parameters,
 			html: "",
 		})
+		bindSessionCancellation(session.session_id, signal)
 
 		// Render HTML
 		session.html = renderDesignDirectionPage({
@@ -784,21 +885,12 @@ async function handleToolCall(request: {
 			directionUrl = `http://127.0.0.1:${port}/direction/${session.session_id}`
 		}
 
-		// Open browser
-		try {
-			const cmd =
-				process.platform === "darwin"
-					? ["open", directionUrl]
-					: ["xdg-open", directionUrl]
-			spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
-		} catch (err) {
-			console.error("Failed to open browser:", err)
-		}
+		launchBrowserBestEffort(directionUrl, "Direction session")
 
 		// Block until the user submits their selection (event-based, no polling)
 		const MAX_WAIT_DD = 30 * 60 * 1000 // 30 minutes
 		try {
-			await waitForSession(session.session_id, MAX_WAIT_DD)
+			await waitForSession(session.session_id, MAX_WAIT_DD, signal)
 		} catch {
 			return {
 				content: [
@@ -910,7 +1002,12 @@ async function handleToolCall(request: {
 // This lets haiku_run_next open a review and block until the user decides,
 // without the agent needing to call open_review separately.
 setOpenReviewHandler(
-	async (intentDirRel: string, reviewType: string, gateType?: string) => {
+	async (
+		intentDirRel: string,
+		reviewType: string,
+		gateType?: string,
+		signal?: AbortSignal,
+	) => {
 		const intentDirAbs = resolve(process.cwd(), intentDirRel)
 		const intent = await parseIntent(intentDirAbs)
 		if (!intent) throw new Error("Could not parse intent")
@@ -935,6 +1032,7 @@ setOpenReviewHandler(
 			target: "",
 			html: "",
 		})
+		bindSessionCancellation(session.session_id, signal)
 
 		// Store parsed data on session for the SPA
 		Object.assign(session, {
@@ -994,86 +1092,88 @@ setOpenReviewHandler(
 			reviewUrl = `http://127.0.0.1:${port}/review/${session.session_id}`
 		}
 
-		function openBrowser(url?: string) {
-			try {
-				const target = url ?? reviewUrl
-				const cmd =
-					process.platform === "darwin"
-						? ["open", target]
-						: ["xdg-open", target]
-				spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
-			} catch {
-				/* */
-			}
-		}
+		launchBrowserBestEffort(reviewUrl, "Review gate")
 
-		openBrowser()
-
-		// Single 30-minute wait. NO browser re-opens.
-		//
-		// The previous retry loop spawned a fresh browser tab on every
-		// presence-lost wakeup AND on every attempt timeout. Modern browsers
-		// throttle setInterval in backgrounded tabs, so a user who had the
-		// review tab open but switched windows would hit spurious
-		// presence-lost events and see brand-new tabs pop up, overwriting
-		// their in-progress comments on the original (still-alive) tab.
-		//
-		// Recovery path: on timeout, throw — the caller in orchestrator.ts
-		// classifies review timeouts as agent-fixable and returns
-		// GATE BLOCKED. The agent's next haiku_run_next tick re-enters the
-		// review phase and creates a fresh session. No orphaned tabs.
-		while (true) {
-			let timedOut = false
-			try {
-				await waitForSession(session.session_id, 30 * 60 * 1000)
-			} catch {
-				timedOut = true
-			}
-
-			const updated = getSession(session.session_id)
-			if (
-				updated &&
-				updated.session_type === "review" &&
-				updated.status === "decided"
-			) {
-				clearHeartbeat(session.session_id)
-				if (useRemote) {
-					clearE2EKey(session.session_id)
-					closeTunnel()
+		// Close + evict the session as soon as this tool call exits,
+		// whether the user decided, we timed out, the agent cancelled,
+		// or the call threw. Anchored in try/finally so the WS tear-down
+		// is impossible to skip — otherwise stale sessions linger in the
+		// map and zombie tabs keep thinking they're live.
+		try {
+			// Single 30-minute wait. NO browser re-opens.
+			//
+			// The previous retry loop spawned a fresh browser tab on every
+			// presence-lost wakeup AND on every attempt timeout. Modern
+			// browsers throttle setInterval in backgrounded tabs, so a
+			// user who had the review tab open but switched windows would
+			// hit spurious presence-lost events and see brand-new tabs
+			// pop up, overwriting their in-progress comments on the
+			// original (still-alive) tab.
+			//
+			// Recovery path: on timeout, throw — the caller in
+			// orchestrator.ts classifies review timeouts as agent-fixable
+			// and returns GATE BLOCKED. The agent's next haiku_run_next
+			// tick re-enters the review phase and creates a fresh session.
+			// No orphaned tabs.
+			while (true) {
+				let timedOut = false
+				try {
+					await waitForSession(session.session_id, 30 * 60 * 1000, signal)
+				} catch (err) {
+					// Abort propagates here too — distinguish by checking the
+					// signal. If aborted, break out of the whole retry loop so
+					// the finally block can clean up promptly.
+					if (signal?.aborted) {
+						throw err
+					}
+					timedOut = true
 				}
-				return {
-					decision: updated.decision,
-					feedback: updated.feedback,
-					annotations: updated.annotations,
+
+				const updated = getSession(session.session_id)
+				if (
+					updated &&
+					updated.session_type === "review" &&
+					updated.status === "decided"
+				) {
+					return {
+						decision: updated.decision,
+						feedback: updated.feedback,
+						annotations: updated.annotations,
+					}
 				}
+
+				// Timeout check MUST come before presence-lost: once
+				// presenceLost contains the session ID it stays there
+				// across iterations, so checking presence-lost first
+				// would swallow every subsequent timeout.
+				if (timedOut) break
+
+				if (hasPresenceLost(session.session_id)) {
+					// Log but keep waiting. The tab may just be
+					// backgrounded and heartbeat-throttled; if genuinely
+					// closed, the timeout above will eventually fire.
+					console.error(
+						`[haiku] Review session ${session.session_id} lost presence — continuing to wait (no reopen)`,
+					)
+				}
+
+				// Presence-lost or spurious wakeup — loop again.
 			}
 
-			// Timeout check MUST come before presence-lost: once presenceLost
-			// contains the session ID it stays there across iterations (only
-			// recordHeartbeat or clearHeartbeat removes it), so checking
-			// presence-lost first would swallow every subsequent timeout.
-			if (timedOut) {
-				break
+			throw new Error("Review timeout after 30 minutes")
+		} finally {
+			// Drop the WebSocket first so any still-connected SPA tab
+			// transitions to the session-ended overlay, then remove the
+			// session from the registry so subsequent reloads 404 and
+			// render the overlay from their own fetch path.
+			closeSessionConnection(session.session_id, "tool call complete")
+			clearHeartbeat(session.session_id)
+			if (useRemote) {
+				clearE2EKey(session.session_id)
+				closeTunnel()
 			}
-
-			if (hasPresenceLost(session.session_id)) {
-				// Log but keep waiting. The tab may just be backgrounded and
-				// heartbeat-throttled; if genuinely closed, the timeout above
-				// will eventually fire and the caller can recover.
-				console.error(
-					`[haiku] Review session ${session.session_id} lost presence — continuing to wait (no reopen)`,
-				)
-			}
-
-			// Presence-lost or spurious wakeup — loop again.
+			deleteSession(session.session_id)
 		}
-
-		clearHeartbeat(session.session_id)
-		if (useRemote) {
-			clearE2EKey(session.session_id)
-			closeTunnel()
-		}
-		throw new Error("Review timeout after 30 minutes")
 	},
 )
 

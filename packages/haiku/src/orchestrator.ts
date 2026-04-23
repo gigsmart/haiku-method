@@ -55,6 +55,7 @@ import {
 	appendStageIteration,
 	closeCurrentStageIteration,
 	countPendingFeedback,
+	type FeedbackItem,
 	findFeedbackFile,
 	findHaikuRoot,
 	getStageIterationCount,
@@ -2993,6 +2994,83 @@ export function runNext(slug: string): OrchestratorAction {
 				}
 			}
 
+			// ── Route 1.5: human-in-the-loop for human-authored feedback ──
+			// If ANY pending item is human-authored AND has no explicit
+			// `resolution` set, the human hasn't signed off on dispatch.
+			// Open the gate review UI instead of auto-firing the fix
+			// loop — the reviewer needs to see the items, triage them
+			// (pick a resolution per item or leave them for agent
+			// triage), then click "Send to agent" which routes through
+			// `haiku_revisit` → `feedback_dispatch` (or stage rollback).
+			//
+			// Agent-authored findings (adversarial-review, studio-review,
+			// origin: agent) skip this short-circuit: they're the
+			// existing fix-loop contract — find, fix, move on, no human
+			// intervention required.
+			const needsHumanReview = pendingItems.some(
+				(item) =>
+					item.author_type === "human" &&
+					(!(item as { resolution?: string | null }).resolution ||
+						(item as { resolution?: string | null }).resolution === null),
+			)
+			if (needsHumanReview) {
+				const stageIdxForGate = studioStages.indexOf(currentStage)
+				const nextStageForGate =
+					stageIdxForGate >= 0 && stageIdxForGate < studioStages.length - 1
+						? studioStages[stageIdxForGate + 1]
+						: null
+				fsmGateAsk(slug, currentStage)
+				return {
+					action: "gate_review",
+					intent: slug,
+					studio,
+					stage: currentStage,
+					next_stage: nextStageForGate,
+					gate_type: "ask",
+					gate_context: "stage_gate",
+					message: `Stage '${currentStage}' has ${pendingItems.length} pending feedback item(s), including human-authored comments awaiting triage. Open the review UI so the reviewer can classify each (reply, inline fix, stage revisit, upstream rewind) before the agent dispatches.`,
+				}
+			}
+
+			// ── Route 1.6: auto-dispatch on explicit rewind-causing resolutions ──
+			// If any pending item is explicitly tagged `stage_revisit` or
+			// `upstream_rewind`, run_next should just DO the thing — no prose
+			// handoff, no "call run_next again." The reviewer (or triage
+			// pass) already decided; prompting the agent to dispatch adds
+			// a round trip and leaves room for the chain to stall.
+			const gateClassification = classifyPendingForRevisit(pendingItems)
+			if (gateClassification.stageRevisits.length > 0) {
+				// Write a deterministic audit line of which items forced the
+				// revisit — a post-revisit trace is the only way to tell from
+				// a git log why the stage rolled back.
+				const revisitIds = gateClassification.stageRevisits
+					.map((it) => it.id)
+					.join(", ")
+				emitTelemetry("haiku.gate.auto_revisit", {
+					intent: slug,
+					stage: currentStage,
+					feedback_ids: revisitIds,
+				})
+				return revisitCurrentStage(slug, iDir, intentFile, currentStage)
+			}
+			if (gateClassification.upstreamRewinds.length > 0) {
+				emitTelemetry("haiku.gate.upstream_rewind_surfaced", {
+					intent: slug,
+					stage: currentStage,
+					count: String(gateClassification.upstreamRewinds.length),
+				})
+				return {
+					action: "upstream_finding_surfaced",
+					intent: slug,
+					studio,
+					stage: currentStage,
+					upstream_items: gateClassification.upstreamRewinds.map(
+						summarizeFeedback,
+					),
+					message: `Stage '${currentStage}' has ${gateClassification.upstreamRewinds.length} finding(s) tagged \`upstream_rewind\`. Present them to the user and ask which upstream stage to revisit (or whether to reject / accept as-is). Do NOT call \`haiku_run_next\` until the user decides.`,
+				}
+			}
+
 			// ── Route 2: fix_hats fix loop ────────────────────────────────
 			// When the stage declares fix_hats, batch-dispatch the sequence
 			// against EVERY eligible (under bolt-cap) pending finding in one
@@ -3653,6 +3731,130 @@ function currentWaveNumber(
 
 // ── Go back (stage/phase regression) ──────────────────────────────────────
 
+/**
+ * Bucket pending feedback on a stage by the `resolution` field the
+ * reviewer (or a prior triage pass) wrote. The revisit entry point
+ * uses this to decide whether to actually roll the stage back or to
+ * hand the resolution work off to the agent without a rollback.
+ *
+ * Resolution semantics:
+ *   - `null`           → reviewer didn't pick a path; the agent
+ *                        triages each one during `feedback_dispatch`
+ *                        (read the finding, decide on a resolution,
+ *                        call `haiku_feedback_update` to persist,
+ *                        then dispatch per the chosen bucket).
+ *                        NOT treated as `stage_revisit` — the nuclear
+ *                        option should never be the silent default.
+ *   - `stage_revisit`  → the stage needs a full re-loop; this is the
+ *                        ONLY bucket that triggers `revisitCurrentStage`.
+ *   - `question`       → agent replies via POST .../replies with
+ *                        close_as_answered: true, no code delta.
+ *   - `inline_fix`     → agent dispatches ONE bolt of the stage's
+ *                        fix_hats against the finding. The existing
+ *                        fix-loop machinery (`review_fix` action)
+ *                        takes it from there.
+ *   - `upstream_rewind`→ surface to the human via the existing
+ *                        `upstream_finding_surfaced` path.
+ */
+interface FeedbackClassification {
+	questions: FeedbackItem[]
+	inlineFixes: FeedbackItem[]
+	upstreamRewinds: FeedbackItem[]
+	stageRevisits: FeedbackItem[] // EXPLICIT stage_revisit only
+	needsTriage: FeedbackItem[] // null resolution — agent decides
+}
+
+function classifyPendingForRevisit(
+	items: FeedbackItem[],
+): FeedbackClassification {
+	const out: FeedbackClassification = {
+		questions: [],
+		inlineFixes: [],
+		upstreamRewinds: [],
+		stageRevisits: [],
+		needsTriage: [],
+	}
+	for (const it of items) {
+		if (it.status !== "pending") continue
+		const r = (it as { resolution?: string | null }).resolution ?? null
+		switch (r) {
+			case "question":
+				out.questions.push(it)
+				break
+			case "inline_fix":
+				out.inlineFixes.push(it)
+				break
+			case "upstream_rewind":
+				out.upstreamRewinds.push(it)
+				break
+			case "stage_revisit":
+				out.stageRevisits.push(it)
+				break
+			default:
+				// null / unset → needs triage by the agent. Do NOT default
+				// to stage_revisit — the reviewer's "I didn't pick" is a
+				// request for the agent to read the finding and decide,
+				// not an implicit nuclear reset.
+				out.needsTriage.push(it)
+				break
+		}
+	}
+	return out
+}
+
+/**
+ * Compose a `feedback_dispatch` action the agent can act on without a
+ * stage rollback. Each bucket becomes a block of instructions keyed
+ * off the feedback id, so the agent can dispatch them serially
+ * (questions first, inline-fixes next, upstream-rewinds surfaced to
+ * the user). Returned only when every pending item routes through
+ * one of the non-revisit paths.
+ */
+function buildFeedbackDispatchAction(
+	slug: string,
+	stage: string,
+	classification: FeedbackClassification,
+): OrchestratorAction {
+	const summaryOf = (it: FeedbackItem): string =>
+		`- **${it.id}** — ${it.title}`
+	const sections: string[] = []
+	if (classification.needsTriage.length > 0) {
+		// Put triage first — the agent must assign resolutions to null
+		// items before (or alongside) dispatching the explicit ones, so
+		// the next `haiku_run_next` tick sees a fully classified queue.
+		sections.push(
+			`### Triage — reviewer left resolution unset (${classification.needsTriage.length})\n\nFor each item below, read the title + body (and any attachment/source_ref) and decide which resolution applies:\n- **question** — the reviewer wants a reply with no code delta\n- **inline_fix** — small, scoped change; dispatch one fix_hats bolt against just this finding\n- **stage_revisit** — the stage's elaboration or execution missed something fundamental; a full re-loop is warranted\n- **upstream_rewind** — root cause lives in an upstream stage; surface to human\n\nPersist your decision by calling \`haiku_feedback_update { intent: "${slug}", stage: "${stage}", feedback_id, resolution: "<choice>" }\`. After setting resolutions on every item below, call \`haiku_run_next\` again — the router will re-classify and dispatch.\n\n${classification.needsTriage.map(summaryOf).join("\n")}`,
+		)
+	}
+	if (classification.questions.length > 0) {
+		sections.push(
+			`### Reply to questions (${classification.questions.length})\n\nFor each item below, read the body, formulate a reply, and POST it to \`/api/feedback/${encodeURIComponent(slug)}/${encodeURIComponent(stage)}/<feedback_id>/replies\` with \`{ body: <reply>, close_as_answered: true }\`. No code delta needed.\n\n${classification.questions.map(summaryOf).join("\n")}`,
+		)
+	}
+	if (classification.inlineFixes.length > 0) {
+		sections.push(
+			`### Inline fixes (${classification.inlineFixes.length})\n\nFor each item below, run ONE bolt of the stage's \`fix_hats\` sequence against the single finding. The fix hat must land a real code change; a planning-only hat (planner/strategist) will fail to close the finding. On success, the feedback_assessor hat (terminal validator) flips the item to \`closed\`.\n\n${classification.inlineFixes.map(summaryOf).join("\n")}`,
+		)
+	}
+	if (classification.upstreamRewinds.length > 0) {
+		sections.push(
+			`### Upstream rewinds — SURFACE TO HUMAN (${classification.upstreamRewinds.length})\n\nThese items' root causes live in an upstream stage. DO NOT auto-fix. Present each to the user and let them choose: \`haiku_revisit { intent, stage: <upstream> }\` to roll upstream, \`haiku_feedback_reject\` to dismiss, or accept as-is.\n\n${classification.upstreamRewinds.map(summaryOf).join("\n")}`,
+		)
+	}
+	return {
+		action: "feedback_dispatch",
+		intent: slug,
+		stage,
+		counts: {
+			needs_triage: classification.needsTriage.length,
+			questions: classification.questions.length,
+			inline_fixes: classification.inlineFixes.length,
+			upstream_rewinds: classification.upstreamRewinds.length,
+		},
+		message: `Resolve pending feedback on stage '${stage}' WITHOUT rolling the stage back. Dispatch each item per its resolution:\n\n${sections.join("\n\n")}\n\nAfter dispatching all items, call \`haiku_run_next { intent: "${slug}" }\` to re-check the gate.`,
+	}
+}
+
 function revisit(slug: string, requestedStage?: string): OrchestratorAction {
 	const root = findHaikuRoot()
 	const iDir = join(root, "intents", slug)
@@ -3674,6 +3876,42 @@ function revisit(slug: string, requestedStage?: string): OrchestratorAction {
 
 	if (!currentActiveStage) {
 		return { action: "error", message: "No active stage to revisit from" }
+	}
+
+	// Before rolling back anything, inspect the pending feedback on the
+	// active stage. If every pending item explicitly routes through a
+	// non-revisit path (question / inline_fix / upstream_rewind), we
+	// return a `feedback_dispatch` action instead — the stage stays
+	// intact, the agent resolves each finding per its declared
+	// resolution, and the next `haiku_run_next` re-checks the gate.
+	// When the requested stage is the current stage OR omitted, the
+	// classification applies; an explicit earlier-stage revisit is the
+	// reviewer declaring "roll back," so we skip the check and let the
+	// existing flow run.
+	const shouldClassify =
+		!requestedStage || requestedStage === currentActiveStage
+	if (shouldClassify) {
+		const pending = readFeedbackFiles(slug, currentActiveStage)
+		const classification = classifyPendingForRevisit(pending)
+		const hasAny =
+			classification.questions.length +
+				classification.inlineFixes.length +
+				classification.upstreamRewinds.length +
+				classification.stageRevisits.length +
+				classification.needsTriage.length >
+			0
+		// Rollback ONLY when the reviewer explicitly tagged at least
+		// one item `stage_revisit`. Null/unset resolutions route through
+		// the dispatch action and the agent triages them there — silent
+		// defaulting to rollback was the "ran next and got rewound"
+		// footgun.
+		if (hasAny && classification.stageRevisits.length === 0) {
+			return buildFeedbackDispatchAction(
+				slug,
+				currentActiveStage,
+				classification,
+			)
+		}
 	}
 
 	const studioStages = resolveIntentStages(intent, studio)
@@ -6918,6 +7156,10 @@ let _openReviewAndWait:
 			intentDir: string,
 			reviewType: string,
 			gateType?: string,
+			/** Abort signal propagated from the MCP tool call so the review
+			 *  session can be torn down (and its WebSocket closed) if the
+			 *  user cancels the tool. */
+			signal?: AbortSignal,
 	  ) => Promise<{ decision: string; feedback: string; annotations?: unknown }>)
 	| null = null
 
@@ -6943,6 +7185,7 @@ export function setElicitInputHandler(handler: typeof _elicitInput): void {
 export async function handleOrchestratorTool(
 	name: string,
 	args: Record<string, unknown>,
+	signal?: AbortSignal,
 ): Promise<{
 	content: Array<{ type: "text"; text: string }>
 	isError?: boolean
@@ -7158,6 +7401,7 @@ export async function handleOrchestratorTool(
 					intentDirPath,
 					"intent",
 					gateType,
+					signal,
 				)
 
 				// Re-enforce stage branch after the await — the user may have
@@ -7278,6 +7522,37 @@ export async function handleOrchestratorTool(
 					}
 					return text(withInstructions(gateResult))
 				}
+				// Revisit-dispatch short-circuit: when the decision came in
+				// via POST /api/revisit, the HTTP bridge parks the dispatch
+				// action (`feedback_dispatch` / `revisited` / etc.) in
+				// `annotations.revisit_action` and the orchestrator's
+				// instruction prose in `annotations.revisit_message`. The
+				// `feedback` field is empty on purpose — treating that prose
+				// as reviewer-typed input would spawn a new feedback file
+				// mirroring the dispatch message back, which the next run
+				// would read as a finding. Detect the marker and return the
+				// dispatch result verbatim, skipping file creation + rollback.
+				const revisitAnnotations = reviewResult.annotations as
+					| { revisit_action?: string; revisit_message?: string }
+					| undefined
+				const revisitAction =
+					typeof revisitAnnotations?.revisit_action === "string"
+						? revisitAnnotations.revisit_action
+						: null
+				if (revisitAction) {
+					syncSessionMetadata(slug, args.state_file as string | undefined)
+					return text(
+						withInstructions({
+							action: revisitAction,
+							intent: slug,
+							stage,
+							message:
+								revisitAnnotations?.revisit_message ||
+								`Revisit dispatched on stage '${stage}'. Follow the instructions returned by the orchestrator.`,
+						}),
+					)
+				}
+
 				// Feedback files only make sense when there are built artifacts
 				// to critique. If this rejection is happening at pre-execute time
 				// (elaborate phase with no completed units in the stage), persist
@@ -7393,6 +7668,16 @@ export async function handleOrchestratorTool(
 			} catch (err) {
 				const errorMsg = err instanceof Error ? err.message : String(err)
 				const errorStack = err instanceof Error ? err.stack : ""
+
+				// User cancelled the tool call from Claude Code — escape is
+				// "keep chatting", NOT "keep asking me". Rethrow so the MCP
+				// SDK suppresses the response; any elicitation fallback
+				// below would put up a second prompt that contradicts the
+				// user's intent.
+				if (signal?.aborted) {
+					throw err
+				}
+
 				console.error(`[haiku] gate_review failed: ${errorMsg}`)
 				reportError(err, { intent: slug, stage })
 
@@ -8270,19 +8555,50 @@ export async function handleOrchestratorTool(
 			}
 		}
 
-		// Stopgap: no reasons provided — do NOT roll back
+		// Stopgap: no reasons provided — do NOT roll back UNLESS pending
+		// feedback already exists on the active stage. In the stacked-
+		// comments flow the reviewer adds items one at a time in the UI,
+		// then clicks "Send to agent" which fires this tool with no
+		// `reasons`: the pending feedback items on disk ARE the reasons,
+		// so we should drop straight into `revisit()` (which classifies
+		// per resolution field + either rolls back or returns a
+		// `feedback_dispatch` action). Keep the stopgap for the agent
+		// path — an agent calling `haiku_revisit` on a clean stage with
+		// no reasons is still a no-op.
 		if (!reasons) {
-			return text(
-				JSON.stringify(
-					{
-						action: "revisit_needs_reasons",
-						message:
-							"To revisit, provide reasons as feedback. Call haiku_revisit with reasons: [{title, body}] so the feedback is recorded before rolling back.",
-					},
-					null,
-					2,
-				),
+			const stopgapSlug = args.intent as string
+			const stopgapRoot = findHaikuRoot()
+			const stopgapIntentFile = join(
+				stopgapRoot,
+				"intents",
+				stopgapSlug,
+				"intent.md",
 			)
+			const stopgapActiveStage = existsSync(stopgapIntentFile)
+				? ((readFrontmatter(stopgapIntentFile).active_stage as string) || "")
+				: ""
+			const stopgapStage =
+				(args.stage as string | undefined) || stopgapActiveStage
+			const pendingOnStage = stopgapStage
+				? readFeedbackFiles(stopgapSlug, stopgapStage).filter(
+						(i) => i.status === "pending",
+					)
+				: []
+			if (pendingOnStage.length === 0) {
+				return text(
+					JSON.stringify(
+						{
+							action: "revisit_needs_reasons",
+							message:
+								"To revisit, provide reasons as feedback. Call haiku_revisit with reasons: [{title, body}] so the feedback is recorded before rolling back — or add pending feedback items via the review UI first.",
+						},
+						null,
+						2,
+					),
+				)
+			}
+			const directResult = revisit(stopgapSlug, args.stage as string | undefined)
+			return text(JSON.stringify(directResult, null, 2))
 		}
 
 		// Reasons provided — write feedback files BEFORE rolling back
@@ -8350,11 +8666,18 @@ export async function handleOrchestratorTool(
 			title: string
 		}> = []
 		for (const reason of reasons) {
+			// Agents calling `haiku_revisit` with explicit reasons are
+			// asking for the stage to roll back — that's the whole point
+			// of the call. Tag the feedback `resolution: stage_revisit`
+			// so the classifier honors the intent and the revisit
+			// branch runs. User-UI comments (posted via POST
+			// /api/feedback) stay null by default and get triaged.
 			const fb = writeFeedbackFile(revisitSlug, revisitTargetStage, {
 				title: reason.title,
 				body: reason.body,
 				origin: "agent",
 				author: "parent-agent",
+				resolution: "stage_revisit",
 			})
 			createdFeedback.push({
 				feedback_id: fb.feedback_id,

@@ -1010,6 +1010,7 @@ if (typeof buildOpenApi !== "function") {
 import {
 	DEFAULT_BODY_MAX_BYTES,
 	FEEDBACK_BODY_MAX_BYTES,
+	FEEDBACK_CREATE_MAX_BYTES,
 	routeBodyLimit,
 	routes,
 	RevisitReasonSchema,
@@ -1219,15 +1220,21 @@ describe("routes.ts — transport invariant + body caps", () => {
 		if (ROUTE_BODY_LIMITS.feedback !== FEEDBACK_BODY_MAX_BYTES) {
 			throw new Error("ROUTE_BODY_LIMITS.feedback drift")
 		}
+		if (ROUTE_BODY_LIMITS.feedbackCreate !== FEEDBACK_CREATE_MAX_BYTES) {
+			throw new Error("ROUTE_BODY_LIMITS.feedbackCreate drift")
+		}
 		if (DEFAULT_BODY_MAX_BYTES !== 1_048_576) {
 			throw new Error("DEFAULT_BODY_MAX_BYTES drift")
 		}
 		if (FEEDBACK_BODY_MAX_BYTES !== 131_072) {
 			throw new Error("FEEDBACK_BODY_MAX_BYTES drift")
 		}
+		if (FEEDBACK_CREATE_MAX_BYTES !== 8_388_608) {
+			throw new Error("FEEDBACK_CREATE_MAX_BYTES drift")
+		}
 	})
 
-	test("feedback POST/PUT routes advertise 128 KiB cap", () => {
+	test("feedback POST advertises create cap, PUT advertises update cap", () => {
 		const post = routes.find(
 			(r) =>
 				r.method === "POST" &&
@@ -1238,18 +1245,18 @@ describe("routes.ts — transport invariant + body caps", () => {
 				r.method === "PUT" &&
 				r.pathTemplate === "/api/feedback/{intent}/{stage}/{feedbackId}",
 		)
-		if (post?.maxBodyBytes !== FEEDBACK_BODY_MAX_BYTES) {
-			throw new Error("POST /api/feedback cap drift")
+		if (post?.maxBodyBytes !== FEEDBACK_CREATE_MAX_BYTES) {
+			throw new Error("POST /api/feedback cap drift (expected create cap)")
 		}
 		if (put?.maxBodyBytes !== FEEDBACK_BODY_MAX_BYTES) {
 			throw new Error("PUT /api/feedback cap drift")
 		}
 	})
 
-	test("routeBodyLimit() returns feedback cap for feedback POST", () => {
+	test("routeBodyLimit() returns create cap for feedback POST", () => {
 		const cap = routeBodyLimit("POST", "/api/feedback/{intent}/{stage}")
-		if (cap !== FEEDBACK_BODY_MAX_BYTES) {
-			throw new Error(`feedback cap drift: ${cap}`)
+		if (cap !== FEEDBACK_CREATE_MAX_BYTES) {
+			throw new Error(`feedback POST cap drift: ${cap}`)
 		}
 	})
 

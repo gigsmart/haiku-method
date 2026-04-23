@@ -575,14 +575,16 @@ test("every route has a unique operationId", () => {
 	}
 })
 
-test("feedback POST/PUT routes have 128 KiB cap", () => {
+test("feedback POST uses 8 MiB create cap, PUT uses 128 KiB update cap", () => {
+	// POST carries screenshot attachments, so it gets the larger cap.
 	assert.strictEqual(
 		routeBodyLimit("POST", "/api/feedback/{intent}/{stage}"),
-		131072,
+		8_388_608,
 	)
+	// PUT only updates status/closed_by — text-only traffic.
 	assert.strictEqual(
 		routeBodyLimit("PUT", "/api/feedback/{intent}/{stage}/{feedbackId}"),
-		131072,
+		131_072,
 	)
 })
 
@@ -679,11 +681,23 @@ asyncTest("server body > 1 MiB returns 413 at bridge level", async () => {
 	const { startHttpServer } = await import("../src/http.ts")
 	const port = await startHttpServer()
 	const huge = "x".repeat(2 * 1024 * 1024) // 2 MiB — above 1 MiB cap
-	const res = await fetch(`http://127.0.0.1:${port}/review/does-not-exist/decide`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ decision: "approved", feedback: huge }),
-	})
+	let res
+	try {
+		res = await fetch(`http://127.0.0.1:${port}/review/does-not-exist/decide`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ decision: "approved", feedback: huge }),
+		})
+	} catch (e) {
+		// Server may 413 cleanly OR reset the connection while the client
+		// is still writing the oversize body. Both are valid rejections —
+		// what we're asserting is "oversize body is refused", not "refusal
+		// delivers a nicely-framed JSON envelope no matter how the client
+		// paces its writes." ECONNRESET / UND_ERR_SOCKET is the reset path.
+		const code = e.cause?.code
+		if (code === "ECONNRESET" || code === "UND_ERR_SOCKET") return
+		throw new Error(`fetch failed: ${e.message} / cause=${e.cause?.message} code=${code}`)
+	}
 	assert.strictEqual(res.status, 413)
 	const data = await res.json()
 	assert.strictEqual(data.error, "payload_too_large")

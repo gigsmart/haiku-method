@@ -8,224 +8,216 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { ConcreteRequest } from "relay-runtime"
+import { ConcreteRequest } from 'relay-runtime';
 export type operationsReadFileQuery$variables = {
-	fullPath: string
-	paths: ReadonlyArray<string>
-	ref?: string | null | undefined
-}
+  fullPath: string;
+  paths: ReadonlyArray<string>;
+  ref?: string | null | undefined;
+};
 export type operationsReadFileQuery$data = {
-	readonly project:
-		| {
-				readonly repository:
-					| {
-							readonly blobs:
-								| {
-										readonly nodes:
-											| ReadonlyArray<
-													| {
-															readonly path: string
-															readonly rawTextBlob: string | null | undefined
-													  }
-													| null
-													| undefined
-											  >
-											| null
-											| undefined
-								  }
-								| null
-								| undefined
-					  }
-					| null
-					| undefined
-		  }
-		| null
-		| undefined
-}
+  readonly project: {
+    readonly repository: {
+      readonly blobs: {
+        readonly nodes: ReadonlyArray<{
+          readonly path: string;
+          readonly rawTextBlob: string | null | undefined;
+        } | null | undefined> | null | undefined;
+      } | null | undefined;
+    } | null | undefined;
+  } | null | undefined;
+};
 export type operationsReadFileQuery = {
-	response: operationsReadFileQuery$data
-	variables: operationsReadFileQuery$variables
-}
+  response: operationsReadFileQuery$data;
+  variables: operationsReadFileQuery$variables;
+};
 
-const node: ConcreteRequest = (() => {
-	const v0 = [
-		{
-			defaultValue: null,
-			kind: "LocalArgument",
-			name: "fullPath",
-		},
-		{
-			defaultValue: null,
-			kind: "LocalArgument",
-			name: "paths",
-		},
-		{
-			defaultValue: null,
-			kind: "LocalArgument",
-			name: "ref",
-		},
-	]
-	const v1 = [
-		{
-			kind: "Variable",
-			name: "fullPath",
-			variableName: "fullPath",
-		},
-	]
-	const v2 = [
-		{
-			kind: "Literal",
-			name: "first",
-			value: 1,
-		},
-		{
-			kind: "Variable",
-			name: "paths",
-			variableName: "paths",
-		},
-		{
-			kind: "Variable",
-			name: "ref",
-			variableName: "ref",
-		},
-	]
-	const v3 = {
-		alias: null,
-		args: null,
-		kind: "ScalarField",
-		name: "path",
-		storageKey: null,
-	}
-	const v4 = {
-		alias: null,
-		args: null,
-		kind: "ScalarField",
-		name: "rawTextBlob",
-		storageKey: null,
-	}
-	const v5 = {
-		alias: null,
-		args: null,
-		kind: "ScalarField",
-		name: "id",
-		storageKey: null,
-	}
-	return {
-		fragment: {
-			argumentDefinitions: v0 /*: any*/,
-			kind: "Fragment",
-			metadata: null,
-			name: "operationsReadFileQuery",
-			selections: [
-				{
-					alias: null,
-					args: v1 /*: any*/,
-					concreteType: "Project",
-					kind: "LinkedField",
-					name: "project",
-					plural: false,
-					selections: [
-						{
-							alias: null,
-							args: null,
-							concreteType: "Repository",
-							kind: "LinkedField",
-							name: "repository",
-							plural: false,
-							selections: [
-								{
-									alias: null,
-									args: v2 /*: any*/,
-									concreteType: "RepositoryBlobConnection",
-									kind: "LinkedField",
-									name: "blobs",
-									plural: false,
-									selections: [
-										{
-											alias: null,
-											args: null,
-											concreteType: "RepositoryBlob",
-											kind: "LinkedField",
-											name: "nodes",
-											plural: true,
-											selections: [v3 /*: any*/, v4 /*: any*/],
-											storageKey: null,
-										},
-									],
-									storageKey: null,
-								},
-							],
-							storageKey: null,
-						},
-					],
-					storageKey: null,
-				},
-			],
-			type: "Query",
-			abstractKey: null,
-		},
-		kind: "Request",
-		operation: {
-			argumentDefinitions: v0 /*: any*/,
-			kind: "Operation",
-			name: "operationsReadFileQuery",
-			selections: [
-				{
-					alias: null,
-					args: v1 /*: any*/,
-					concreteType: "Project",
-					kind: "LinkedField",
-					name: "project",
-					plural: false,
-					selections: [
-						{
-							alias: null,
-							args: null,
-							concreteType: "Repository",
-							kind: "LinkedField",
-							name: "repository",
-							plural: false,
-							selections: [
-								{
-									alias: null,
-									args: v2 /*: any*/,
-									concreteType: "RepositoryBlobConnection",
-									kind: "LinkedField",
-									name: "blobs",
-									plural: false,
-									selections: [
-										{
-											alias: null,
-											args: null,
-											concreteType: "RepositoryBlob",
-											kind: "LinkedField",
-											name: "nodes",
-											plural: true,
-											selections: [v3 /*: any*/, v4 /*: any*/, v5 /*: any*/],
-											storageKey: null,
-										},
-									],
-									storageKey: null,
-								},
-							],
-							storageKey: null,
-						},
-						v5 /*: any*/,
-					],
-					storageKey: null,
-				},
-			],
-		},
-		params: {
-			cacheID: "cae1b7c112b9865336ada75b4ca6ba82",
-			id: null,
-			metadata: {},
-			name: "operationsReadFileQuery",
-			operationKind: "query",
-			text: "query operationsReadFileQuery(\n  $fullPath: ID!\n  $paths: [String!]!\n  $ref: String\n) {\n  project(fullPath: $fullPath) {\n    repository {\n      blobs(paths: $paths, ref: $ref, first: 1) {\n        nodes {\n          path\n          rawTextBlob\n          id\n        }\n      }\n    }\n    id\n  }\n}\n",
-		},
-	}
-})()
-;(node as any).hash = "6d8f9718bebbd468b5222ddc5ed2049b"
+const node: ConcreteRequest = (function(){
+var v0 = [
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
+    "name": "fullPath"
+  },
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
+    "name": "paths"
+  },
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
+    "name": "ref"
+  }
+],
+v1 = [
+  {
+    "kind": "Variable",
+    "name": "fullPath",
+    "variableName": "fullPath"
+  }
+],
+v2 = [
+  {
+    "kind": "Literal",
+    "name": "first",
+    "value": 1
+  },
+  {
+    "kind": "Variable",
+    "name": "paths",
+    "variableName": "paths"
+  },
+  {
+    "kind": "Variable",
+    "name": "ref",
+    "variableName": "ref"
+  }
+],
+v3 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "path",
+  "storageKey": null
+},
+v4 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "rawTextBlob",
+  "storageKey": null
+},
+v5 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "id",
+  "storageKey": null
+};
+return {
+  "fragment": {
+    "argumentDefinitions": (v0/*: any*/),
+    "kind": "Fragment",
+    "metadata": null,
+    "name": "operationsReadFileQuery",
+    "selections": [
+      {
+        "alias": null,
+        "args": (v1/*: any*/),
+        "concreteType": "Project",
+        "kind": "LinkedField",
+        "name": "project",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "Repository",
+            "kind": "LinkedField",
+            "name": "repository",
+            "plural": false,
+            "selections": [
+              {
+                "alias": null,
+                "args": (v2/*: any*/),
+                "concreteType": "RepositoryBlobConnection",
+                "kind": "LinkedField",
+                "name": "blobs",
+                "plural": false,
+                "selections": [
+                  {
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "RepositoryBlob",
+                    "kind": "LinkedField",
+                    "name": "nodes",
+                    "plural": true,
+                    "selections": [
+                      (v3/*: any*/),
+                      (v4/*: any*/)
+                    ],
+                    "storageKey": null
+                  }
+                ],
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          }
+        ],
+        "storageKey": null
+      }
+    ],
+    "type": "Query",
+    "abstractKey": null
+  },
+  "kind": "Request",
+  "operation": {
+    "argumentDefinitions": (v0/*: any*/),
+    "kind": "Operation",
+    "name": "operationsReadFileQuery",
+    "selections": [
+      {
+        "alias": null,
+        "args": (v1/*: any*/),
+        "concreteType": "Project",
+        "kind": "LinkedField",
+        "name": "project",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "Repository",
+            "kind": "LinkedField",
+            "name": "repository",
+            "plural": false,
+            "selections": [
+              {
+                "alias": null,
+                "args": (v2/*: any*/),
+                "concreteType": "RepositoryBlobConnection",
+                "kind": "LinkedField",
+                "name": "blobs",
+                "plural": false,
+                "selections": [
+                  {
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "RepositoryBlob",
+                    "kind": "LinkedField",
+                    "name": "nodes",
+                    "plural": true,
+                    "selections": [
+                      (v3/*: any*/),
+                      (v4/*: any*/),
+                      (v5/*: any*/)
+                    ],
+                    "storageKey": null
+                  }
+                ],
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          },
+          (v5/*: any*/)
+        ],
+        "storageKey": null
+      }
+    ]
+  },
+  "params": {
+    "cacheID": "cae1b7c112b9865336ada75b4ca6ba82",
+    "id": null,
+    "metadata": {},
+    "name": "operationsReadFileQuery",
+    "operationKind": "query",
+    "text": "query operationsReadFileQuery(\n  $fullPath: ID!\n  $paths: [String!]!\n  $ref: String\n) {\n  project(fullPath: $fullPath) {\n    repository {\n      blobs(paths: $paths, ref: $ref, first: 1) {\n        nodes {\n          path\n          rawTextBlob\n          id\n        }\n      }\n    }\n    id\n  }\n}\n"
+  }
+};
+})();
 
-export default node
+(node as any).hash = "6d8f9718bebbd468b5222ddc5ed2049b";
+
+export default node;

@@ -39,7 +39,6 @@ import { FeedbackPanelBody } from "./FeedbackPanelBody"
 import { useFeedbackSidebarController } from "./useFeedbackSidebarController"
 
 export interface FeedbackSidebarProps {
-	intent: string | null
 	stage: string | null
 	activeStage?: string | null
 	sessionId: string
@@ -69,7 +68,6 @@ function isExternalGate(gateType: string | undefined): boolean {
 }
 
 export function FeedbackSidebar({
-	intent,
 	stage,
 	activeStage,
 	sessionId,
@@ -81,12 +79,32 @@ export function FeedbackSidebar({
 	onDecisionSuccess,
 	className,
 }: FeedbackSidebarProps): React.ReactElement {
-	const { items, loading, error, retry, handleStatusChange, handleDelete } =
-		useFeedbackSidebarController(intent, stage)
+	const {
+		items,
+		loading,
+		error,
+		busyIds,
+		creating,
+		retry,
+		handleStatusChange,
+		handleDelete,
+		handleReply,
+		createFeedback,
+	} = useFeedbackSidebarController()
 
 	const client = useApiClient()
 	const announce = useAnnounce()
+	// `composerText` stages the NEXT comment. Pressing "Add" creates a
+	// pending feedback item; the textarea clears. Request Changes then
+	// fires revisit with whatever pending items have accumulated — no
+	// blob-text pooling at the decide step.
 	const [composerText, setComposerText] = useState("")
+	// Resolution the reviewer wants this comment routed through. `null`
+	// means "let the agent triage" — the default and most common path.
+	const [composerResolution, setComposerResolution] = useState<
+		null | "question" | "inline_fix" | "stage_revisit" | "upstream_rewind"
+	>(null)
+	const [addingComment, setAddingComment] = useState(false)
 	const [submitting, setSubmitting] = useState<DecisionKind | null>(null)
 	const [revisitOpen, setRevisitOpen] = useState(false)
 
@@ -96,9 +114,50 @@ export function FeedbackSidebar({
 	const showExternal = isExternalGate(gateType)
 	const isCurrent = !!stage && stage === activeStage
 
-	// Decide which button to render.
-	const mode: "request" | "approve" | "disabled" =
-		hasPending || hasTyped ? "request" : isCurrent ? "approve" : "disabled"
+	// Decide which action to emphasize. Typed text → Add is the primary
+	// action (stage a comment). Any pending items → Request Changes is
+	// primary (fire revisit). Otherwise the stage is clean and we offer
+	// Approve.
+	const mode: "add" | "request" | "approve" | "disabled" = hasTyped
+		? "add"
+		: hasPending
+			? "request"
+			: isCurrent
+				? "approve"
+				: "disabled"
+
+	const handleAddComment = useCallback(async () => {
+		const body = composerText.trim()
+		if (!body) return
+		setAddingComment(true)
+		try {
+			const firstLine = body.split("\n")[0]?.slice(0, 80) || "Comment"
+			const origin =
+				composerResolution === "question" ? "user-question" : "user-chat"
+			await createFeedback({
+				title: firstLine,
+				body,
+				origin,
+				source_ref: null,
+				resolution: composerResolution ?? undefined,
+			})
+			setComposerText("")
+			setComposerResolution(null)
+			announce(
+				"polite",
+				composerResolution === "question"
+					? "Question added"
+					: "Comment added",
+			)
+		} catch (err) {
+			announce(
+				"assertive",
+				err instanceof Error ? err.message : "Failed to add comment",
+			)
+		} finally {
+			setAddingComment(false)
+		}
+	}, [announce, composerResolution, composerText, createFeedback])
 
 	const submit = useCallback(
 		async (decision: DecisionKind): Promise<void> => {
@@ -137,11 +196,13 @@ export function FeedbackSidebar({
 	)
 
 	const hintText =
-		mode === "request"
-			? `Will trigger haiku_revisit → ${stage ?? "(stage)"} ${hasPending ? "· pending feedback" : "· composer has feedback"}`
-			: mode === "approve"
-				? "No feedback pending — approving advances the FSM to the next stage."
-				: `Type feedback above to revisit ${stage ?? "this stage"}, or click into another stage.`
+		mode === "add"
+			? "Adds a pending feedback item. Use the Route dropdown to steer the agent, or leave it on \"Let agent decide\" and the triage pass will classify."
+			: mode === "request"
+				? `Hands ${pendingCount} item${pendingCount === 1 ? "" : "s"} to the agent on ${stage ?? "(stage)"}. Each routes per its resolution: reply, inline fix, stage revisit, or upstream rewind.`
+				: mode === "approve"
+					? "No feedback pending — approving advances the FSM to the next stage."
+					: `Type a comment above or click into another stage.`
 
 	return (
 		<Aside
@@ -215,6 +276,9 @@ export function FeedbackSidebar({
 					onStatusChange={handleStatusChange}
 					onDelete={handleDelete}
 					onRetry={retry}
+					onReply={handleReply}
+					busyIds={busyIds}
+					creating={creating}
 				/>
 			</div>
 
@@ -226,11 +290,85 @@ export function FeedbackSidebar({
 				<textarea
 					value={composerText}
 					onChange={(e) => setComposerText(e.target.value)}
-					placeholder="Add feedback on this stage..."
+					onKeyDown={(e) => {
+						// Meta/Ctrl+Enter adds the comment without reaching
+						// for the mouse. Plain Enter still inserts a newline
+						// — reviewers type multi-line comments often enough
+						// that hijacking Enter would be a footgun.
+						if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+							e.preventDefault()
+							void handleAddComment()
+						}
+					}}
+					placeholder="Add a comment on this stage…"
 					rows={2}
-					className="w-full text-xs p-2 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:outline-none resize-none"
+					disabled={addingComment}
+					aria-disabled={addingComment || undefined}
+					className="w-full text-xs p-2 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:outline-none resize-none disabled:bg-stone-100 disabled:text-stone-500 dark:disabled:bg-stone-800 dark:disabled:text-stone-400 disabled:cursor-not-allowed"
 				/>
+				<div className="flex items-center gap-2">
+					<label className="text-[11px] font-semibold text-stone-600 dark:text-stone-300 shrink-0">
+						Route:
+					</label>
+					<select
+						value={composerResolution ?? ""}
+						onChange={(e) => {
+							const v = e.target.value
+							setComposerResolution(
+								v === ""
+									? null
+									: (v as
+											| "question"
+											| "inline_fix"
+											| "stage_revisit"
+											| "upstream_rewind"),
+							)
+						}}
+						disabled={addingComment}
+						aria-label="How should the agent resolve this comment"
+						className="flex-1 text-xs px-2 py-1.5 rounded-md border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:outline-none disabled:bg-stone-100 disabled:text-stone-500 dark:disabled:bg-stone-800 dark:disabled:text-stone-400 disabled:cursor-not-allowed"
+					>
+						<option value="">Let agent decide</option>
+						<option value="question">Question · wants a reply</option>
+						<option value="inline_fix">
+							Inline fix · one-bolt patch
+						</option>
+						<option value="stage_revisit">
+							Stage revisit · re-run the stage
+						</option>
+						<option value="upstream_rewind">
+							Upstream rewind · surface to human
+						</option>
+					</select>
+				</div>
 				<div className="flex gap-2 flex-wrap">
+					{(mode === "add" || mode === "disabled") && (
+						<button
+							type="button"
+							onClick={() => void handleAddComment()}
+							disabled={!hasTyped || addingComment}
+							className={`${touchTargetClass} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md bg-teal-700 hover:bg-teal-800 px-3 py-2 text-xs font-semibold text-white transition-colors disabled:bg-stone-200 disabled:text-stone-500 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 dark:disabled:bg-stone-700 dark:disabled:text-stone-400`}
+						>
+							{addingComment
+								? "Adding…"
+								: hasTyped
+									? "Add comment (⌘↵)"
+									: "Type a comment to add"}
+						</button>
+					)}
+					{mode === "request" && (
+						<button
+							type="button"
+							onClick={() => setRevisitOpen(true)}
+							disabled={submitting !== null}
+							data-decision="changes_requested"
+							className={`${touchTargetClass} ${focusRingClass} ${focusRingVariantClasses.requestChanges} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md bg-teal-700 hover:bg-teal-800 px-3 py-2 text-xs font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900`}
+						>
+							{isCurrent
+								? `Send ${pendingCount} to agent`
+								: `Send ${pendingCount} on ${stage}`}
+						</button>
+					)}
 					{mode === "approve" && (
 						<button
 							type="button"
@@ -240,26 +378,6 @@ export function FeedbackSidebar({
 							className={`${touchTargetClass} ${focusRingClass} ${focusRingVariantClasses.approve} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md bg-teal-700 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200`}
 						>
 							{DECISION_LABELS.approved}
-						</button>
-					)}
-					{mode === "request" && (
-						<button
-							type="button"
-							onClick={() => setRevisitOpen(true)}
-							disabled={submitting !== null}
-							data-decision="changes_requested"
-							className={`${touchTargetClass} ${focusRingClass} ${focusRingVariantClasses.requestChanges} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md bg-amber-600 hover:bg-amber-700 px-3 py-2 text-xs font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900`}
-						>
-							{isCurrent ? "Request Changes" : `Request Changes on ${stage}`}
-						</button>
-					)}
-					{mode === "disabled" && (
-						<button
-							type="button"
-							disabled
-							className={`${touchTargetClass} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md bg-stone-100 dark:bg-stone-800 px-3 py-2 text-xs font-semibold text-stone-500 dark:text-stone-300 cursor-not-allowed`}
-						>
-							Add feedback above to enable
 						</button>
 					)}
 					{showExternal && mode === "approve" && (
@@ -284,10 +402,11 @@ export function FeedbackSidebar({
 				open={revisitOpen}
 				onClose={() => setRevisitOpen(false)}
 				onSuccess={() => {
-					announce("polite", "Revisit requested")
+					announce("polite", "Feedback sent to agent")
 					setComposerText("")
 				}}
 				targetStage={stage ?? undefined}
+				pendingItems={items.filter((i) => i.status === "pending")}
 			/>
 		</Aside>
 	)

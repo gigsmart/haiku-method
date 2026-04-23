@@ -11,7 +11,7 @@
 
 import { useNavigate } from "@tanstack/react-router"
 import { useCallback } from "react"
-import { useFeedback } from "../../../../../hooks/useFeedback"
+import { useFeedbackContext } from "../../../../../hooks/FeedbackContext"
 import { ArtifactsPane } from "../../../../../pages/review/ArtifactsPane"
 import type {
 	ReviewDetailKind,
@@ -44,7 +44,8 @@ export function StageContent({
 	const navigate = useNavigate()
 
 	const intentSlug = session.intent_slug ?? session.intent?.slug ?? null
-	const { items: stageFeedback } = useFeedback(intentSlug, stage)
+	const { items: stageFeedback, createFeedback: hookCreateFeedback } =
+		useFeedbackContext()
 
 	const handleTabChange = useCallback(
 		(next: ReviewTab | undefined) => {
@@ -104,10 +105,35 @@ export function StageContent({
 		)
 	}
 
-	// Suppress unused-var warnings in the StageReview path — these are
-	// routed through ArtifactsPane above for unit reviews.
+	// `inlineComments` and `pins` are consumed by the sidebar composer
+	// via `getAnnotations()`; StageReview itself only needs the setters
+	// so detail views can push drafts up.
 	void inlineComments
 	void pins
+
+	const handleSubmitAnnotation = useCallback(
+		async (artifactName: string, comment: string, screenshotDataUrl: string) => {
+			if (!intentSlug) {
+				throw new Error("Cannot submit annotation without an intent slug")
+			}
+			// Title is the artifact + first few words of the comment so the
+			// feedback list shows something scannable without opening it.
+			const firstLine =
+				comment.trim().split("\n")[0]?.slice(0, 80) || "Annotation"
+			const title = `${artifactName}: ${firstLine}`.slice(0, 200)
+			// Route through the hook so it refetches the list on success —
+			// without this the new item would only appear after a manual
+			// reload.
+			await hookCreateFeedback({
+				title,
+				body: comment.trim(),
+				origin: "user-visual",
+				source_ref: artifactName,
+				attachment_data_url: screenshotDataUrl,
+			})
+		},
+		[hookCreateFeedback, intentSlug],
+	)
 
 	return (
 		<StageReview
@@ -122,6 +148,8 @@ export function StageContent({
 			onTabChange={handleTabChange}
 			detail={detail}
 			onDetailChange={handleDetailChange}
+			onInlineCommentsChange={setInlineComments}
+			onSubmitAnnotation={handleSubmitAnnotation}
 		/>
 	)
 }

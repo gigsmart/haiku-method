@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { ApiError } from "../api/client"
 import { useApiClient } from "../api/context"
 import type { SessionData } from "../types"
 
@@ -10,6 +11,11 @@ export function useSession(sessionId: string) {
 	const [session, setSession] = useState<SessionData | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
+	/** True when the initial fetch returned 404 — the session does not
+	 *  exist on the server. Distinct from `error` so reviewers who reload
+	 *  a stale tab can be shown the terminal "session ended" overlay
+	 *  rather than a generic error. */
+	const [notFound, setNotFound] = useState(false)
 	const client = useApiClient()
 
 	useEffect(() => {
@@ -24,6 +30,9 @@ export function useSession(sessionId: string) {
 				}
 			} catch (err) {
 				if (!cancelled) {
+					if (err instanceof ApiError && err.status === 404) {
+						setNotFound(true)
+					}
 					setError(
 						err instanceof Error ? err.message : "Failed to load session",
 					)
@@ -39,5 +48,5 @@ export function useSession(sessionId: string) {
 		}
 	}, [sessionId, client])
 
-	return { session, loading, error }
+	return { session, loading, error, notFound }
 }

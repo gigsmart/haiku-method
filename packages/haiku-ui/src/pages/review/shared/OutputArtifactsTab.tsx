@@ -137,7 +137,7 @@ export function OutputArtifactsTab({
 												</div>
 												<iframe
 													srcDoc={a.content}
-													sandbox="allow-scripts"
+													sandbox="allow-scripts allow-same-origin"
 													className="w-full h-[600px] border border-stone-200 dark:border-stone-700 rounded-lg bg-white"
 													title={a.name}
 												/>

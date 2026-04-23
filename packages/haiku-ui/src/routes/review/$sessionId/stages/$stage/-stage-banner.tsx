@@ -38,19 +38,42 @@ export function PhaseStepper({
 				{STAGE_PHASES.map((p, i) => {
 					const isActive = i === activeIndex && !isStageComplete
 					const isDone = isStageComplete || activeIndex > i
-					const tooltip = PHASE_TOOLTIPS[p]
+					const state = isActive ? "active" : isDone ? "done" : "pending"
+					const phaseLabel = `${p[0].toUpperCase()}${p.slice(1)}`
+					const tooltip = `${phaseLabel} (${state}) — ${PHASE_TOOLTIPS[p]}`
 					return (
-						<div key={p} className="flex items-center gap-1" title={tooltip}>
+						<div key={p} className="flex items-center gap-1">
+							{/*
+							 * Tooltip overlay — a floating pill shown on pointer
+							 * hover + keyboard focus (for a11y). The hit-target is
+							 * the `p-1` wrapper (so cursor doesn't need pixel-
+							 * perfect aim on the 2x2 dot). `aria-label` duplicates
+							 * the tooltip text for SRs; we intentionally skip the
+							 * native `title` attribute so the browser's delayed
+							 * OS tooltip doesn't double with the overlay.
+							 */}
 							<span
-								className={`inline-block w-2 h-2 rounded-full ${
-									isActive
-										? "bg-amber-500 ring-2 ring-amber-300 dark:ring-amber-700"
-										: isDone
-											? "bg-green-500"
-											: "bg-stone-300 dark:bg-stone-700"
-								}`}
-								aria-hidden="true"
-							/>
+								className="relative inline-flex items-center justify-center p-1 -m-1 group focus:outline-none"
+								tabIndex={0}
+								aria-label={tooltip}
+							>
+								<span
+									className={`inline-block w-2 h-2 rounded-full ${
+										isActive
+											? "bg-amber-500 ring-2 ring-amber-300 dark:ring-amber-700"
+											: isDone
+												? "bg-green-500"
+												: "bg-stone-300 dark:bg-stone-700"
+									}`}
+									aria-hidden="true"
+								/>
+								<span
+									role="tooltip"
+									className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-md bg-stone-900 dark:bg-stone-100 px-2 py-1 text-xs font-medium text-white dark:text-stone-900 shadow-lg opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity z-50"
+								>
+									{tooltip}
+								</span>
+							</span>
 							{i < STAGE_PHASES.length - 1 && (
 								<span
 									className={`w-3 h-0.5 ${
@@ -112,7 +135,7 @@ export function StageBanner({
 	return (
 		<div
 			data-testid="review-stage-banner"
-			className="sticky top-0 z-20 bg-stone-50 dark:bg-stone-950 px-6 lg:px-10 pt-6 pb-3"
+			className="bg-stone-50 dark:bg-stone-950 px-6 lg:px-10 pt-6 pb-3"
 		>
 			<div
 				className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${statusPill.bannerClasses}`}

@@ -56,10 +56,64 @@ function jsonResponse(body: unknown, init: { ok?: boolean; status?: number } = {
 }
 
 function stubClient(): ApiClient {
+	// The hook now routes PUT / DELETE / POST through the typed client
+	// rather than reaching for `fetch` directly. These forwarders preserve
+	// the existing test contract (fetch call counts + URL shapes) while
+	// letting the test suite continue to stub a single global fetch.
+	async function forward(
+		method: string,
+		url: string,
+		body?: unknown,
+	): Promise<unknown> {
+		const init: RequestInit = {
+			method,
+			headers: body !== undefined ? { "Content-Type": "application/json" } : {},
+		}
+		if (body !== undefined) init.body = JSON.stringify(body)
+		const res = await fetch(url, init)
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}))
+			throw new Error(
+				(err as { error?: string }).error || `HTTP ${res.status}`,
+			)
+		}
+		return res.json()
+	}
 	return {
 		getSessionId: () => null,
 		setSessionId: () => {},
 		openWebSocket: () => null,
+		feedback: {
+			async create(
+				intent: string,
+				stage: string,
+				body: Record<string, unknown>,
+			) {
+				return forward(
+					"POST",
+					`/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}`,
+					body,
+				)
+			},
+			async update(
+				intent: string,
+				stage: string,
+				id: string,
+				fields: Record<string, unknown>,
+			) {
+				return forward(
+					"PUT",
+					`/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}/${encodeURIComponent(id)}`,
+					fields,
+				)
+			},
+			async delete(intent: string, stage: string, id: string) {
+				return forward(
+					"DELETE",
+					`/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}/${encodeURIComponent(id)}`,
+				)
+			},
+		},
 	} as unknown as ApiClient
 }
 

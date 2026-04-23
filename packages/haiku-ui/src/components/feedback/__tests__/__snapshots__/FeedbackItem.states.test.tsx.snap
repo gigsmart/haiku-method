@@ -2,7 +2,7 @@
 
 exports[`FeedbackItem — state matrix > renders every (status × interaction) cell (snapshot with token-hash header) 1`] = `
 <div
-  data-token-hash="137cde5abcef12d6"
+  data-token-hash="fa9f004f38d5ccf1"
 >
   <div
     data-status-row="pending"
@@ -13,7 +13,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-01"
         data-status="pending"
         data-testid="feedback-item"
@@ -65,7 +65,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-01"
         data-status="pending"
         data-testid="feedback-item"
@@ -117,7 +117,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-01"
         data-status="pending"
         data-testid="feedback-item"
@@ -169,7 +169,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="true"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-01"
         data-status="pending"
         data-testid="feedback-item"
@@ -220,9 +220,9 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
             class="text-xs text-stone-700 dark:text-stone-300 feedback-markdown prose prose-stone prose-sm dark:prose-invert max-w-none"
           >
             <div
-              class="prose prose-sm prose-stone dark:prose-invert max-w-none
-        prose-code:bg-stone-100 prose-code:dark:bg-stone-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
-        prose-pre:bg-stone-100 prose-pre:dark:bg-stone-800 prose-pre:rounded-lg
+              class="prose prose-sm prose-stone dark:prose-invert max-w-none min-w-0 [overflow-wrap:anywhere]
+        prose-code:bg-stone-100 prose-code:dark:bg-stone-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:[overflow-wrap:anywhere]
+        prose-pre:bg-stone-100 prose-pre:dark:bg-stone-800 prose-pre:rounded-lg prose-pre:overflow-x-auto prose-pre:max-w-full prose-pre:whitespace-pre-wrap
         prose-table:border-collapse prose-th:border prose-th:border-stone-300 prose-th:dark:border-stone-600 prose-th:px-3 prose-th:py-1.5
         prose-td:border prose-td:border-stone-300 prose-td:dark:border-stone-600 prose-td:px-3 prose-td:py-1.5 "
               id="feedback-body"
@@ -275,7 +275,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
           >
             <button
               aria-label="Dismiss feedback FB-01"
-              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700 disabled:cursor-not-allowed"
               data-action="dismiss"
               type="button"
             >
@@ -292,7 +292,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-01"
         data-status="pending"
         data-testid="feedback-item"
@@ -344,7 +344,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-01"
         data-status="pending"
         data-testid="feedback-item"
@@ -400,7 +400,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-02"
         data-status="addressed"
         data-testid="feedback-item"
@@ -460,7 +460,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-02"
         data-status="addressed"
         data-testid="feedback-item"
@@ -520,7 +520,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-02"
         data-status="addressed"
         data-testid="feedback-item"
@@ -580,7 +580,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="true"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-02"
         data-status="addressed"
         data-testid="feedback-item"
@@ -639,9 +639,9 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
             class="text-xs text-stone-700 dark:text-stone-300 feedback-markdown prose prose-stone prose-sm dark:prose-invert max-w-none"
           >
             <div
-              class="prose prose-sm prose-stone dark:prose-invert max-w-none
-        prose-code:bg-stone-100 prose-code:dark:bg-stone-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
-        prose-pre:bg-stone-100 prose-pre:dark:bg-stone-800 prose-pre:rounded-lg
+              class="prose prose-sm prose-stone dark:prose-invert max-w-none min-w-0 [overflow-wrap:anywhere]
+        prose-code:bg-stone-100 prose-code:dark:bg-stone-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:[overflow-wrap:anywhere]
+        prose-pre:bg-stone-100 prose-pre:dark:bg-stone-800 prose-pre:rounded-lg prose-pre:overflow-x-auto prose-pre:max-w-full prose-pre:whitespace-pre-wrap
         prose-table:border-collapse prose-th:border prose-th:border-stone-300 prose-th:dark:border-stone-600 prose-th:px-3 prose-th:py-1.5
         prose-td:border prose-td:border-stone-300 prose-td:dark:border-stone-600 prose-td:px-3 prose-td:py-1.5 "
               id="feedback-body"
@@ -738,7 +738,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
           >
             <button
               aria-label="Verify and close feedback FB-02"
-              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40 disabled:cursor-not-allowed"
               data-action="verify-close"
               type="button"
             >
@@ -746,7 +746,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
             </button>
             <button
               aria-label="Reopen feedback FB-02"
-              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40 disabled:cursor-not-allowed"
               data-action="reopen"
               type="button"
             >
@@ -763,7 +763,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-02"
         data-status="addressed"
         data-testid="feedback-item"
@@ -823,7 +823,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-02"
         data-status="addressed"
         data-testid="feedback-item"
@@ -887,7 +887,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-03"
         data-status="closed"
         data-testid="feedback-item"
@@ -947,7 +947,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-03"
         data-status="closed"
         data-testid="feedback-item"
@@ -1007,7 +1007,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-03"
         data-status="closed"
         data-testid="feedback-item"
@@ -1067,7 +1067,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="true"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-03"
         data-status="closed"
         data-testid="feedback-item"
@@ -1126,9 +1126,9 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
             class="text-xs text-stone-700 dark:text-stone-300 feedback-markdown prose prose-stone prose-sm dark:prose-invert max-w-none"
           >
             <div
-              class="prose prose-sm prose-stone dark:prose-invert max-w-none
-        prose-code:bg-stone-100 prose-code:dark:bg-stone-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
-        prose-pre:bg-stone-100 prose-pre:dark:bg-stone-800 prose-pre:rounded-lg
+              class="prose prose-sm prose-stone dark:prose-invert max-w-none min-w-0 [overflow-wrap:anywhere]
+        prose-code:bg-stone-100 prose-code:dark:bg-stone-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:[overflow-wrap:anywhere]
+        prose-pre:bg-stone-100 prose-pre:dark:bg-stone-800 prose-pre:rounded-lg prose-pre:overflow-x-auto prose-pre:max-w-full prose-pre:whitespace-pre-wrap
         prose-table:border-collapse prose-th:border prose-th:border-stone-300 prose-th:dark:border-stone-600 prose-th:px-3 prose-th:py-1.5
         prose-td:border prose-td:border-stone-300 prose-td:dark:border-stone-600 prose-td:px-3 prose-td:py-1.5 "
               id="feedback-body"
@@ -1149,7 +1149,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
           >
             <button
               aria-label="Reopen feedback FB-03"
-              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40 disabled:cursor-not-allowed"
               data-action="reopen"
               type="button"
             >
@@ -1157,7 +1157,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
             </button>
             <button
               aria-label="Delete feedback FB-03"
-              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 disabled:cursor-not-allowed"
               data-action="delete"
               type="button"
             >
@@ -1174,7 +1174,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-03"
         data-status="closed"
         data-testid="feedback-item"
@@ -1234,7 +1234,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-03"
         data-status="closed"
         data-testid="feedback-item"
@@ -1298,7 +1298,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-04"
         data-status="rejected"
         data-testid="feedback-item"
@@ -1358,7 +1358,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-04"
         data-status="rejected"
         data-testid="feedback-item"
@@ -1418,7 +1418,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-04"
         data-status="rejected"
         data-testid="feedback-item"
@@ -1478,7 +1478,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="true"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-04"
         data-status="rejected"
         data-testid="feedback-item"
@@ -1537,9 +1537,9 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
             class="text-xs text-stone-700 dark:text-stone-300 feedback-markdown prose prose-stone prose-sm dark:prose-invert max-w-none"
           >
             <div
-              class="prose prose-sm prose-stone dark:prose-invert max-w-none
-        prose-code:bg-stone-100 prose-code:dark:bg-stone-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
-        prose-pre:bg-stone-100 prose-pre:dark:bg-stone-800 prose-pre:rounded-lg
+              class="prose prose-sm prose-stone dark:prose-invert max-w-none min-w-0 [overflow-wrap:anywhere]
+        prose-code:bg-stone-100 prose-code:dark:bg-stone-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:[overflow-wrap:anywhere]
+        prose-pre:bg-stone-100 prose-pre:dark:bg-stone-800 prose-pre:rounded-lg prose-pre:overflow-x-auto prose-pre:max-w-full prose-pre:whitespace-pre-wrap
         prose-table:border-collapse prose-th:border prose-th:border-stone-300 prose-th:dark:border-stone-600 prose-th:px-3 prose-th:py-1.5
         prose-td:border prose-td:border-stone-300 prose-td:dark:border-stone-600 prose-td:px-3 prose-td:py-1.5 "
               id="feedback-body"
@@ -1571,7 +1571,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
           >
             <button
               aria-label="Reopen feedback FB-04"
-              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40 disabled:cursor-not-allowed"
               data-action="reopen"
               type="button"
             >
@@ -1579,7 +1579,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
             </button>
             <button
               aria-label="Delete feedback FB-04"
-              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 disabled:cursor-not-allowed"
               data-action="delete"
               type="button"
             >
@@ -1596,7 +1596,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-04"
         data-status="rejected"
         data-testid="feedback-item"
@@ -1656,7 +1656,7 @@ exports[`FeedbackItem — state matrix > renders every (status × interaction) c
     >
       <div
         aria-expanded="false"
-        class="p-2.5 rounded-lg border border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
         data-feedback-id="FB-04"
         data-status="rejected"
         data-testid="feedback-item"

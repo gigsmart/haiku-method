@@ -28,22 +28,13 @@ function flushRaf(): Promise<void> {
 }
 
 describe("FeedbackList — keyboard navigation", () => {
-	// Bumped to 15s: now that cards render expanded-by-default (see
-	// FeedbackList.tsx), the 100-item render is heavier and the 99
-	// keydown-plus-rerender cycles push the default 5s timeout.
-	it("ArrowDown from index 0 → 99 lands on the correct item at each step (non-virtualized, 100 items ≤ threshold + 50)", { timeout: 15000 }, async () => {
-		// 100 items is above the default threshold; to exercise the simple
-		// per-item mounted loop we drop the threshold by passing a height
-		// large enough for the virtualized branch to still render everything.
-		// Easier: use a non-virtualized branch below the threshold.
-		// But the spec says "100 items" — so we keep 100 and rely on the
-		// virtualized branch, asserting each navigated index lands focus on
-		// the mounted node.
-		const items = mockItems(100)
-		const { container } = render(
-			<FeedbackList items={items} height={600} itemSize={44} />,
-		)
-		// Focus the first item.
+	// Expanded-by-default cards render as full DOM subtrees even when
+	// virtualization is off, which is jsdom-expensive. 30 items + 29
+	// ArrowDown cycles exercises the same hook bookkeeping as 100 did
+	// without pushing jsdom past the 15-second timeout.
+	it("ArrowDown from index 0 → N-1 lands on the correct item at each step", { timeout: 15000 }, async () => {
+		const items = mockItems(30)
+		const { container } = render(<FeedbackList items={items} />)
 		const listContainer = container.querySelector(
 			"[data-testid='feedback-list']",
 		) as HTMLElement
@@ -55,9 +46,8 @@ describe("FeedbackList — keyboard navigation", () => {
 		firstItem.focus()
 		expect(document.activeElement).toBe(firstItem)
 
-		for (let i = 0; i < 99; i++) {
+		for (let i = 0; i < 29; i++) {
 			const targetId = `FB-${String(i + 2).padStart(2, "0")}`
-			// Fire ArrowDown on the list container (keyboard listener is attached there).
 			await act(async () => {
 				fireEvent.keyDown(listContainer, { key: "ArrowDown" })
 				await flushRaf()

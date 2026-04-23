@@ -21,9 +21,15 @@
  */
 
 import { MarkdownViewer } from "@haiku/shared"
+import { markdownToSimpleHtml } from "../shared/section-helpers"
 import DOMPurify from "dompurify"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { ArtifactAnnotator } from "../../../components/ArtifactAnnotator"
 import { Card, SectionHeading } from "../../../components/Card"
+import {
+	InlineComments,
+	type InlineCommentEntry,
+} from "../../../components/InlineComments"
 import { type TabDef, Tabs } from "../../../components/Tabs"
 import type { ParsedUnit } from "../../../parsed"
 import type { ReviewDetailKind, ReviewTab } from "../shared/stage-tabs"
@@ -57,6 +63,21 @@ export interface StageReviewProps {
 	onDetailChange?: (
 		detail: { kind: ReviewDetailKind; name: string } | null,
 	) => void
+	/** Inline-comment drafts surfaced by the detail views (select text →
+	 *  add comment). Parent collects them and hands them to the sidebar
+	 *  composer via `getAnnotations()`. */
+	onInlineCommentsChange?: (comments: InlineCommentEntry[]) => void
+	/** Called by the artifact-annotator flow when the reviewer draws on
+	 *  a wireframe/image, writes a comment, and hits submit. Receives
+	 *  the artifact name, the comment text, and a `data:image/png;...`
+	 *  screenshot of the artifact with the overlay baked in. Parent
+	 *  routes this to the feedback API; the annotator clears its
+	 *  overlay once the promise resolves. */
+	onSubmitAnnotation?: (
+		artifactName: string,
+		comment: string,
+		screenshotDataUrl: string,
+	) => Promise<void>
 }
 
 const TYPE_BADGE: Record<string, string> = {
@@ -184,6 +205,8 @@ export function StageReview({
 	onTabChange,
 	detail: detailProp,
 	onDetailChange,
+	onInlineCommentsChange,
+	onSubmitAnnotation,
 }: StageReviewProps): React.ReactElement {
 	// Controlled-or-uncontrolled tab: when the parent owns the tab (for
 	// URL sync), `tab`/`onTabChange` drive it. When unused, fall back to
@@ -223,14 +246,14 @@ export function StageReview({
 		...stageArtifacts.map((a) => ({
 			name: a.name,
 			kind: inferKind(a.name),
-			summary: firstLine(a.content),
+			summary: summaryFor(a.name, a.content),
 			body: a.content,
 			mime: inferMime(a.name),
 		})),
 		...intentKnowledge.map((k) => ({
 			name: k.name,
 			kind: inferKind(k.name),
-			summary: firstLine(k.content),
+			summary: summaryFor(k.name, k.content),
 			body: k.content,
 			mime: inferMime(k.name),
 		})),
@@ -238,7 +261,7 @@ export function StageReview({
 	const outputVMs: ArtifactViewModel[] = outputArtifacts.map((a) => ({
 		name: a.name,
 		kind: inferOutputKind(a),
-		summary: firstLine(a.content ?? ""),
+		summary: summaryFor(a.name, a.content ?? "", a.type),
 		body: a.content ?? "",
 		mime: a.type,
 	}))
@@ -324,11 +347,6 @@ export function StageReview({
 		[onDetailChange],
 	)
 
-	// Stepper mode — "unseen" cycles only the items that haven't been
-	// marked seen yet, "all" cycles everything. Persisted on the component
-	// instance so switching tabs keeps the same preference.
-	const [stepperMode, setStepperMode] = useState<"unseen" | "all">("unseen")
-
 	const openDetail = useCallback(
 		(tab: "units" | "knowledge" | "outputs", name: string) => {
 			setActiveTab(tab)
@@ -352,38 +370,54 @@ export function StageReview({
 		setActiveTab("overview")
 	}, [stageName, setActiveTab, setDetail])
 
-	// "Start walkthrough" entry — find the first unseen artifact across
-	// units → knowledge → outputs and open its detail view.
+	// Unified walkthrough list — one contiguous sequence across every
+	// type in the stage. Units first, then knowledge, then outputs; the
+	// stepper in each detail view steps through this list so `Next` on
+	// the last unit goes straight to the first knowledge item without
+	// the reviewer having to manually switch tabs or re-invoke the
+	// walkthrough for each type.
+	const walkthroughItems = useMemo(
+		() => [
+			...units.map((u) => ({
+				tab: "units" as const,
+				name: u.slug,
+			})),
+			...knowledgeVMs.map((a) => ({
+				tab: "knowledge" as const,
+				name: a.name,
+			})),
+			...outputVMs.map((a) => ({
+				tab: "outputs" as const,
+				name: a.name,
+			})),
+		],
+		[units, knowledgeVMs, outputVMs],
+	)
+	const walkIndex = detail
+		? walkthroughItems.findIndex(
+				(i) => i.tab === detail.tab && i.name === detail.name,
+			)
+		: -1
+	const walkPrev = walkIndex > 0 ? walkthroughItems[walkIndex - 1] : null
+	const walkNext =
+		walkIndex >= 0 && walkIndex < walkthroughItems.length - 1
+			? walkthroughItems[walkIndex + 1]
+			: null
+	const walkPrevHandler = useCallback(() => {
+		if (walkPrev) openDetail(walkPrev.tab, walkPrev.name)
+	}, [walkPrev, openDetail])
+	const walkNextHandler = useCallback(() => {
+		if (walkNext) openDetail(walkNext.tab, walkNext.name)
+	}, [walkNext, openDetail])
+
+	// "Start walkthrough" entry — always land on the very first item in
+	// the unified walkthrough list (units[0], else knowledge[0], else
+	// outputs[0]). Next/prev then carry the reviewer through every type
+	// in order without requiring them to re-invoke the walkthrough.
 	const startWalkthrough = useCallback(() => {
-		setStepperMode("unseen")
-		const firstUnseenUnit = units.find(
-			(u) => seen.state("unit", stageName, u.slug, shaOf(u)) !== "seen",
-		)
-		if (firstUnseenUnit) {
-			openDetail("units", firstUnseenUnit.slug)
-			return
-		}
-		const firstUnseenKnowledge = knowledgeVMs.find(
-			(a) => seen.state("knowledge", stageName, a.name, shaOf(a)) !== "seen",
-		)
-		if (firstUnseenKnowledge) {
-			openDetail("knowledge", firstUnseenKnowledge.name)
-			return
-		}
-		const firstUnseenOutput = outputVMs.find(
-			(a) => seen.state("output", stageName, a.name, shaOf(a)) !== "seen",
-		)
-		if (firstUnseenOutput) {
-			openDetail("outputs", firstUnseenOutput.name)
-			return
-		}
-		// Nothing unseen — fall back to opening the first unit's detail
-		// with the stepper in "all" mode so prev/next still walks.
-		if (units[0]) {
-			setStepperMode("all")
-			openDetail("units", units[0].slug)
-		}
-	}, [units, knowledgeVMs, outputVMs, seen, stageName, openDetail])
+		const first = walkthroughItems[0]
+		if (first) openDetail(first.tab, first.name)
+	}, [walkthroughItems, openDetail])
 
 	const totalUnseen =
 		units.filter(
@@ -430,10 +464,14 @@ export function StageReview({
 						seen={seen}
 						stageId={stageName}
 						feedbackByUnit={feedbackByUnit}
-						stepperMode={stepperMode}
-						onStepperModeChange={setStepperMode}
+						walkIndex={walkIndex}
+						walkTotal={walkthroughItems.length}
+						onWalkPrev={walkPrevHandler}
+						onWalkNext={walkNextHandler}
+						hasWalkPrev={!!walkPrev}
+						hasWalkNext={!!walkNext}
 						onBack={closeDetail}
-						onStep={(name) => setDetail({ tab: "units", name })}
+						onInlineCommentsChange={onInlineCommentsChange}
 					/>
 				) : (
 					<UnitsTab
@@ -461,10 +499,15 @@ export function StageReview({
 						seen={seen}
 						stageId={stageName}
 						feedbackByName={feedbackByKnowledge}
-						stepperMode={stepperMode}
-						onStepperModeChange={setStepperMode}
+						walkIndex={walkIndex}
+						walkTotal={walkthroughItems.length}
+						onWalkPrev={walkPrevHandler}
+						onWalkNext={walkNextHandler}
+						hasWalkPrev={!!walkPrev}
+						hasWalkNext={!!walkNext}
 						onBack={closeDetail}
-						onStep={(name) => setDetail({ tab: "knowledge", name })}
+						onInlineCommentsChange={onInlineCommentsChange}
+						onSubmitAnnotation={onSubmitAnnotation}
 					/>
 				) : (
 					<ArtifactsTab
@@ -493,10 +536,15 @@ export function StageReview({
 						seen={seen}
 						stageId={stageName}
 						feedbackByName={feedbackByOutput}
-						stepperMode={stepperMode}
-						onStepperModeChange={setStepperMode}
+						walkIndex={walkIndex}
+						walkTotal={walkthroughItems.length}
+						onWalkPrev={walkPrevHandler}
+						onWalkNext={walkNextHandler}
+						hasWalkPrev={!!walkPrev}
+						hasWalkNext={!!walkNext}
 						onBack={closeDetail}
-						onStep={(name) => setDetail({ tab: "outputs", name })}
+						onInlineCommentsChange={onInlineCommentsChange}
+						onSubmitAnnotation={onSubmitAnnotation}
 					/>
 				) : (
 					<ArtifactsTab
@@ -940,26 +988,23 @@ function CondensedUnitRow({
 
 /**
  * StepperBar — top-of-detail-view nav: Back button, Prev/Next arrows,
- * Unseen/All toggle, and a position counter ("3 of 8"). Shared by unit
- * and artifact detail views.
+ * and a position counter ("3 of 48"). Index/total span the unified
+ * walkthrough (units + knowledge + outputs), so Next on the last unit
+ * advances into the first knowledge item and so on.
  */
 function StepperBar({
-	label,
+	backLabel,
 	currentIndex,
 	total,
-	stepperMode,
-	onStepperModeChange,
 	onBack,
 	onPrev,
 	onNext,
 	hasPrev,
 	hasNext,
 }: {
-	label: string
+	backLabel: string
 	currentIndex: number
 	total: number
-	stepperMode: "unseen" | "all"
-	onStepperModeChange: (m: "unseen" | "all") => void
 	onBack: () => void
 	onPrev: () => void
 	onNext: () => void
@@ -988,25 +1033,9 @@ function StepperBar({
 						d="M15 19l-7-7 7-7"
 					/>
 				</svg>
-				Back to {label}
+				{backLabel}
 			</button>
 			<div className="flex items-center gap-2 flex-wrap">
-				<div className="inline-flex rounded-md border border-stone-300 dark:border-stone-600 overflow-hidden text-xs font-semibold">
-					<button
-						type="button"
-						onClick={() => onStepperModeChange("unseen")}
-						className={`px-2.5 py-1 ${stepperMode === "unseen" ? "bg-teal-700 text-white" : "bg-transparent text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"}`}
-					>
-						Unseen
-					</button>
-					<button
-						type="button"
-						onClick={() => onStepperModeChange("all")}
-						className={`px-2.5 py-1 ${stepperMode === "all" ? "bg-teal-700 text-white" : "bg-transparent text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"}`}
-					>
-						All
-					</button>
-				</div>
 				<span className="text-xs font-mono text-stone-600 dark:text-stone-300 tabular-nums">
 					{total > 0 ? `${currentIndex + 1} of ${total}` : "0 of 0"}
 				</span>
@@ -1062,9 +1091,9 @@ function StepperBar({
 }
 
 /**
- * UnitDetailView — focused single-unit view with prev/next stepper.
- * The stepper cycles the filtered list (unseen-only or all based on
- * `stepperMode`). Entering or stepping marks the unit seen.
+ * UnitDetailView — focused single-unit view. Prev/next step through the
+ * parent's unified walkthrough list (units → knowledge → outputs), so
+ * Next on the last unit lands on the first knowledge artifact.
  */
 function UnitDetailView({
 	units,
@@ -1072,20 +1101,28 @@ function UnitDetailView({
 	seen,
 	stageId,
 	feedbackByUnit,
-	stepperMode,
-	onStepperModeChange,
+	walkIndex,
+	walkTotal,
+	onWalkPrev,
+	onWalkNext,
+	hasWalkPrev,
+	hasWalkNext,
 	onBack,
-	onStep,
+	onInlineCommentsChange,
 }: {
 	units: ParsedUnit[]
 	currentName: string
 	seen: ReturnType<typeof useSeenTracker>
 	stageId: string
 	feedbackByUnit: Map<string, FeedbackItemData[]>
-	stepperMode: "unseen" | "all"
-	onStepperModeChange: (m: "unseen" | "all") => void
+	walkIndex: number
+	walkTotal: number
+	onWalkPrev: () => void
+	onWalkNext: () => void
+	hasWalkPrev: boolean
+	hasWalkNext: boolean
 	onBack: () => void
-	onStep: (name: string) => void
+	onInlineCommentsChange?: (comments: InlineCommentEntry[]) => void
 }) {
 	const current = units.find((u) => u.slug === currentName)
 
@@ -1093,32 +1130,6 @@ function UnitDetailView({
 	useEffect(() => {
 		if (current) seen.markSeen("unit", stageId, current.slug, shaOf(current))
 	}, [current, seen, stageId])
-
-	// Filtered list the stepper cycles through. When the current item is
-	// no longer in the filter (e.g. it was just marked seen while in
-	// Unseen mode), splice it in so prev/next still work from here.
-	const filtered = useMemo(() => {
-		const base =
-			stepperMode === "all"
-				? units
-				: units.filter(
-						(u) =>
-							seen.state("unit", stageId, u.slug, shaOf(u)) !== "seen",
-					)
-		if (current && !base.find((u) => u.slug === current.slug)) {
-			return [...base, current]
-		}
-		return base
-	}, [units, current, stepperMode, seen, stageId])
-
-	const currentIndex = current
-		? filtered.findIndex((u) => u.slug === current.slug)
-		: -1
-	const prev = currentIndex > 0 ? filtered[currentIndex - 1] : null
-	const next =
-		currentIndex >= 0 && currentIndex < filtered.length - 1
-			? filtered[currentIndex + 1]
-			: null
 
 	if (!current) {
 		return (
@@ -1128,7 +1139,7 @@ function UnitDetailView({
 					onClick={onBack}
 					className="text-teal-600 dark:text-teal-400 hover:underline"
 				>
-					← Back to Units
+					← Back to Stage
 				</button>
 				<p className="mt-2">Unit not found.</p>
 			</div>
@@ -1150,16 +1161,14 @@ function UnitDetailView({
 	return (
 		<>
 			<StepperBar
-				label="Units"
-				currentIndex={currentIndex}
-				total={filtered.length}
-				stepperMode={stepperMode}
-				onStepperModeChange={onStepperModeChange}
+				backLabel="Back to Stage"
+				currentIndex={walkIndex}
+				total={walkTotal}
 				onBack={onBack}
-				onPrev={() => prev && onStep(prev.slug)}
-				onNext={() => next && onStep(next.slug)}
-				hasPrev={!!prev}
-				hasNext={!!next}
+				onPrev={onWalkPrev}
+				onNext={onWalkNext}
+				hasPrev={hasWalkPrev}
+				hasNext={hasWalkNext}
 			/>
 			<div className="bg-white dark:bg-stone-900 rounded-lg border-2 border-stone-200 dark:border-stone-700 overflow-hidden">
 				<div className="flex items-start gap-3 px-4 py-3 border-b border-stone-200 dark:border-stone-700">
@@ -1206,11 +1215,18 @@ function UnitDetailView({
 					)}
 				</div>
 				<div className="px-4 py-3">
-					{current.rawContent && (
-						<MarkdownViewer id={`unit-${current.slug}`}>
-							{current.rawContent}
-						</MarkdownViewer>
-					)}
+					{current.rawContent &&
+						(onInlineCommentsChange ? (
+							<InlineComments
+								htmlContent={markdownToSimpleHtml(current.rawContent)}
+								location={`Unit: ${current.title || current.slug}`}
+								onCommentsChange={onInlineCommentsChange}
+							/>
+						) : (
+							<MarkdownViewer id={`unit-${current.slug}`}>
+								{current.rawContent}
+							</MarkdownViewer>
+						))}
 				</div>
 			</div>
 		</>
@@ -1218,8 +1234,10 @@ function UnitDetailView({
 }
 
 /**
- * ArtifactDetailView — focused single-artifact view with prev/next
- * stepper. Mirrors UnitDetailView for knowledge and output rows.
+ * ArtifactDetailView — focused single-artifact view. Prev/next step
+ * through the parent's unified walkthrough list; the stepper does not
+ * filter by kind, so Next on the last knowledge artifact lands on the
+ * first output.
  */
 function ArtifactDetailView({
 	kind,
@@ -1228,10 +1246,15 @@ function ArtifactDetailView({
 	seen,
 	stageId,
 	feedbackByName,
-	stepperMode,
-	onStepperModeChange,
+	walkIndex,
+	walkTotal,
+	onWalkPrev,
+	onWalkNext,
+	hasWalkPrev,
+	hasWalkNext,
 	onBack,
-	onStep,
+	onInlineCommentsChange,
+	onSubmitAnnotation,
 }: {
 	kind: "knowledge" | "output"
 	artifacts: ArtifactViewModel[]
@@ -1239,10 +1262,19 @@ function ArtifactDetailView({
 	seen: ReturnType<typeof useSeenTracker>
 	stageId: string
 	feedbackByName: Map<string, FeedbackItemData[]>
-	stepperMode: "unseen" | "all"
-	onStepperModeChange: (m: "unseen" | "all") => void
+	walkIndex: number
+	walkTotal: number
+	onWalkPrev: () => void
+	onWalkNext: () => void
+	hasWalkPrev: boolean
+	hasWalkNext: boolean
 	onBack: () => void
-	onStep: (name: string) => void
+	onInlineCommentsChange?: (comments: InlineCommentEntry[]) => void
+	onSubmitAnnotation?: (
+		artifactName: string,
+		comment: string,
+		screenshotDataUrl: string,
+	) => Promise<void>
 }) {
 	const current = artifacts.find((a) => a.name === currentName)
 
@@ -1250,30 +1282,6 @@ function ArtifactDetailView({
 		if (current) seen.markSeen(kind, stageId, current.name, shaOf(current))
 	}, [current, seen, stageId, kind])
 
-	const filtered = useMemo(() => {
-		const base =
-			stepperMode === "all"
-				? artifacts
-				: artifacts.filter(
-						(a) =>
-							seen.state(kind, stageId, a.name, shaOf(a)) !== "seen",
-					)
-		if (current && !base.find((a) => a.name === current.name)) {
-			return [...base, current]
-		}
-		return base
-	}, [artifacts, current, stepperMode, seen, stageId, kind])
-
-	const currentIndex = current
-		? filtered.findIndex((a) => a.name === current.name)
-		: -1
-	const prev = currentIndex > 0 ? filtered[currentIndex - 1] : null
-	const next =
-		currentIndex >= 0 && currentIndex < filtered.length - 1
-			? filtered[currentIndex + 1]
-			: null
-
-	const label = kind === "knowledge" ? "Knowledge" : "Outputs"
 	const iconCls = kind === "knowledge" ? "text-sky-500" : "text-violet-500"
 	const icon = kind === "knowledge" ? "\u{1F9E0}" : "\u{1F4E6}"
 
@@ -1285,7 +1293,7 @@ function ArtifactDetailView({
 					onClick={onBack}
 					className="text-teal-600 dark:text-teal-400 hover:underline"
 				>
-					← Back to {label}
+					← Back to Stage
 				</button>
 				<p className="mt-2">Artifact not found.</p>
 			</div>
@@ -1300,16 +1308,14 @@ function ArtifactDetailView({
 	return (
 		<>
 			<StepperBar
-				label={label}
-				currentIndex={currentIndex}
-				total={filtered.length}
-				stepperMode={stepperMode}
-				onStepperModeChange={onStepperModeChange}
+				backLabel="Back to Stage"
+				currentIndex={walkIndex}
+				total={walkTotal}
 				onBack={onBack}
-				onPrev={() => prev && onStep(prev.name)}
-				onNext={() => next && onStep(next.name)}
-				hasPrev={!!prev}
-				hasNext={!!next}
+				onPrev={onWalkPrev}
+				onNext={onWalkNext}
+				hasPrev={hasWalkPrev}
+				hasNext={hasWalkNext}
 			/>
 			<div className="bg-white dark:bg-stone-900 rounded-lg border-2 border-stone-200 dark:border-stone-700 overflow-hidden">
 				<div className="flex items-start gap-3 px-4 py-3 border-b border-stone-200 dark:border-stone-700">
@@ -1351,7 +1357,12 @@ function ArtifactDetailView({
 					)}
 				</div>
 				<div className="px-4 py-3">
-					<ArtifactBody kind={kind} artifact={current} />
+					<ArtifactBody
+						kind={kind}
+						artifact={current}
+						onInlineCommentsChange={onInlineCommentsChange}
+						onSubmitAnnotation={onSubmitAnnotation}
+					/>
 				</div>
 			</div>
 		</>
@@ -1452,6 +1463,7 @@ function ArtifactCard({
 	const kindCls =
 		KIND_BADGE[artifact.kind.toLowerCase()] ??
 		"bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300 border-stone-200 dark:border-stone-700"
+	const isVisualPreview = artifact.mime === "html" || artifact.mime === "svg"
 
 	return (
 		<button
@@ -1461,12 +1473,16 @@ function ArtifactCard({
 			className={`w-full text-left bg-white dark:bg-stone-900 rounded-lg border-2 ${seenBorderClass(state)} overflow-hidden transition-colors hover:border-teal-400 dark:hover:border-teal-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900`}
 		>
 			<div className="flex items-start gap-3 px-4 py-3">
-				<span
-					className={`shrink-0 ${iconCls} text-lg leading-none mt-0.5`}
-					aria-hidden="true"
-				>
-					{icon}
-				</span>
+				{isVisualPreview ? (
+					<ArtifactThumbnail artifact={artifact} />
+				) : (
+					<span
+						className={`shrink-0 ${iconCls} text-lg leading-none mt-0.5`}
+						aria-hidden="true"
+					>
+						{icon}
+					</span>
+				)}
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2 flex-wrap">
 						<span className="text-sm font-semibold text-stone-900 dark:text-stone-100 font-mono truncate">
@@ -1521,19 +1537,42 @@ function ArtifactCard({
 }
 
 /**
- * ArtifactBody — the rendered preview of an artifact's content,
- * reused by ArtifactDetailView. Separated out so the card in list
- * mode can stay tiny (click-to-open) while the detail view embeds
- * the full preview.
+ * ArtifactBody — the rendered preview of an artifact's content. For
+ * markdown/text with `onInlineCommentsChange` wired: renders via
+ * `<InlineComments>` so reviewers can select a span and attach a
+ * comment. For HTML wireframes + raster images with `onSubmitAnnotation`
+ * wired: wraps the preview in `<ArtifactAnnotator>` so reviewers can
+ * draw on the artifact and post a feedback entry with the annotated
+ * screenshot as a sidecar attachment.
+ *
+ * Shared between list cards and the detail view; the detail view is
+ * the only current caller that supplies the annotation callbacks.
  */
 function ArtifactBody({
 	kind,
 	artifact,
+	onInlineCommentsChange,
+	onSubmitAnnotation,
 }: {
 	kind: "knowledge" | "output"
 	artifact: ArtifactViewModel
+	onInlineCommentsChange?: (comments: InlineCommentEntry[]) => void
+	onSubmitAnnotation?: (
+		artifactName: string,
+		comment: string,
+		screenshotDataUrl: string,
+	) => Promise<void>
 }): React.ReactElement {
 	if (artifact.mime === "markdown" || artifact.mime === "text") {
+		if (onInlineCommentsChange) {
+			return (
+				<InlineComments
+					htmlContent={markdownToSimpleHtml(artifact.body)}
+					location={`${kind}: ${artifact.name}`}
+					onCommentsChange={onInlineCommentsChange}
+				/>
+			)
+		}
 		return (
 			<MarkdownViewer id={`${kind}-${artifact.name}`}>
 				{artifact.body}
@@ -1541,22 +1580,124 @@ function ArtifactBody({
 		)
 	}
 	if (artifact.mime === "html") {
-		return (
+		// Sandbox intentionally omits `allow-same-origin`: wireframes
+		// authored as standalone pages read `window.location` and pull
+		// `allow-same-origin` on a `srcdoc` iframe gives html-to-image
+		// access to the inner DOM so annotation screenshots capture the
+		// mockup content instead of a blank rectangle. The document
+		// origin is inherited from the parent — URLs the wireframe
+		// references must therefore resolve against the SPA root (e.g.
+		// `/api/...` reaches our server); self-contained wireframes
+		// (Tailwind CDN + inline styles, which is the convention) aren't
+		// affected. Legacy wireframes that probed `window.location` for
+		// session state have been dropped; re-introducing one means
+		// writing it as fully self-contained HTML.
+		const iframe = (
 			<iframe
 				srcDoc={artifact.body}
-				sandbox="allow-scripts"
+				sandbox="allow-scripts allow-same-origin"
 				title={artifact.name}
-				className="w-full h-[60vh] border border-stone-200 dark:border-stone-800 rounded-md bg-white"
+				className="w-full h-[60vh] border-0 bg-white"
 			/>
 		)
+		if (onSubmitAnnotation) {
+			return (
+				<ArtifactAnnotator
+					artifactName={artifact.name}
+					onSubmit={(comment, dataUrl) =>
+						onSubmitAnnotation(artifact.name, comment, dataUrl)
+					}
+				>
+					{iframe}
+				</ArtifactAnnotator>
+			)
+		}
+		return iframe
 	}
 	if (artifact.mime === "svg") {
 		return <SvgPreview body={artifact.body} />
+	}
+	if (artifact.mime === "image" && artifact.body) {
+		const img = (
+			<img
+				src={artifact.body}
+				alt={artifact.name}
+				className="w-full h-auto bg-white"
+			/>
+		)
+		if (onSubmitAnnotation) {
+			return (
+				<ArtifactAnnotator
+					artifactName={artifact.name}
+					onSubmit={(comment, dataUrl) =>
+						onSubmitAnnotation(artifact.name, comment, dataUrl)
+					}
+				>
+					{img}
+				</ArtifactAnnotator>
+			)
+		}
+		return img
 	}
 	return (
 		<pre className="text-xs font-mono text-stone-700 dark:text-stone-300 whitespace-pre-wrap bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-md p-3 max-h-[60vh] overflow-auto">
 			{artifact.body}
 		</pre>
+	)
+}
+
+/**
+ * ArtifactThumbnail — compact static preview used in list rows for
+ * visual artifacts (html wireframes + svg diagrams). The goal is to
+ * give reviewers a glance at shape/layout without opening detail.
+ *
+ * HTML renders into a sandboxed iframe scaled to a fixed 96×60 tile; we
+ * set `pointer-events: none` so the tile acts like an image (the parent
+ * button's click still opens the detail view).
+ */
+function ArtifactThumbnail({
+	artifact,
+}: {
+	artifact: ArtifactViewModel
+}): React.ReactElement {
+	if (artifact.mime === "svg") {
+		const safe = DOMPurify.sanitize(artifact.body, {
+			USE_PROFILES: { svg: true, svgFilters: true },
+		})
+		return (
+			<div
+				aria-hidden="true"
+				className="shrink-0 w-24 h-16 rounded border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-950 overflow-hidden flex items-center justify-center p-1 [&>svg]:max-w-full [&>svg]:max-h-full"
+				// biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via DOMPurify svg profile above — same contract as SvgPreview.
+				// audit-allow: DOMPurify-sanitized SVG render path — same contract as the detail view at line 1713
+				dangerouslySetInnerHTML={{ __html: safe }}
+			/>
+		)
+	}
+	// html — render via sandboxed iframe scaled down. Sandbox flags
+	// match the detail-view iframe (see `ArtifactDetailBody`) so style
+	// resolution + html-to-image capture behave the same at both
+	// scales. pointer-events:none keeps the tile passive so the parent
+	// <button>'s click-to-open still fires.
+	return (
+		<div
+			aria-hidden="true"
+			className="shrink-0 w-32 h-20 rounded border border-stone-200 dark:border-stone-700 bg-white overflow-hidden relative pointer-events-none"
+		>
+			<iframe
+				srcDoc={artifact.body}
+				sandbox="allow-scripts allow-same-origin"
+				title=""
+				tabIndex={-1}
+				className="absolute top-0 left-0 border-0"
+				style={{
+					width: "1280px",
+					height: "800px",
+					transform: "scale(0.1)",
+					transformOrigin: "top left",
+				}}
+			/>
+		</div>
 	)
 }
 
@@ -1678,4 +1819,39 @@ function firstLine(content: string): string {
 			return t && !t.startsWith("---")
 		}) ?? ""
 	return line.replace(/^#+\s*/, "").trim().slice(0, 200)
+}
+
+/**
+ * Produce a reader-friendly one-line summary for an artifact. For most
+ * formats this is the first non-empty, non-frontmatter line. For HTML
+ * (wireframes, mockups) we never want to show the literal `<!DOCTYPE>`
+ * line — extract the `<title>` tag or the first visible text instead.
+ */
+function summaryFor(
+	filename: string,
+	content: string,
+	explicitType?: string,
+): string {
+	const lower = filename.toLowerCase()
+	const isHtml = explicitType === "html" || lower.endsWith(".html")
+	if (isHtml) return htmlSummary(content)
+	return firstLine(content)
+}
+
+function htmlSummary(content: string): string {
+	if (!content) return ""
+	const titleMatch = content.match(/<title[^>]*>([\s\S]*?)<\/title>/i)
+	if (titleMatch) {
+		const title = titleMatch[1].replace(/\s+/g, " ").trim()
+		if (title) return title.slice(0, 200)
+	}
+	// Fallback: strip <head> + tags, grab first chunk of visible text.
+	const withoutHead = content.replace(/<head[\s\S]*?<\/head>/i, "")
+	const visible = withoutHead
+		.replace(/<script[\s\S]*?<\/script>/gi, "")
+		.replace(/<style[\s\S]*?<\/style>/gi, "")
+		.replace(/<[^>]+>/g, " ")
+		.replace(/\s+/g, " ")
+		.trim()
+	return visible.slice(0, 200)
 }

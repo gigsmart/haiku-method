@@ -37,6 +37,10 @@ export const feedbackStatusColors: Record<FeedbackStatus, string> = {
 	fixing:
 		"bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
 	addressed: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+	// `answered` is the question-resolved-by-reply terminal state — teal
+	// matches agent/reply activity and distinguishes it from `closed`
+	// (code delta landed) in the at-a-glance list.
+	answered: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300",
 	closed:
 		"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
 	rejected:
@@ -59,6 +63,7 @@ export const statusDotClasses: Record<FeedbackStatus, string> = {
 	pending: "bg-amber-600 dark:bg-amber-500",
 	fixing: "bg-amber-600 dark:bg-amber-500",
 	addressed: "bg-blue-600 dark:bg-blue-500",
+	answered: "bg-teal-600 dark:bg-teal-400",
 	closed: "bg-green-600 dark:bg-green-400",
 	rejected: "bg-stone-600 dark:bg-stone-400",
 }
@@ -69,6 +74,7 @@ export const statusBorderLeft: Record<FeedbackStatus, string> = {
 	pending: "border-l-[3px] border-l-amber-400 dark:border-l-amber-500",
 	fixing: "border-l-[3px] border-l-amber-400 dark:border-l-amber-500",
 	addressed: "border-l-[3px] border-l-blue-400 dark:border-l-blue-500",
+	answered: "border-l-[3px] border-l-teal-400 dark:border-l-teal-500",
 	closed: "border-l-[3px] border-l-green-500 dark:border-l-green-400",
 	rejected: "border-l-[3px] border-l-stone-400 dark:border-l-stone-500",
 }
@@ -77,6 +83,7 @@ export const statusBackground: Record<FeedbackStatus, string> = {
 	pending: "bg-amber-50/50 dark:bg-amber-950/20",
 	fixing: "bg-amber-50/50 dark:bg-amber-950/20",
 	addressed: "bg-blue-50/50 dark:bg-blue-950/20",
+	answered: "bg-teal-50/50 dark:bg-teal-950/20",
 	closed: "bg-green-50/60 dark:bg-green-950/25",
 	rejected: "bg-stone-100 dark:bg-stone-800/50",
 }
@@ -94,6 +101,8 @@ export const originColors: Record<FeedbackOrigin, string> = {
 		"bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
 	"user-visual": "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
 	"user-chat": "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
+	"user-question":
+		"bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
 	agent: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
 }
 
@@ -109,6 +118,7 @@ export const originIcons: Record<FeedbackOrigin, string> = {
 	"external-mr": "\u{1F517}", // 🔗 link
 	"user-visual": "\u{270E}", // ✎ pencil
 	"user-chat": "\u{1F4AC}", // 💬 speech balloon
+	"user-question": "\u{2753}", // ❓ question mark
 	agent: "\u{1F916}", // 🤖 robot face
 }
 
@@ -125,6 +135,7 @@ export const originLabels: Record<FeedbackOrigin, string> = {
 	"external-mr": "MR Comment",
 	"user-visual": "Annotation",
 	"user-chat": "Comment",
+	"user-question": "Question",
 	agent: "Agent",
 }
 

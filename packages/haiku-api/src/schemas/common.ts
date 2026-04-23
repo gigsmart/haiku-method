@@ -12,6 +12,14 @@
 
 import { z } from "zod"
 
+/** Authorship type derived from origin — declared early so
+ *  FeedbackReplySchema below can reference it. */
+const AuthorTypeSchemaInternal = z
+	.enum(["human", "agent"])
+	.describe(
+		"Derived from origin. Human-authored feedback cannot be closed/deleted by agents.",
+	)
+
 /** Origins a feedback item can come from. */
 export const FeedbackOriginSchema = z
 	.enum([
@@ -21,27 +29,59 @@ export const FeedbackOriginSchema = z
 		"external-mr",
 		"user-visual",
 		"user-chat",
+		"user-question",
 		"agent",
 	])
 	.describe(
-		"Origin of a feedback item. Derives author_type (human|agent) via state-tools.deriveAuthorType.",
+		"Origin of a feedback item. Derives author_type (human|agent) via state-tools.deriveAuthorType. `user-question` marks a reply-seeking item that the router handles with `feedback_answer` instead of a fix loop.",
 	)
 export type FeedbackOrigin = z.infer<typeof FeedbackOriginSchema>
 
 /** Lifecycle status of a feedback item. */
 export const FeedbackStatusSchema = z
-	.enum(["pending", "fixing", "addressed", "closed", "rejected"])
+	.enum(["pending", "fixing", "addressed", "answered", "closed", "rejected"])
 	.describe(
-		"Lifecycle: pending -> fixing -> addressed -> closed, or pending -> rejected. Only pending/fixing block the stage gate.",
+		"Lifecycle: pending -> fixing -> addressed -> closed, or pending -> answered (question resolved by reply, no code delta), or pending -> rejected. Only pending/fixing block the stage gate.",
 	)
 export type FeedbackStatus = z.infer<typeof FeedbackStatusSchema>
 
-/** Authorship type derived from origin. */
-export const AuthorTypeSchema = z
-	.enum(["human", "agent"])
+/** How the FSM should resolve a feedback item when the revisit flow
+ *  picks it up. Default (undefined / null on the wire) behaves as
+ *  `stage_revisit` so legacy flows regress cleanly. Authors — human or
+ *  agent — set this to steer the router: a question skips the fix
+ *  loop entirely, an inline fix runs a single bolt of the stage's
+ *  fix_hats against the one finding, a stage revisit re-loops the
+ *  whole stage (today's default), an upstream rewind routes the
+ *  finding to the agent's `upstream_finding_surfaced` path. */
+export const FeedbackResolutionSchema = z
+	.enum(["question", "inline_fix", "stage_revisit", "upstream_rewind"])
 	.describe(
-		"Derived from origin. Human-authored feedback cannot be closed/deleted by agents.",
+		"Routing hint for the FSM's feedback resolver. null = caller has no preference, router defaults to stage_revisit.",
 	)
+export type FeedbackResolution = z.infer<typeof FeedbackResolutionSchema>
+
+/** A reply on a feedback item — used to answer a question, record an
+ *  agent's justification for closing/rejecting, or thread a short
+ *  discussion without creating a new feedback item. */
+export const FeedbackReplySchema = z
+	.object({
+		author: z
+			.string()
+			.min(1)
+			.max(200)
+			.describe("Free-form author handle ('user', agent name)."),
+		author_type: AuthorTypeSchemaInternal,
+		body: z.string().min(1).max(5_000).describe("Reply body (≤ 5,000 chars)."),
+		created_at: z
+			.string()
+			.max(40)
+			.describe("ISO-8601 timestamp the reply was written."),
+	})
+	.describe("A single reply on a feedback thread")
+export type FeedbackReply = z.infer<typeof FeedbackReplySchema>
+
+/** Authorship type derived from origin. */
+export const AuthorTypeSchema = AuthorTypeSchemaInternal
 export type AuthorType = z.infer<typeof AuthorTypeSchema>
 
 /** A pin placed on a mockup/screenshot during review. */
@@ -158,8 +198,15 @@ export {
 /** Default body-size cap for JSON request bodies (1 MiB). */
 export const DEFAULT_BODY_MAX_BYTES = 1_048_576 as const
 
-/** Tighter cap for feedback-bearing endpoints (128 KiB). */
+/** Tighter cap for feedback update/delete endpoints (128 KiB). Text-only
+ *  traffic — status flips, closed_by markers — never needs more. */
 export const FEEDBACK_BODY_MAX_BYTES = 131_072 as const
+
+/** Larger cap for feedback CREATE, which may carry an annotated
+ *  screenshot as a `data:image/png;base64,...` URL. 8 MiB accommodates
+ *  a full-resolution wireframe capture (~1-3 MB once base64-encoded)
+ *  plus the text fields. Updates/deletes still use the tighter cap. */
+export const FEEDBACK_CREATE_MAX_BYTES = 8_388_608 as const
 
 /** Per-route body-size caps. Routes not listed default to DEFAULT_BODY_MAX_BYTES.
  *  The http.ts bridge enforces the default at the server level; the handler
@@ -167,4 +214,5 @@ export const FEEDBACK_BODY_MAX_BYTES = 131_072 as const
 export const ROUTE_BODY_LIMITS = {
 	default: DEFAULT_BODY_MAX_BYTES,
 	feedback: FEEDBACK_BODY_MAX_BYTES,
+	feedbackCreate: FEEDBACK_CREATE_MAX_BYTES,
 } as const

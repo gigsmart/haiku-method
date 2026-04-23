@@ -1,1542 +1,1542 @@
 {
-	"ai-dlc-2026": {
-		"slug": "ai-dlc-2026",
-		"currentVersion": "1",
-		"revisions": [
-			{
-				"version": "1",
-				"date": "2026-02-02",
-				"commitHash": "5b3294d",
-				"fullCommitHash": "5b3294d92bf574c961fb7c287d2a3b077a634486",
-				"commitMessage": "feat: transform AI-DLC into comprehensive methodology site",
-				"stats": {
-					"linesAdded": 813,
-					"linesRemoved": 0
-				},
-				"sectionChanges": [
-					{
-						"section": "Introduction",
-						"originalSection": "Introduction",
-						"isNew": false,
-						"linesAdded": 8,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Acknowledgments & Attribution",
-						"originalSection": "Acknowledgments & Attribution",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Foundational Work",
-						"originalSection": "Foundational Work",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Key Influences for 2026",
-						"originalSection": "Key Influences for 2026",
-						"isNew": true,
-						"linesAdded": 11,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Preface: The State of AI-Driven Development",
-						"originalSection": "Preface: The State of AI-Driven Development",
-						"isNew": true,
-						"linesAdded": 18,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Context",
-						"originalSection": "Context",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The Evolution of Software Engineering",
-						"originalSection": "The Evolution of Software Engineering",
-						"isNew": true,
-						"linesAdded": 5,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The Problem with Traditional Methods",
-						"originalSection": "The Problem with Traditional Methods",
-						"isNew": true,
-						"linesAdded": 12,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The New Reality",
-						"originalSection": "The New Reality",
-						"isNew": true,
-						"linesAdded": 3,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Why AI-DLC Over Ad-Hoc AI Assistance",
-						"originalSection": "Why AI-DLC Over Ad-Hoc AI Assistance",
-						"isNew": true,
-						"linesAdded": 51,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Core Principles",
-						"originalSection": "Core Principles",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Reimagine Rather Than Retrofit",
-						"originalSection": "Reimagine Rather Than Retrofit",
-						"isNew": true,
-						"linesAdded": 11,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Three Operating Modes: HITL, OHOTL, and AHOTL",
-						"originalSection": "Three Operating Modes: HITL, OHOTL, and AHOTL",
-						"isNew": true,
-						"linesAdded": 48,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Backpressure Over Prescription",
-						"originalSection": "Backpressure Over Prescription",
-						"isNew": true,
-						"linesAdded": 26,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Embrace the Collapsing SDLC",
-						"originalSection": "Embrace the Collapsing SDLC",
-						"isNew": true,
-						"linesAdded": 15,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Context Is Abundant—Use It Wisely",
-						"originalSection": "Context Is Abundant—Use It Wisely",
-						"isNew": true,
-						"linesAdded": 21,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Memory Providers Expand Knowledge",
-						"originalSection": "Memory Providers Expand Knowledge",
-						"isNew": true,
-						"linesAdded": 31,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Completion Criteria Enable Autonomy",
-						"originalSection": "Completion Criteria Enable Autonomy",
-						"isNew": true,
-						"linesAdded": 22,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Design Techniques Are Tools, Not Requirements",
-						"originalSection": "Design Techniques Are Tools, Not Requirements",
-						"isNew": true,
-						"linesAdded": 19,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Everyone Becomes a Builder",
-						"originalSection": "Everyone Becomes a Builder",
-						"isNew": true,
-						"linesAdded": 28,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Streamline Responsibilities",
-						"originalSection": "Streamline Responsibilities",
-						"isNew": true,
-						"linesAdded": 13,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Tool and Platform Agnostic",
-						"originalSection": "Tool and Platform Agnostic",
-						"isNew": true,
-						"linesAdded": 15,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Core Framework",
-						"originalSection": "Core Framework",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Artifacts",
-						"originalSection": "Artifacts",
-						"isNew": true,
-						"linesAdded": 246,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Phases & Rituals",
-						"originalSection": "Phases & Rituals",
-						"isNew": true,
-						"linesAdded": 171,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The Workflow",
-						"originalSection": "The Workflow",
-						"isNew": true,
-						"linesAdded": 11,
-						"linesRemoved": 0
-					},
-					{
-						"section": "AI-DLC 2026 in Action: Greenfield Development",
-						"originalSection": "AI-DLC 2026 in Action: Greenfield Development",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Inception Phase (Mob Elaboration)",
-						"originalSection": "Inception Phase (Mob Elaboration)",
-						"isNew": true,
-						"linesAdded": 86,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Construction Phase",
-						"originalSection": "Construction Phase",
-						"isNew": true,
-						"linesAdded": 30,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Operations Phase",
-						"originalSection": "Operations Phase",
-						"isNew": true,
-						"linesAdded": 28,
-						"linesRemoved": 0
-					},
-					{
-						"section": "AI-DLC 2026 in Action: Brownfield Development",
-						"originalSection": "AI-DLC 2026 in Action: Brownfield Development",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Key Difference: Context Building",
-						"originalSection": "Key Difference: Context Building",
-						"isNew": true,
-						"linesAdded": 30,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Pre-Inception Artifacts",
-						"originalSection": "Pre-Inception Artifacts",
-						"isNew": true,
-						"linesAdded": 9,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Decision Framework: Selecting Operating Mode",
-						"originalSection": "Decision Framework: Selecting Operating Mode",
-						"isNew": true,
-						"linesAdded": 15,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Implementing Autonomous Bolts",
-						"originalSection": "Implementing Autonomous Bolts",
-						"isNew": true,
-						"linesAdded": 14,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Adoption Path",
-						"originalSection": "Adoption Path",
-						"isNew": true,
-						"linesAdded": 11,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Measuring AI-DLC Effectiveness",
-						"originalSection": "Measuring AI-DLC Effectiveness",
-						"isNew": true,
-						"linesAdded": 12,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Compliance and Audit Integration",
-						"originalSection": "Compliance and Audit Integration",
-						"isNew": true,
-						"linesAdded": 8,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Glossary",
-						"originalSection": "Glossary",
-						"isNew": true,
-						"linesAdded": 21,
-						"linesRemoved": 0
-					},
-					{
-						"section": "References",
-						"originalSection": "References",
-						"isNew": true,
-						"linesAdded": 23,
-						"linesRemoved": 0
-					}
-				]
-			}
-		],
-		"newSections": []
-	},
-	"haiku-method": {
-		"slug": "haiku-method",
-		"currentVersion": "2",
-		"revisions": [
-			{
-				"version": "2",
-				"date": "2026-04-15",
-				"commitHash": "f5d0755",
-				"fullCommitHash": "f5d0755d742d34aae1c15bcfc20272827a385d5a",
-				"commitMessage": "feat(orchestrator): comprehensive artifact injection across all FSM phases (#219)",
-				"stats": {
-					"linesAdded": 292,
-					"linesRemoved": 994
-				},
-				"sectionChanges": [
-					{
-						"section": "Introduction",
-						"originalSection": "Introduction",
-						"isNew": false,
-						"linesAdded": 8,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Acknowledgments & Attribution",
-						"originalSection": "Acknowledgments & Attribution",
-						"isNew": false,
-						"linesAdded": 1,
-						"linesRemoved": 1
-					},
-					{
-						"section": "Foundational Work",
-						"originalSection": "Foundational Work",
-						"isNew": false,
-						"linesAdded": 2,
-						"linesRemoved": 2
-					},
-					{
-						"section": "The Problem",
-						"originalSection": "1. The Problem",
-						"isNew": false,
-						"linesAdded": 8,
-						"linesRemoved": 10
-					},
-					{
-						"section": "Glossary",
-						"originalSection": "Glossary",
-						"isNew": false,
-						"linesAdded": 13,
-						"linesRemoved": 22
-					},
-					{
-						"section": "References",
-						"originalSection": "References",
-						"isNew": false,
-						"linesAdded": 1,
-						"linesRemoved": 2
-					},
-					{
-						"section": "The Four-Phase Lifecycle",
-						"originalSection": "2. The Four-Phase Lifecycle",
-						"isNew": true,
-						"linesAdded": 9,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Elaboration",
-						"originalSection": "Elaboration",
-						"isNew": true,
-						"linesAdded": 11,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Execution",
-						"originalSection": "Execution",
-						"isNew": true,
-						"linesAdded": 7,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Operation",
-						"originalSection": "Operation",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Reflection",
-						"originalSection": "Reflection",
-						"isNew": true,
-						"linesAdded": 5,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Studios: Domain Templates",
-						"originalSection": "3. Studios: Domain Templates",
-						"isNew": true,
-						"linesAdded": 3,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Built-in Studios",
-						"originalSection": "Built-in Studios",
-						"isNew": true,
-						"linesAdded": 131,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Custom Studios",
-						"originalSection": "Custom Studios",
-						"isNew": true,
-						"linesAdded": 5,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Stages: The Implementation Layer",
-						"originalSection": "4. Stages: The Implementation Layer",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "What a Stage Defines",
-						"originalSection": "What a Stage Defines",
-						"isNew": true,
-						"linesAdded": 20,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The Stage Loop",
-						"originalSection": "The Stage Loop",
-						"isNew": true,
-						"linesAdded": 10,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Hat Isolation",
-						"originalSection": "Hat Isolation",
-						"isNew": true,
-						"linesAdded": 3,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Output Scoping",
-						"originalSection": "Output Scoping",
-						"isNew": true,
-						"linesAdded": 10,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Units and Bolts: The Work",
-						"originalSection": "5. Units and Bolts: The Work",
-						"isNew": false,
-						"renamedFrom": "The 4-Phase Lifecycle",
-						"linesAdded": 0,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Units",
-						"originalSection": "Units",
-						"isNew": true,
-						"linesAdded": 5,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Completion Criteria",
-						"originalSection": "Completion Criteria",
-						"isNew": true,
-						"linesAdded": 15,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Backpressure",
-						"originalSection": "Backpressure",
-						"isNew": true,
-						"linesAdded": 5,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Bolts",
-						"originalSection": "Bolts",
-						"isNew": true,
-						"linesAdded": 14,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Persistence",
-						"originalSection": "6. Persistence",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The Abstraction",
-						"originalSection": "The Abstraction",
-						"isNew": true,
-						"linesAdded": 3,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Adapters",
-						"originalSection": "Adapters",
-						"isNew": true,
-						"linesAdded": 5,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Why This Matters",
-						"originalSection": "Why This Matters",
-						"isNew": true,
-						"linesAdded": 3,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Modes of Operation",
-						"originalSection": "7. Modes of Operation",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Continuous Mode",
-						"originalSection": "Continuous Mode",
-						"isNew": true,
-						"linesAdded": 3,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Discrete Mode",
-						"originalSection": "Discrete Mode",
-						"isNew": true,
-						"linesAdded": 3,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Planning Levels",
-						"originalSection": "Planning Levels",
-						"isNew": true,
-						"linesAdded": 9,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The Reference Implementation",
-						"originalSection": "8. The Reference Implementation",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Two Commands",
-						"originalSection": "Two Commands",
-						"isNew": true,
-						"linesAdded": 3,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Enforcement Through Hooks",
-						"originalSection": "Enforcement Through Hooks",
-						"isNew": true,
-						"linesAdded": 9,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Configuration",
-						"originalSection": "Configuration",
-						"isNew": true,
-						"linesAdded": 11,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Beyond Software",
-						"originalSection": "9. Beyond Software",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Fifteen Studios in Practice",
-						"originalSection": "Fifteen Studios in Practice",
-						"isNew": true,
-						"linesAdded": 9,
-						"linesRemoved": 0
-					},
-					{
-						"section": "What Changes Across Domains",
-						"originalSection": "What Changes Across Domains",
-						"isNew": true,
-						"linesAdded": 6,
-						"linesRemoved": 0
-					},
-					{
-						"section": "What Stays the Same",
-						"originalSection": "What Stays the Same",
-						"isNew": true,
-						"linesAdded": 7,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Creating a Custom Studio",
-						"originalSection": "Creating a Custom Studio",
-						"isNew": true,
-						"linesAdded": 11,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Conclusion",
-						"originalSection": "10. Conclusion",
-						"isNew": true,
-						"linesAdded": 11,
-						"linesRemoved": 0
-					},
-					{
-						"section": "HAIKU: Human AI Knowledge Unification",
-						"originalSection": "HAIKU: Human AI Knowledge Unification",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 9
-					},
-					{
-						"section": "Who This Is For",
-						"originalSection": "Who This Is For",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 12
-					},
-					{
-						"section": "The State of the Art",
-						"originalSection": "2. The State of the Art",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 1
-					},
-					{
-						"section": "The Landscape Shift",
-						"originalSection": "The Landscape Shift",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 14
-					},
-					{
-						"section": "The Evidence for Structure",
-						"originalSection": "The Evidence for Structure",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 7
-					},
-					{
-						"section": "The \"Vibe Coding\" Moment",
-						"originalSection": "The \"Vibe Coding\" Moment",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 5
-					},
-					{
-						"section": "Competing Approaches",
-						"originalSection": "Competing Approaches",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 15
-					},
-					{
-						"section": "The Protocol Ecosystem",
-						"originalSection": "The Protocol Ecosystem",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 11
-					},
-					{
-						"section": "Core Principles",
-						"originalSection": "3. Core Principles",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 1
-					},
-					{
-						"section": "Reimagine Rather Than Retrofit",
-						"originalSection": "Reimagine Rather Than Retrofit",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 7
-					},
-					{
-						"section": "Context Engineering Over Context Stuffing",
-						"originalSection": "Context Engineering Over Context Stuffing",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 16
-					},
-					{
-						"section": "Quality Enforcement Over Prescription",
-						"originalSection": "Quality Enforcement Over Prescription",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 30
-					},
-					{
-						"section": "Context Preservation Through Artifacts",
-						"originalSection": "Context Preservation Through Artifacts",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 12
-					},
-					{
-						"section": "The Workspace: Where Knowledge Lives",
-						"originalSection": "The Workspace: Where Knowledge Lives",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 25
-					},
-					{
-						"section": "Hierarchical Knowledge",
-						"originalSection": "Hierarchical Knowledge",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 16
-					},
-					{
-						"section": "Memory Layers",
-						"originalSection": "Memory Layers",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 13
-					},
-					{
-						"section": "Iterative Refinement Through Bolts",
-						"originalSection": "Iterative Refinement Through Bolts",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 14
-					},
-					{
-						"section": "Human Oversight at Strategic Moments",
-						"originalSection": "Human Oversight at Strategic Moments",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 21
-					},
-					{
-						"section": "Learning Loops",
-						"originalSection": "Learning Loops",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 13
-					},
-					{
-						"section": "Overview",
-						"originalSection": "Overview",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 42
-					},
-					{
-						"section": "Phase 1: Elaboration",
-						"originalSection": "Phase 1: Elaboration",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 150
-					},
-					{
-						"section": "Phase 2: Execution",
-						"originalSection": "Phase 2: Execution",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 121
-					},
-					{
-						"section": "Phase 3: Operation",
-						"originalSection": "Phase 3: Operation",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 47
-					},
-					{
-						"section": "Phase 4: Reflection",
-						"originalSection": "Phase 4: Reflection",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 56
-					},
-					{
-						"section": "Operating Modes",
-						"originalSection": "5. Operating Modes",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 1
-					},
-					{
-						"section": "Supervised",
-						"originalSection": "Supervised",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 33
-					},
-					{
-						"section": "Observed",
-						"originalSection": "Observed",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 34
-					},
-					{
-						"section": "Autonomous",
-						"originalSection": "Autonomous",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 36
-					},
-					{
-						"section": "Mode Selection",
-						"originalSection": "Mode Selection",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 13
-					},
-					{
-						"section": "The Profile Model",
-						"originalSection": "6. The Profile Model",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 1
-					},
-					{
-						"section": "Universal Core, Domain Adaptation",
-						"originalSection": "Universal Core, Domain Adaptation",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 19
-					},
-					{
-						"section": "AI-DLC: The Software Development Profile",
-						"originalSection": "AI-DLC: The Software Development Profile",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 92
-					},
-					{
-						"section": "SWARM: The Marketing & Sales Profile",
-						"originalSection": "SWARM: The Marketing & Sales Profile",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 42
-					},
-					{
-						"section": "Creating Custom Profiles",
-						"originalSection": "Creating Custom Profiles",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 28
-					},
-					{
-						"section": "Practical Examples",
-						"originalSection": "7. Practical Examples",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 1
-					},
-					{
-						"section": "Example 1: Software Feature Using the AI-DLC Profile",
-						"originalSection": "Example 1: Software Feature Using the AI-DLC Profile",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 35
-					},
-					{
-						"section": "Example 2: Marketing Campaign Using the SWARM Profile",
-						"originalSection": "Example 2: Marketing Campaign Using the SWARM Profile",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 38
-					},
-					{
-						"section": "Example 3: Strategic Planning Using HAIKU Core",
-						"originalSection": "Example 3: Strategic Planning Using HAIKU Core",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 38
-					},
-					{
-						"section": "Adoption",
-						"originalSection": "8. Adoption",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 1
-					},
-					{
-						"section": "Start Where You Are",
-						"originalSection": "Start Where You Are",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 1
-					},
-					{
-						"section": "Step 1: Start with Elaboration",
-						"originalSection": "Step 1: Start with Elaboration",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 16
-					},
-					{
-						"section": "Step 2: Add Execution Structure",
-						"originalSection": "Step 2: Add Execution Structure",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 13
-					},
-					{
-						"section": "Step 3: Extend into Operation",
-						"originalSection": "Step 3: Extend into Operation",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 13
-					},
-					{
-						"section": "Step 4: Close the Loop with Reflection",
-						"originalSection": "Step 4: Close the Loop with Reflection",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 14
-					},
-					{
-						"section": "Progression Is Natural",
-						"originalSection": "Progression Is Natural",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 12
-					},
-					{
-						"section": "Scaling Across an Organization",
-						"originalSection": "Scaling Across an Organization",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 19
-					},
-					{
-						"section": "Measuring Effectiveness",
-						"originalSection": "9. Measuring Effectiveness",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 1
-					},
-					{
-						"section": "Core Metrics",
-						"originalSection": "Core Metrics",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 7
-					},
-					{
-						"section": "What Not to Measure",
-						"originalSection": "What Not to Measure",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 7
-					},
-					{
-						"section": "The DORA Connection",
-						"originalSection": "The DORA Connection",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 10
-					},
-					{
-						"section": "Governance and Compliance",
-						"originalSection": "10. Governance and Compliance",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 1
-					},
-					{
-						"section": "The Regulatory Landscape",
-						"originalSection": "The Regulatory Landscape",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 6
-					},
-					{
-						"section": "HAIKU as a Governance Framework",
-						"originalSection": "HAIKU as a Governance Framework",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 10
-					},
-					{
-						"section": "Quality Gates as Governance-as-Code",
-						"originalSection": "Quality Gates as Governance-as-Code",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 3
-					},
-					{
-						"section": "Compliance Patterns",
-						"originalSection": "Compliance Patterns",
-						"isNew": false,
-						"isRemoved": true,
-						"linesAdded": 0,
-						"linesRemoved": 9
-					}
-				]
-			},
-			{
-				"version": "1",
-				"date": "2026-04-03",
-				"commitHash": "0a798c0",
-				"fullCommitHash": "0a798c0ee0394b28bd05c042776babcfc5d49600",
-				"commitMessage": "Ai dlc/haiku rebrand/main (#138)",
-				"stats": {
-					"linesAdded": 1048,
-					"linesRemoved": 0
-				},
-				"sectionChanges": [
-					{
-						"section": "Acknowledgments & Attribution",
-						"originalSection": "Acknowledgments & Attribution",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Foundational Work",
-						"originalSection": "Foundational Work",
-						"isNew": true,
-						"linesAdded": 3,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Key Influences",
-						"originalSection": "Key Influences",
-						"isNew": true,
-						"linesAdded": 9,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The Problem",
-						"originalSection": "The Problem",
-						"isNew": true,
-						"linesAdded": 13,
-						"linesRemoved": 0
-					},
-					{
-						"section": "HAIKU: Human AI Knowledge Unification",
-						"originalSection": "HAIKU: Human AI Knowledge Unification",
-						"isNew": true,
-						"linesAdded": 9,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The 4-Phase Lifecycle",
-						"originalSection": "4. The 4-Phase Lifecycle",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Who This Is For",
-						"originalSection": "Who This Is For",
-						"isNew": true,
-						"linesAdded": 12,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The State of the Art",
-						"originalSection": "2. The State of the Art",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The Landscape Shift",
-						"originalSection": "The Landscape Shift",
-						"isNew": true,
-						"linesAdded": 14,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The Evidence for Structure",
-						"originalSection": "The Evidence for Structure",
-						"isNew": true,
-						"linesAdded": 7,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The \"Vibe Coding\" Moment",
-						"originalSection": "The \"Vibe Coding\" Moment",
-						"isNew": true,
-						"linesAdded": 5,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Competing Approaches",
-						"originalSection": "Competing Approaches",
-						"isNew": true,
-						"linesAdded": 15,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The Protocol Ecosystem",
-						"originalSection": "The Protocol Ecosystem",
-						"isNew": true,
-						"linesAdded": 11,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Core Principles",
-						"originalSection": "3. Core Principles",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Reimagine Rather Than Retrofit",
-						"originalSection": "Reimagine Rather Than Retrofit",
-						"isNew": true,
-						"linesAdded": 7,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Context Engineering Over Context Stuffing",
-						"originalSection": "Context Engineering Over Context Stuffing",
-						"isNew": true,
-						"linesAdded": 16,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Quality Enforcement Over Prescription",
-						"originalSection": "Quality Enforcement Over Prescription",
-						"isNew": true,
-						"linesAdded": 30,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Context Preservation Through Artifacts",
-						"originalSection": "Context Preservation Through Artifacts",
-						"isNew": true,
-						"linesAdded": 12,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The Workspace: Where Knowledge Lives",
-						"originalSection": "The Workspace: Where Knowledge Lives",
-						"isNew": true,
-						"linesAdded": 25,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Hierarchical Knowledge",
-						"originalSection": "Hierarchical Knowledge",
-						"isNew": true,
-						"linesAdded": 16,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Memory Layers",
-						"originalSection": "Memory Layers",
-						"isNew": true,
-						"linesAdded": 13,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Iterative Refinement Through Bolts",
-						"originalSection": "Iterative Refinement Through Bolts",
-						"isNew": true,
-						"linesAdded": 14,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Human Oversight at Strategic Moments",
-						"originalSection": "Human Oversight at Strategic Moments",
-						"isNew": true,
-						"linesAdded": 21,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Learning Loops",
-						"originalSection": "Learning Loops",
-						"isNew": true,
-						"linesAdded": 13,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Overview",
-						"originalSection": "Overview",
-						"isNew": true,
-						"linesAdded": 42,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Phase 1: Elaboration",
-						"originalSection": "Phase 1: Elaboration",
-						"isNew": true,
-						"linesAdded": 150,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Phase 2: Execution",
-						"originalSection": "Phase 2: Execution",
-						"isNew": true,
-						"linesAdded": 121,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Phase 3: Operation",
-						"originalSection": "Phase 3: Operation",
-						"isNew": true,
-						"linesAdded": 47,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Phase 4: Reflection",
-						"originalSection": "Phase 4: Reflection",
-						"isNew": true,
-						"linesAdded": 56,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Operating Modes",
-						"originalSection": "5. Operating Modes",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Supervised",
-						"originalSection": "Supervised",
-						"isNew": true,
-						"linesAdded": 33,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Observed",
-						"originalSection": "Observed",
-						"isNew": true,
-						"linesAdded": 34,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Autonomous",
-						"originalSection": "Autonomous",
-						"isNew": true,
-						"linesAdded": 36,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Mode Selection",
-						"originalSection": "Mode Selection",
-						"isNew": true,
-						"linesAdded": 13,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The Profile Model",
-						"originalSection": "6. The Profile Model",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Universal Core, Domain Adaptation",
-						"originalSection": "Universal Core, Domain Adaptation",
-						"isNew": true,
-						"linesAdded": 19,
-						"linesRemoved": 0
-					},
-					{
-						"section": "AI-DLC: The Software Development Profile",
-						"originalSection": "AI-DLC: The Software Development Profile",
-						"isNew": true,
-						"linesAdded": 92,
-						"linesRemoved": 0
-					},
-					{
-						"section": "SWARM: The Marketing & Sales Profile",
-						"originalSection": "SWARM: The Marketing & Sales Profile",
-						"isNew": true,
-						"linesAdded": 42,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Creating Custom Profiles",
-						"originalSection": "Creating Custom Profiles",
-						"isNew": true,
-						"linesAdded": 28,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Practical Examples",
-						"originalSection": "7. Practical Examples",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Example 1: Software Feature Using the AI-DLC Profile",
-						"originalSection": "Example 1: Software Feature Using the AI-DLC Profile",
-						"isNew": true,
-						"linesAdded": 35,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Example 2: Marketing Campaign Using the SWARM Profile",
-						"originalSection": "Example 2: Marketing Campaign Using the SWARM Profile",
-						"isNew": true,
-						"linesAdded": 38,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Example 3: Strategic Planning Using HAIKU Core",
-						"originalSection": "Example 3: Strategic Planning Using HAIKU Core",
-						"isNew": true,
-						"linesAdded": 38,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Adoption",
-						"originalSection": "8. Adoption",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Start Where You Are",
-						"originalSection": "Start Where You Are",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Step 1: Start with Elaboration",
-						"originalSection": "Step 1: Start with Elaboration",
-						"isNew": true,
-						"linesAdded": 16,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Step 2: Add Execution Structure",
-						"originalSection": "Step 2: Add Execution Structure",
-						"isNew": true,
-						"linesAdded": 13,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Step 3: Extend into Operation",
-						"originalSection": "Step 3: Extend into Operation",
-						"isNew": true,
-						"linesAdded": 13,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Step 4: Close the Loop with Reflection",
-						"originalSection": "Step 4: Close the Loop with Reflection",
-						"isNew": true,
-						"linesAdded": 14,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Progression Is Natural",
-						"originalSection": "Progression Is Natural",
-						"isNew": true,
-						"linesAdded": 12,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Scaling Across an Organization",
-						"originalSection": "Scaling Across an Organization",
-						"isNew": true,
-						"linesAdded": 19,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Measuring Effectiveness",
-						"originalSection": "9. Measuring Effectiveness",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Core Metrics",
-						"originalSection": "Core Metrics",
-						"isNew": true,
-						"linesAdded": 7,
-						"linesRemoved": 0
-					},
-					{
-						"section": "What Not to Measure",
-						"originalSection": "What Not to Measure",
-						"isNew": true,
-						"linesAdded": 7,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The DORA Connection",
-						"originalSection": "The DORA Connection",
-						"isNew": true,
-						"linesAdded": 10,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Governance and Compliance",
-						"originalSection": "10. Governance and Compliance",
-						"isNew": true,
-						"linesAdded": 1,
-						"linesRemoved": 0
-					},
-					{
-						"section": "The Regulatory Landscape",
-						"originalSection": "The Regulatory Landscape",
-						"isNew": true,
-						"linesAdded": 6,
-						"linesRemoved": 0
-					},
-					{
-						"section": "HAIKU as a Governance Framework",
-						"originalSection": "HAIKU as a Governance Framework",
-						"isNew": true,
-						"linesAdded": 10,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Quality Gates as Governance-as-Code",
-						"originalSection": "Quality Gates as Governance-as-Code",
-						"isNew": true,
-						"linesAdded": 3,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Compliance Patterns",
-						"originalSection": "Compliance Patterns",
-						"isNew": true,
-						"linesAdded": 9,
-						"linesRemoved": 0
-					},
-					{
-						"section": "Glossary",
-						"originalSection": "Glossary",
-						"isNew": true,
-						"linesAdded": 26,
-						"linesRemoved": 0
-					},
-					{
-						"section": "References",
-						"originalSection": "References",
-						"isNew": true,
-						"linesAdded": 39,
-						"linesRemoved": 0
-					}
-				]
-			}
-		],
-		"newSections": [
-			"1. The Problem",
-			"2. The Four-Phase Lifecycle",
-			"Elaboration",
-			"Execution",
-			"Operation",
-			"Reflection",
-			"3. Studios: Domain Templates",
-			"Built-in Studios",
-			"Custom Studios",
-			"4. Stages: The Implementation Layer",
-			"What a Stage Defines",
-			"The Stage Loop",
-			"Hat Isolation",
-			"Output Scoping",
-			"5. Units and Bolts: The Work",
-			"Units",
-			"Completion Criteria",
-			"Backpressure",
-			"Bolts",
-			"6. Persistence",
-			"The Abstraction",
-			"Adapters",
-			"Why This Matters",
-			"7. Modes of Operation",
-			"Continuous Mode",
-			"Discrete Mode",
-			"Planning Levels",
-			"8. The Reference Implementation",
-			"Two Commands",
-			"Enforcement Through Hooks",
-			"Configuration",
-			"9. Beyond Software",
-			"Fifteen Studios in Practice",
-			"What Changes Across Domains",
-			"What Stays the Same",
-			"Creating a Custom Studio",
-			"10. Conclusion"
-		]
-	}
+  "ai-dlc-2026": {
+    "slug": "ai-dlc-2026",
+    "currentVersion": "1",
+    "revisions": [
+      {
+        "version": "1",
+        "date": "2026-02-02",
+        "commitHash": "5b3294d",
+        "fullCommitHash": "5b3294d92bf574c961fb7c287d2a3b077a634486",
+        "commitMessage": "feat: transform AI-DLC into comprehensive methodology site",
+        "stats": {
+          "linesAdded": 813,
+          "linesRemoved": 0
+        },
+        "sectionChanges": [
+          {
+            "section": "Introduction",
+            "originalSection": "Introduction",
+            "isNew": false,
+            "linesAdded": 8,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Acknowledgments & Attribution",
+            "originalSection": "Acknowledgments & Attribution",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Foundational Work",
+            "originalSection": "Foundational Work",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Key Influences for 2026",
+            "originalSection": "Key Influences for 2026",
+            "isNew": true,
+            "linesAdded": 11,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Preface: The State of AI-Driven Development",
+            "originalSection": "Preface: The State of AI-Driven Development",
+            "isNew": true,
+            "linesAdded": 18,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Context",
+            "originalSection": "Context",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The Evolution of Software Engineering",
+            "originalSection": "The Evolution of Software Engineering",
+            "isNew": true,
+            "linesAdded": 5,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The Problem with Traditional Methods",
+            "originalSection": "The Problem with Traditional Methods",
+            "isNew": true,
+            "linesAdded": 12,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The New Reality",
+            "originalSection": "The New Reality",
+            "isNew": true,
+            "linesAdded": 3,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Why AI-DLC Over Ad-Hoc AI Assistance",
+            "originalSection": "Why AI-DLC Over Ad-Hoc AI Assistance",
+            "isNew": true,
+            "linesAdded": 51,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Core Principles",
+            "originalSection": "Core Principles",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Reimagine Rather Than Retrofit",
+            "originalSection": "Reimagine Rather Than Retrofit",
+            "isNew": true,
+            "linesAdded": 11,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Three Operating Modes: HITL, OHOTL, and AHOTL",
+            "originalSection": "Three Operating Modes: HITL, OHOTL, and AHOTL",
+            "isNew": true,
+            "linesAdded": 48,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Backpressure Over Prescription",
+            "originalSection": "Backpressure Over Prescription",
+            "isNew": true,
+            "linesAdded": 26,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Embrace the Collapsing SDLC",
+            "originalSection": "Embrace the Collapsing SDLC",
+            "isNew": true,
+            "linesAdded": 15,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Context Is Abundant—Use It Wisely",
+            "originalSection": "Context Is Abundant—Use It Wisely",
+            "isNew": true,
+            "linesAdded": 21,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Memory Providers Expand Knowledge",
+            "originalSection": "Memory Providers Expand Knowledge",
+            "isNew": true,
+            "linesAdded": 31,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Completion Criteria Enable Autonomy",
+            "originalSection": "Completion Criteria Enable Autonomy",
+            "isNew": true,
+            "linesAdded": 22,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Design Techniques Are Tools, Not Requirements",
+            "originalSection": "Design Techniques Are Tools, Not Requirements",
+            "isNew": true,
+            "linesAdded": 19,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Everyone Becomes a Builder",
+            "originalSection": "Everyone Becomes a Builder",
+            "isNew": true,
+            "linesAdded": 28,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Streamline Responsibilities",
+            "originalSection": "Streamline Responsibilities",
+            "isNew": true,
+            "linesAdded": 13,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Tool and Platform Agnostic",
+            "originalSection": "Tool and Platform Agnostic",
+            "isNew": true,
+            "linesAdded": 15,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Core Framework",
+            "originalSection": "Core Framework",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Artifacts",
+            "originalSection": "Artifacts",
+            "isNew": true,
+            "linesAdded": 246,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Phases & Rituals",
+            "originalSection": "Phases & Rituals",
+            "isNew": true,
+            "linesAdded": 171,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The Workflow",
+            "originalSection": "The Workflow",
+            "isNew": true,
+            "linesAdded": 11,
+            "linesRemoved": 0
+          },
+          {
+            "section": "AI-DLC 2026 in Action: Greenfield Development",
+            "originalSection": "AI-DLC 2026 in Action: Greenfield Development",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Inception Phase (Mob Elaboration)",
+            "originalSection": "Inception Phase (Mob Elaboration)",
+            "isNew": true,
+            "linesAdded": 86,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Construction Phase",
+            "originalSection": "Construction Phase",
+            "isNew": true,
+            "linesAdded": 30,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Operations Phase",
+            "originalSection": "Operations Phase",
+            "isNew": true,
+            "linesAdded": 28,
+            "linesRemoved": 0
+          },
+          {
+            "section": "AI-DLC 2026 in Action: Brownfield Development",
+            "originalSection": "AI-DLC 2026 in Action: Brownfield Development",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Key Difference: Context Building",
+            "originalSection": "Key Difference: Context Building",
+            "isNew": true,
+            "linesAdded": 30,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Pre-Inception Artifacts",
+            "originalSection": "Pre-Inception Artifacts",
+            "isNew": true,
+            "linesAdded": 9,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Decision Framework: Selecting Operating Mode",
+            "originalSection": "Decision Framework: Selecting Operating Mode",
+            "isNew": true,
+            "linesAdded": 15,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Implementing Autonomous Bolts",
+            "originalSection": "Implementing Autonomous Bolts",
+            "isNew": true,
+            "linesAdded": 14,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Adoption Path",
+            "originalSection": "Adoption Path",
+            "isNew": true,
+            "linesAdded": 11,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Measuring AI-DLC Effectiveness",
+            "originalSection": "Measuring AI-DLC Effectiveness",
+            "isNew": true,
+            "linesAdded": 12,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Compliance and Audit Integration",
+            "originalSection": "Compliance and Audit Integration",
+            "isNew": true,
+            "linesAdded": 8,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Glossary",
+            "originalSection": "Glossary",
+            "isNew": true,
+            "linesAdded": 21,
+            "linesRemoved": 0
+          },
+          {
+            "section": "References",
+            "originalSection": "References",
+            "isNew": true,
+            "linesAdded": 23,
+            "linesRemoved": 0
+          }
+        ]
+      }
+    ],
+    "newSections": []
+  },
+  "haiku-method": {
+    "slug": "haiku-method",
+    "currentVersion": "2",
+    "revisions": [
+      {
+        "version": "2",
+        "date": "2026-04-20",
+        "commitHash": "da3416e",
+        "fullCommitHash": "da3416e03832368157ce28907e5253bd0987b3b3",
+        "commitMessage": "haiku: snapshot design-stage WIP before product switch",
+        "stats": {
+          "linesAdded": 307,
+          "linesRemoved": 995
+        },
+        "sectionChanges": [
+          {
+            "section": "Introduction",
+            "originalSection": "Introduction",
+            "isNew": false,
+            "linesAdded": 8,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Acknowledgments & Attribution",
+            "originalSection": "Acknowledgments & Attribution",
+            "isNew": false,
+            "linesAdded": 1,
+            "linesRemoved": 1
+          },
+          {
+            "section": "Foundational Work",
+            "originalSection": "Foundational Work",
+            "isNew": false,
+            "linesAdded": 2,
+            "linesRemoved": 2
+          },
+          {
+            "section": "The Problem",
+            "originalSection": "1. The Problem",
+            "isNew": false,
+            "linesAdded": 8,
+            "linesRemoved": 10
+          },
+          {
+            "section": "Glossary",
+            "originalSection": "Glossary",
+            "isNew": false,
+            "linesAdded": 19,
+            "linesRemoved": 22
+          },
+          {
+            "section": "References",
+            "originalSection": "References",
+            "isNew": false,
+            "linesAdded": 1,
+            "linesRemoved": 2
+          },
+          {
+            "section": "The Four-Phase Lifecycle",
+            "originalSection": "2. The Four-Phase Lifecycle",
+            "isNew": true,
+            "linesAdded": 9,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Elaboration",
+            "originalSection": "Elaboration",
+            "isNew": true,
+            "linesAdded": 11,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Execution",
+            "originalSection": "Execution",
+            "isNew": true,
+            "linesAdded": 7,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Operation",
+            "originalSection": "Operation",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Reflection",
+            "originalSection": "Reflection",
+            "isNew": true,
+            "linesAdded": 5,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Studios: Domain Templates",
+            "originalSection": "3. Studios: Domain Templates",
+            "isNew": true,
+            "linesAdded": 3,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Built-in Studios",
+            "originalSection": "Built-in Studios",
+            "isNew": true,
+            "linesAdded": 131,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Custom Studios",
+            "originalSection": "Custom Studios",
+            "isNew": true,
+            "linesAdded": 5,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Stages: The Implementation Layer",
+            "originalSection": "4. Stages: The Implementation Layer",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "What a Stage Defines",
+            "originalSection": "What a Stage Defines",
+            "isNew": true,
+            "linesAdded": 20,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The Stage Loop",
+            "originalSection": "The Stage Loop",
+            "isNew": true,
+            "linesAdded": 22,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Hat Isolation",
+            "originalSection": "Hat Isolation",
+            "isNew": true,
+            "linesAdded": 3,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Output Scoping",
+            "originalSection": "Output Scoping",
+            "isNew": true,
+            "linesAdded": 10,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Units and Bolts: The Work",
+            "originalSection": "5. Units and Bolts: The Work",
+            "isNew": false,
+            "renamedFrom": "The 4-Phase Lifecycle",
+            "linesAdded": 0,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Units",
+            "originalSection": "Units",
+            "isNew": true,
+            "linesAdded": 5,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Completion Criteria",
+            "originalSection": "Completion Criteria",
+            "isNew": true,
+            "linesAdded": 17,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Backpressure",
+            "originalSection": "Backpressure",
+            "isNew": true,
+            "linesAdded": 5,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Bolts",
+            "originalSection": "Bolts",
+            "isNew": true,
+            "linesAdded": 14,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Persistence",
+            "originalSection": "6. Persistence",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The Abstraction",
+            "originalSection": "The Abstraction",
+            "isNew": true,
+            "linesAdded": 3,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Adapters",
+            "originalSection": "Adapters",
+            "isNew": true,
+            "linesAdded": 5,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Why This Matters",
+            "originalSection": "Why This Matters",
+            "isNew": true,
+            "linesAdded": 3,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Modes of Operation",
+            "originalSection": "7. Modes of Operation",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Continuous Mode",
+            "originalSection": "Continuous Mode",
+            "isNew": true,
+            "linesAdded": 3,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Discrete Mode",
+            "originalSection": "Discrete Mode",
+            "isNew": true,
+            "linesAdded": 3,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Planning Levels",
+            "originalSection": "Planning Levels",
+            "isNew": true,
+            "linesAdded": 9,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The Reference Implementation",
+            "originalSection": "8. The Reference Implementation",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Two Commands",
+            "originalSection": "Two Commands",
+            "isNew": true,
+            "linesAdded": 3,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Enforcement Through Hooks",
+            "originalSection": "Enforcement Through Hooks",
+            "isNew": true,
+            "linesAdded": 9,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Configuration",
+            "originalSection": "Configuration",
+            "isNew": true,
+            "linesAdded": 11,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Beyond Software",
+            "originalSection": "9. Beyond Software",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Fifteen Studios in Practice",
+            "originalSection": "Fifteen Studios in Practice",
+            "isNew": true,
+            "linesAdded": 9,
+            "linesRemoved": 0
+          },
+          {
+            "section": "What Changes Across Domains",
+            "originalSection": "What Changes Across Domains",
+            "isNew": true,
+            "linesAdded": 6,
+            "linesRemoved": 0
+          },
+          {
+            "section": "What Stays the Same",
+            "originalSection": "What Stays the Same",
+            "isNew": true,
+            "linesAdded": 7,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Creating a Custom Studio",
+            "originalSection": "Creating a Custom Studio",
+            "isNew": true,
+            "linesAdded": 11,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Conclusion",
+            "originalSection": "10. Conclusion",
+            "isNew": true,
+            "linesAdded": 11,
+            "linesRemoved": 0
+          },
+          {
+            "section": "HAIKU: Human AI Knowledge Unification",
+            "originalSection": "HAIKU: Human AI Knowledge Unification",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 9
+          },
+          {
+            "section": "Who This Is For",
+            "originalSection": "Who This Is For",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 12
+          },
+          {
+            "section": "The State of the Art",
+            "originalSection": "2. The State of the Art",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 1
+          },
+          {
+            "section": "The Landscape Shift",
+            "originalSection": "The Landscape Shift",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 14
+          },
+          {
+            "section": "The Evidence for Structure",
+            "originalSection": "The Evidence for Structure",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 7
+          },
+          {
+            "section": "The \"Vibe Coding\" Moment",
+            "originalSection": "The \"Vibe Coding\" Moment",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 5
+          },
+          {
+            "section": "Competing Approaches",
+            "originalSection": "Competing Approaches",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 15
+          },
+          {
+            "section": "The Protocol Ecosystem",
+            "originalSection": "The Protocol Ecosystem",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 11
+          },
+          {
+            "section": "Core Principles",
+            "originalSection": "3. Core Principles",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 1
+          },
+          {
+            "section": "Reimagine Rather Than Retrofit",
+            "originalSection": "Reimagine Rather Than Retrofit",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 7
+          },
+          {
+            "section": "Context Engineering Over Context Stuffing",
+            "originalSection": "Context Engineering Over Context Stuffing",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 16
+          },
+          {
+            "section": "Quality Enforcement Over Prescription",
+            "originalSection": "Quality Enforcement Over Prescription",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 30
+          },
+          {
+            "section": "Context Preservation Through Artifacts",
+            "originalSection": "Context Preservation Through Artifacts",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 12
+          },
+          {
+            "section": "The Workspace: Where Knowledge Lives",
+            "originalSection": "The Workspace: Where Knowledge Lives",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 25
+          },
+          {
+            "section": "Hierarchical Knowledge",
+            "originalSection": "Hierarchical Knowledge",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 16
+          },
+          {
+            "section": "Memory Layers",
+            "originalSection": "Memory Layers",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 13
+          },
+          {
+            "section": "Iterative Refinement Through Bolts",
+            "originalSection": "Iterative Refinement Through Bolts",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 14
+          },
+          {
+            "section": "Human Oversight at Strategic Moments",
+            "originalSection": "Human Oversight at Strategic Moments",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 21
+          },
+          {
+            "section": "Learning Loops",
+            "originalSection": "Learning Loops",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 13
+          },
+          {
+            "section": "Overview",
+            "originalSection": "Overview",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 42
+          },
+          {
+            "section": "Phase 1: Elaboration",
+            "originalSection": "Phase 1: Elaboration",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 150
+          },
+          {
+            "section": "Phase 2: Execution",
+            "originalSection": "Phase 2: Execution",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 121
+          },
+          {
+            "section": "Phase 3: Operation",
+            "originalSection": "Phase 3: Operation",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 47
+          },
+          {
+            "section": "Phase 4: Reflection",
+            "originalSection": "Phase 4: Reflection",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 56
+          },
+          {
+            "section": "Operating Modes",
+            "originalSection": "5. Operating Modes",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 1
+          },
+          {
+            "section": "Supervised",
+            "originalSection": "Supervised",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 33
+          },
+          {
+            "section": "Observed",
+            "originalSection": "Observed",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 34
+          },
+          {
+            "section": "Autonomous",
+            "originalSection": "Autonomous",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 36
+          },
+          {
+            "section": "Mode Selection",
+            "originalSection": "Mode Selection",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 13
+          },
+          {
+            "section": "The Profile Model",
+            "originalSection": "6. The Profile Model",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 1
+          },
+          {
+            "section": "Universal Core, Domain Adaptation",
+            "originalSection": "Universal Core, Domain Adaptation",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 19
+          },
+          {
+            "section": "AI-DLC: The Software Development Profile",
+            "originalSection": "AI-DLC: The Software Development Profile",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 92
+          },
+          {
+            "section": "SWARM: The Marketing & Sales Profile",
+            "originalSection": "SWARM: The Marketing & Sales Profile",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 42
+          },
+          {
+            "section": "Creating Custom Profiles",
+            "originalSection": "Creating Custom Profiles",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 28
+          },
+          {
+            "section": "Practical Examples",
+            "originalSection": "7. Practical Examples",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 1
+          },
+          {
+            "section": "Example 1: Software Feature Using the AI-DLC Profile",
+            "originalSection": "Example 1: Software Feature Using the AI-DLC Profile",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 35
+          },
+          {
+            "section": "Example 2: Marketing Campaign Using the SWARM Profile",
+            "originalSection": "Example 2: Marketing Campaign Using the SWARM Profile",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 38
+          },
+          {
+            "section": "Example 3: Strategic Planning Using HAIKU Core",
+            "originalSection": "Example 3: Strategic Planning Using HAIKU Core",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 38
+          },
+          {
+            "section": "Adoption",
+            "originalSection": "8. Adoption",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 1
+          },
+          {
+            "section": "Start Where You Are",
+            "originalSection": "Start Where You Are",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 1
+          },
+          {
+            "section": "Step 1: Start with Elaboration",
+            "originalSection": "Step 1: Start with Elaboration",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 16
+          },
+          {
+            "section": "Step 2: Add Execution Structure",
+            "originalSection": "Step 2: Add Execution Structure",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 13
+          },
+          {
+            "section": "Step 3: Extend into Operation",
+            "originalSection": "Step 3: Extend into Operation",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 13
+          },
+          {
+            "section": "Step 4: Close the Loop with Reflection",
+            "originalSection": "Step 4: Close the Loop with Reflection",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 14
+          },
+          {
+            "section": "Progression Is Natural",
+            "originalSection": "Progression Is Natural",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 12
+          },
+          {
+            "section": "Scaling Across an Organization",
+            "originalSection": "Scaling Across an Organization",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 19
+          },
+          {
+            "section": "Measuring Effectiveness",
+            "originalSection": "9. Measuring Effectiveness",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 1
+          },
+          {
+            "section": "Core Metrics",
+            "originalSection": "Core Metrics",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 7
+          },
+          {
+            "section": "What Not to Measure",
+            "originalSection": "What Not to Measure",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 7
+          },
+          {
+            "section": "The DORA Connection",
+            "originalSection": "The DORA Connection",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 10
+          },
+          {
+            "section": "Governance and Compliance",
+            "originalSection": "10. Governance and Compliance",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 1
+          },
+          {
+            "section": "The Regulatory Landscape",
+            "originalSection": "The Regulatory Landscape",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 6
+          },
+          {
+            "section": "HAIKU as a Governance Framework",
+            "originalSection": "HAIKU as a Governance Framework",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 10
+          },
+          {
+            "section": "Quality Gates as Governance-as-Code",
+            "originalSection": "Quality Gates as Governance-as-Code",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 3
+          },
+          {
+            "section": "Compliance Patterns",
+            "originalSection": "Compliance Patterns",
+            "isNew": false,
+            "isRemoved": true,
+            "linesAdded": 0,
+            "linesRemoved": 9
+          }
+        ]
+      },
+      {
+        "version": "1",
+        "date": "2026-04-03",
+        "commitHash": "0a798c0",
+        "fullCommitHash": "0a798c0ee0394b28bd05c042776babcfc5d49600",
+        "commitMessage": "Ai dlc/haiku rebrand/main (#138)",
+        "stats": {
+          "linesAdded": 1048,
+          "linesRemoved": 0
+        },
+        "sectionChanges": [
+          {
+            "section": "Acknowledgments & Attribution",
+            "originalSection": "Acknowledgments & Attribution",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Foundational Work",
+            "originalSection": "Foundational Work",
+            "isNew": true,
+            "linesAdded": 3,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Key Influences",
+            "originalSection": "Key Influences",
+            "isNew": true,
+            "linesAdded": 9,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The Problem",
+            "originalSection": "The Problem",
+            "isNew": true,
+            "linesAdded": 13,
+            "linesRemoved": 0
+          },
+          {
+            "section": "HAIKU: Human AI Knowledge Unification",
+            "originalSection": "HAIKU: Human AI Knowledge Unification",
+            "isNew": true,
+            "linesAdded": 9,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The 4-Phase Lifecycle",
+            "originalSection": "4. The 4-Phase Lifecycle",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Who This Is For",
+            "originalSection": "Who This Is For",
+            "isNew": true,
+            "linesAdded": 12,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The State of the Art",
+            "originalSection": "2. The State of the Art",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The Landscape Shift",
+            "originalSection": "The Landscape Shift",
+            "isNew": true,
+            "linesAdded": 14,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The Evidence for Structure",
+            "originalSection": "The Evidence for Structure",
+            "isNew": true,
+            "linesAdded": 7,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The \"Vibe Coding\" Moment",
+            "originalSection": "The \"Vibe Coding\" Moment",
+            "isNew": true,
+            "linesAdded": 5,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Competing Approaches",
+            "originalSection": "Competing Approaches",
+            "isNew": true,
+            "linesAdded": 15,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The Protocol Ecosystem",
+            "originalSection": "The Protocol Ecosystem",
+            "isNew": true,
+            "linesAdded": 11,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Core Principles",
+            "originalSection": "3. Core Principles",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Reimagine Rather Than Retrofit",
+            "originalSection": "Reimagine Rather Than Retrofit",
+            "isNew": true,
+            "linesAdded": 7,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Context Engineering Over Context Stuffing",
+            "originalSection": "Context Engineering Over Context Stuffing",
+            "isNew": true,
+            "linesAdded": 16,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Quality Enforcement Over Prescription",
+            "originalSection": "Quality Enforcement Over Prescription",
+            "isNew": true,
+            "linesAdded": 30,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Context Preservation Through Artifacts",
+            "originalSection": "Context Preservation Through Artifacts",
+            "isNew": true,
+            "linesAdded": 12,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The Workspace: Where Knowledge Lives",
+            "originalSection": "The Workspace: Where Knowledge Lives",
+            "isNew": true,
+            "linesAdded": 25,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Hierarchical Knowledge",
+            "originalSection": "Hierarchical Knowledge",
+            "isNew": true,
+            "linesAdded": 16,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Memory Layers",
+            "originalSection": "Memory Layers",
+            "isNew": true,
+            "linesAdded": 13,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Iterative Refinement Through Bolts",
+            "originalSection": "Iterative Refinement Through Bolts",
+            "isNew": true,
+            "linesAdded": 14,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Human Oversight at Strategic Moments",
+            "originalSection": "Human Oversight at Strategic Moments",
+            "isNew": true,
+            "linesAdded": 21,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Learning Loops",
+            "originalSection": "Learning Loops",
+            "isNew": true,
+            "linesAdded": 13,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Overview",
+            "originalSection": "Overview",
+            "isNew": true,
+            "linesAdded": 42,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Phase 1: Elaboration",
+            "originalSection": "Phase 1: Elaboration",
+            "isNew": true,
+            "linesAdded": 150,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Phase 2: Execution",
+            "originalSection": "Phase 2: Execution",
+            "isNew": true,
+            "linesAdded": 121,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Phase 3: Operation",
+            "originalSection": "Phase 3: Operation",
+            "isNew": true,
+            "linesAdded": 47,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Phase 4: Reflection",
+            "originalSection": "Phase 4: Reflection",
+            "isNew": true,
+            "linesAdded": 56,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Operating Modes",
+            "originalSection": "5. Operating Modes",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Supervised",
+            "originalSection": "Supervised",
+            "isNew": true,
+            "linesAdded": 33,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Observed",
+            "originalSection": "Observed",
+            "isNew": true,
+            "linesAdded": 34,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Autonomous",
+            "originalSection": "Autonomous",
+            "isNew": true,
+            "linesAdded": 36,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Mode Selection",
+            "originalSection": "Mode Selection",
+            "isNew": true,
+            "linesAdded": 13,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The Profile Model",
+            "originalSection": "6. The Profile Model",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Universal Core, Domain Adaptation",
+            "originalSection": "Universal Core, Domain Adaptation",
+            "isNew": true,
+            "linesAdded": 19,
+            "linesRemoved": 0
+          },
+          {
+            "section": "AI-DLC: The Software Development Profile",
+            "originalSection": "AI-DLC: The Software Development Profile",
+            "isNew": true,
+            "linesAdded": 92,
+            "linesRemoved": 0
+          },
+          {
+            "section": "SWARM: The Marketing & Sales Profile",
+            "originalSection": "SWARM: The Marketing & Sales Profile",
+            "isNew": true,
+            "linesAdded": 42,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Creating Custom Profiles",
+            "originalSection": "Creating Custom Profiles",
+            "isNew": true,
+            "linesAdded": 28,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Practical Examples",
+            "originalSection": "7. Practical Examples",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Example 1: Software Feature Using the AI-DLC Profile",
+            "originalSection": "Example 1: Software Feature Using the AI-DLC Profile",
+            "isNew": true,
+            "linesAdded": 35,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Example 2: Marketing Campaign Using the SWARM Profile",
+            "originalSection": "Example 2: Marketing Campaign Using the SWARM Profile",
+            "isNew": true,
+            "linesAdded": 38,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Example 3: Strategic Planning Using HAIKU Core",
+            "originalSection": "Example 3: Strategic Planning Using HAIKU Core",
+            "isNew": true,
+            "linesAdded": 38,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Adoption",
+            "originalSection": "8. Adoption",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Start Where You Are",
+            "originalSection": "Start Where You Are",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Step 1: Start with Elaboration",
+            "originalSection": "Step 1: Start with Elaboration",
+            "isNew": true,
+            "linesAdded": 16,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Step 2: Add Execution Structure",
+            "originalSection": "Step 2: Add Execution Structure",
+            "isNew": true,
+            "linesAdded": 13,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Step 3: Extend into Operation",
+            "originalSection": "Step 3: Extend into Operation",
+            "isNew": true,
+            "linesAdded": 13,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Step 4: Close the Loop with Reflection",
+            "originalSection": "Step 4: Close the Loop with Reflection",
+            "isNew": true,
+            "linesAdded": 14,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Progression Is Natural",
+            "originalSection": "Progression Is Natural",
+            "isNew": true,
+            "linesAdded": 12,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Scaling Across an Organization",
+            "originalSection": "Scaling Across an Organization",
+            "isNew": true,
+            "linesAdded": 19,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Measuring Effectiveness",
+            "originalSection": "9. Measuring Effectiveness",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Core Metrics",
+            "originalSection": "Core Metrics",
+            "isNew": true,
+            "linesAdded": 7,
+            "linesRemoved": 0
+          },
+          {
+            "section": "What Not to Measure",
+            "originalSection": "What Not to Measure",
+            "isNew": true,
+            "linesAdded": 7,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The DORA Connection",
+            "originalSection": "The DORA Connection",
+            "isNew": true,
+            "linesAdded": 10,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Governance and Compliance",
+            "originalSection": "10. Governance and Compliance",
+            "isNew": true,
+            "linesAdded": 1,
+            "linesRemoved": 0
+          },
+          {
+            "section": "The Regulatory Landscape",
+            "originalSection": "The Regulatory Landscape",
+            "isNew": true,
+            "linesAdded": 6,
+            "linesRemoved": 0
+          },
+          {
+            "section": "HAIKU as a Governance Framework",
+            "originalSection": "HAIKU as a Governance Framework",
+            "isNew": true,
+            "linesAdded": 10,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Quality Gates as Governance-as-Code",
+            "originalSection": "Quality Gates as Governance-as-Code",
+            "isNew": true,
+            "linesAdded": 3,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Compliance Patterns",
+            "originalSection": "Compliance Patterns",
+            "isNew": true,
+            "linesAdded": 9,
+            "linesRemoved": 0
+          },
+          {
+            "section": "Glossary",
+            "originalSection": "Glossary",
+            "isNew": true,
+            "linesAdded": 26,
+            "linesRemoved": 0
+          },
+          {
+            "section": "References",
+            "originalSection": "References",
+            "isNew": true,
+            "linesAdded": 39,
+            "linesRemoved": 0
+          }
+        ]
+      }
+    ],
+    "newSections": [
+      "1. The Problem",
+      "2. The Four-Phase Lifecycle",
+      "Elaboration",
+      "Execution",
+      "Operation",
+      "Reflection",
+      "3. Studios: Domain Templates",
+      "Built-in Studios",
+      "Custom Studios",
+      "4. Stages: The Implementation Layer",
+      "What a Stage Defines",
+      "The Stage Loop",
+      "Hat Isolation",
+      "Output Scoping",
+      "5. Units and Bolts: The Work",
+      "Units",
+      "Completion Criteria",
+      "Backpressure",
+      "Bolts",
+      "6. Persistence",
+      "The Abstraction",
+      "Adapters",
+      "Why This Matters",
+      "7. Modes of Operation",
+      "Continuous Mode",
+      "Discrete Mode",
+      "Planning Levels",
+      "8. The Reference Implementation",
+      "Two Commands",
+      "Enforcement Through Hooks",
+      "Configuration",
+      "9. Beyond Software",
+      "Fifteen Studios in Practice",
+      "What Changes Across Domains",
+      "What Stays the Same",
+      "Creating a Custom Studio",
+      "10. Conclusion"
+    ]
+  }
 }

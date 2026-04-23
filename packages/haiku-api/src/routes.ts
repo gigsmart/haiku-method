@@ -14,6 +14,7 @@ import type { ZodTypeAny } from "zod"
 import {
 	DEFAULT_BODY_MAX_BYTES,
 	FEEDBACK_BODY_MAX_BYTES,
+	FEEDBACK_CREATE_MAX_BYTES,
 	type RouteTransport,
 } from "./schemas/common.js"
 import {
@@ -25,6 +26,8 @@ import {
 	FeedbackCreateResponseSchema,
 	FeedbackDeleteResponseSchema,
 	FeedbackListResponseSchema,
+	FeedbackReplyCreateRequestSchema,
+	FeedbackReplyCreateResponseSchema,
 	FeedbackUpdateRequestSchema,
 	FeedbackUpdateResponseSchema,
 } from "./schemas/feedback.js"
@@ -306,7 +309,9 @@ export const routes: readonly RouteSpec[] = [
 		summary: "Create a new feedback item in an intent's stage.",
 		tag: "feedback",
 		transport: "loopback",
-		maxBodyBytes: FEEDBACK_BODY_MAX_BYTES,
+		// Larger cap than the update/delete routes because create may
+		// carry a base64-encoded screenshot attachment.
+		maxBodyBytes: FEEDBACK_CREATE_MAX_BYTES,
 	},
 	{
 		method: "PUT",
@@ -328,6 +333,29 @@ export const routes: readonly RouteSpec[] = [
 		summary: "Delete a feedback item (blocks open items via 409).",
 		tag: "feedback",
 		transport: "loopback",
+	},
+	{
+		method: "GET",
+		pathTemplate: "/api/feedback-attachment/{intent}/{stage}/{filename}",
+		operationId: "getFeedbackAttachment",
+		request: null,
+		response: null,
+		summary:
+			"Serve an annotated-screenshot sidecar attached to a feedback item.",
+		tag: "feedback",
+		transport: "loopback",
+	},
+	{
+		method: "POST",
+		pathTemplate: "/api/feedback/{intent}/{stage}/{feedbackId}/replies",
+		operationId: "createFeedbackReply",
+		request: FeedbackReplyCreateRequestSchema,
+		response: FeedbackReplyCreateResponseSchema,
+		summary:
+			"Append a reply to a feedback thread. Optionally closes the parent as 'answered'.",
+		tag: "feedback",
+		transport: "loopback",
+		maxBodyBytes: FEEDBACK_BODY_MAX_BYTES,
 	},
 
 	// Health ─────────────────────────────────────────────────────────────

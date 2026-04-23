@@ -47,37 +47,41 @@ const EXPECTED = [
 	["POST", "/api/feedback/{intent}/{stage}"],
 	["PUT", "/api/feedback/{intent}/{stage}/{feedbackId}"],
 	["DELETE", "/api/feedback/{intent}/{stage}/{feedbackId}"],
+	["POST", "/api/feedback/{intent}/{stage}/{feedbackId}/replies"],
+	["GET", "/api/feedback-attachment/{intent}/{stage}/{filename}"],
 	["GET", "/health"],
 	["WS", "/ws/session/{sessionId}"],
 ]
 
 /**
  * Each expected route should be rooted in http.ts. We spot-check via a small
- * fingerprint — the handler function name for request routes, or the WebSocket
- * upgrade path match for WS.
+ * fingerprint — the Fastify route path literal used when registering the
+ * handler. Keep these in lockstep with the `instance.{get,post,…}(…)` calls
+ * in http.ts.
  */
 const HTTP_FINGERPRINTS = [
-	"handleFileGet",
-	"handleSessionApi",
-	"recordHeartbeat",
-	"/review/current",
-	"handleReviewGet",
-	"handleDecidePost",
-	"handleMockupGet",
-	"handleWireframeGet",
-	"handleStageArtifactGet",
-	"handleDirectionGet",
-	"handleDirectionSelectPost",
-	"handleQuestionImageGet",
-	"handleQuestionGet",
-	"handleQuestionAnswerPost",
-	"handleReviewCurrent",
-	"handleFeedbackGet",
-	"handleFeedbackPost",
-	"handleFeedbackPut",
-	"handleFeedbackDelete",
-	'path === "/health"',
-	"/ws/session/",
+	'"/files/:sessionId/*"',
+	'"/api/session/:sessionId"',
+	'"/api/session/:sessionId/heartbeat"',
+	'"/review/current"',
+	'"/review/:sessionId"',
+	'"/review/:sessionId/decide"',
+	'"/mockups/:sessionId/*"',
+	'"/wireframe/:sessionId/*"',
+	'"/stage-artifacts/:sessionId/*"',
+	'"/direction/:sessionId"',
+	'"/direction/:sessionId/select"',
+	'"/question-image/:sessionId/:index"',
+	'"/question/:sessionId"',
+	'"/question/:sessionId/answer"',
+	'"/api/review/current"',
+	'"/api/revisit/:sessionId"',
+	'"/api/feedback/:intent/:stage"',
+	'"/api/feedback/:intent/:stage/:feedbackId"',
+	'"/api/feedback/:intent/:stage/:feedbackId/replies"',
+	'"/api/feedback-attachment/:intent/:stage/:filename"',
+	'"/health"',
+	'"/ws/session/:sessionId"',
 ]
 
 describe("routes.ts — coverage vs packages/haiku/src/http.ts", () => {

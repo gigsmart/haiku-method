@@ -8,319 +8,304 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { ConcreteRequest } from "relay-runtime"
+import { ConcreteRequest } from 'relay-runtime';
 export type operationsIntentTreeQuery$variables = {
-	fullPath: string
-	path: string
-	ref?: string | null | undefined
-}
+  fullPath: string;
+  path: string;
+  ref?: string | null | undefined;
+};
 export type operationsIntentTreeQuery$data = {
-	readonly project:
-		| {
-				readonly repository:
-					| {
-							readonly tree:
-								| {
-										readonly blobs: {
-											readonly nodes:
-												| ReadonlyArray<
-														| {
-																readonly name: string
-																readonly path: string
-														  }
-														| null
-														| undefined
-												  >
-												| null
-												| undefined
-										}
-										readonly trees: {
-											readonly nodes:
-												| ReadonlyArray<
-														| {
-																readonly name: string
-																readonly path: string
-														  }
-														| null
-														| undefined
-												  >
-												| null
-												| undefined
-										}
-								  }
-								| null
-								| undefined
-					  }
-					| null
-					| undefined
-		  }
-		| null
-		| undefined
-}
+  readonly project: {
+    readonly repository: {
+      readonly tree: {
+        readonly blobs: {
+          readonly nodes: ReadonlyArray<{
+            readonly name: string;
+            readonly path: string;
+          } | null | undefined> | null | undefined;
+        };
+        readonly trees: {
+          readonly nodes: ReadonlyArray<{
+            readonly name: string;
+            readonly path: string;
+          } | null | undefined> | null | undefined;
+        };
+      } | null | undefined;
+    } | null | undefined;
+  } | null | undefined;
+};
 export type operationsIntentTreeQuery = {
-	response: operationsIntentTreeQuery$data
-	variables: operationsIntentTreeQuery$variables
-}
+  response: operationsIntentTreeQuery$data;
+  variables: operationsIntentTreeQuery$variables;
+};
 
-const node: ConcreteRequest = (() => {
-	const v0 = [
-		{
-			defaultValue: null,
-			kind: "LocalArgument",
-			name: "fullPath",
-		},
-		{
-			defaultValue: null,
-			kind: "LocalArgument",
-			name: "path",
-		},
-		{
-			defaultValue: null,
-			kind: "LocalArgument",
-			name: "ref",
-		},
-	]
-	const v1 = [
-		{
-			kind: "Variable",
-			name: "fullPath",
-			variableName: "fullPath",
-		},
-	]
-	const v2 = [
-		{
-			kind: "Variable",
-			name: "path",
-			variableName: "path",
-		},
-		{
-			kind: "Literal",
-			name: "recursive",
-			value: true,
-		},
-		{
-			kind: "Variable",
-			name: "ref",
-			variableName: "ref",
-		},
-	]
-	const v3 = [
-		{
-			kind: "Literal",
-			name: "first",
-			value: 500,
-		},
-	]
-	const v4 = {
-		alias: null,
-		args: null,
-		kind: "ScalarField",
-		name: "name",
-		storageKey: null,
-	}
-	const v5 = {
-		alias: null,
-		args: null,
-		kind: "ScalarField",
-		name: "path",
-		storageKey: null,
-	}
-	const v6 = [v4 /*: any*/, v5 /*: any*/]
-	const v7 = [
-		{
-			kind: "Literal",
-			name: "first",
-			value: 100,
-		},
-	]
-	const v8 = {
-		alias: null,
-		args: null,
-		kind: "ScalarField",
-		name: "id",
-		storageKey: null,
-	}
-	const v9 = [v4 /*: any*/, v5 /*: any*/, v8 /*: any*/]
-	return {
-		fragment: {
-			argumentDefinitions: v0 /*: any*/,
-			kind: "Fragment",
-			metadata: null,
-			name: "operationsIntentTreeQuery",
-			selections: [
-				{
-					alias: null,
-					args: v1 /*: any*/,
-					concreteType: "Project",
-					kind: "LinkedField",
-					name: "project",
-					plural: false,
-					selections: [
-						{
-							alias: null,
-							args: null,
-							concreteType: "Repository",
-							kind: "LinkedField",
-							name: "repository",
-							plural: false,
-							selections: [
-								{
-									alias: null,
-									args: v2 /*: any*/,
-									concreteType: "Tree",
-									kind: "LinkedField",
-									name: "tree",
-									plural: false,
-									selections: [
-										{
-											alias: null,
-											args: v3 /*: any*/,
-											concreteType: "BlobConnection",
-											kind: "LinkedField",
-											name: "blobs",
-											plural: false,
-											selections: [
-												{
-													alias: null,
-													args: null,
-													concreteType: "Blob",
-													kind: "LinkedField",
-													name: "nodes",
-													plural: true,
-													selections: v6 /*: any*/,
-													storageKey: null,
-												},
-											],
-											storageKey: "blobs(first:500)",
-										},
-										{
-											alias: null,
-											args: v7 /*: any*/,
-											concreteType: "TreeEntryConnection",
-											kind: "LinkedField",
-											name: "trees",
-											plural: false,
-											selections: [
-												{
-													alias: null,
-													args: null,
-													concreteType: "TreeEntry",
-													kind: "LinkedField",
-													name: "nodes",
-													plural: true,
-													selections: v6 /*: any*/,
-													storageKey: null,
-												},
-											],
-											storageKey: "trees(first:100)",
-										},
-									],
-									storageKey: null,
-								},
-							],
-							storageKey: null,
-						},
-					],
-					storageKey: null,
-				},
-			],
-			type: "Query",
-			abstractKey: null,
-		},
-		kind: "Request",
-		operation: {
-			argumentDefinitions: v0 /*: any*/,
-			kind: "Operation",
-			name: "operationsIntentTreeQuery",
-			selections: [
-				{
-					alias: null,
-					args: v1 /*: any*/,
-					concreteType: "Project",
-					kind: "LinkedField",
-					name: "project",
-					plural: false,
-					selections: [
-						{
-							alias: null,
-							args: null,
-							concreteType: "Repository",
-							kind: "LinkedField",
-							name: "repository",
-							plural: false,
-							selections: [
-								{
-									alias: null,
-									args: v2 /*: any*/,
-									concreteType: "Tree",
-									kind: "LinkedField",
-									name: "tree",
-									plural: false,
-									selections: [
-										{
-											alias: null,
-											args: v3 /*: any*/,
-											concreteType: "BlobConnection",
-											kind: "LinkedField",
-											name: "blobs",
-											plural: false,
-											selections: [
-												{
-													alias: null,
-													args: null,
-													concreteType: "Blob",
-													kind: "LinkedField",
-													name: "nodes",
-													plural: true,
-													selections: v9 /*: any*/,
-													storageKey: null,
-												},
-											],
-											storageKey: "blobs(first:500)",
-										},
-										{
-											alias: null,
-											args: v7 /*: any*/,
-											concreteType: "TreeEntryConnection",
-											kind: "LinkedField",
-											name: "trees",
-											plural: false,
-											selections: [
-												{
-													alias: null,
-													args: null,
-													concreteType: "TreeEntry",
-													kind: "LinkedField",
-													name: "nodes",
-													plural: true,
-													selections: v9 /*: any*/,
-													storageKey: null,
-												},
-											],
-											storageKey: "trees(first:100)",
-										},
-									],
-									storageKey: null,
-								},
-							],
-							storageKey: null,
-						},
-						v8 /*: any*/,
-					],
-					storageKey: null,
-				},
-			],
-		},
-		params: {
-			cacheID: "62e0d429e4a565191ac3ee700253edc2",
-			id: null,
-			metadata: {},
-			name: "operationsIntentTreeQuery",
-			operationKind: "query",
-			text: "query operationsIntentTreeQuery(\n  $fullPath: ID!\n  $path: String!\n  $ref: String\n) {\n  project(fullPath: $fullPath) {\n    repository {\n      tree(path: $path, ref: $ref, recursive: true) {\n        blobs(first: 500) {\n          nodes {\n            name\n            path\n            id\n          }\n        }\n        trees(first: 100) {\n          nodes {\n            name\n            path\n            id\n          }\n        }\n      }\n    }\n    id\n  }\n}\n",
-		},
-	}
-})()
-;(node as any).hash = "079d192142f866cc0b207dcebc578a36"
+const node: ConcreteRequest = (function(){
+var v0 = [
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
+    "name": "fullPath"
+  },
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
+    "name": "path"
+  },
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
+    "name": "ref"
+  }
+],
+v1 = [
+  {
+    "kind": "Variable",
+    "name": "fullPath",
+    "variableName": "fullPath"
+  }
+],
+v2 = [
+  {
+    "kind": "Variable",
+    "name": "path",
+    "variableName": "path"
+  },
+  {
+    "kind": "Literal",
+    "name": "recursive",
+    "value": true
+  },
+  {
+    "kind": "Variable",
+    "name": "ref",
+    "variableName": "ref"
+  }
+],
+v3 = [
+  {
+    "kind": "Literal",
+    "name": "first",
+    "value": 500
+  }
+],
+v4 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "name",
+  "storageKey": null
+},
+v5 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "path",
+  "storageKey": null
+},
+v6 = [
+  (v4/*: any*/),
+  (v5/*: any*/)
+],
+v7 = [
+  {
+    "kind": "Literal",
+    "name": "first",
+    "value": 100
+  }
+],
+v8 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "id",
+  "storageKey": null
+},
+v9 = [
+  (v4/*: any*/),
+  (v5/*: any*/),
+  (v8/*: any*/)
+];
+return {
+  "fragment": {
+    "argumentDefinitions": (v0/*: any*/),
+    "kind": "Fragment",
+    "metadata": null,
+    "name": "operationsIntentTreeQuery",
+    "selections": [
+      {
+        "alias": null,
+        "args": (v1/*: any*/),
+        "concreteType": "Project",
+        "kind": "LinkedField",
+        "name": "project",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "Repository",
+            "kind": "LinkedField",
+            "name": "repository",
+            "plural": false,
+            "selections": [
+              {
+                "alias": null,
+                "args": (v2/*: any*/),
+                "concreteType": "Tree",
+                "kind": "LinkedField",
+                "name": "tree",
+                "plural": false,
+                "selections": [
+                  {
+                    "alias": null,
+                    "args": (v3/*: any*/),
+                    "concreteType": "BlobConnection",
+                    "kind": "LinkedField",
+                    "name": "blobs",
+                    "plural": false,
+                    "selections": [
+                      {
+                        "alias": null,
+                        "args": null,
+                        "concreteType": "Blob",
+                        "kind": "LinkedField",
+                        "name": "nodes",
+                        "plural": true,
+                        "selections": (v6/*: any*/),
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": "blobs(first:500)"
+                  },
+                  {
+                    "alias": null,
+                    "args": (v7/*: any*/),
+                    "concreteType": "TreeEntryConnection",
+                    "kind": "LinkedField",
+                    "name": "trees",
+                    "plural": false,
+                    "selections": [
+                      {
+                        "alias": null,
+                        "args": null,
+                        "concreteType": "TreeEntry",
+                        "kind": "LinkedField",
+                        "name": "nodes",
+                        "plural": true,
+                        "selections": (v6/*: any*/),
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": "trees(first:100)"
+                  }
+                ],
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          }
+        ],
+        "storageKey": null
+      }
+    ],
+    "type": "Query",
+    "abstractKey": null
+  },
+  "kind": "Request",
+  "operation": {
+    "argumentDefinitions": (v0/*: any*/),
+    "kind": "Operation",
+    "name": "operationsIntentTreeQuery",
+    "selections": [
+      {
+        "alias": null,
+        "args": (v1/*: any*/),
+        "concreteType": "Project",
+        "kind": "LinkedField",
+        "name": "project",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "Repository",
+            "kind": "LinkedField",
+            "name": "repository",
+            "plural": false,
+            "selections": [
+              {
+                "alias": null,
+                "args": (v2/*: any*/),
+                "concreteType": "Tree",
+                "kind": "LinkedField",
+                "name": "tree",
+                "plural": false,
+                "selections": [
+                  {
+                    "alias": null,
+                    "args": (v3/*: any*/),
+                    "concreteType": "BlobConnection",
+                    "kind": "LinkedField",
+                    "name": "blobs",
+                    "plural": false,
+                    "selections": [
+                      {
+                        "alias": null,
+                        "args": null,
+                        "concreteType": "Blob",
+                        "kind": "LinkedField",
+                        "name": "nodes",
+                        "plural": true,
+                        "selections": (v9/*: any*/),
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": "blobs(first:500)"
+                  },
+                  {
+                    "alias": null,
+                    "args": (v7/*: any*/),
+                    "concreteType": "TreeEntryConnection",
+                    "kind": "LinkedField",
+                    "name": "trees",
+                    "plural": false,
+                    "selections": [
+                      {
+                        "alias": null,
+                        "args": null,
+                        "concreteType": "TreeEntry",
+                        "kind": "LinkedField",
+                        "name": "nodes",
+                        "plural": true,
+                        "selections": (v9/*: any*/),
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": "trees(first:100)"
+                  }
+                ],
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          },
+          (v8/*: any*/)
+        ],
+        "storageKey": null
+      }
+    ]
+  },
+  "params": {
+    "cacheID": "62e0d429e4a565191ac3ee700253edc2",
+    "id": null,
+    "metadata": {},
+    "name": "operationsIntentTreeQuery",
+    "operationKind": "query",
+    "text": "query operationsIntentTreeQuery(\n  $fullPath: ID!\n  $path: String!\n  $ref: String\n) {\n  project(fullPath: $fullPath) {\n    repository {\n      tree(path: $path, ref: $ref, recursive: true) {\n        blobs(first: 500) {\n          nodes {\n            name\n            path\n            id\n          }\n        }\n        trees(first: 100) {\n          nodes {\n            name\n            path\n            id\n          }\n        }\n      }\n    }\n    id\n  }\n}\n"
+  }
+};
+})();
 
-export default node
+(node as any).hash = "079d192142f866cc0b207dcebc578a36";
+
+export default node;

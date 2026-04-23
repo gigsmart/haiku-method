@@ -15,6 +15,7 @@ import { statusDotClasses } from "./tokens"
 const VISIBLE_STATUSES: ReadonlyArray<FeedbackStatus> = [
 	"pending",
 	"addressed",
+	"answered",
 	"closed",
 	"rejected",
 ]
@@ -23,6 +24,7 @@ const STATUS_LABELS: Record<FeedbackStatus, string> = {
 	pending: "Pending",
 	fixing: "Fixing",
 	addressed: "Addressed",
+	answered: "Answered",
 	closed: "Closed",
 	rejected: "Rejected",
 }
@@ -41,6 +43,7 @@ function countByStatus(
 		pending: 0,
 		fixing: 0,
 		addressed: 0,
+		answered: 0,
 		closed: 0,
 		rejected: 0,
 	}

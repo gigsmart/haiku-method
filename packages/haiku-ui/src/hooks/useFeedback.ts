@@ -1,31 +1,17 @@
-import { useCallback, useEffect, useState } from "react"
+import type { FeedbackCreateRequest } from "haiku-api"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { authHeader } from "../api/auth"
-import { SESSION_HEADER } from "../api/client"
 import { useApiClient } from "../api/context"
 import type { FeedbackItemData, FeedbackListResponse } from "../types"
 
 const FETCH_HEADERS = { "bypass-tunnel-reminder": "1" }
 
 /**
- * Attach the cross-session auth header if the ApiClient has a sessionId
- * registered. The server requires this header on POST/PUT/DELETE feedback
- * mutations when remote review is enabled (tunnel live) — see
- * `verifyFeedbackMutationAuth` in `packages/haiku/src/http.ts`.
- *
- * Also attaches the tunnel-auth `Authorization: Bearer <jwt>` header
- * (FB-30) — no-op when no token is present (local-only mode).
- */
-function mutationHeaders(
-	sessionId: string | null,
-	base: Record<string, string>,
-): Record<string, string> {
-	const next = { ...base, ...authHeader() }
-	return sessionId ? { ...next, [SESSION_HEADER]: sessionId } : next
-}
-
-/**
- * Tunnel-auth-only headers — used on GET reads. Pairs with the server's
- * `requireTunnelAuth` gate when remote review is live.
+ * Tunnel-auth headers — attaches `Authorization: Bearer <jwt>` (FB-30)
+ * when a token is present (remote-review mode). No-op in local mode.
+ * The JWT is the single source of session identity on both reads and
+ * mutations — the server extracts the session id from its `sid` claim
+ * inside `verifyFeedbackMutationAuth`.
  */
 function readHeaders(base: Record<string, string>): Record<string, string> {
 	return { ...base, ...authHeader() }
@@ -35,7 +21,35 @@ export function useFeedback(intent: string | null, stage: string | null) {
 	const [items, setItems] = useState<FeedbackItemData[]>([])
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	// IDs currently in flight (PUT / DELETE). Components use this to show
+	// a spinner + disable buttons so the user doesn't double-click while
+	// the optimistic mutation is being confirmed by the server.
+	const [busyIds, setBusyIds] = useState<Set<string>>(() => new Set())
+	// `creating` flips true from the optimistic write until the server
+	// echoes back a real feedback_id. Parent can use it to render a
+	// placeholder row or a spinner on the FAB.
+	const [creating, setCreating] = useState(false)
 	const apiClient = useApiClient()
+	const itemsRef = useRef<FeedbackItemData[]>([])
+	itemsRef.current = items
+
+	const markBusy = useCallback((id: string) => {
+		setBusyIds((prev) => {
+			if (prev.has(id)) return prev
+			const next = new Set(prev)
+			next.add(id)
+			return next
+		})
+	}, [])
+
+	const clearBusy = useCallback((id: string) => {
+		setBusyIds((prev) => {
+			if (!prev.has(id)) return prev
+			const next = new Set(prev)
+			next.delete(id)
+			return next
+		})
+	}, [])
 
 	const fetchFeedback = useCallback(
 		async (statusFilter?: string) => {
@@ -70,31 +84,28 @@ export function useFeedback(intent: string | null, stage: string | null) {
 	}, [fetchFeedback])
 
 	const createFeedback = useCallback(
-		async (title: string, body: string, origin = "user-visual") => {
+		async (
+			input: string | FeedbackCreateRequest,
+			body?: string,
+			origin: FeedbackCreateRequest["origin"] = "user-visual",
+		) => {
 			if (!(intent && stage)) return null
-			const sessionId = apiClient.getSessionId()
-			const res = await fetch(
-				`/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}`,
-				{
-					method: "POST",
-					headers: mutationHeaders(sessionId, {
-						"Content-Type": "application/json",
-						...FETCH_HEADERS,
-					}),
-					body: JSON.stringify({ title, body, origin }),
-				},
-			)
-			if (!res.ok) {
-				const errBody = await res.json().catch(() => ({}))
-				throw new Error(errBody.error || `HTTP ${res.status}`)
+			setCreating(true)
+			const payload: FeedbackCreateRequest =
+				typeof input === "string"
+					? { title: input, body: body ?? "", origin }
+					: input
+			try {
+				const result = await apiClient.feedback.create(intent, stage, payload)
+				// v1: refetch on create — the POST response carries just the
+				// new id + file path, not the projected FeedbackItem. Update
+				// and delete splice optimistically; create remains a refetch
+				// until the server response is extended.
+				await fetchFeedback()
+				return result
+			} finally {
+				setCreating(false)
 			}
-			const result = await res.json()
-			// v1: refetch on create — response doesn't project the full item
-			// (see FB-47 fix rationale). Update and delete use optimistic
-			// splices below; create stays on refetch until the POST response
-			// is extended to echo the projected FeedbackItem.
-			await fetchFeedback()
-			return result
 		},
 		[intent, stage, fetchFeedback, apiClient],
 	)
@@ -102,39 +113,23 @@ export function useFeedback(intent: string | null, stage: string | null) {
 	const updateFeedback = useCallback(
 		async (
 			feedbackId: string,
-			fields: { status?: string; closed_by?: string },
+			fields: { status?: FeedbackItemData["status"]; closed_by?: string },
 		) => {
 			if (!(intent && stage)) return null
-			const sessionId = apiClient.getSessionId()
-			const res = await fetch(
-				`/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}/${encodeURIComponent(feedbackId)}`,
-				{
-					method: "PUT",
-					headers: mutationHeaders(sessionId, {
-						"Content-Type": "application/json",
-						...FETCH_HEADERS,
-					}),
-					body: JSON.stringify(fields),
-				},
+			// Snapshot the pre-change item so we can roll back on failure.
+			const before = itemsRef.current.find(
+				(i) => i.feedback_id === feedbackId,
 			)
-			if (!res.ok) {
-				const errBody = await res.json().catch(() => ({}))
-				throw new Error(errBody.error || `HTTP ${res.status}`)
-			}
-			const result = await res.json()
-			// FB-47: optimistic splice instead of full-list refetch.
-			// The request body carries the new status / closed_by values and
-			// the path identifies the target item, so the client has
-			// everything it needs to reconcile without a follow-up GET.
+			// Optimistic splice — apply the change locally *before* the
+			// network round trip so the UI feels instant. Server confirms
+			// asynchronously; on failure we restore `before`.
 			setItems((prev) =>
 				prev.map((item) =>
 					item.feedback_id === feedbackId
 						? {
 								...item,
 								...(fields.status !== undefined
-									? {
-											status: fields.status as FeedbackItemData["status"],
-										}
+									? { status: fields.status }
 									: {}),
 								...(fields.closed_by !== undefined
 									? { closed_by: fields.closed_by }
@@ -143,43 +138,98 @@ export function useFeedback(intent: string | null, stage: string | null) {
 						: item,
 				),
 			)
-			return result
+			markBusy(feedbackId)
+			try {
+				return await apiClient.feedback.update(intent, stage, feedbackId, fields)
+			} catch (err) {
+				if (before) {
+					setItems((prev) =>
+						prev.map((item) =>
+							item.feedback_id === feedbackId ? before : item,
+						),
+					)
+				}
+				throw err
+			} finally {
+				clearBusy(feedbackId)
+			}
 		},
-		[intent, stage, apiClient],
+		[intent, stage, apiClient, markBusy, clearBusy],
 	)
 
 	const deleteFeedback = useCallback(
 		async (feedbackId: string) => {
 			if (!(intent && stage)) return null
-			const sessionId = apiClient.getSessionId()
-			const res = await fetch(
-				`/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}/${encodeURIComponent(feedbackId)}`,
-				{
-					method: "DELETE",
-					headers: mutationHeaders(sessionId, FETCH_HEADERS),
-				},
+			const before = itemsRef.current.find(
+				(i) => i.feedback_id === feedbackId,
 			)
-			if (!res.ok) {
-				const errBody = await res.json().catch(() => ({}))
-				throw new Error(errBody.error || `HTTP ${res.status}`)
-			}
-			const result = await res.json()
-			// FB-47: optimistic filter instead of full-list refetch. The id
-			// on the request path is authoritative, so the client knows
-			// exactly which row to drop without a follow-up GET.
+			const beforeIndex = itemsRef.current.findIndex(
+				(i) => i.feedback_id === feedbackId,
+			)
 			setItems((prev) => prev.filter((item) => item.feedback_id !== feedbackId))
-			return result
+			markBusy(feedbackId)
+			try {
+				return await apiClient.feedback.delete(intent, stage, feedbackId)
+			} catch (err) {
+				if (before) {
+					setItems((prev) => {
+						const next = prev.slice()
+						next.splice(Math.max(0, beforeIndex), 0, before)
+						return next
+					})
+				}
+				throw err
+			} finally {
+				clearBusy(feedbackId)
+			}
 		},
-		[intent, stage, apiClient],
+		[intent, stage, apiClient, markBusy, clearBusy],
+	)
+
+	const replyToFeedback = useCallback(
+		async (
+			feedbackId: string,
+			body: string,
+			closeAsAnswered = false,
+		): Promise<void> => {
+			if (!(intent && stage)) return
+			const trimmed = body.trim()
+			if (!trimmed) throw new Error("Reply body is required")
+			const url = `/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}/${encodeURIComponent(feedbackId)}/replies`
+			markBusy(feedbackId)
+			try {
+				const res = await fetch(url, {
+					method: "POST",
+					headers: { "Content-Type": "application/json", ...authHeader() },
+					body: JSON.stringify({
+						body: trimmed,
+						close_as_answered: closeAsAnswered,
+					}),
+				})
+				if (!res.ok) {
+					const errBody = await res.json().catch(() => ({}))
+					throw new Error(errBody.error || `HTTP ${res.status}`)
+				}
+				// Refetch so the new reply + any status flip (`answered`)
+				// land in the shared context and every consumer rerenders.
+				await fetchFeedback()
+			} finally {
+				clearBusy(feedbackId)
+			}
+		},
+		[intent, stage, fetchFeedback, markBusy, clearBusy],
 	)
 
 	return {
 		items,
 		loading,
 		error,
+		busyIds,
+		creating,
 		refetch: fetchFeedback,
 		createFeedback,
 		updateFeedback,
 		deleteFeedback,
+		replyToFeedback,
 	}
 }

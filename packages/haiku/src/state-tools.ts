@@ -3,7 +3,7 @@
 // One tool per resource per operation. Under the hood: frontmatter + JSON files.
 // The caller doesn't need to know file paths — just resource identifiers.
 
-import { execFileSync, execSync, spawnSync } from "node:child_process"
+import { execFileSync, execSync, spawn, spawnSync } from "node:child_process"
 import {
 	existsSync,
 	mkdirSync,
@@ -2590,6 +2590,44 @@ export function gitCommitState(message: string): {
 }
 
 /**
+ * Like `gitCommitState`, but commits synchronously and pushes in the
+ * background via an unref'd child process. Use for HTTP mutation
+ * handlers where the caller is waiting on an HTTP response — pushing
+ * inline adds a network round trip per mutation, which is perceptible
+ * as UI lag on every approve/reject/delete. The commit is the real
+ * durability boundary; push is for sharing state with remote tooling
+ * and can safely slip a few hundred ms.
+ */
+export function gitCommitStateBackgroundPush(message: string): {
+	committed: boolean
+} {
+	if (!isGitRepo()) return { committed: false }
+	try {
+		const haikuRoot = findHaikuRoot()
+		execFileSync("git", ["add", haikuRoot], { encoding: "utf8", stdio: "pipe" })
+		execFileSync("git", ["commit", "-m", message, "--allow-empty"], {
+			encoding: "utf8",
+			stdio: "pipe",
+		})
+	} catch {
+		return { committed: false }
+	}
+	try {
+		const child = spawn("git", ["push"], {
+			stdio: "ignore",
+			detached: true,
+		})
+		child.unref()
+		child.on("error", () => {
+			/* Background push failures are non-fatal. */
+		})
+	} catch {
+		/* swallow — commit already landed */
+	}
+	return { committed: true }
+}
+
+/**
  * Validate the agent is on the correct git branch for the current operation.
  * Returns an error message if on the wrong branch, empty string if OK.
  */
@@ -2911,6 +2949,7 @@ export const FEEDBACK_ORIGINS = [
 	"external-mr",
 	"user-visual",
 	"user-chat",
+	"user-question",
 	"agent",
 ] as const
 
@@ -2924,8 +2963,11 @@ export type FeedbackOrigin = (typeof FEEDBACK_ORIGINS)[number]
  *                writes `closed_by: <unit>` on the feedback item but DOES
  *                NOT change its status — the agent doing the work cannot
  *                self-certify.
+ *   fixing     — the FSM is mid-fix-loop on this finding (one or more
+ *                `fix_hats` bolts have run against it).
  *   addressed  — an independent actor (feedback-assessor hat, human via the
  *                review UI, or another agent) verified the closure.
+ *   answered   — resolved by a reply with no code delta (questions).
  *   closed     — terminal; the feedback author confirmed resolution.
  *   rejected   — terminal; rejected with reason.
  */
@@ -2933,6 +2975,7 @@ export const FEEDBACK_STATUSES = [
 	"pending",
 	"fixing",
 	"addressed",
+	"answered",
 	"closed",
 	"rejected",
 ] as const
@@ -3006,6 +3049,16 @@ function zeroPad(n: number): string {
 	return n.toString().padStart(2, "0")
 }
 
+/** One reply on a feedback thread. Append-only; agents and humans
+ *  alike add replies to answer questions or document why they
+ *  closed/rejected the parent. */
+export interface FeedbackReply {
+	author: string
+	author_type: "human" | "agent"
+	body: string
+	created_at: string
+}
+
 /** Parsed feedback item returned by readFeedbackFiles. */
 export interface FeedbackItem {
 	id: string // "FB-NN"
@@ -3036,6 +3089,14 @@ export interface FeedbackItem {
 	// revisit upstream, reject the finding, or accept-as-is.
 	// `null` means same-stage (in-scope for the stage's fix loop).
 	upstream_stage: string | null
+	// How the FSM should resolve this finding. `null` = caller has no
+	// preference; the feedback router defaults to `stage_revisit`.
+	// Legal values: question | inline_fix | stage_revisit | upstream_rewind.
+	resolution: string | null
+	// Append-only thread on this finding. Human replies come from the
+	// review sidebar; agent replies come from `feedback_answer` and from
+	// `feedback-assessor` hats recording their closure reasoning.
+	replies: FeedbackReply[]
 }
 
 /**
@@ -3056,6 +3117,14 @@ export function writeFeedbackFile(
 		 *  here so the FSM surfaces it as cross-stage rather than attempting
 		 *  to fix it in stage X's fix loop. */
 		upstream_stage?: string | null
+		/** Routing hint for the FSM's feedback resolver. Accepts the
+		 *  four `FeedbackResolution` literals; anything else is coerced
+		 *  to null so legacy callers keep working. */
+		resolution?: string | null
+		/** Optional `data:image/png;base64,...` URL captured by the review
+		 *  UI (e.g. an artifact preview + drawn overlay). Persisted as a
+		 *  sidecar file next to the feedback .md and linked inline. */
+		attachmentDataUrl?: string | null
 	},
 ): { feedback_id: string; file: string; num: number } {
 	const dir = feedbackDir(slug, stage)
@@ -3081,6 +3150,45 @@ export function writeFeedbackFile(
 		iteration = getStageIterationCount(stageState)
 	}
 
+	// Persist a sidecar attachment if the caller passed one. Filename is
+	// the same stem as the feedback .md (FB-NN-slug.<ext>) so the pair
+	// is obvious on disk and stays adjacent in directory listings.
+	// Vector SVG is the default shape from the built-in annotator;
+	// raster PNG/JPEG/WebP covers externally-sourced attachments.
+	let attachmentBasename: string | null = null
+	if (opts.attachmentDataUrl) {
+		const match = opts.attachmentDataUrl.match(
+			/^data:image\/(png|jpeg|webp|svg\+xml);base64,([A-Za-z0-9+/=]+)$/,
+		)
+		if (match) {
+			const mime = match[1]
+			const ext =
+				mime === "jpeg" ? "jpg" : mime === "svg+xml" ? "svg" : mime
+			attachmentBasename = `${nn}-${fileSlug}.${ext}`
+			const attachmentPath = join(dir, attachmentBasename)
+			writeFileSync(attachmentPath, Buffer.from(match[2], "base64"))
+		}
+	}
+
+	// Link the attachment via the server route so MarkdownViewer's
+	// default <img> renders correctly in the review UI. Storing a
+	// root-relative URL (rather than `./…`) avoids depending on the
+	// current page's path — all review pages share the same origin.
+	const bodyWithAttachment = attachmentBasename
+		? `${opts.body.trim()}\n\n![annotation](/api/feedback-attachment/${encodeURIComponent(slug)}/${encodeURIComponent(stage)}/${encodeURIComponent(attachmentBasename)})\n`
+		: opts.body
+
+	const allowedResolutions = new Set([
+		"question",
+		"inline_fix",
+		"stage_revisit",
+		"upstream_rewind",
+	])
+	const normalizedResolution =
+		typeof opts.resolution === "string" &&
+		allowedResolutions.has(opts.resolution)
+			? opts.resolution
+			: null
 	const frontmatter: Record<string, unknown> = {
 		title: opts.title,
 		status: "pending",
@@ -3096,9 +3204,12 @@ export function writeFeedbackFile(
 		// `||` (not `??`) so an empty-string upstream_stage from a sloppy
 		// caller still normalizes to null — "" is not nullish.
 		upstream_stage: opts.upstream_stage || null,
+		resolution: normalizedResolution,
+		replies: [],
+		...(attachmentBasename ? { attachment: attachmentBasename } : {}),
 	}
 
-	const content = matter.stringify(`\n${opts.body}\n`, frontmatter)
+	const content = matter.stringify(`\n${bodyWithAttachment}\n`, frontmatter)
 	writeFileSync(filePath, content)
 
 	const relPath = stage
@@ -3128,6 +3239,29 @@ export function readFeedbackFiles(slug: string, stage: string): FeedbackItem[] {
 		const raw = readFileSync(join(dir, f), "utf8")
 		const { data, body } = parseFrontmatter(raw)
 
+		const resolutionRaw = (data as { resolution?: unknown }).resolution
+		const resolution =
+			typeof resolutionRaw === "string" &&
+			resolutionRaw.length > 0 &&
+			resolutionRaw !== "null"
+				? resolutionRaw
+				: null
+		const rawReplies = (data as { replies?: unknown }).replies
+		const replies: FeedbackReply[] = Array.isArray(rawReplies)
+			? rawReplies
+					.filter(
+						(r): r is Record<string, unknown> =>
+							typeof r === "object" && r !== null,
+					)
+					.map((r) => ({
+						author: typeof r.author === "string" ? r.author : "unknown",
+						author_type:
+							r.author_type === "agent" ? "agent" : "human",
+						body: typeof r.body === "string" ? r.body : "",
+						created_at:
+							typeof r.created_at === "string" ? r.created_at : "",
+					}))
+			: []
 		items.push({
 			id: `FB-${zeroPad(num)}`,
 			num,
@@ -3151,6 +3285,8 @@ export function readFeedbackFiles(slug: string, stage: string): FeedbackItem[] {
 				(data.upstream_stage as string).length > 0
 					? (data.upstream_stage as string)
 					: null,
+			resolution,
+			replies,
 		})
 	}
 
@@ -3174,6 +3310,7 @@ export function countPendingFeedback(slug: string, stage: string): number {
 		if (
 			item.status === "closed" ||
 			item.status === "addressed" ||
+			item.status === "answered" ||
 			item.status === "rejected"
 		)
 			return false
@@ -3228,6 +3365,7 @@ export function updateFeedbackFile(
 	fields: {
 		status?: string
 		closed_by?: string | null
+		resolution?: string | null
 	},
 	callerContext: "agent" | "human" = "agent",
 ): { ok: true; updated_fields: string[] } | { ok: false; error: string } {
@@ -3242,10 +3380,33 @@ export function updateFeedbackFile(
 	}
 
 	// At least one updatable field must be provided
-	if (fields.status === undefined && fields.closed_by === undefined) {
+	if (
+		fields.status === undefined &&
+		fields.closed_by === undefined &&
+		fields.resolution === undefined
+	) {
 		return {
 			ok: false,
-			error: "Error: at least one of 'status' or 'closed_by' must be provided",
+			error:
+				"Error: at least one of 'status' / 'closed_by' / 'resolution' must be provided",
+		}
+	}
+
+	// Validate resolution enum when present (undefined = no change, null = clear).
+	if (
+		fields.resolution !== undefined &&
+		fields.resolution !== null &&
+		!new Set([
+			"question",
+			"inline_fix",
+			"stage_revisit",
+			"upstream_rewind",
+		]).has(fields.resolution)
+	) {
+		return {
+			ok: false,
+			error:
+				"Error: resolution must be one of: question, inline_fix, stage_revisit, upstream_rewind (or null to clear).",
 		}
 	}
 
@@ -3314,9 +3475,64 @@ export function updateFeedbackFile(
 		}
 		updated.push("closed_by")
 	}
+	if (fields.resolution !== undefined) {
+		newData.resolution = fields.resolution
+		updated.push("resolution")
+	}
 
 	writeFileSync(found.path, matter.stringify(`\n${found.body}\n`, newData))
 	return { ok: true, updated_fields: updated }
+}
+
+/**
+ * Append a reply to a feedback thread. `close_as_answered` flips the
+ * parent's `status` to `answered` in the same write so the FSM sees
+ * the item as resolved on the next tick.
+ */
+export function appendFeedbackReply(
+	slug: string,
+	stage: string,
+	feedbackId: string,
+	reply: {
+		author: string
+		author_type: "human" | "agent"
+		body: string
+	},
+	opts: { close_as_answered?: boolean } = {},
+):
+	| { ok: true; reply_index: number; status: string }
+	| { ok: false; error: string } {
+	const found = findFeedbackFile(slug, stage, feedbackId)
+	if (!found) {
+		return {
+			ok: false,
+			error: stage
+				? `Error: feedback '${feedbackId}' not found in stage '${stage}'`
+				: `Error: feedback '${feedbackId}' not found (intent-scope)`,
+		}
+	}
+	const trimmed = reply.body.trim()
+	if (trimmed.length === 0) {
+		return { ok: false, error: "Error: reply body cannot be empty" }
+	}
+	const newReply = {
+		author: reply.author || "unknown",
+		author_type: reply.author_type,
+		body: trimmed,
+		created_at: timestamp(),
+	}
+	const existingReplies = Array.isArray(found.data.replies)
+		? (found.data.replies as unknown[])
+		: []
+	const replies = [...existingReplies, newReply]
+	const newData: Record<string, unknown> = { ...found.data, replies }
+	if (opts.close_as_answered) newData.status = "answered"
+	writeFileSync(found.path, matter.stringify(`\n${found.body}\n`, newData))
+	return {
+		ok: true,
+		reply_index: replies.length - 1,
+		status: (newData.status as string) || (found.data.status as string) || "pending",
+	}
 }
 
 /**
@@ -3734,12 +3950,17 @@ export const stateToolDefs = [
 				status: {
 					type: "string",
 					description:
-						"New status: pending | fixing | addressed | closed | rejected",
+						"New status: pending | fixing | addressed | answered | closed | rejected",
 				},
 				closed_by: {
 					type: "string",
 					description:
 						"Identifier of who/what closed the feedback. For stage feedback: the unit slug whose work the feedback-assessor validated. For fix-loop closures: `fix-loop:<FB-ID>:bolt-<N>`. For intent-scope closures: `intent-fix:<FB-ID>:bolt-<N>`.",
+				},
+				resolution: {
+					type: "string",
+					description:
+						"Routing hint for the feedback resolver. One of: `question` (reply, no code delta), `inline_fix` (one fix_hats bolt against this finding), `stage_revisit` (re-loop the whole stage), `upstream_rewind` (surface to human; root cause is in an upstream stage). Pass `null` / empty to clear.",
 				},
 			},
 			required: ["intent", "feedback_id"],
@@ -5886,10 +6107,21 @@ export function handleStateTool(
 					isError: true,
 				}
 
-			const updateFields: { status?: string; closed_by?: string } = {}
+			const updateFields: {
+				status?: string
+				closed_by?: string
+				resolution?: string | null
+			} = {}
 			if (args.status !== undefined) updateFields.status = args.status as string
 			if (args.closed_by !== undefined)
 				updateFields.closed_by = args.closed_by as string
+			if (args.resolution !== undefined) {
+				const raw = args.resolution
+				updateFields.resolution =
+					typeof raw === "string" && raw.length > 0
+						? (raw as string)
+						: null
+			}
 
 			// Intent-scope ("") enforces intent-main; stage-scoped enforces the stage branch.
 			const feedbackUpdateBranchErr = enforceStageBranch(

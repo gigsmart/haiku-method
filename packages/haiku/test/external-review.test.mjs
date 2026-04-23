@@ -727,8 +727,9 @@ try {
 		}
 
 		await test("WS frame > 64 KiB closes with 1009", async () => {
+			const { randomBytes } = await import("node:crypto")
 			const socket = net.createConnection(port, "127.0.0.1")
-			const key = Buffer.from("ws-frame-oversize-test").toString("base64")
+			const key = randomBytes(16).toString("base64")
 			await new Promise((resolve, reject) => {
 				socket.once("connect", resolve)
 				socket.once("error", reject)
@@ -770,8 +771,9 @@ try {
 				review_type: "intent",
 				target: "review",
 			})
+			const { randomBytes } = await import("node:crypto")
 			const socket = net.createConnection(port, "127.0.0.1")
-			const key = Buffer.from("ws-rate-limit-test").toString("base64")
+			const key = randomBytes(16).toString("base64")
 			await new Promise((resolve, reject) => {
 				socket.once("connect", resolve)
 				socket.once("error", reject)

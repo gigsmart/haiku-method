@@ -1,18 +1,18 @@
 /**
  * FeedbackList — list container for FeedbackItem rows.
  *
- * Two branches:
- *  - Plain (≤ VIRTUALIZE_THRESHOLD items) renders every row.
- *  - Virtualized (> VIRTUALIZE_THRESHOLD items) wraps `react-window`
- *    `FixedSizeList` so rows outside the viewport window are unmounted. Steady
- *    state count ≤ 30 per the unit spec's completion criteria (verified in
- *    `FeedbackList.virtualization.test.tsx`).
+ * Renders every row. Expanded-by-default cards have variable heights,
+ * and the async-measurement dance that react-window needs to size
+ * absolute-positioned wrappers races with ResizeObserver callbacks —
+ * the visible failure is cards overlapping while sizes stabilize.
+ * Typical feedback queues are small (< 20 items), so skipping
+ * virtualization is the correct tradeoff; revisit with a library that
+ * measures synchronously (e.g. react-virtuoso) if queues routinely
+ * grow past a few hundred items.
  *
  * Keyboard navigation: the container delegates to
- * `useFeedbackListKeyboardNav` which wires a single `keydown` listener at the
- * container level and calls `scrollToItem(nextIndex, "auto")` on the
- * virtualizer ref before refocusing the next item. This is the coordination
- * between virtualization + arrow-key roving focus called out in the unit spec.
+ * `useFeedbackListKeyboardNav`, which wires a single `keydown` listener
+ * at the container level and focuses the next item on Arrow keys.
  *
  * Container states (per `state-coverage-grid.md §7.5`):
  *  - loading (`aria-busy="true"` + skeleton rows + spinner)
@@ -21,21 +21,22 @@
  *  - default (list of items)
  */
 
-import { useCallback, useLayoutEffect, useRef, useState } from "react"
-import type { FixedSizeList as FixedSizeListType } from "react-window"
-import { FixedSizeList } from "react-window"
+import { useLayoutEffect, useRef, useState } from "react"
 import type { FeedbackItemData } from "../../types"
 import { FeedbackItem } from "./FeedbackItem"
 import type { FeedbackStatus } from "./tokens"
 import { useFeedbackListKeyboardNav } from "./useFeedbackListKeyboardNav"
 
+// Virtualization is off: expanded-by-default cards have variable heights
+// that would need async measurement, and the measurement race against
+// react-window's absolute-positioned wrappers produces visible overlap
+// while sizes stabilize. Real feedback queues are small (< 20 items in
+// practice), so always rendering every row is the correct tradeoff.
+// `VIRTUALIZE_THRESHOLD` is retained as a constant because tests and
+// sibling hooks still reference it as the "large list" boundary.
 export const VIRTUALIZE_THRESHOLD = 50
-
-// Default height for the virtualized list when no explicit height is
-// provided. Larger than the original 600 so typical laptop viewports
-// don't feel cramped; callers that want to tighten can pass `height`.
 export const DEFAULT_LIST_HEIGHT = 1200
-export const DEFAULT_ITEM_SIZE = 88
+export const DEFAULT_ITEM_SIZE = 240
 
 export interface FeedbackListProps {
 	items: FeedbackItemData[]
@@ -44,6 +45,15 @@ export interface FeedbackListProps {
 	onRetry?: () => void
 	onStatusChange?: (id: string, nextStatus: FeedbackStatus) => void
 	onDelete?: (id: string) => void
+	/** Called when the user submits a reply on a feedback row. */
+	onReply?: (
+		id: string,
+		body: string,
+		closeAsAnswered?: boolean,
+	) => Promise<void>
+	/** Set of feedback ids currently in flight (PUT / DELETE). Rows
+	 *  matching render a "Saving…" indicator + disable action buttons. */
+	busyIds?: ReadonlySet<string>
 	/** Initial expanded item id (uncontrolled). */
 	initialExpandedId?: string | null
 	/** Override list height. Defaults to DEFAULT_LIST_HEIGHT. */
@@ -53,55 +63,6 @@ export interface FeedbackListProps {
 	className?: string
 }
 
-interface VirtualRowProps {
-	index: number
-	style: React.CSSProperties
-	data: {
-		items: FeedbackItemData[]
-		expandedId: string | null
-		setExpandedId: (id: string | null) => void
-		onStatusChange?: (id: string, nextStatus: FeedbackStatus) => void
-		onDelete?: (id: string) => void
-		itemRefs: React.MutableRefObject<Array<HTMLElement | null>>
-	}
-}
-
-function VirtualRow({
-	index,
-	style,
-	data,
-}: VirtualRowProps): React.ReactElement {
-	const item = data.items[index]
-	// Cards are always expanded now — the old disclosure hid the body
-	// + action buttons on the first click, which competed with the
-	// parent's delegated jump-to-target handler. Expanded-by-default
-	// surfaces everything up-front and the click still bubbles to the
-	// sidebar's handler for the jump.
-	const isExpanded = true
-	return (
-		// biome-ignore lint/a11y/useSemanticElements: react-window's FixedSizeList renders rows in an inner <div> — we cannot swap this virtualized row to a native <li> without controlling the parent list element (which would require innerElementType=ul across the virtualizer boundary).
-		<div
-			style={style}
-			role="listitem"
-			aria-setsize={data.items.length}
-			aria-posinset={index + 1}
-		>
-			<FeedbackItem
-				ref={(node) => {
-					data.itemRefs.current[index] = node
-				}}
-				item={item}
-				isExpanded={isExpanded}
-				onToggle={() => {
-					/* no-op: cards always expanded */
-				}}
-				onStatusChange={data.onStatusChange}
-				onDelete={data.onDelete}
-			/>
-		</div>
-	)
-}
-
 export function FeedbackList({
 	items,
 	isLoading,
@@ -109,36 +70,33 @@ export function FeedbackList({
 	onRetry,
 	onStatusChange,
 	onDelete,
+	onReply,
+	busyIds,
 	initialExpandedId = null,
 	height = DEFAULT_LIST_HEIGHT,
 	itemSize = DEFAULT_ITEM_SIZE,
 	className,
 }: FeedbackListProps): React.ReactElement {
-	const [expandedId, setExpandedId] = useState<string | null>(initialExpandedId)
+	// `expandedId` is retained in case a future variant wants collapsible
+	// rows again; today every row renders expanded (see below). The state
+	// is kept so the keyboard-nav hook and container wiring stay the same.
+	const [_expandedId, _setExpandedId] = useState<string | null>(initialExpandedId)
+	void _expandedId
+	void _setExpandedId
+	void height
+	void itemSize
 	const containerRef = useRef<HTMLDivElement | null>(null)
 	const itemRefs = useRef<Array<HTMLElement | null>>([])
-	const virtualRef = useRef<FixedSizeListType | null>(null)
 
 	// Reset refs array to match item count (prevents stale entries).
 	useLayoutEffect(() => {
 		itemRefs.current.length = items.length
 	}, [items.length])
 
-	// Disable virtualization when an item is expanded — expanded cards
-	// exceed the fixed itemSize and would overlap neighbors otherwise.
-	const virtualized = items.length > VIRTUALIZE_THRESHOLD && expandedId === null
-
-	const scrollToIndex = useCallback((index: number) => {
-		if (virtualRef.current) {
-			virtualRef.current.scrollToItem(index, "auto")
-		}
-	}, [])
-
 	useFeedbackListKeyboardNav({
 		itemCount: items.length,
 		containerRef,
 		itemRefs,
-		scrollToIndex: virtualized ? scrollToIndex : undefined,
 	})
 
 	// ── Container-state branches ─────────────────────────────────────────────
@@ -210,37 +168,6 @@ export function FeedbackList({
 
 	// ── Default branch ──────────────────────────────────────────────────────
 
-	if (virtualized) {
-		const rowData = {
-			items,
-			expandedId,
-			setExpandedId,
-			onStatusChange,
-			onDelete,
-			itemRefs,
-		}
-		return (
-			<div
-				ref={containerRef}
-				data-testid="feedback-list"
-				data-state="default"
-				data-virtualized="true"
-				className={`h-full ${className ?? ""}`}
-			>
-				<FixedSizeList
-					height={height}
-					itemCount={items.length}
-					itemSize={itemSize}
-					width="100%"
-					itemData={rowData}
-					ref={virtualRef}
-				>
-					{VirtualRow}
-				</FixedSizeList>
-			</div>
-		)
-	}
-
 	return (
 		<ul
 			ref={containerRef as unknown as React.Ref<HTMLUListElement>}
@@ -249,33 +176,29 @@ export function FeedbackList({
 			data-virtualized="false"
 			className={`h-full overflow-y-auto space-y-2 py-3 ${className ?? ""}`}
 		>
-			{items.map((item, index) => {
-				// Always rendered expanded — see VirtualRow for the
-				// rationale. `expandedId` is kept for the keyboard-nav
-				// hook but no longer gates card body visibility.
-				const isExpanded = true
-				return (
-					<li
-						key={item.feedback_id}
-						aria-setsize={items.length}
-						aria-posinset={index + 1}
-						className="px-3"
-					>
-						<FeedbackItem
-							ref={(node) => {
-								itemRefs.current[index] = node
-							}}
-							item={item}
-							isExpanded={isExpanded}
-							onToggle={() => {
-								/* no-op: cards always expanded */
-							}}
-							onStatusChange={onStatusChange}
-							onDelete={onDelete}
-						/>
-					</li>
-				)
-			})}
+			{items.map((item, index) => (
+				<li
+					key={item.feedback_id}
+					aria-setsize={items.length}
+					aria-posinset={index + 1}
+					className="px-3"
+				>
+					<FeedbackItem
+						ref={(node) => {
+							itemRefs.current[index] = node
+						}}
+						item={item}
+						isExpanded={true}
+						onToggle={() => {
+							/* no-op: cards always expanded */
+						}}
+						onStatusChange={onStatusChange}
+						onDelete={onDelete}
+						onReply={onReply}
+						pending={busyIds?.has(item.feedback_id)}
+					/>
+				</li>
+			))}
 		</ul>
 	)
 }

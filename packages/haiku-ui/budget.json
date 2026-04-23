@@ -1,6 +1,6 @@
 {
   "bundleGzipMaxBytes": 1048576,
-  "lastKnownGzipBytes": 748736,
+  "lastKnownGzipBytes": 751902,
   "notes": [
     "Pre-move bundle measured at 929.8 KB gzipped (inlined HTML blob at stages/development/artifacts/bundle-baseline.html). Post-move blob was 884.9 KB gzipped (-44.8 KB from pre-move relocation).",
     "FB-21: vite.config.ts had `minify: false`, shipping a ~919 KB un-minified inlined SPA. Flipping to `minify: \"esbuild\"` (Vite default) dropped the inlined gzipped size to 693 KB (-24.6% / ~220 KB saved) with no bundle-shape changes — single inline HTML blob still required by the MCP embedder.",

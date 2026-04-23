@@ -553,29 +553,47 @@ async function run() {
 		assert.ok(Array.isArray(data.issues))
 	})
 
-	// ── Feedback body size cap (128 KiB) ─────────────────────────────────────
+	// ── Feedback body size cap ────────────────────────────────────────────
+	//
+	// POST uses the larger FEEDBACK_CREATE_MAX_BYTES (8 MiB) because the
+	// body may carry a base64 screenshot attachment. Anything below that
+	// passes the envelope check, after which the Zod schema (`body` max
+	// 10,000 chars, `attachment_data_url` max ~6 MiB) decides whether to
+	// reject at 400. Updates still use the tighter 128 KiB cap.
 
-	console.log("\n=== Feedback body size cap (128 KiB) ===")
+	console.log("\n=== Feedback body size cap ===")
 
-	await test("POST body > 128 KiB returns 413", async () => {
-		const huge = "x".repeat(130 * 1024) // 130 KiB, above the 128 KiB cap
-		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
-			{
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ title: "big", body: huge }),
-			},
-		)
+	await test("POST body > 8 MiB returns 413 (envelope cap)", async () => {
+		// 9 MiB raw body — exceeds FEEDBACK_CREATE_MAX_BYTES (8 MiB).
+		const huge = "x".repeat(9 * 1024 * 1024)
+		let res
+		try {
+			res = await fetch(
+				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ title: "big", body: huge }),
+				},
+			)
+		} catch (e) {
+			// Fastify sends the 413 and closes while the client is still
+			// writing the 9 MiB body, which some HTTP clients surface as
+			// ECONNRESET. The refusal itself is what matters — accept the
+			// reset as a valid path.
+			const code = e?.cause?.code
+			if (code === "ECONNRESET" || code === "UND_ERR_SOCKET") return
+			throw e
+		}
 		assert.strictEqual(res.status, 413)
 		const data = await res.json()
 		assert.strictEqual(data.error, "payload_too_large")
-		assert.strictEqual(data.max_bytes, 131072)
+		assert.strictEqual(data.max_bytes, 8_388_608)
 	})
 
 	await test("POST body at the cap still accepted (happy path)", async () => {
 		// 9 KiB body — comfortably inside the schema's 10,000-char body cap
-		// (the 128 KiB envelope cap fires earlier for truly huge payloads).
+		// (the envelope cap only fires for truly huge attachment payloads).
 		const fitting = "x".repeat(9 * 1024)
 		const res = await fetch(
 			`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
@@ -589,58 +607,22 @@ async function run() {
 	})
 
 	// ── Cross-session mutation guard ─────────────────────────────────────────
+	//
+	// In local (non-tunneled) mode the server is loopback-bound and
+	// does NOT gate mutations by session id — any caller reaching
+	// localhost already has full file-system access through the same
+	// process, so a header check adds no real defense.
+	//
+	// In tunneled mode the cross-session gate runs off the JWT's `sid`
+	// claim — covered end-to-end in `tunnel-auth.test.mjs`. Here we
+	// just verify the local-mode no-gate contract so a future tightening
+	// doesn't silently 401 on the local UI.
 
-	console.log("\n=== Cross-session mutation guard ===")
+	console.log("\n=== Cross-session mutation guard (local-mode no-gate) ===")
 
-	await test("PUT with mismatched X-Haiku-Session-Id returns 403", async () => {
-		const { createSession } = await import("../src/sessions.ts")
-		// Fake session belonging to a different intent.
-		const other = createSession({
-			intent_slug: "different-intent",
-			intent_dir: projDir,
-			review_type: "intent",
-			target: "review",
-		})
-		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-01`,
-			{
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-					"X-Haiku-Session-Id": other.session_id,
-				},
-				body: JSON.stringify({ status: "addressed" }),
-			},
-		)
-		assert.strictEqual(res.status, 403)
-		const data = await res.json()
-		assert.strictEqual(data.error, "forbidden_cross_session")
-	})
-
-	await test("DELETE with unknown session header returns 403", async () => {
-		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-01`,
-			{
-				method: "DELETE",
-				headers: { "X-Haiku-Session-Id": "does-not-exist" },
-			},
-		)
-		assert.strictEqual(res.status, 403)
-		const data = await res.json()
-		assert.strictEqual(data.error, "forbidden_cross_session")
-	})
-
-	await test("PUT with matching session header proceeds", async () => {
-		const { createSession } = await import("../src/sessions.ts")
-		const matching = createSession({
-			intent_slug: intentSlug,
-			intent_dir: intentDirPath,
-			review_type: "intent",
-			target: "review",
-		})
-		// Seed a feedback item we know exists
+	await test("PUT in local mode proceeds without any session header", async () => {
 		const create = writeFeedbackFile(intentSlug, stageName, {
-			title: "for-auth-test",
+			title: "for-local-no-gate-test",
 			body: "body",
 			origin: "agent",
 			author: "tester",
@@ -650,10 +632,7 @@ async function run() {
 			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/${create.feedback_id}`,
 			{
 				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-					"X-Haiku-Session-Id": matching.session_id,
-				},
+				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ status: "addressed" }),
 			},
 		)

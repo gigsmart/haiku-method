@@ -1,22 +1,40 @@
-import { createHash } from "node:crypto"
-import { existsSync, readdirSync, readFileSync } from "node:fs"
+// http.ts — Review HTTP+WebSocket server backed by Fastify.
+//
+// Historical note: this module was previously ~2,300 lines of
+// hand-rolled RFC 6455 frame encoding, CORS header stitching, and
+// Web-API ↔ Node http adapter glue. The rewrite moves transport
+// concerns (routing, CORS, body size caps, WebSocket upgrade) onto
+// Fastify and keeps the domain handlers (session reads, feedback
+// CRUD, revisit, review decide, file serving with path-traversal
+// defence) intact. Anything surprising below is usually because
+// Fastify + @fastify/cors + @fastify/websocket already handle the
+// obvious case — we're only coding the project-specific bits.
+
+import { appendFileSync, existsSync, readdirSync, readFileSync } from "node:fs"
 import { readFile, realpath } from "node:fs/promises"
-import {
-	createServer,
-	type Server as HttpServer,
-	type IncomingMessage,
-} from "node:http"
 import { dirname, extname, join, resolve } from "node:path"
-import type { Duplex } from "node:stream"
+import Fastify, {
+	type FastifyInstance,
+	type FastifyReply,
+	type FastifyRequest,
+} from "fastify"
+import fastifyCors from "@fastify/cors"
+import fastifyWebsocket from "@fastify/websocket"
+import type { WebSocket as WsWebSocket } from "ws"
+import { z, type ZodTypeAny } from "zod"
 import {
 	DEFAULT_BODY_MAX_BYTES,
 	DirectionSelectRequestSchema,
 	type DirectionSelectResponse,
 	FEEDBACK_BODY_MAX_BYTES,
+	FEEDBACK_CREATE_MAX_BYTES,
+
 	FeedbackCreateRequestSchema,
 	type FeedbackCreateResponse,
 	type FeedbackDeleteResponse,
 	type FeedbackListResponse,
+	FeedbackReplyCreateRequestSchema,
+	type FeedbackReplyCreateResponse,
 	FeedbackUpdateRequestSchema,
 	type FeedbackUpdateResponse,
 	FileServeParamsSchema,
@@ -28,14 +46,11 @@ import {
 	RevisitRequestSchema,
 	type RevisitResponse,
 	type ValidationError,
-	WS_MAX_FRAME_BYTES,
 	WsClientMessageSchema,
 	type WsServerMessage,
 	type ZodIssueWire,
 } from "haiku-api"
-import type { ZodTypeAny, z } from "zod"
 import { review } from "./config.js"
-import { ensureOnStageBranch } from "./git-worktree.js"
 import { HAIKU_UI_HTML } from "./haiku-ui-html.js"
 import { handleOrchestratorTool } from "./orchestrator.js"
 import type {
@@ -51,11 +66,14 @@ import {
 	updateSession,
 } from "./sessions.js"
 import {
+	appendFeedbackReply,
 	deleteFeedbackFile,
+	FEEDBACK_ORIGINS,
 	FEEDBACK_STATUSES,
 	type FeedbackItem,
 	findHaikuRoot,
 	gitCommitState,
+	gitCommitStateBackgroundPush,
 	intentDir,
 	parseFrontmatter,
 	readFeedbackFiles,
@@ -64,116 +82,152 @@ import {
 	updateFeedbackFile,
 	writeFeedbackFile,
 } from "./state-tools.js"
-import {
-	e2eEncrypt,
-	isE2EActive,
-	isRemoteReviewEnabled,
-	verifyTunnelJWT,
-} from "./tunnel.js"
+import { e2eEncrypt, isE2EActive, isRemoteReviewEnabled } from "./tunnel.js"
+import { verifyTunnelJWT } from "./tunnel.js"
 
-// ─── Validation helpers ────────────────────────────────────────────────────
-//
-// Uniform plumbing for JSON request parsing:
-//   - size cap (413 before parse)
-//   - malformed JSON → 400 with a synthetic `invalid_json` issue
-//   - schema mismatch → 400 with ZodIssue[] under the `validation_failed` envelope
-// All mutating handlers call parseJsonBody() and respond via
-// validationErrorResponse() on failure.
+// ── MIME and well-known constants ────────────────────────────────────────
 
-/** Build a 400 Response with the canonical validation-failed envelope. */
-function validationErrorResponse(
-	issues: ZodIssueWire[],
-	status = 400,
-): Response {
-	const payload: ValidationError = {
-		error: "validation_failed",
-		issues,
-	}
-	return Response.json(payload, { status })
+const MIME_TYPES: Record<string, string> = {
+	".html": "text/html; charset=utf-8",
+	".css": "text/css; charset=utf-8",
+	".js": "application/javascript; charset=utf-8",
+	".json": "application/json; charset=utf-8",
+	".svg": "image/svg+xml",
+	".png": "image/png",
+	".jpg": "image/jpeg",
+	".jpeg": "image/jpeg",
+	".gif": "image/gif",
+	".webp": "image/webp",
+	".md": "text/markdown; charset=utf-8",
+	".txt": "text/plain; charset=utf-8",
+	".pdf": "application/pdf",
 }
 
-/** Build a 413 Response when the incoming body exceeds the configured cap. */
-function payloadTooLargeResponse(maxBytes: number): Response {
-	return Response.json(
-		{
-			error: "payload_too_large",
-			max_bytes: maxBytes,
-		},
-		{ status: 413 },
-	)
+const SESSION_CANCEL_LOG_PATH = "/tmp/haiku-session-cancel.log"
+
+function logClose(msg: string): void {
+	try {
+		appendFileSync(SESSION_CANCEL_LOG_PATH, `${new Date().toISOString()} ${msg}\n`)
+	} catch {
+		/* */
+	}
+	process.stderr.write(`[haiku-mcp] ${msg}\n`)
+}
+
+// ── WebSocket registry ───────────────────────────────────────────────────
+//
+// @fastify/websocket hands us a `WsWebSocket` which wraps `ws`'s
+// `WebSocket`. We track one per sessionId so tool handlers can push
+// session-update frames via `sendToWebSocket` and force-close via
+// `closeSessionConnection`.
+
+const wsConnections = new Map<string, WsWebSocket>()
+
+// Per-session rate-limit state — sliding-window message timestamps.
+const wsRateState = new WeakMap<WsWebSocket, number[]>()
+const WS_RATE_LIMIT_PER_SEC = Number.parseInt(
+	process.env.HAIKU_WS_RATE_LIMIT ?? "20",
+	10,
+)
+
+function allowWsFrame(socket: WsWebSocket): boolean {
+	if (!Number.isFinite(WS_RATE_LIMIT_PER_SEC) || WS_RATE_LIMIT_PER_SEC <= 0) {
+		return true
+	}
+	const now = Date.now()
+	const windowStart = now - 1000
+	const prior = wsRateState.get(socket) ?? []
+	const recent = prior.filter((t) => t > windowStart)
+	if (recent.length >= WS_RATE_LIMIT_PER_SEC) {
+		wsRateState.set(socket, recent)
+		return false
+	}
+	recent.push(now)
+	wsRateState.set(socket, recent)
+	return true
+}
+
+/** Send a JSON text frame to the SPA for a given session. */
+export function sendToWebSocket(sessionId: string, data: unknown): void {
+	const socket = wsConnections.get(sessionId)
+	if (!socket || socket.readyState !== socket.OPEN) return
+	try {
+		socket.send(JSON.stringify(data))
+	} catch {
+		/* send may throw if the socket is mid-close */
+	}
 }
 
 /**
- * Parse + validate a JSON request body against a Zod schema with an explicit
- * size cap. Returns a discriminated union so callers short-circuit on
- * failure with a canonical 400/413 response.
+ * Server-initiated end of a session. Fires when the originating MCP
+ * tool call is cancelled or the tool's `finally` block cleans up.
+ * Sends a typed hint frame (so the SPA's overlay can pick the reason),
+ * then closes with RFC 6455 code 4001 in the private-use range.
  */
-async function parseJsonBody<S extends ZodTypeAny>(
-	req: Request,
-	schema: S,
-	opts: { maxBytes?: number } = {},
-): Promise<{ ok: true; data: z.infer<S> } | { ok: false; response: Response }> {
-	const maxBytes = opts.maxBytes ?? DEFAULT_BODY_MAX_BYTES
-	let raw: string
-	try {
-		// Request.text() reads the whole body; the server-level bridge also caps
-		// at DEFAULT_BODY_MAX_BYTES so this byte-length check is the finer cap
-		// for per-route overrides (e.g. feedback at 128 KiB).
-		const buffer = await req.arrayBuffer()
-		if (buffer.byteLength > maxBytes) {
-			return { ok: false, response: payloadTooLargeResponse(maxBytes) }
-		}
-		raw = new TextDecoder("utf-8").decode(buffer)
-	} catch {
-		return {
-			ok: false,
-			response: validationErrorResponse([
-				{
-					code: "invalid_body",
-					message: "Failed to read request body",
-					path: [],
-				},
-			]),
-		}
+export function closeSessionConnection(
+	sessionId: string,
+	reason?: string,
+): void {
+	logClose(
+		`closeSessionConnection(${sessionId}) invoked [build:fastify] reason=${reason ?? "null"}`,
+	)
+	const socket = wsConnections.get(sessionId)
+	if (!socket) {
+		logClose(
+			`closeSessionConnection(${sessionId}): NO socket registered — SPA has no active WS`,
+		)
+		return
 	}
-
-	let parsed: unknown
 	try {
-		parsed = JSON.parse(raw)
+		socket.send(
+			JSON.stringify({ type: "session-ended", reason: reason ?? null }),
+		)
+		logClose(`closeSessionConnection(${sessionId}): hint frame queued`)
 	} catch (err) {
-		return {
-			ok: false,
-			response: validationErrorResponse([
-				{
-					code: "invalid_json",
-					message:
-						err instanceof Error
-							? err.message
-							: "Request body is not valid JSON",
-					path: [],
-				},
-			]),
-		}
+		logClose(
+			`closeSessionConnection(${sessionId}): hint write threw ${err instanceof Error ? err.message : String(err)}`,
+		)
 	}
+	try {
+		socket.close(4001, reason ?? "session ended")
+		logClose(`closeSessionConnection(${sessionId}): close frame sent`)
+	} catch {
+		/* */
+	}
+	wsConnections.delete(sessionId)
+}
 
-	const result = schema.safeParse(parsed)
+// ── Body validation helpers ──────────────────────────────────────────────
+
+function validationErrorReply(
+	reply: FastifyReply,
+	issues: ZodIssueWire[],
+	status = 400,
+): FastifyReply {
+	const payload: ValidationError = { error: "validation_failed", issues }
+	return reply.status(status).send(payload)
+}
+
+function parseBodyWithSchema<S extends ZodTypeAny>(
+	reply: FastifyReply,
+	body: unknown,
+	schema: S,
+): { ok: true; data: z.infer<S> } | { ok: false } {
+	const result = schema.safeParse(body)
 	if (!result.success) {
 		const issues: ZodIssueWire[] = result.error.issues.map((iss) => ({
 			code: iss.code,
 			message: iss.message,
 			path: iss.path as (string | number)[],
 		}))
-		return { ok: false, response: validationErrorResponse(issues) }
+		validationErrorReply(reply, issues)
+		return { ok: false }
 	}
 	return { ok: true, data: result.data as z.infer<S> }
 }
 
-/**
- * Resolve `requested` relative to `root`, returning the real resolved path if
- * and only if it stays within `root` after symlink resolution. Mirrors the
- * inline guards previously duplicated across file / mockup / wireframe /
- * stage-artifact handlers. Paths are allowed to equal root (dir itself).
- */
+// ── Filesystem path-safe resolver (shared across asset serves) ──────────
+
 async function resolvePathSafe(
 	root: string,
 	requested: string,
@@ -198,34 +252,179 @@ async function resolvePathSafe(
 	}
 }
 
-let httpServer: HttpServer | null = null
-let actualPort: number | null = null
-
-export function getActualPort(): number | null {
-	return actualPort
+/**
+ * Schema-level path refinement. Rejects adversarial `..`, `%2e%2e`,
+ * null-byte, and backslash fixtures before we even reach the filesystem.
+ * Returns a reply on rejection, or null when the path is safe.
+ */
+function rejectUnsafePathParam(
+	reply: FastifyReply,
+	sessionId: string,
+	filePath: string,
+): boolean {
+	const parsed = FileServeParamsSchema.safeParse({ sessionId, path: filePath })
+	if (parsed.success) return false
+	reply.status(403).send({ error: "forbidden_path_traversal" })
+	return true
 }
 
-/** Serve the React SPA for any page route — the SPA reads the session ID from the URL */
-function serveSpa(): Response {
-	return new Response(HAIKU_UI_HTML, {
-		headers: { "Content-Type": "text/html; charset=utf-8" },
-	})
+async function serveFile(reply: FastifyReply, realPath: string): Promise<void> {
+	try {
+		const data = await readFile(realPath)
+		const ext = extname(realPath).toLowerCase()
+		const contentType = MIME_TYPES[ext] ?? "application/octet-stream"
+		reply.header("Content-Type", contentType).send(data)
+	} catch {
+		reply.status(404).send("Not found")
+	}
 }
 
-/** API endpoint: return session data as JSON for the SPA to render */
-function handleSessionApi(sessionId: string): Response {
+async function serveUnderRoot(
+	reply: FastifyReply,
+	rootDir: string,
+	filePath: string,
+): Promise<void> {
+	const safe = await resolvePathSafe(rootDir, filePath)
+	if (!safe.ok) {
+		reply.status(403).send({ error: "forbidden_path_traversal" })
+		return
+	}
+	return serveFile(reply, safe.path)
+}
+
+// ── Tunnel-auth extraction and enforcement ──────────────────────────────
+
+function extractTunnelToken(req: FastifyRequest): string | null {
+	const authz = req.headers.authorization
+	if (authz) {
+		const m = authz.match(/^Bearer\s+(.+)$/i)
+		if (m) {
+			const raw = m[1].trim()
+			if (raw) return raw
+		}
+	}
+	const t = (req.query as Record<string, string | undefined>)?.t
+	return t?.trim() || null
+}
+
+function requireTunnelAuth(
+	req: FastifyRequest,
+	reply: FastifyReply,
+	expectedSid: string | null,
+): boolean {
+	if (!isRemoteReviewEnabled()) return true
+	const token = extractTunnelToken(req)
+	if (!token) {
+		reply.status(401).send({ error: "unauthorized", reason: "missing_token" })
+		return false
+	}
+	const result = verifyTunnelJWT(token, expectedSid)
+	if (!result.ok) {
+		reply.status(401).send({ error: "unauthorized", reason: result.reason })
+		return false
+	}
+	return true
+}
+
+function verifyFeedbackMutationAuth(
+	req: FastifyRequest,
+	reply: FastifyReply,
+	intent: string,
+): boolean {
+	// Local (non-tunneled) mode binds loopback-only. Any caller reaching
+	// us already has localhost access, so no extra gate is needed.
+	if (!isRemoteReviewEnabled()) return true
+
+	// Tunnel mode: `requireTunnelAuth` has already validated the bearer
+	// JWT before we get here. Extract the session id from the JWT claims
+	// — that's the session this request is bound to, full stop. No
+	// separate `X-Haiku-Session-Id` header required; the JWT is the only
+	// source of truth.
+	const token = extractTunnelToken(req)
+	if (!token) {
+		reply.status(401).send({ error: "unauthorized", reason: "missing_token" })
+		return false
+	}
+	const verified = verifyTunnelJWT(token, null)
+	if (!verified.ok) {
+		reply.status(401).send({ error: "unauthorized", reason: verified.reason })
+		return false
+	}
+	const sessionId = verified.payload.sid
 	const session = getSession(sessionId)
 	if (!session) {
-		return Response.json({ error: "Session not found" }, { status: 404 })
+		reply
+			.status(403)
+			.send({ error: "forbidden_cross_session", reason: "unknown_session" })
+		return false
 	}
+	const sessionIntent =
+		session.session_type === "review" ? session.intent_slug : undefined
+	if (sessionIntent !== intent) {
+		reply
+			.status(403)
+			.send({ error: "forbidden_cross_session", reason: "intent_mismatch" })
+		return false
+	}
+	return true
+}
 
-	// Build a JSON-serializable response with all data the SPA needs
+// ── E2E encryption wrapper (Fastify onSend hook) ────────────────────────
+
+async function e2eOnSend(
+	req: FastifyRequest,
+	reply: FastifyReply,
+	payload: unknown,
+): Promise<unknown> {
+	if (reply.statusCode >= 400) return payload
+	if (reply.statusCode === 204 || reply.statusCode === 205 || reply.statusCode === 304) {
+		return payload
+	}
+	const sessionId = extractSessionIdFromPath(req.url.split("?")[0])
+	if (!sessionId || !isE2EActive(sessionId)) return payload
+	const contentType =
+		(reply.getHeader("content-type") as string | undefined) ??
+		"application/octet-stream"
+	let bodyBuffer: Buffer
+	if (typeof payload === "string") {
+		bodyBuffer = Buffer.from(payload, "utf8")
+	} else if (Buffer.isBuffer(payload)) {
+		bodyBuffer = payload
+	} else if (payload instanceof Uint8Array) {
+		bodyBuffer = Buffer.from(payload)
+	} else if (payload && typeof payload === "object") {
+		bodyBuffer = Buffer.from(JSON.stringify(payload), "utf8")
+	} else {
+		return payload
+	}
+	const encrypted = e2eEncrypt(sessionId, bodyBuffer)
+	if (!encrypted) return payload
+	reply.header("Content-Type", "application/octet-stream")
+	reply.header("X-Original-Content-Type", contentType)
+	reply.header("X-E2E-Encrypted", "1")
+	return encrypted
+}
+
+function extractSessionIdFromPath(path: string): string | null {
+	const match = path.match(
+		/\/(?:api\/session|review|question|direction|files|mockups|wireframe|stage-artifacts|question-image)\/([^/]+)/,
+	)
+	return match?.[1] ?? null
+}
+
+// ── Session API domain handlers (shape preserved from prior revision) ──
+
+function respondSessionApi(reply: FastifyReply, sessionId: string): void {
+	const session = getSession(sessionId)
+	if (!session) {
+		reply.status(404).send({ error: "Session not found" })
+		return
+	}
 	const data: Record<string, unknown> = {
 		session_id: session.session_id,
 		session_type: session.session_type,
 		status: session.status,
 	}
-
 	if (session.session_type === "review") {
 		data.intent_slug = session.intent_slug
 		data.review_type = session.review_type
@@ -234,45 +433,36 @@ function handleSessionApi(sessionId: string): Response {
 		data.decision = session.decision
 		data.feedback = session.feedback
 		if (session.annotations) data.annotations = session.annotations
-
-		// Include parsed intent/unit data if available
 		if (session.parsedIntent) data.intent = session.parsedIntent
 		if (session.parsedUnits) data.units = session.parsedUnits
 		if (session.parsedCriteria) data.criteria = session.parsedCriteria
 		if (session.parsedMermaid) data.mermaid = session.parsedMermaid
 		if (session.intentMockups) data.intent_mockups = session.intentMockups
 		if (session.unitMockups) {
-			// Convert Map to plain object for JSON serialization
 			const obj: Record<string, unknown> = {}
 			if (session.unitMockups instanceof Map) {
-				for (const [k, v] of session.unitMockups) {
-					obj[k] = v
-				}
+				for (const [k, v] of session.unitMockups) obj[k] = v
 			} else {
 				Object.assign(obj, session.unitMockups)
 			}
 			data.unit_mockups = obj
 		}
-		// Stage states, knowledge files, and stage artifacts
 		if (session.stageStates) data.stage_states = session.stageStates
 		if (session.knowledgeFiles) data.knowledge_files = session.knowledgeFiles
 		if (session.stageArtifacts) data.stage_artifacts = session.stageArtifacts
 		if (session.outputArtifacts) data.output_artifacts = session.outputArtifacts
 		if (session.previousReview) data.previous_review = session.previousReview
 	}
-
 	if (session.session_type === "question") {
 		data.title = session.title
 		data.context = session.context
 		data.questions = session.questions
 		data.answers = session.answers
-		// Build image URLs
 		const imagePaths = session.imagePaths ?? []
 		data.image_urls = imagePaths.map(
 			(_: string, i: number) => `/question-image/${session.session_id}/${i}`,
 		)
 	}
-
 	if (session.session_type === "design_direction") {
 		data.title = "Design Direction"
 		data.intent_slug = session.intent_slug
@@ -280,1323 +470,26 @@ function handleSessionApi(sessionId: string): Response {
 		data.parameters = session.parameters
 		data.selection = session.selection
 	}
-
-	return Response.json(data)
+	reply.send(data)
 }
 
-function handleReviewGet(sessionId: string): Response {
-	const session = getSession(sessionId)
-	if (!session || session.session_type !== "review") {
-		return new Response("Session not found", { status: 404 })
-	}
-	// Serve the SPA — it will fetch session data via /api/session/:id
-	return serveSpa()
-}
+// ── Review-current aggregate ────────────────────────────────────────────
 
-async function handleDecidePost(
-	sessionId: string,
-	req: Request,
-): Promise<Response> {
-	const session = getSession(sessionId)
-	if (!session || session.session_type !== "review") {
-		return new Response("Session not found", { status: 404 })
-	}
-
-	const parsed = await parseJsonBody(req, ReviewDecisionRequestSchema)
-	if (!parsed.ok) return parsed.response
-
-	const decision =
-		parsed.data.decision === "approved" ? "approved" : "changes_requested"
-	const feedback = parsed.data.feedback ?? ""
-	const annotations = parsed.data.annotations as ReviewAnnotations | undefined
-
-	updateSession(sessionId, {
-		status: "decided",
-		decision,
-		feedback,
-		annotations,
-	})
-
-	const payload: ReviewDecisionResponse = { ok: true, decision, feedback }
-	return Response.json(payload)
-}
-
-const MIME_TYPES: Record<string, string> = {
-	".html": "text/html; charset=utf-8",
-	".css": "text/css; charset=utf-8",
-	".js": "application/javascript; charset=utf-8",
-	".json": "application/json; charset=utf-8",
-	".svg": "image/svg+xml",
-	".png": "image/png",
-	".jpg": "image/jpeg",
-	".jpeg": "image/jpeg",
-	".gif": "image/gif",
-	".webp": "image/webp",
-	".md": "text/markdown; charset=utf-8",
-	".txt": "text/plain; charset=utf-8",
-	".pdf": "application/pdf",
-}
-
-/**
- * Resolve the CORS allow-list for this server. Collapses to `[siteUrl]` when
- * `HAIKU_REVIEW_ALLOWED_ORIGINS` is unset, so the zero-config happy path
- * still works. `"*"` entries are stripped by `stripWildcardAllowedOrigins()`
- * at server startup; a stray one reaching this point is also filtered here
- * as belt-and-suspenders.
- */
-function resolveAllowedCorsOrigin(origin: string | null): string | null {
-	if (!origin) return null
-	const configured = review.allowedOrigins.filter((o) => o && o !== "*")
-	const allowList = configured.length > 0 ? configured : [review.siteUrl]
-	// Exact string match only — substring/prefix checks open subdomain
-	// takeover / suffix-bypass attacks. The reviewer always arrives from a
-	// known origin, so exact match is correct.
-	return allowList.includes(origin) ? origin : null
-}
-
-/**
- * Add CORS headers when remote review is enabled, gated on the request's
- * `Origin` header matching the allow-list.
- *
- * Invariants (FB-36):
- *   - NEVER emit `Access-Control-Allow-Origin: *`. This server performs
- *     mutating actions and the auth model (URL-fragment JWT) cannot defend
- *     against cross-origin abuse if the wildcard is in play.
- *   - NEVER emit `Access-Control-Allow-Credentials: true`. Credentials
- *     (cookies, HTTP auth) are not the transport for this session; allowing
- *     them would re-introduce cross-origin cookie-carrying mutations.
- *   - Always append `Vary: Origin`, even when the origin is disallowed, so
- *     shared caches/CDNs treat each origin as a distinct cache entry and do
- *     not leak one origin's response to another.
- *   - When the origin is not allowed, emit NO ACAO/ACAM/ACAH/ACEH headers.
- *     The browser then blocks the cross-origin read. Setting ACAO to `""`
- *     is unsafe due to legacy browser quirks — omit it entirely.
- */
-function withCors(response: Response, requestOrigin: string | null): Response {
-	if (!isRemoteReviewEnabled()) return response
-	const headers = new Headers(response.headers)
-	// Append (not set) Vary so any existing Vary header on the response is
-	// preserved. Caches see "Vary: <existing>, Origin" and partition correctly.
-	headers.append("Vary", "Origin")
-	const allowed = resolveAllowedCorsOrigin(requestOrigin)
-	if (allowed) {
-		headers.set("Access-Control-Allow-Origin", allowed)
-		headers.set("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS")
-		// `bypass-tunnel-reminder` is the custom header the SPA sends to skip
-		// loca.lt's interstitial reminder page. `X-Haiku-Session-Id` is the
-		// cross-session auth header required on mutating feedback calls when
-		// the tunnel is live (see `verifyFeedbackMutationAuth`). Custom
-		// headers trigger a CORS preflight and must be explicitly allowed.
-		headers.set(
-			"Access-Control-Allow-Headers",
-			"Authorization, Content-Type, bypass-tunnel-reminder, X-Haiku-Session-Id",
-		)
-		// `X-E2E-Encrypted` / `X-Original-Content-Type` are read by the SPA's
-		// e2eFetch helper to decide whether to decrypt. Custom response
-		// headers are only visible to cross-origin JS when exposed here.
-		headers.set(
-			"Access-Control-Expose-Headers",
-			"X-E2E-Encrypted, X-Original-Content-Type",
-		)
-	}
-	// else: disallowed origin (or absent Origin on a same-origin request).
-	// No ACAO/ACAM/ACAH/ACEH headers. Same-origin works without them; cross-
-	// origin is blocked by the browser. Vary: Origin is still set above.
-	return new Response(response.body, {
-		status: response.status,
-		statusText: response.statusText,
-		headers,
-	})
-}
-
-/** Extract session ID from any request URL path */
-function extractSessionId(path: string): string | null {
-	const match = path.match(
-		/\/(?:api\/session|review|question|direction|files|mockups|wireframe|stage-artifacts|question-image)\/([^/]+)/,
-	)
-	return match?.[1] ?? null
-}
-
-/**
- * Extract the tunnel-auth JWT from a request.
- *
- * Resolution order:
- *   1. `Authorization: Bearer <jwt>` header — used by the typed ApiClient
- *      for JSON API calls.
- *   2. `?t=<jwt>` query parameter — used by asset URLs (`<img src>`,
- *      `<iframe src>`) and the WebSocket upgrade, neither of which can
- *      attach custom request headers from a browser.
- *
- * Returns null if neither is present.
- */
-function extractTunnelToken(req: Request): string | null {
-	const authz = req.headers.get("authorization")
-	if (authz) {
-		const m = authz.match(/^Bearer\s+(.+)$/i)
-		if (m) {
-			const raw = m[1].trim()
-			if (raw) return raw
-		}
-	}
-	const url = new URL(req.url)
-	const t = url.searchParams.get("t")
-	return t?.trim() || null
-}
-
-/**
- * Enforce tunnel-JWT auth on a single route when remote review is live.
- *
- * - When `isRemoteReviewEnabled()` is false (local MCP, loopback only):
- *   no-op; returns `{ ok: true }` and the caller proceeds.
- * - When remote review is on: caller MUST present a token that verifies
- *   against `EPHEMERAL_SECRET`, is not expired, binds to the currently
- *   active tunnel URL, and (when `expectedSid` is a string) matches the
- *   URL's session id. Any failure returns a minimal 401 body — no session
- *   state leaks on a failed auth.
- *
- * This is the authentication layer. Authorization guards (cross-session
- * / cross-intent — see `verifyFeedbackMutationAuth`) run after this one.
- */
-function requireTunnelAuth(
-	req: Request,
-	expectedSid: string | null,
-): { ok: true } | { ok: false; response: Response } {
-	if (!isRemoteReviewEnabled()) return { ok: true }
-	const token = extractTunnelToken(req)
-	if (!token) {
-		return {
-			ok: false,
-			response: Response.json(
-				{ error: "unauthorized", reason: "missing_token" },
-				{ status: 401 },
-			),
-		}
-	}
-	const result = verifyTunnelJWT(token, expectedSid)
-	if (!result.ok) {
-		return {
-			ok: false,
-			response: Response.json(
-				{ error: "unauthorized", reason: result.reason },
-				{ status: 401 },
-			),
-		}
-	}
-	return { ok: true }
-}
-
-/**
- * Wrap a response with E2E encryption if active for this session.
- * Preserves the original Content-Type in X-Original-Content-Type header
- * so the client knows how to handle the decrypted data.
- */
-async function withE2E(
-	response: Response,
-	sessionId: string | null,
-): Promise<Response> {
-	if (!(sessionId && isE2EActive(sessionId)) || response.status >= 400)
-		return response
-	// Null-body responses (HEAD endpoints, 204/205/304) have no payload to
-	// encrypt, and constructing `new Response(body, { status: 204 })` throws
-	// "Invalid response status code 204" in modern Node. Skip encryption
-	// and the associated crypto + allocation cost on every call.
-	if (response.body === null) return response
-	if (
-		response.status === 204 ||
-		response.status === 205 ||
-		response.status === 304
-	)
-		return response
-
-	const originalContentType =
-		response.headers.get("Content-Type") ?? "application/octet-stream"
-	const body = await response.arrayBuffer()
-	const encrypted = e2eEncrypt(sessionId, Buffer.from(body))
-
-	if (!encrypted) return response
-
-	const headers = new Headers(response.headers)
-	headers.set("Content-Type", "application/octet-stream")
-	headers.set("X-Original-Content-Type", originalContentType)
-	headers.set("X-E2E-Encrypted", "1")
-
-	return new Response(encrypted, {
-		status: response.status,
-		statusText: response.statusText,
-		headers,
-	})
-}
-
-/** Build a Response for a resolved real filesystem path with MIME detection. */
-async function respondWithFile(realPath: string): Promise<Response> {
-	try {
-		const data = await readFile(realPath)
-		const ext = extname(realPath).toLowerCase()
-		const contentType = MIME_TYPES[ext] ?? "application/octet-stream"
-		return new Response(data, {
-			headers: { "Content-Type": contentType },
-		})
-	} catch {
-		return new Response("Not found", { status: 404 })
-	}
-}
-
-/**
- * Schema-level path refinement gate. Every file-serve handler (/files,
- * /mockups, /wireframe, /stage-artifacts) runs this BEFORE `resolvePathSafe`
- * so adversarial fixtures declared in the unit-01 spec
- * (`['../', '%2e%2e%2f', '/etc/passwd', 'foo\x00.png', '\..\', '.', '',
- * 'a\0b']`) are rejected at the wire contract, not just by defense-in-depth
- * in `resolvePathSafe`. Returns a 403 Response on rejection, or `null` when
- * the path passes schema validation and the caller should continue.
- */
-function rejectUnsafePathParam(
-	sessionId: string,
-	filePath: string,
-): Response | null {
-	const parsed = FileServeParamsSchema.safeParse({ sessionId, path: filePath })
-	if (parsed.success) return null
-	return Response.json({ error: "forbidden_path_traversal" }, { status: 403 })
-}
-
-/** Consolidated file serving: GET /files/:sessionId/*path */
-async function handleFileGet(
-	sessionId: string,
-	filePath: string,
-): Promise<Response> {
-	const schemaRejection = rejectUnsafePathParam(sessionId, filePath)
-	if (schemaRejection) return schemaRejection
-
-	const session = getSession(sessionId)
-	if (!session) {
-		return new Response("Session not found", { status: 404 })
-	}
-
-	const intentDir =
-		session.session_type === "review" ? session.intent_dir : null
-	const haikuKnowledgeDir = intentDir
-		? resolve(dirname(dirname(intentDir)), "knowledge")
-		: null
-	const allowedBases = [intentDir, haikuKnowledgeDir].filter(
-		(d): d is string => d !== null,
-	)
-
-	if (allowedBases.length === 0) {
-		return new Response("Not found", { status: 404 })
-	}
-
-	let escaped = false
-	for (const baseDir of allowedBases) {
-		const safe = await resolvePathSafe(baseDir, filePath)
-		if (!safe.ok) {
-			escaped = true
-			continue
-		}
-		return respondWithFile(safe.path)
-	}
-
-	// Every allowed base rejected the path. If every rejection was a traversal
-	// escape (resolved outside root), return 403 to match the rest of the
-	// stream-handler contract — the unit spec requires path-traversal fixtures
-	// to return 403 on every file-serve route. Missing-file (not traversal)
-	// behaviour is handled earlier in respondWithFile's readFile fallback.
-	if (escaped) {
-		return Response.json({ error: "forbidden_path_traversal" }, { status: 403 })
-	}
-	return new Response("Not found", { status: 404 })
-}
-
-/**
- * Shared helper: validate a path param against a base dir, reject escapes
- * with 403, serve the real file otherwise. Used by the stream aliases
- * (/mockups, /wireframe, /stage-artifacts) whose contract is stricter
- * than /files (403 on escape, not 404).
- */
-async function serveUnderRoot(
-	rootDir: string,
-	filePath: string,
-): Promise<Response> {
-	const safe = await resolvePathSafe(rootDir, filePath)
-	if (!safe.ok) {
-		return Response.json({ error: "forbidden_path_traversal" }, { status: 403 })
-	}
-	return respondWithFile(safe.path)
-}
-
-async function handleMockupGet(
-	sessionId: string,
-	filePath: string,
-): Promise<Response> {
-	const schemaRejection = rejectUnsafePathParam(sessionId, filePath)
-	if (schemaRejection) return schemaRejection
-
-	const session = getSession(sessionId)
-	if (!session || session.session_type !== "review") {
-		return new Response("Session not found", { status: 404 })
-	}
-	return serveUnderRoot(join(session.intent_dir, "mockups"), filePath)
-}
-
-async function handleWireframeGet(
-	sessionId: string,
-	filePath: string,
-): Promise<Response> {
-	const schemaRejection = rejectUnsafePathParam(sessionId, filePath)
-	if (schemaRejection) return schemaRejection
-
-	const session = getSession(sessionId)
-	if (!session || session.session_type !== "review") {
-		return new Response("Session not found", { status: 404 })
-	}
-	return serveUnderRoot(session.intent_dir, filePath)
-}
-
-async function handleStageArtifactGet(
-	sessionId: string,
-	filePath: string,
-): Promise<Response> {
-	const schemaRejection = rejectUnsafePathParam(sessionId, filePath)
-	if (schemaRejection) return schemaRejection
-
-	const session = getSession(sessionId)
-	if (!session || session.session_type !== "review") {
-		return new Response("Session not found", { status: 404 })
-	}
-	return serveUnderRoot(session.intent_dir, filePath)
-}
-
-async function handleQuestionImageGet(
-	sessionId: string,
-	index: number,
-): Promise<Response> {
-	const session = getSession(sessionId)
-	if (!session || session.session_type !== "question") {
-		return new Response("Session not found", { status: 404 })
-	}
-
-	const imagePaths = session.imagePaths ?? []
-	if (index < 0 || index >= imagePaths.length) {
-		return new Response("Image index out of range", { status: 404 })
-	}
-
-	const imagePath = imagePaths[index]
-	// Validate the path is absolute to prevent path traversal
-	if (!imagePath.startsWith("/")) {
-		return new Response("Forbidden", { status: 403 })
-	}
-
-	// Defense-in-depth: if a base directory was recorded for this index at session creation,
-	// ensure the resolved real path stays within it (mirrors handleMockupGet pattern)
-	const allowedBaseDir = session.imageBaseDirs?.[index]
-	if (allowedBaseDir) {
-		try {
-			const realResolved = await realpath(imagePath).catch(() => null)
-			const realBase = await realpath(allowedBaseDir).catch(() =>
-				resolve(allowedBaseDir),
-			)
-			if (
-				!realResolved ||
-				(!realResolved.startsWith(`${realBase}/`) && realResolved !== realBase)
-			) {
-				return new Response("Forbidden", { status: 403 })
-			}
-		} catch {
-			return new Response("Forbidden", { status: 403 })
-		}
-	}
-
-	try {
-		const data = await readFile(imagePath)
-		const ext = extname(imagePath).toLowerCase()
-		const contentType = MIME_TYPES[ext] ?? "application/octet-stream"
-		return new Response(data, {
-			headers: { "Content-Type": contentType },
-		})
-	} catch {
-		return new Response("Not found", { status: 404 })
-	}
-}
-
-function handleQuestionGet(sessionId: string): Response {
-	const session = getSession(sessionId)
-	if (!session || session.session_type !== "question") {
-		return new Response("Session not found", { status: 404 })
-	}
-	// Serve the SPA
-	return serveSpa()
-}
-
-async function handleQuestionAnswerPost(
-	sessionId: string,
-	req: Request,
-): Promise<Response> {
-	const session = getSession(sessionId)
-	if (!session || session.session_type !== "question") {
-		return new Response("Session not found", { status: 404 })
-	}
-
-	const parsed = await parseJsonBody(req, QuestionAnswerRequestSchema)
-	if (!parsed.ok) return parsed.response
-
-	updateQuestionSession(sessionId, {
-		status: "answered",
-		answers: parsed.data.answers as QuestionAnswer[],
-		feedback: parsed.data.feedback ?? "",
-		annotations: parsed.data.annotations as QuestionAnnotations | undefined,
-	})
-
-	const payload: QuestionAnswerResponse = { ok: true }
-	return Response.json(payload)
-}
-
-function handleDirectionGet(sessionId: string): Response {
-	const session = getSession(sessionId)
-	if (!session || session.session_type !== "design_direction") {
-		return new Response("Session not found", { status: 404 })
-	}
-	// Serve the SPA
-	return serveSpa()
-}
-
-async function handleDirectionSelectPost(
-	sessionId: string,
-	req: Request,
-): Promise<Response> {
-	const session = getSession(sessionId)
-	if (!session || session.session_type !== "design_direction") {
-		return Response.json(
-			{ error: "Session not found or expired" },
-			{ status: 404 },
-		)
-	}
-
-	if (session.status === "answered") {
-		return Response.json(
-			{ error: "Direction already selected for this session" },
-			{ status: 409 },
-		)
-	}
-
-	const parsed = await parseJsonBody(req, DirectionSelectRequestSchema)
-	if (!parsed.ok) return parsed.response
-
-	updateDesignDirectionSession(sessionId, {
-		status: "answered",
-		selection: {
-			archetype: parsed.data.archetype,
-			parameters: parsed.data.parameters,
-		},
-	})
-
-	const payload: DirectionSelectResponse = { ok: true }
-	return Response.json(payload)
-}
-
-// ─── WebSocket support ───────────────────────────────────────────────
-// Minimal RFC 6455 implementation using Node built-ins (no dependencies).
-// The browser opens ws://…/ws/session/:id and can send JSON messages that
-// are routed to the same update functions as the HTTP POST endpoints.
-// This lets tool handlers use event-based waitForSession() instead of polling.
-
-const WS_MAGIC = "258EAFA5-E914-47DA-95CA-C5AB5DC85B11"
-
-// Per-frame cap. Frames over this get closed with code 1009 (Message Too Big).
-// The canonical constant lives in `haiku-api`'s websocket schema so that the
-// socket-layer close and the schema-level `.superRefine` share one number.
-
-/** Per-connection frame rate cap (messages/second). Configurable via env. */
-const WS_RATE_LIMIT_PER_SEC = Number.parseInt(
-	process.env.HAIKU_WS_RATE_LIMIT ?? "20",
-	10,
-)
-
-/** WebSocket close codes (RFC 6455 §7.4). */
-const WS_CLOSE_POLICY_VIOLATION = 1008
-const WS_CLOSE_MESSAGE_TOO_BIG = 1009
-
-/** Active WebSocket connections keyed by session ID */
-const wsConnections = new Map<string, Duplex>()
-
-/** Per-connection rate-limit state — sliding-window message timestamps. */
-const wsRateState = new WeakMap<Duplex, number[]>()
-
-/** Send a close frame with the given code, then destroy the socket. */
-function sendCloseFrame(socket: Duplex, code: number): void {
-	const frame = Buffer.alloc(4)
-	frame[0] = 0x88 // FIN + close opcode
-	frame[1] = 0x02 // payload length
-	frame.writeUInt16BE(code, 2)
-	try {
-		socket.write(frame)
-	} catch {
-		// socket already destroyed
-	}
-	socket.destroy()
-}
-
-/**
- * Check the per-connection rate limit. Returns true if the frame should be
- * allowed, false if the connection must be closed for rate abuse.
- */
-function allowWsFrame(socket: Duplex): boolean {
-	if (!Number.isFinite(WS_RATE_LIMIT_PER_SEC) || WS_RATE_LIMIT_PER_SEC <= 0) {
-		return true
-	}
-	const now = Date.now()
-	const windowStart = now - 1000
-	const prior = wsRateState.get(socket) ?? []
-	const recent = prior.filter((t) => t > windowStart)
-	if (recent.length >= WS_RATE_LIMIT_PER_SEC) {
-		wsRateState.set(socket, recent)
-		return false
-	}
-	recent.push(now)
-	wsRateState.set(socket, recent)
-	return true
-}
-
-function trackWebSocket(sessionId: string, socket: Duplex): void {
-	wsConnections.set(sessionId, socket)
-}
-
-function untrackWebSocket(sessionId: string): void {
-	wsConnections.delete(sessionId)
-}
-
-/**
- * Send a text frame to the WebSocket client for a given session (if connected).
- * Used for server-initiated notifications (e.g. confirming receipt).
- */
-export function sendToWebSocket(sessionId: string, data: unknown): void {
-	const socket = wsConnections.get(sessionId)
-	if (!socket || socket.destroyed) return
-	const payload = Buffer.from(JSON.stringify(data), "utf8")
-	const frame = encodeWebSocketFrame(payload)
-	socket.write(frame)
-}
-
-/** Encode a payload into an unmasked WebSocket text frame (server → client) */
-function encodeWebSocketFrame(payload: Buffer): Buffer {
-	const len = payload.length
-	let header: Buffer
-	if (len < 126) {
-		header = Buffer.alloc(2)
-		header[0] = 0x81 // FIN + text opcode
-		header[1] = len
-	} else if (len < 65536) {
-		header = Buffer.alloc(4)
-		header[0] = 0x81
-		header[1] = 126
-		header.writeUInt16BE(len, 2)
-	} else {
-		header = Buffer.alloc(10)
-		header[0] = 0x81
-		header[1] = 127
-		// Write as two 32-bit values since writeBigUInt64BE may not be available
-		header.writeUInt32BE(0, 2)
-		header.writeUInt32BE(len, 6)
-	}
-	return Buffer.concat([header, payload])
-}
-
-/**
- * Decode a single WebSocket frame from a client (masked).
- * Returns:
- *  - `null` if more bytes are needed (buffer too short),
- *  - `{ tooLarge: true, consumed }` if the advertised payload length exceeds
- *    WS_MAX_FRAME_BYTES — the caller MUST close with code 1009 and destroy
- *    the socket (no attempt is made to read the oversize payload),
- *  - `{ payload, opcode, consumed }` on success; payload is `null` for
- *    non-text frames (close, binary, continuation).
- */
-function decodeWebSocketFrame(
-	buf: Buffer,
-):
-	| { payload: string | null; opcode: number; consumed: number }
-	| { tooLarge: true; consumed: number }
-	| null {
-	if (buf.length < 2) return null
-
-	const opcode = buf[0] & 0x0f
-	const isMasked = (buf[1] & 0x80) !== 0
-	let payloadLen = buf[1] & 0x7f
-	let offset = 2
-
-	if (payloadLen === 126) {
-		if (buf.length < 4) return null
-		payloadLen = buf.readUInt16BE(2)
-		offset = 4
-	} else if (payloadLen === 127) {
-		if (buf.length < 10) return null
-		// Read lower 32 bits (messages > 4GB are not expected)
-		payloadLen = buf.readUInt32BE(6)
-		offset = 10
-	}
-
-	// Size-cap check happens BEFORE we try to read the full payload.
-	if (payloadLen > WS_MAX_FRAME_BYTES) {
-		// Consume the header so the caller can close cleanly.
-		return { tooLarge: true, consumed: offset + (isMasked ? 4 : 0) }
-	}
-
-	let mask: Buffer | null = null
-	if (isMasked) {
-		if (buf.length < offset + 4) return null
-		mask = buf.subarray(offset, offset + 4)
-		offset += 4
-	}
-
-	if (buf.length < offset + payloadLen) return null
-
-	const payloadBuf = buf.subarray(offset, offset + payloadLen)
-	if (mask) {
-		for (let i = 0; i < payloadBuf.length; i++) {
-			payloadBuf[i] ^= mask[i % 4]
-		}
-	}
-
-	const consumed = offset + payloadLen
-
-	// Handle close and ping frames — return consumed so buffer advances
-	if (opcode === 0x08) return { payload: null, opcode, consumed }
-	// Ping — caller should send pong (RFC 6455 §5.5.3)
-	if (opcode === 0x09)
-		return { payload: payloadBuf.toString("utf8"), opcode, consumed }
-	// Only process text frames
-	if (opcode !== 0x01) return { payload: null, opcode, consumed }
-
-	return { payload: payloadBuf.toString("utf8"), opcode, consumed }
-}
-
-/** Handle an incoming WebSocket message: parse and route to the appropriate update function */
-function handleWebSocketMessage(sessionId: string, raw: string): void {
-	let parsed: unknown
-	try {
-		parsed = JSON.parse(raw)
-	} catch {
-		const err: WsServerMessage = { type: "error", error: "invalid_json" }
-		sendToWebSocket(sessionId, err)
-		return
-	}
-
-	const schemaResult = WsClientMessageSchema.safeParse(parsed)
-	if (!schemaResult.success) {
-		const err: WsServerMessage = {
-			type: "error",
-			error: "invalid_ws_frame",
-		}
-		sendToWebSocket(sessionId, err)
-		return
-	}
-	const msg = schemaResult.data
-
-	const session = getSession(sessionId)
-	if (!session) return
-
-	if (session.session_type === "review" && msg.type === "decide") {
-		const decision =
-			msg.decision === "approved" ? "approved" : "changes_requested"
-		const feedback = msg.feedback ?? ""
-		const annotations = msg.annotations as ReviewAnnotations | undefined
-		updateSession(sessionId, {
-			status: "decided" as never,
-			decision,
-			feedback,
-			annotations,
-		})
-		const ack: WsServerMessage = {
-			type: "ack",
-			ok: true,
-			decision,
-			feedback,
-		}
-		sendToWebSocket(sessionId, ack)
-	} else if (session.session_type === "question" && msg.type === "answer") {
-		const annotations = msg.annotations as QuestionAnnotations | undefined
-		updateQuestionSession(sessionId, {
-			status: "answered",
-			answers: msg.answers as QuestionAnswer[],
-			feedback: msg.feedback ?? "",
-			annotations,
-		})
-		const ack: WsServerMessage = { type: "ack", ok: true }
-		sendToWebSocket(sessionId, ack)
-	} else if (
-		session.session_type === "design_direction" &&
-		msg.type === "select"
-	) {
-		if (session.status === "answered") {
-			const err: WsServerMessage = {
-				type: "error",
-				error: "Direction already selected",
-			}
-			sendToWebSocket(sessionId, err)
-			return
-		}
-		const annotations = msg.annotations as
-			| {
-					screenshot?: string
-					pins?: Array<{ x: number; y: number; text: string }>
-			  }
-			| undefined
-		updateDesignDirectionSession(sessionId, {
-			status: "answered",
-			selection: {
-				archetype: msg.archetype,
-				parameters: msg.parameters,
-				comments: msg.comments,
-				annotations,
-			},
-		})
-		const ack: WsServerMessage = { type: "ack", ok: true }
-		sendToWebSocket(sessionId, ack)
-	}
-}
-
-/**
- * Handle HTTP upgrade requests for WebSocket connections.
- * Path: /ws/session/:sessionId
- */
-function handleUpgrade(
-	req: IncomingMessage,
-	socket: Duplex,
-	head: Buffer,
-): void {
-	const url = new URL(
-		req.url ?? "/",
-		`http://${req.headers.host ?? "127.0.0.1"}`,
-	)
-	const match = url.pathname.match(/^\/ws\/session\/([^/]+)$/)
-
-	if (!match) {
-		socket.write("HTTP/1.1 404 Not Found\r\n\r\n")
-		socket.destroy()
-		return
-	}
-
-	const sessionId = match[1]
-	const session = getSession(sessionId)
-	if (!session) {
-		socket.write("HTTP/1.1 404 Not Found\r\n\r\n")
-		socket.destroy()
-		return
-	}
-
-	// Tunnel-auth gate. Browsers cannot attach custom headers to a
-	// WebSocket upgrade, so the JWT rides in `?t=<jwt>` on the upgrade
-	// URL. In local-only mode (no public tunnel) this is a no-op.
-	if (isRemoteReviewEnabled()) {
-		const token = url.searchParams.get("t")?.trim()
-		if (!token) {
-			socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n")
-			socket.destroy()
-			return
-		}
-		const result = verifyTunnelJWT(token, sessionId)
-		if (!result.ok) {
-			socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n")
-			socket.destroy()
-			return
-		}
-	}
-
-	const key = req.headers["sec-websocket-key"]
-	if (!key) {
-		socket.write("HTTP/1.1 400 Bad Request\r\n\r\n")
-		socket.destroy()
-		return
-	}
-
-	// Compute Sec-WebSocket-Accept per RFC 6455
-	const accept = createHash("sha1")
-		.update(key + WS_MAGIC)
-		.digest("base64")
-
-	socket.write(
-		`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`,
-	)
-
-	// Track this connection
-	trackWebSocket(sessionId, socket)
-
-	// Buffer for fragmented reads — seed with leftover bytes from the HTTP
-	// parser (the `head` argument from the upgrade event). Without this,
-	// any data the client sends in the same TCP segment as the upgrade
-	// request is silently dropped, which can cause the first WS frame to
-	// be lost and the connection to appear broken.
-	let frameBuffer = head.length > 0 ? Buffer.from(head) : Buffer.alloc(0)
-
-	socket.on("data", (chunk: Buffer) => {
-		frameBuffer = Buffer.concat([frameBuffer, chunk])
-
-		// Consume all complete frames; return null means more data needed.
-		while (frameBuffer.length > 0) {
-			const result = decodeWebSocketFrame(frameBuffer)
-			if (result === null) break // need more data
-			frameBuffer = frameBuffer.subarray(result.consumed)
-			if ("tooLarge" in result) {
-				// Frame exceeded WS_MAX_FRAME_BYTES — close 1009 and bail.
-				sendCloseFrame(socket, WS_CLOSE_MESSAGE_TOO_BIG)
-				frameBuffer = Buffer.alloc(0)
-				break
-			}
-			if (result.opcode === 0x08) {
-				// Close frame — send close back and tear down (RFC 6455 §5.5.1)
-				const closeFrame = Buffer.alloc(2)
-				closeFrame[0] = 0x88 // FIN + close opcode
-				closeFrame[1] = 0
-				socket.write(closeFrame)
-				socket.destroy()
-				break
-			}
-			if (result.opcode === 0x09) {
-				// Respond to ping with pong (RFC 6455 §5.5.3)
-				const pongHeader = Buffer.alloc(2)
-				pongHeader[0] = 0x8a // FIN + pong opcode
-				pongHeader[1] = 0 // no payload
-				socket.write(pongHeader)
-			} else if (result.payload !== null) {
-				// Rate-limit BEFORE dispatch so abusive clients never touch session state.
-				if (!allowWsFrame(socket)) {
-					sendCloseFrame(socket, WS_CLOSE_POLICY_VIOLATION)
-					frameBuffer = Buffer.alloc(0)
-					return
-				}
-				handleWebSocketMessage(sessionId, result.payload)
-			}
-		}
-		// Reset buffer if it's grown too large (malformed client)
-		if (frameBuffer.length > 1024 * 1024) {
-			frameBuffer = Buffer.alloc(0)
-		}
-	})
-
-	socket.on("close", () => {
-		untrackWebSocket(sessionId)
-	})
-
-	socket.on("error", () => {
-		untrackWebSocket(sessionId)
-	})
-}
-
-// ─── Slug sanitisation ──────────────────────────────────────────────────
-
-/**
- * Reject URL path parameters that contain path traversal (`..`) or path
- * separators (`/`, `\`). Decodes percent-encoding first so that `%2F`, `%5C`,
- * and `%2E%2E` are caught. Returns `true` when the value is safe to use as a
- * filesystem slug, `false` otherwise.
- */
-function isValidSlug(value: string): boolean {
-	let decoded: string
-	try {
-		decoded = decodeURIComponent(value)
-	} catch {
-		// Malformed percent-encoding — reject
-		return false
-	}
-	return !/[/\\]|\.\./.test(decoded)
-}
-
-// ─── Feedback CRUD endpoints ────────────────────────────────────────────
-
-/** Validate intent slug exists on disk. Returns the slug or null. */
-function validateIntent(slug: string): boolean {
-	try {
-		return existsSync(join(intentDir(slug), "intent.md"))
-	} catch {
-		return false
-	}
-}
-
-/** Validate stage exists under intent. */
-function validateStage(slug: string, stage: string): boolean {
-	try {
-		const stagesDir = join(intentDir(slug), "stages", stage)
-		return existsSync(stagesDir)
-	} catch {
-		return false
-	}
-}
-
-function handleFeedbackGet(intent: string, stage: string, url: URL): Response {
-	if (!(isValidSlug(intent) && isValidSlug(stage))) {
-		return Response.json(
-			{
-				error:
-					"Invalid slug — must not contain path separators or traversal sequences",
-			},
-			{ status: 400 },
-		)
-	}
-	if (!validateIntent(intent)) {
-		return Response.json({ error: "Intent not found" }, { status: 404 })
-	}
-	// Align branch BEFORE validateStage and readFeedbackFiles — if main has
-	// drifted, the stage dir may only exist on the stage branch and reads
-	// would return stale/empty. The SPA needs a consistent view.
-	const getBranchGuard = ensureOnStageBranch(intent, stage)
-	if (!getBranchGuard.ok) {
-		return Response.json(
-			{
-				error: `Stage-branch enforcement failed: ${getBranchGuard.message}`,
-			},
-			{ status: 409 },
-		)
-	}
-	if (!validateStage(intent, stage)) {
-		return Response.json({ error: "Stage not found" }, { status: 404 })
-	}
-
-	const statusFilter = url.searchParams.get("status")
-	if (
-		statusFilter &&
-		!(FEEDBACK_STATUSES as readonly string[]).includes(statusFilter)
-	) {
-		return Response.json(
-			{
-				error: `Invalid status filter. Must be one of: ${FEEDBACK_STATUSES.join(", ")}`,
-			},
-			{ status: 400 },
-		)
-	}
-
-	let items: FeedbackItem[] = readFeedbackFiles(intent, stage)
-	if (statusFilter) {
-		items = items.filter((i) => i.status === statusFilter)
-	}
-
-	// state-tools.FeedbackItem exposes status/origin/author_type as `string`;
-	// haiku-api's FeedbackItemSchema narrows them to enum literals. The values
-	// written on disk are always valid (writeFeedbackFile enforces the set),
-	// so a cast through the list-response mapper is sound.
-	const payload: FeedbackListResponse = {
-		intent,
-		stage,
-		count: items.length,
-		items: items.map((i) => ({
-			feedback_id: i.id,
-			title: i.title,
-			body: i.body,
-			status: i.status as FeedbackListResponse["items"][number]["status"],
-			origin: i.origin as FeedbackListResponse["items"][number]["origin"],
-			author: i.author,
-			author_type:
-				i.author_type as FeedbackListResponse["items"][number]["author_type"],
-			created_at: i.created_at,
-			visit: i.visit,
-			source_ref: i.source_ref,
-			closed_by: i.closed_by,
-		})),
-	}
-	return Response.json(payload)
-}
-
-async function handleFeedbackPost(
-	intent: string,
-	stage: string,
-	req: Request,
-): Promise<Response> {
-	if (!(isValidSlug(intent) && isValidSlug(stage))) {
-		return Response.json(
-			{
-				error:
-					"Invalid slug — must not contain path separators or traversal sequences",
-			},
-			{ status: 400 },
-		)
-	}
-	if (!validateIntent(intent)) {
-		return Response.json({ error: "Intent not found" }, { status: 404 })
-	}
-
-	// Cross-session mutation guard (soft for POST in v1 — logged-only if the
-	// header is absent; hard 403 on mismatch).
-	const authResult = verifyFeedbackMutationAuth(req, intent)
-	if (!authResult.ok) return authResult.response
-
-	// Parse the body FIRST so the guard and the write run contiguously with
-	// no awaits between them. This closes a concurrency race where two
-	// concurrent HTTP handlers could interleave guard → await → write and
-	// end up writing on each other's branch.
-	const parsed = await parseJsonBody(req, FeedbackCreateRequestSchema, {
-		maxBytes: FEEDBACK_BODY_MAX_BYTES,
-	})
-	if (!parsed.ok) return parsed.response
-
-	// Align the checkout with the stage branch. No awaits between here and
-	// the write, so Node's single-threaded event loop ensures atomicity
-	// within this handler's tail.
-	const branchGuard = ensureOnStageBranch(intent, stage)
-	if (!branchGuard.ok) {
-		return Response.json(
-			{
-				error: `Stage-branch enforcement failed: ${branchGuard.message}`,
-			},
-			{ status: 409 },
-		)
-	}
-
-	if (!validateStage(intent, stage)) {
-		return Response.json({ error: "Stage not found" }, { status: 404 })
-	}
-
-	const result = writeFeedbackFile(intent, stage, {
-		title: parsed.data.title,
-		body: parsed.data.body,
-		origin: parsed.data.origin,
-		author: "user",
-		source_ref: parsed.data.source_ref ?? null,
-	})
-
-	gitCommitState(`feedback: create ${result.feedback_id} in ${stage}`)
-
-	const response: FeedbackCreateResponse = {
-		feedback_id: result.feedback_id,
-		file: result.file,
-		status: "pending",
-		message: `Feedback ${result.feedback_id} created.`,
-	}
-	return Response.json(response, { status: 201 })
-}
-
-async function handleFeedbackPut(
-	intent: string,
-	stage: string,
-	feedbackId: string,
-	req: Request,
-): Promise<Response> {
-	if (!(isValidSlug(intent) && isValidSlug(stage) && isValidSlug(feedbackId))) {
-		return Response.json(
-			{
-				error:
-					"Invalid slug — must not contain path separators or traversal sequences",
-			},
-			{ status: 400 },
-		)
-	}
-	if (!validateIntent(intent)) {
-		return Response.json({ error: "Intent not found" }, { status: 404 })
-	}
-
-	// Cross-session mutation guard — hard 403 on session mismatch.
-	const authResult = verifyFeedbackMutationAuth(req, intent)
-	if (!authResult.ok) return authResult.response
-
-	// Parse body FIRST so the guard and write run contiguously (no awaits
-	// between them). Prevents interleaving when two concurrent handlers
-	// would otherwise switch branches on each other.
-	const parsed = await parseJsonBody(req, FeedbackUpdateRequestSchema, {
-		maxBytes: FEEDBACK_BODY_MAX_BYTES,
-	})
-	if (!parsed.ok) return parsed.response
-
-	// Align checkout with the stage branch before validateStage or any read.
-	const updateBranchGuard = ensureOnStageBranch(intent, stage)
-	if (!updateBranchGuard.ok) {
-		return Response.json(
-			{
-				error: `Stage-branch enforcement failed: ${updateBranchGuard.message}`,
-			},
-			{ status: 409 },
-		)
-	}
-
-	if (!validateStage(intent, stage)) {
-		return Response.json({ error: "Stage not found" }, { status: 404 })
-	}
-
-	// HTTP endpoint is human context — no author-type restrictions
-	const result = updateFeedbackFile(
-		intent,
-		stage,
-		feedbackId,
-		{ status: parsed.data.status, closed_by: parsed.data.closed_by },
-		"human",
-	)
-
-	if (!result.ok) {
-		// Determine status code from error
-		if (result.error.includes("not found")) {
-			return Response.json(
-				{ error: `Feedback '${feedbackId}' not found in stage '${stage}'` },
-				{ status: 404 },
-			)
-		}
-		return Response.json({ error: result.error }, { status: 400 })
-	}
-
-	gitCommitState(`feedback: update ${feedbackId} in ${stage}`)
-
-	const response: FeedbackUpdateResponse = {
-		feedback_id: feedbackId,
-		updated_fields: result.updated_fields,
-		message: `Feedback ${feedbackId} updated.`,
-	}
-	return Response.json(response)
-}
-
-async function handleFeedbackDelete(
-	intent: string,
-	stage: string,
-	feedbackId: string,
-	req: Request,
-): Promise<Response> {
-	if (!(isValidSlug(intent) && isValidSlug(stage) && isValidSlug(feedbackId))) {
-		return Response.json(
-			{
-				error:
-					"Invalid slug — must not contain path separators or traversal sequences",
-			},
-			{ status: 400 },
-		)
-	}
-	if (!validateIntent(intent)) {
-		return Response.json({ error: "Intent not found" }, { status: 404 })
-	}
-
-	// Cross-session mutation guard — hard 403 on session mismatch.
-	const authResult = verifyFeedbackMutationAuth(req, intent)
-	if (!authResult.ok) return authResult.response
-
-	// Align checkout with the stage branch before validateStage or any read.
-	const deleteBranchGuard = ensureOnStageBranch(intent, stage)
-	if (!deleteBranchGuard.ok) {
-		return Response.json(
-			{
-				error: `Stage-branch enforcement failed: ${deleteBranchGuard.message}`,
-			},
-			{ status: 409 },
-		)
-	}
-
-	if (!validateStage(intent, stage)) {
-		return Response.json({ error: "Stage not found" }, { status: 404 })
-	}
-
-	// HTTP endpoint is human context — no author-type restrictions
-	const result = deleteFeedbackFile(intent, stage, feedbackId, "human")
-
-	if (!result.ok) {
-		if (result.error.includes("not found")) {
-			return Response.json(
-				{ error: `Feedback '${feedbackId}' not found in stage '${stage}'` },
-				{ status: 404 },
-			)
-		}
-		// Lifecycle conflict: open item ("pending" or "fixing") can't be
-		// deleted mid-flight. Both statuses surface as 409 (Conflict) so
-		// UI clients can distinguish a lifecycle block from a bad request.
-		if (result.error.includes("cannot delete")) {
-			return Response.json(
-				{
-					error: result.error.replace(/^Error:\s*/, ""),
-				},
-				{ status: 409 },
-			)
-		}
-		return Response.json({ error: result.error }, { status: 400 })
-	}
-
-	gitCommitState(`feedback: delete ${feedbackId} from ${stage}`)
-
-	const response: FeedbackDeleteResponse = {
-		feedback_id: feedbackId,
-		deleted: true,
-		message: `Feedback ${feedbackId} deleted.`,
-	}
-	return Response.json(response)
-}
-
-// ─── Cross-session feedback mutation guard ──────────────────────────────────
-//
-// The review UI advertises its session via the `X-Haiku-Session-Id` header
-// on mutating feedback calls (POST/PUT/DELETE). The session MUST belong to
-// the same intent as the URL path — otherwise we 403.
-//
-// When remote review is enabled (`isRemoteReviewEnabled()` — i.e. a public
-// `*.loca.lt` tunnel is live with permissive CORS), absence of the header is
-// a HARD 401. Before this flip the gate was fail-open: any unauthenticated
-// cross-origin caller could POST/PUT/DELETE feedback simply by omitting the
-// header, letting attackers poison review state and mass-close findings to
-// silently unblock gate advancement (see FB-20).
-//
-// In local-only mode (no tunnel) the header remains optional — same-origin
-// review UI plus CLI-dispatched MCP tools are the only callers, and requiring
-// the header there would break the local happy path.
-
-function verifyFeedbackMutationAuth(
-	req: Request,
-	intent: string,
-): { ok: true } | { ok: false; response: Response } {
-	const sessionHeader = req.headers.get("x-haiku-session-id")
-	if (!sessionHeader) {
-		if (isRemoteReviewEnabled()) {
-			// Strict gate — public tunnel is live. An unauthenticated mutation
-			// attempt is a 401 with no ambiguity. Log intent (no body content).
-			console.error(
-				"[feedback-auth] 401 mutation without X-Haiku-Session-Id (intent=%s, tunnel=true)",
-				intent,
-			)
-			return {
-				ok: false,
-				response: Response.json(
-					{ error: "unauthorized", reason: "missing_session_header" },
-					{ status: 401 },
-				),
-			}
-		}
-		// Local-only mode — log and allow, but we still want visibility.
-		console.error(
-			"[feedback-auth] mutation without X-Haiku-Session-Id (intent=%s, tunnel=false)",
-			intent,
-		)
-		return { ok: true }
-	}
-	const session = getSession(sessionHeader)
-	if (!session) {
-		return {
-			ok: false,
-			response: Response.json(
-				{ error: "forbidden_cross_session", reason: "unknown_session" },
-				{ status: 403 },
-			),
-		}
-	}
-	const sessionIntent =
-		session.session_type === "review" ? session.intent_slug : undefined
-	if (sessionIntent !== intent) {
-		return {
-			ok: false,
-			response: Response.json(
-				{ error: "forbidden_cross_session", reason: "intent_mismatch" },
-				{ status: 403 },
-			),
-		}
-	}
-	return { ok: true }
-}
-
-// ─── Review current state endpoint ──────────────────────────────────────
-
-function handleReviewCurrent(): Response {
+function respondReviewCurrent(reply: FastifyReply): void {
 	let root: string
 	try {
 		root = findHaikuRoot()
 	} catch {
-		return Response.json(
-			{ error: "No .haiku directory found" },
-			{ status: 404 },
-		)
+		reply.status(404).send({ error: "No .haiku directory found" })
+		return
 	}
 
 	const intentsPath = join(root, "intents")
 	if (!existsSync(intentsPath)) {
-		return Response.json({ error: "No intents found" }, { status: 404 })
+		reply.status(404).send({ error: "No intents found" })
+		return
 	}
 
-	// Find the active intent
 	const dirs = readdirSync(intentsPath, { withFileTypes: true }).filter((d) =>
 		d.isDirectory(),
 	)
@@ -1617,13 +510,12 @@ function handleReviewCurrent(): Response {
 	}
 
 	if (!activeIntent) {
-		return Response.json({ error: "No active intent found" }, { status: 404 })
+		reply.status(404).send({ error: "No active intent found" })
+		return
 	}
 
 	const activeStage = (intentData.active_stage as string) || null
 	const stagesList = (intentData.stages as string[]) || []
-
-	// Build stage status info
 	const stages: Array<{
 		name: string
 		status: string
@@ -1646,14 +538,13 @@ function handleReviewCurrent(): Response {
 				phase: (stageState.phase as string) || undefined,
 				iteration,
 				iterations: iters,
-				visits: iteration, // legacy alias
+				visits: iteration,
 			})
 		} catch {
 			stages.push({ name: stageName, status: "pending" })
 		}
 	}
 
-	// Current phase
 	let currentPhase: string | undefined
 	if (activeStage) {
 		try {
@@ -1661,11 +552,10 @@ function handleReviewCurrent(): Response {
 			const stageState = readJson(stateFile)
 			currentPhase = (stageState.phase as string) || undefined
 		} catch {
-			/* no state file */
+			/* */
 		}
 	}
 
-	// Build feedback summary
 	const feedbackSummary = { pending: 0, addressed: 0, closed: 0, rejected: 0 }
 	if (activeStage) {
 		const items = readFeedbackFiles(activeIntent, activeStage)
@@ -1675,7 +565,6 @@ function handleReviewCurrent(): Response {
 		}
 	}
 
-	// List units for the active stage
 	const units: Array<{ slug: string; title: string; status: string }> = []
 	if (activeStage) {
 		try {
@@ -1700,7 +589,7 @@ function handleReviewCurrent(): Response {
 				}
 			}
 		} catch {
-			/* no units */
+			/* */
 		}
 	}
 
@@ -1712,312 +601,1077 @@ function handleReviewCurrent(): Response {
 		feedback_summary: feedbackSummary,
 		stages,
 	}
-	return Response.json(payload)
+	reply.send(payload)
 }
 
-// ─── Revisit endpoint ───────────────────────────────────────────────────
-//
-// POST /api/revisit/:sessionId — the review UI asks the FSM to roll back to
-// an earlier stage. Body carries optional `stage` (explicit target) and
-// optional `reasons` (each becomes a feedback file before the rollback).
-//
-// Bridges straight to the orchestrator's `haiku_revisit` handler so the MCP
-// tool path and the HTTP path share identical semantics.
+// ── Slug sanitisation + feedback validators ─────────────────────────────
 
-async function handleRevisitPost(
-	sessionId: string,
-	req: Request,
-): Promise<Response> {
-	const session = getSession(sessionId)
-	if (!session || session.session_type !== "review") {
-		return new Response("Session not found", { status: 404 })
-	}
-	if (!session.intent_slug) {
-		return Response.json(
-			{ error: "Session has no intent context" },
-			{ status: 409 },
-		)
-	}
-
-	const parsed = await parseJsonBody(req, RevisitRequestSchema)
-	if (!parsed.ok) return parsed.response
-
-	const args: {
-		intent: string
-		stage?: string
-		reasons?: Array<{ title: string; body: string }>
-	} = { intent: session.intent_slug }
-	if (parsed.data.stage) args.stage = parsed.data.stage
-	if (parsed.data.reasons) args.reasons = parsed.data.reasons
-
-	const toolResult = await handleOrchestratorTool("haiku_revisit", args)
-
-	// handleOrchestratorTool returns `{ content: [{ type: "text", text }], isError? }`.
-	// The text is either JSON-encoded action payload or an "Error: …" string.
-	const text = toolResult.content
-		.filter((c) => c.type === "text")
-		.map((c) => (c as { text: string }).text)
-		.join("\n")
-
-	if (toolResult.isError) {
-		return Response.json(
-			{ error: "revisit_failed", detail: text },
-			{ status: 409 },
-		)
-	}
-
-	// Best-effort decode: the orchestrator's haiku_revisit handler returns a
-	// JSON blob on success. If parsing fails, surface the raw text so the
-	// client can still read it.
-	let action = "revisit"
-	let stage: string | undefined
-	let feedbackCreated: string[] | undefined
-	let message = text
-
+function isValidSlug(value: string): boolean {
+	let decoded: string
 	try {
-		const parsedAction = JSON.parse(text) as Record<string, unknown>
-		action =
-			typeof parsedAction.action === "string" ? parsedAction.action : action
-		if (typeof parsedAction.stage === "string") stage = parsedAction.stage
-		if (Array.isArray(parsedAction.feedback_created)) {
-			feedbackCreated = parsedAction.feedback_created.filter(
-				(v): v is string => typeof v === "string",
-			)
-		}
-		if (typeof parsedAction.message === "string") {
-			message = parsedAction.message
-		}
+		decoded = decodeURIComponent(value)
 	} catch {
-		// non-JSON → keep defaults; `message` already carries the text
+		return false
 	}
-
-	const response: RevisitResponse = {
-		ok: true,
-		action,
-		stage,
-		feedback_created: feedbackCreated,
-		message,
-	}
-	return Response.json(response)
+	return !/[/\\]|\.\./.test(decoded)
 }
 
-function handleRequest(req: Request): Response | Promise<Response> {
-	const url = new URL(req.url)
-	const path = url.pathname
+function validateIntent(slug: string): boolean {
+	try {
+		const intentRoot = intentDir(slug)
+		return existsSync(join(intentRoot, "intent.md"))
+	} catch {
+		return false
+	}
+}
 
-	// CORS preflight (handled before E2E — preflight is plaintext).
-	// The network-layer middleware (see `listenOnPort`) applies `withCors`,
-	// which gates ACAO/ACAM/ACAH/ACEH on the request's Origin header. A
-	// disallowed origin gets a bare 204 with no CORS headers, so the browser
-	// blocks the real request — preflight leaks only that the endpoint
-	// exists, not a grant of access. Returning 204 with an empty body is
-	// safe; no mutation, no data.
-	if (req.method === "OPTIONS" && isRemoteReviewEnabled()) {
-		return new Response(null, { status: 204 })
+function validateStage(slug: string, stage: string): boolean {
+	try {
+		const root = intentDir(slug)
+		return existsSync(join(root, "stages", stage))
+	} catch {
+		return false
+	}
+}
+
+// ── WebSocket message dispatch ──────────────────────────────────────────
+
+function handleWebSocketMessage(sessionId: string, raw: string): void {
+	let parsed: unknown
+	try {
+		parsed = JSON.parse(raw)
+	} catch {
+		sendToWebSocket(sessionId, {
+			type: "error",
+			error: "invalid_json",
+		} satisfies WsServerMessage)
+		return
+	}
+	const schemaResult = WsClientMessageSchema.safeParse(parsed)
+	if (!schemaResult.success) {
+		sendToWebSocket(sessionId, {
+			type: "error",
+			error: "invalid_ws_frame",
+		} satisfies WsServerMessage)
+		return
+	}
+	const msg = schemaResult.data
+	const session = getSession(sessionId)
+	if (!session) return
+
+	if (session.session_type === "review" && msg.type === "decide") {
+		const decision =
+			msg.decision === "approved" ? "approved" : "changes_requested"
+		const feedback = msg.feedback ?? ""
+		const annotations = msg.annotations as ReviewAnnotations | undefined
+		updateSession(sessionId, {
+			status: "decided" as never,
+			decision,
+			feedback,
+			annotations,
+		})
+		sendToWebSocket(sessionId, {
+			type: "ack",
+			ok: true,
+			decision,
+			feedback,
+		} satisfies WsServerMessage)
+	} else if (session.session_type === "question" && msg.type === "answer") {
+		const annotations = msg.annotations as QuestionAnnotations | undefined
+		updateQuestionSession(sessionId, {
+			status: "answered",
+			answers: msg.answers as QuestionAnswer[],
+			feedback: msg.feedback ?? "",
+			annotations,
+		})
+		sendToWebSocket(sessionId, {
+			type: "ack",
+			ok: true,
+		} satisfies WsServerMessage)
+	} else if (
+		session.session_type === "design_direction" &&
+		msg.type === "select"
+	) {
+		if (session.status === "answered") {
+			sendToWebSocket(sessionId, {
+				type: "error",
+				error: "Direction already selected",
+			} satisfies WsServerMessage)
+			return
+		}
+		const annotations = msg.annotations as
+			| {
+					screenshot?: string
+					pins?: Array<{ x: number; y: number; text: string }>
+			  }
+			| undefined
+		updateDesignDirectionSession(sessionId, {
+			status: "answered",
+			selection: {
+				archetype: msg.archetype,
+				parameters: msg.parameters,
+				comments: msg.comments,
+				annotations,
+			},
+		})
+		sendToWebSocket(sessionId, {
+			type: "ack",
+			ok: true,
+		} satisfies WsServerMessage)
+	}
+}
+
+// ── Fastify app construction ────────────────────────────────────────────
+
+let app: FastifyInstance | null = null
+let actualPort: number | null = null
+
+export function getActualPort(): number | null {
+	return actualPort
+}
+
+function resolveAllowedCorsOrigin(origin: string | undefined): string | null {
+	if (!origin) return null
+	const configured = review.allowedOrigins.filter((o) => o && o !== "*")
+	const allowList = configured.length > 0 ? configured : [review.siteUrl]
+	return allowList.includes(origin) ? origin : null
+}
+
+async function buildApp(): Promise<FastifyInstance> {
+	const instance = Fastify({
+		logger: false,
+		// Conservative default cap — per-route overrides live on routes.
+		bodyLimit: DEFAULT_BODY_MAX_BYTES,
+		// Fastify will reject unknown content types by default; keep it
+		// permissive so our existing handlers can deal with raw buffers
+		// when needed (e.g. E2E-encrypted payloads on ingress, if ever).
+		disableRequestLogging: true,
+	})
+
+	// CORS — only emit headers when remote review is enabled.
+	if (isRemoteReviewEnabled()) {
+		await instance.register(fastifyCors, {
+			origin: (origin, cb) => {
+				// `origin` is undefined on same-origin/no-origin requests.
+				cb(null, resolveAllowedCorsOrigin(origin) ?? false)
+			},
+			credentials: false,
+			methods: ["GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"],
+			allowedHeaders: [
+				"Authorization",
+				"Content-Type",
+				"bypass-tunnel-reminder",
+			],
+			exposedHeaders: ["X-E2E-Encrypted", "X-Original-Content-Type"],
+			// Preflight from a DISALLOWED origin still gets 204 with NO
+			// ACAO/ACAM/ACAH/ACEH headers — matches the previous hand-
+			// rolled behaviour and the test contract. The browser sees
+			// no CORS grant and blocks the real request; 404 instead
+			// would leak route existence differently.
+			strictPreflight: false,
+			preflightContinue: false,
+		})
 	}
 
-	// GET /files/:sessionId/*path — consolidated file serving
-	const filesMatch = path.match(/^\/files\/([^/]+)\/(.+)$/)
-	if (filesMatch && req.method === "GET") {
-		const auth = requireTunnelAuth(req, filesMatch[1])
-		if (!auth.ok) return auth.response
-		return handleFileGet(filesMatch[1], filesMatch[2])
-	}
+	await instance.register(fastifyWebsocket, {
+		options: {
+			// Max payload per frame. The schema-level cap in haiku-api
+			// informs the number; keeping both aligned avoids drift
+			// between "frame too big" at the transport vs the validator.
+			maxPayload: 64 * 1024,
+		},
+	})
 
-	// GET /api/session/:sessionId — JSON API for the SPA
-	const apiSessionMatch = path.match(/^\/api\/session\/([^/]+)$/)
-	if (apiSessionMatch && req.method === "GET") {
-		const auth = requireTunnelAuth(req, apiSessionMatch[1])
-		if (!auth.ok) return auth.response
-		return handleSessionApi(apiSessionMatch[1])
-	}
-
-	// HEAD /api/session/:sessionId/heartbeat — client presence ping
-	const heartbeatMatch = path.match(/^\/api\/session\/([^/]+)\/heartbeat$/)
-	if (heartbeatMatch && req.method === "HEAD") {
-		const auth = requireTunnelAuth(req, heartbeatMatch[1])
-		if (!auth.ok) return auth.response
-		const ok = recordHeartbeat(heartbeatMatch[1])
-		return new Response(null, { status: ok ? 200 : 404 })
-	}
-
-	// GET /review/current — always-available review pane (must be before /:sessionId)
-	// SPA shell: no auth gate. The token is in the URL fragment which the
-	// server never sees. The SPA reads it from `window.location.hash` and
-	// attaches it to every subsequent API call.
-	if (path === "/review/current" && req.method === "GET") {
-		return serveSpa()
-	}
-
-	// GET /review/:sessionId
-	// SPA shell: no auth gate (see /review/current above).
-	const reviewMatch = path.match(/^\/review\/([^/]+)$/)
-	if (reviewMatch && req.method === "GET") {
-		return handleReviewGet(reviewMatch[1])
-	}
-
-	// POST /review/:sessionId/decide
-	const decideMatch = path.match(/^\/review\/([^/]+)\/decide$/)
-	if (decideMatch && req.method === "POST") {
-		const auth = requireTunnelAuth(req, decideMatch[1])
-		if (!auth.ok) return auth.response
-		return handleDecidePost(decideMatch[1], req)
-	}
-
-	// GET /mockups/:sessionId/:path
-	const mockupMatch = path.match(/^\/mockups\/([^/]+)\/(.+)$/)
-	if (mockupMatch && req.method === "GET") {
-		const auth = requireTunnelAuth(req, mockupMatch[1])
-		if (!auth.ok) return auth.response
-		return handleMockupGet(mockupMatch[1], mockupMatch[2])
-	}
-
-	// GET /wireframe/:sessionId/:path
-	const wireframeMatch = path.match(/^\/wireframe\/([^/]+)\/(.+)$/)
-	if (wireframeMatch && req.method === "GET") {
-		const auth = requireTunnelAuth(req, wireframeMatch[1])
-		if (!auth.ok) return auth.response
-		return handleWireframeGet(wireframeMatch[1], wireframeMatch[2])
-	}
-
-	// GET /stage-artifacts/:sessionId/:path
-	const stageArtifactMatch = path.match(/^\/stage-artifacts\/([^/]+)\/(.+)$/)
-	if (stageArtifactMatch && req.method === "GET") {
-		const auth = requireTunnelAuth(req, stageArtifactMatch[1])
-		if (!auth.ok) return auth.response
-		return handleStageArtifactGet(stageArtifactMatch[1], stageArtifactMatch[2])
-	}
-
-	// GET /direction/:sessionId
-	// SPA shell: no auth gate.
-	const directionMatch = path.match(/^\/direction\/([^/]+)$/)
-	if (directionMatch && req.method === "GET") {
-		return handleDirectionGet(directionMatch[1])
-	}
-
-	// POST /direction/:sessionId/select
-	const directionSelectMatch = path.match(/^\/direction\/([^/]+)\/select$/)
-	if (directionSelectMatch && req.method === "POST") {
-		const auth = requireTunnelAuth(req, directionSelectMatch[1])
-		if (!auth.ok) return auth.response
-		return handleDirectionSelectPost(directionSelectMatch[1], req)
-	}
-
-	// GET /question-image/:sessionId/:index
-	const questionImageMatch = path.match(/^\/question-image\/([^/]+)\/(\d+)$/)
-	if (questionImageMatch && req.method === "GET") {
-		const auth = requireTunnelAuth(req, questionImageMatch[1])
-		if (!auth.ok) return auth.response
-		return handleQuestionImageGet(
-			questionImageMatch[1],
-			Number.parseInt(questionImageMatch[2], 10),
+	// E2E encryption hook — wraps all JSON/text/buffer bodies when the
+	// session is in E2E mode. `onSend` is the documented place for
+	// mutating both headers and payload; it runs after serialization so
+	// the payload is a Buffer/string by the time we see it. Short-
+	// circuits when no session match or E2E isn't active.
+	instance.addHook("onSend", async (req, reply, payload) => {
+		const sessionId = extractSessionIdFromPath(
+			(req.url ?? "/").split("?")[0],
 		)
-	}
+		if (!sessionId || !isE2EActive(sessionId)) return payload
+		if (reply.statusCode >= 400) return payload
+		try {
+			return await e2eOnSend(req, reply, payload)
+		} catch {
+			return payload
+		}
+	})
 
-	// GET /question/:sessionId
-	// SPA shell: no auth gate.
-	const questionMatch = path.match(/^\/question\/([^/]+)$/)
-	if (questionMatch && req.method === "GET") {
-		return handleQuestionGet(questionMatch[1])
-	}
+	// ── SPA shell routes (no auth; token lives in URL fragment) ─────────
 
-	// POST /question/:sessionId/answer
-	const questionAnswerMatch = path.match(/^\/question\/([^/]+)\/answer$/)
-	if (questionAnswerMatch && req.method === "POST") {
-		const auth = requireTunnelAuth(req, questionAnswerMatch[1])
-		if (!auth.ok) return auth.response
-		return handleQuestionAnswerPost(questionAnswerMatch[1], req)
-	}
+	instance.get("/review/current", async (_req, reply) => {
+		reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
+	})
 
-	// ─── Review pane (always-available) ────────────────────────────────
-	// GET /api/review/current — return current active intent state
-	// No session id in the path; pass `expectedSid = null` so any valid
-	// tunnel-bound, unexpired token unlocks the read. This is weaker than
-	// per-session gating but stronger than no gate at all.
-	if (path === "/api/review/current" && req.method === "GET") {
-		const auth = requireTunnelAuth(req, null)
-		if (!auth.ok) return auth.response
-		return handleReviewCurrent()
-	}
-
-	// POST /api/revisit/:sessionId — review UI → FSM rollback
-	const revisitMatch = path.match(/^\/api\/revisit\/([^/]+)$/)
-	if (revisitMatch && req.method === "POST") {
-		const auth = requireTunnelAuth(req, revisitMatch[1])
-		if (!auth.ok) return auth.response
-		return handleRevisitPost(revisitMatch[1], req)
-	}
-
-	// ─── Feedback CRUD ─────────────────────────────────────────────────
-	// Feedback routes are intent-scoped (no :sid in path). Gate on any
-	// valid tunnel-bound token (`expectedSid = null`). Cross-session /
-	// cross-intent authorization still runs inside the mutation guard
-	// (`verifyFeedbackMutationAuth`) on POST/PUT/DELETE — JWT is the
-	// authentication layer, that guard is the authorization layer.
-
-	// GET /api/feedback/:intent/:stage
-	const feedbackGetMatch = path.match(/^\/api\/feedback\/([^/]+)\/([^/]+)$/)
-	if (feedbackGetMatch && req.method === "GET") {
-		const auth = requireTunnelAuth(req, null)
-		if (!auth.ok) return auth.response
-		return handleFeedbackGet(feedbackGetMatch[1], feedbackGetMatch[2], url)
-	}
-
-	// POST /api/feedback/:intent/:stage
-	if (feedbackGetMatch && req.method === "POST") {
-		const auth = requireTunnelAuth(req, null)
-		if (!auth.ok) return auth.response
-		return handleFeedbackPost(feedbackGetMatch[1], feedbackGetMatch[2], req)
-	}
-
-	// PUT /api/feedback/:intent/:stage/:id
-	const feedbackItemMatch = path.match(
-		/^\/api\/feedback\/([^/]+)\/([^/]+)\/([^/]+)$/,
+	instance.get<{ Params: { sessionId: string } }>(
+		"/review/:sessionId",
+		async (req, reply) => {
+			const session = getSession(req.params.sessionId)
+			if (!session || session.session_type !== "review") {
+				reply.status(404).send("Session not found")
+				return
+			}
+			reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
+		},
 	)
-	if (feedbackItemMatch && req.method === "PUT") {
-		const auth = requireTunnelAuth(req, null)
-		if (!auth.ok) return auth.response
-		return handleFeedbackPut(
-			feedbackItemMatch[1],
-			feedbackItemMatch[2],
-			feedbackItemMatch[3],
-			req,
+
+	instance.get<{ Params: { sessionId: string } }>(
+		"/question/:sessionId",
+		async (req, reply) => {
+			const session = getSession(req.params.sessionId)
+			if (!session || session.session_type !== "question") {
+				reply.status(404).send("Session not found")
+				return
+			}
+			reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
+		},
+	)
+
+	instance.get<{ Params: { sessionId: string } }>(
+		"/direction/:sessionId",
+		async (req, reply) => {
+			const session = getSession(req.params.sessionId)
+			if (!session || session.session_type !== "design_direction") {
+				reply.status(404).send("Session not found")
+				return
+			}
+			reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
+		},
+	)
+
+	// ── Review decide / question answer / direction select (mutations) ──
+
+	instance.post<{
+		Params: { sessionId: string }
+	}>("/review/:sessionId/decide", async (req, reply) => {
+		if (!requireTunnelAuth(req, reply, req.params.sessionId)) return
+		const session = getSession(req.params.sessionId)
+		if (!session || session.session_type !== "review") {
+			reply.status(404).send("Session not found")
+			return
+		}
+		const parsed = parseBodyWithSchema(reply, req.body, ReviewDecisionRequestSchema)
+		if (!parsed.ok) return
+		const decision =
+			parsed.data.decision === "approved" ? "approved" : "changes_requested"
+		const feedback = parsed.data.feedback ?? ""
+		const annotations = parsed.data.annotations as ReviewAnnotations | undefined
+		updateSession(req.params.sessionId, {
+			status: "decided",
+			decision,
+			feedback,
+			annotations,
+		})
+		const payload: ReviewDecisionResponse = { ok: true, decision, feedback }
+		reply.send(payload)
+	})
+
+	instance.post<{
+		Params: { sessionId: string }
+	}>("/question/:sessionId/answer", async (req, reply) => {
+		if (!requireTunnelAuth(req, reply, req.params.sessionId)) return
+		const session = getSession(req.params.sessionId)
+		if (!session || session.session_type !== "question") {
+			reply.status(404).send("Session not found")
+			return
+		}
+		const parsed = parseBodyWithSchema(reply, req.body, QuestionAnswerRequestSchema)
+		if (!parsed.ok) return
+		updateQuestionSession(req.params.sessionId, {
+			status: "answered",
+			answers: parsed.data.answers as QuestionAnswer[],
+			feedback: parsed.data.feedback ?? "",
+			annotations: parsed.data.annotations as QuestionAnnotations | undefined,
+		})
+		const payload: QuestionAnswerResponse = { ok: true }
+		reply.send(payload)
+	})
+
+	instance.post<{
+		Params: { sessionId: string }
+	}>("/direction/:sessionId/select", async (req, reply) => {
+		if (!requireTunnelAuth(req, reply, req.params.sessionId)) return
+		const session = getSession(req.params.sessionId)
+		if (!session || session.session_type !== "design_direction") {
+			reply.status(404).send({ error: "Session not found or expired" })
+			return
+		}
+		if (session.status === "answered") {
+			reply
+				.status(409)
+				.send({ error: "Direction already selected for this session" })
+			return
+		}
+		const parsed = parseBodyWithSchema(reply, req.body, DirectionSelectRequestSchema)
+		if (!parsed.ok) return
+		updateDesignDirectionSession(req.params.sessionId, {
+			status: "answered",
+			selection: {
+				archetype: parsed.data.archetype,
+				parameters: parsed.data.parameters,
+			},
+		})
+		const payload: DirectionSelectResponse = { ok: true }
+		reply.send(payload)
+	})
+
+	// ── Asset serves (path-traversal hardened) ──────────────────────────
+
+	instance.get<{ Params: { sessionId: string; "*": string } }>(
+		"/files/:sessionId/*",
+		async (req, reply) => {
+			const { sessionId } = req.params
+			const filePath = (req.params as Record<string, string>)["*"]
+			if (!requireTunnelAuth(req, reply, sessionId)) return
+			if (rejectUnsafePathParam(reply, sessionId, filePath)) return
+			const session = getSession(sessionId)
+			if (!session) {
+				reply.status(404).send("Session not found")
+				return
+			}
+			const intentDirPath =
+				session.session_type === "review" ? session.intent_dir : null
+			const haikuKnowledgeDir = intentDirPath
+				? resolve(dirname(dirname(intentDirPath)), "knowledge")
+				: null
+			const allowedBases = [intentDirPath, haikuKnowledgeDir].filter(
+				(d): d is string => d !== null,
+			)
+			if (allowedBases.length === 0) {
+				reply.status(404).send("Not found")
+				return
+			}
+			let escaped = false
+			for (const baseDir of allowedBases) {
+				const safe = await resolvePathSafe(baseDir, filePath)
+				if (!safe.ok) {
+					escaped = true
+					continue
+				}
+				return serveFile(reply, safe.path)
+			}
+			if (escaped) {
+				reply.status(403).send({ error: "forbidden_path_traversal" })
+				return
+			}
+			reply.status(404).send("Not found")
+		},
+	)
+
+	instance.get<{ Params: { sessionId: string; "*": string } }>(
+		"/mockups/:sessionId/*",
+		async (req, reply) => {
+			const { sessionId } = req.params
+			const filePath = (req.params as Record<string, string>)["*"]
+			if (!requireTunnelAuth(req, reply, sessionId)) return
+			if (rejectUnsafePathParam(reply, sessionId, filePath)) return
+			const session = getSession(sessionId)
+			if (!session || session.session_type !== "review") {
+				reply.status(404).send("Session not found")
+				return
+			}
+			return serveUnderRoot(reply, join(session.intent_dir, "mockups"), filePath)
+		},
+	)
+
+	instance.get<{ Params: { sessionId: string; "*": string } }>(
+		"/wireframe/:sessionId/*",
+		async (req, reply) => {
+			const { sessionId } = req.params
+			const filePath = (req.params as Record<string, string>)["*"]
+			if (!requireTunnelAuth(req, reply, sessionId)) return
+			if (rejectUnsafePathParam(reply, sessionId, filePath)) return
+			const session = getSession(sessionId)
+			if (!session || session.session_type !== "review") {
+				reply.status(404).send("Session not found")
+				return
+			}
+			return serveUnderRoot(reply, session.intent_dir, filePath)
+		},
+	)
+
+	instance.get<{ Params: { sessionId: string; "*": string } }>(
+		"/stage-artifacts/:sessionId/*",
+		async (req, reply) => {
+			const { sessionId } = req.params
+			const filePath = (req.params as Record<string, string>)["*"]
+			if (!requireTunnelAuth(req, reply, sessionId)) return
+			if (rejectUnsafePathParam(reply, sessionId, filePath)) return
+			const session = getSession(sessionId)
+			if (!session || session.session_type !== "review") {
+				reply.status(404).send("Session not found")
+				return
+			}
+			return serveUnderRoot(reply, session.intent_dir, filePath)
+		},
+	)
+
+	instance.get<{ Params: { sessionId: string; index: string } }>(
+		"/question-image/:sessionId/:index",
+		async (req, reply) => {
+			const { sessionId } = req.params
+			const index = Number.parseInt(req.params.index, 10)
+			if (!requireTunnelAuth(req, reply, sessionId)) return
+			const session = getSession(sessionId)
+			if (!session || session.session_type !== "question") {
+				reply.status(404).send("Session not found")
+				return
+			}
+			const imagePaths = session.imagePaths ?? []
+			if (index < 0 || index >= imagePaths.length) {
+				reply.status(404).send("Image index out of range")
+				return
+			}
+			const imagePath = imagePaths[index]
+			if (!imagePath.startsWith("/")) {
+				reply.status(403).send("Forbidden")
+				return
+			}
+			const allowedBaseDir = session.imageBaseDirs?.[index]
+			if (allowedBaseDir) {
+				try {
+					const realResolved = await realpath(imagePath).catch(() => null)
+					const realBase = await realpath(allowedBaseDir).catch(() =>
+						resolve(allowedBaseDir),
+					)
+					if (
+						!realResolved ||
+						(!realResolved.startsWith(`${realBase}/`) &&
+							realResolved !== realBase)
+					) {
+						reply.status(403).send("Forbidden")
+						return
+					}
+				} catch {
+					reply.status(403).send("Forbidden")
+					return
+				}
+			}
+			return serveFile(reply, imagePath)
+		},
+	)
+
+	// ── API: session / heartbeat / review-current / revisit ─────────────
+
+	instance.get<{ Params: { sessionId: string } }>(
+		"/api/session/:sessionId",
+		async (req, reply) => {
+			if (!requireTunnelAuth(req, reply, req.params.sessionId)) return
+			respondSessionApi(reply, req.params.sessionId)
+		},
+	)
+
+	instance.head<{ Params: { sessionId: string } }>(
+		"/api/session/:sessionId/heartbeat",
+		async (req, reply) => {
+			if (!requireTunnelAuth(req, reply, req.params.sessionId)) return
+			const ok = recordHeartbeat(req.params.sessionId)
+			reply.status(ok ? 200 : 404).send()
+		},
+	)
+
+	instance.get("/api/review/current", async (req, reply) => {
+		if (!requireTunnelAuth(req, reply, null)) return
+		respondReviewCurrent(reply)
+	})
+
+	instance.post<{ Params: { sessionId: string } }>(
+		"/api/revisit/:sessionId",
+		async (req, reply) => {
+			if (!requireTunnelAuth(req, reply, req.params.sessionId)) return
+			const session = getSession(req.params.sessionId)
+			if (!session || session.session_type !== "review") {
+				reply.status(404).send("Session not found")
+				return
+			}
+			if (!session.intent_slug) {
+				reply.status(409).send({ error: "Session has no intent context" })
+				return
+			}
+			const parsed = parseBodyWithSchema(reply, req.body, RevisitRequestSchema)
+			if (!parsed.ok) return
+			const args: {
+				intent: string
+				stage?: string
+				reasons?: Array<{ title: string; body: string }>
+			} = { intent: session.intent_slug }
+			if (parsed.data.stage) args.stage = parsed.data.stage
+			if (parsed.data.reasons) args.reasons = parsed.data.reasons
+			const toolResult = await handleOrchestratorTool("haiku_revisit", args)
+			const text = toolResult.content
+				.filter((c) => c.type === "text")
+				.map((c) => (c as { text: string }).text)
+				.join("\n")
+			if (toolResult.isError) {
+				reply.status(409).send({ error: "revisit_failed", detail: text })
+				return
+			}
+			let action = "revisit"
+			let stage: string | undefined
+			let feedbackCreated: string[] | undefined
+			let message = text
+			try {
+				const parsedAction = JSON.parse(text) as Record<string, unknown>
+				action =
+					typeof parsedAction.action === "string" ? parsedAction.action : action
+				if (typeof parsedAction.stage === "string") stage = parsedAction.stage
+				if (Array.isArray(parsedAction.feedback_created)) {
+					feedbackCreated = parsedAction.feedback_created.filter(
+						(v): v is string => typeof v === "string",
+					)
+				}
+				if (typeof parsedAction.message === "string") {
+					message = parsedAction.message
+				}
+			} catch {
+				/* */
+			}
+			// Wake the gate_review waiter blocked inside the MCP tool call.
+			// Without this, `waitForSession()` stays parked for the full
+			// 30-minute timeout and the reviewer's click looks like a no-op
+			// — the HTTP response returns 200 to the browser but the agent
+			// never sees the decision.
+			//
+			// IMPORTANT: we carry the revisit's action + message in
+			// `annotations.revisit_action` / `annotations.revisit_message`
+			// and keep `feedback` EMPTY. Stuffing the dispatch message
+			// into `feedback` would make the gate_review handler treat it
+			// as reviewer-typed prose and write a brand-new feedback file
+			// from the instruction text itself — an ouroboros bug that
+			// mirrored the dispatch message back as a new finding on the
+			// next run. The handler now reads `revisit_action` on wake
+			// and short-circuits to the dispatch result verbatim.
+			updateSession(req.params.sessionId, {
+				status: "decided",
+				decision: "changes_requested",
+				feedback: "",
+				annotations: {
+					...(action ? { revisit_action: action } : {}),
+					...(stage ? { revisit_stage: stage } : {}),
+					...(message ? { revisit_message: message } : {}),
+				} as unknown as Parameters<typeof updateSession>[1]["annotations"],
+			})
+			const response: RevisitResponse = {
+				ok: true,
+				action,
+				stage,
+				feedback_created: feedbackCreated,
+				message,
+			}
+			reply.send(response)
+		},
+	)
+
+	// ── Feedback CRUD ──────────────────────────────────────────────────
+
+	instance.get<{
+		Params: { intent: string; stage: string }
+	}>("/api/feedback/:intent/:stage", async (req, reply) => {
+		if (!requireTunnelAuth(req, reply, null)) return
+		const { intent, stage } = req.params
+		if (!(isValidSlug(intent) && isValidSlug(stage))) {
+			reply
+				.status(400)
+				.send({
+					error:
+						"Invalid slug — must not contain path separators or traversal sequences",
+				})
+			return
+		}
+		if (!validateIntent(intent)) {
+			reply.status(404).send({ error: "Intent not found" })
+			return
+		}
+		if (!validateStage(intent, stage)) {
+			reply.status(404).send({ error: "Stage not found" })
+			return
+		}
+		const statusFilter = (req.query as Record<string, string | undefined>)
+			?.status
+		if (
+			statusFilter &&
+			!(FEEDBACK_STATUSES as readonly string[]).includes(statusFilter)
+		) {
+			reply.status(400).send({
+				error: `Invalid status filter. Must be one of: ${FEEDBACK_STATUSES.join(", ")}`,
+			})
+			return
+		}
+		let items: FeedbackItem[] = readFeedbackFiles(intent, stage)
+		if (statusFilter) {
+			items = items.filter((i) => i.status === statusFilter)
+		}
+		const payload: FeedbackListResponse = {
+			intent,
+			stage,
+			count: items.length,
+			items: items.map((i) => ({
+				feedback_id: i.id,
+				title: i.title,
+				body: i.body,
+				status: i.status as FeedbackListResponse["items"][number]["status"],
+				origin:
+					i.origin as FeedbackListResponse["items"][number]["origin"],
+				author: i.author,
+				author_type:
+					i.author_type as FeedbackListResponse["items"][number]["author_type"],
+				created_at: i.created_at,
+				iteration: i.visit,
+				visit: i.visit,
+				source_ref: i.source_ref ?? null,
+				closed_by: i.closed_by ?? null,
+				resolution:
+					i.resolution as
+						| FeedbackListResponse["items"][number]["resolution"]
+						| null,
+				replies: i.replies.map((r) => ({
+					author: r.author,
+					author_type: r.author_type,
+					body: r.body,
+					created_at: r.created_at,
+				})),
+			})),
+		}
+		reply.send(payload)
+	})
+
+	// ── Feedback attachment serve (annotated screenshots) ──────────────
+	//
+	// `writeFeedbackFile` persists the PNG next to the feedback .md as
+	// `FB-NN-<slug>.png` and links it inline via `![annotation](…)`. The
+	// markdown body URL points here so the browser can load the image
+	// without a separate fetch + blob URL dance.
+	instance.get<{
+		Params: { intent: string; stage: string; filename: string }
+	}>(
+		"/api/feedback-attachment/:intent/:stage/:filename",
+		async (req, reply) => {
+			if (!requireTunnelAuth(req, reply, null)) return
+			const { intent, stage, filename } = req.params
+			if (!(isValidSlug(intent) && isValidSlug(stage))) {
+				reply.status(400).send({ error: "invalid_slug" })
+				return
+			}
+			// Attachment basenames we generate look like `FB-01-some-slug.png`.
+			// Reject anything with path separators or odd characters.
+			if (!/^[A-Za-z0-9._-]+\.(png|jpg|jpeg|webp|svg)$/.test(filename)) {
+				reply.status(400).send({ error: "invalid_filename" })
+				return
+			}
+			const feedbackRoot = join(
+				intentDir(intent),
+				"stages",
+				stage,
+				"feedback",
+			)
+			await serveUnderRoot(reply, feedbackRoot, filename)
+		},
+	)
+
+	instance.post<{
+		Params: { intent: string; stage: string }
+	}>(
+		"/api/feedback/:intent/:stage",
+		// POST allows a larger body because an annotated screenshot may
+		// ride along as a base64 data URL.
+		{ bodyLimit: FEEDBACK_CREATE_MAX_BYTES },
+		async (req, reply) => {
+			if (!requireTunnelAuth(req, reply, null)) return
+			const { intent, stage } = req.params
+			if (!(isValidSlug(intent) && isValidSlug(stage))) {
+				reply.status(400).send({
+					error:
+						"Invalid slug — must not contain path separators or traversal sequences",
+				})
+				return
+			}
+			if (!validateIntent(intent)) {
+				reply.status(404).send({ error: "Intent not found" })
+				return
+			}
+			if (!verifyFeedbackMutationAuth(req, reply, intent)) return
+			if (!validateStage(intent, stage)) {
+				reply.status(404).send({ error: "Stage not found" })
+				return
+			}
+			const parsed = parseBodyWithSchema(
+				reply,
+				req.body,
+				FeedbackCreateRequestSchema,
+			)
+			if (!parsed.ok) return
+			const result = writeFeedbackFile(intent, stage, {
+				title: parsed.data.title,
+				body: parsed.data.body,
+				origin: parsed.data.origin,
+				author: "user",
+				source_ref: parsed.data.source_ref ?? null,
+				resolution: parsed.data.resolution ?? null,
+				attachmentDataUrl: parsed.data.attachment_data_url ?? null,
+			})
+			gitCommitStateBackgroundPush(`feedback: create ${result.feedback_id} in ${stage}`)
+			const response: FeedbackCreateResponse = {
+				feedback_id: result.feedback_id,
+				file: result.file,
+				status: "pending",
+				message: `Feedback ${result.feedback_id} created.`,
+			}
+			reply.status(201).send(response)
+		},
+	)
+
+	instance.put<{
+		Params: { intent: string; stage: string; feedbackId: string }
+	}>(
+		"/api/feedback/:intent/:stage/:feedbackId",
+		{ bodyLimit: FEEDBACK_BODY_MAX_BYTES },
+		async (req, reply) => {
+			if (!requireTunnelAuth(req, reply, null)) return
+			const { intent, stage, feedbackId } = req.params
+			if (
+				!(
+					isValidSlug(intent) &&
+					isValidSlug(stage) &&
+					isValidSlug(feedbackId)
+				)
+			) {
+				reply.status(400).send({
+					error:
+						"Invalid slug — must not contain path separators or traversal sequences",
+				})
+				return
+			}
+			if (!validateIntent(intent)) {
+				reply.status(404).send({ error: "Intent not found" })
+				return
+			}
+			if (!verifyFeedbackMutationAuth(req, reply, intent)) return
+			const parsed = parseBodyWithSchema(
+				reply,
+				req.body,
+				FeedbackUpdateRequestSchema,
+			)
+			if (!parsed.ok) return
+			if (!validateStage(intent, stage)) {
+				reply.status(404).send({ error: "Stage not found" })
+				return
+			}
+			const result = updateFeedbackFile(
+				intent,
+				stage,
+				feedbackId,
+				{
+					status: parsed.data.status,
+					closed_by: parsed.data.closed_by,
+					resolution: parsed.data.resolution,
+				},
+				"human",
+			)
+			if (!result.ok) {
+				if (result.error.includes("not found")) {
+					reply
+						.status(404)
+						.send({
+							error: `Feedback '${feedbackId}' not found in stage '${stage}'`,
+						})
+					return
+				}
+				reply.status(400).send({ error: result.error })
+				return
+			}
+			gitCommitStateBackgroundPush(`feedback: update ${feedbackId} in ${stage}`)
+			const response: FeedbackUpdateResponse = {
+				feedback_id: feedbackId,
+				updated_fields: result.updated_fields,
+				message: `Feedback ${feedbackId} updated.`,
+			}
+			reply.send(response)
+		},
+	)
+
+	instance.delete<{
+		Params: { intent: string; stage: string; feedbackId: string }
+	}>("/api/feedback/:intent/:stage/:feedbackId", async (req, reply) => {
+		if (!requireTunnelAuth(req, reply, null)) return
+		const { intent, stage, feedbackId } = req.params
+		if (
+			!(
+				isValidSlug(intent) &&
+				isValidSlug(stage) &&
+				isValidSlug(feedbackId)
+			)
+		) {
+			reply.status(400).send({
+				error:
+					"Invalid slug — must not contain path separators or traversal sequences",
+			})
+			return
+		}
+		if (!validateIntent(intent)) {
+			reply.status(404).send({ error: "Intent not found" })
+			return
+		}
+		if (!verifyFeedbackMutationAuth(req, reply, intent)) return
+		if (!validateStage(intent, stage)) {
+			reply.status(404).send({ error: "Stage not found" })
+			return
+		}
+		const result = deleteFeedbackFile(intent, stage, feedbackId, "human")
+		if (!result.ok) {
+			if (result.error.includes("not found")) {
+				reply
+					.status(404)
+					.send({
+						error: `Feedback '${feedbackId}' not found in stage '${stage}'`,
+					})
+				return
+			}
+			if (result.error.includes("cannot delete")) {
+				reply
+					.status(409)
+					.send({ error: result.error.replace(/^Error:\s*/, "") })
+				return
+			}
+			reply.status(400).send({ error: result.error })
+			return
+		}
+		gitCommitStateBackgroundPush(`feedback: delete ${feedbackId} from ${stage}`)
+		const response: FeedbackDeleteResponse = {
+			feedback_id: feedbackId,
+			deleted: true,
+			message: `Feedback ${feedbackId} deleted.`,
+		}
+		reply.send(response)
+	})
+
+	// ── Feedback reply ─────────────────────────────────────────────────
+	//
+	// Threaded replies let humans and agents answer questions or
+	// document closure reasoning without creating a new feedback item.
+	// `close_as_answered: true` in the payload flips the parent to
+	// `answered` in the same write — used by the agent's
+	// `feedback_answer` action and by the reviewer's "reply & close".
+	instance.post<{
+		Params: { intent: string; stage: string; feedbackId: string }
+	}>(
+		"/api/feedback/:intent/:stage/:feedbackId/replies",
+		{ bodyLimit: FEEDBACK_BODY_MAX_BYTES },
+		async (req, reply) => {
+			if (!requireTunnelAuth(req, reply, null)) return
+			const { intent, stage, feedbackId } = req.params
+			if (
+				!(
+					isValidSlug(intent) &&
+					isValidSlug(stage) &&
+					isValidSlug(feedbackId)
+				)
+			) {
+				reply.status(400).send({
+					error:
+						"Invalid slug — must not contain path separators or traversal sequences",
+				})
+				return
+			}
+			if (!validateIntent(intent)) {
+				reply.status(404).send({ error: "Intent not found" })
+				return
+			}
+			if (!verifyFeedbackMutationAuth(req, reply, intent)) return
+			if (!validateStage(intent, stage)) {
+				reply.status(404).send({ error: "Stage not found" })
+				return
+			}
+			const parsed = parseBodyWithSchema(
+				reply,
+				req.body,
+				FeedbackReplyCreateRequestSchema,
+			)
+			if (!parsed.ok) return
+			const result = appendFeedbackReply(
+				intent,
+				stage,
+				feedbackId,
+				{
+					author: parsed.data.author ?? "user",
+					author_type: "human",
+					body: parsed.data.body,
+				},
+				{ close_as_answered: parsed.data.close_as_answered === true },
+			)
+			if (!result.ok) {
+				if (result.error.includes("not found")) {
+					reply.status(404).send({
+						error: `Feedback '${feedbackId}' not found in stage '${stage}'`,
+					})
+					return
+				}
+				reply.status(400).send({ error: result.error })
+				return
+			}
+			gitCommitStateBackgroundPush(
+				`feedback: reply on ${feedbackId} in ${stage}`,
+			)
+			const response: FeedbackReplyCreateResponse = {
+				feedback_id: feedbackId,
+				reply_index: result.reply_index,
+				status: result.status as FeedbackReplyCreateResponse["status"],
+				message: `Reply added to ${feedbackId}.`,
+			}
+			reply.status(201).send(response)
+		},
+	)
+
+	// ── Health + SPA catch-all ─────────────────────────────────────────
+
+	instance.get("/health", async (_req, reply) => {
+		reply.send("ok")
+	})
+
+	// CORS preflight catch-all (only when remote review is enabled).
+	// When @fastify/cors rejects the origin it falls through to normal
+	// routing, which 404s for OPTIONS on paths with no explicit OPTIONS
+	// handler. The prior hand-rolled server answered every OPTIONS with
+	// 204; the browser then reads CORS headers (or their absence) to
+	// decide. Restore that shape.
+	if (isRemoteReviewEnabled()) {
+		instance.options("/*", async (_req, reply) => {
+			reply.status(204).send()
+		})
+	}
+
+	instance.get("/", async (_req, reply) => {
+		reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
+	})
+
+	// SPA deep-link catch-all. Scoped to the three page prefixes so
+	// file-serving handlers' 403/404 still surface correctly for
+	// path-traversal probes.
+	instance.setNotFoundHandler((req, reply) => {
+		if (
+			req.method === "GET" &&
+			(req.url === "/" ||
+				req.url.startsWith("/review/") ||
+				req.url.startsWith("/question/") ||
+				req.url.startsWith("/direction/"))
+		) {
+			reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
+			return
+		}
+		reply.status(404).send("Not Found")
+	})
+
+	// Translate Fastify's built-in parser errors into the envelopes the
+	// existing test suite and SPA client expect:
+	//   - FST_ERR_CTP_INVALID_JSON   → {error:"validation_failed", issues:[{code:"invalid_json", ...}]}
+	//   - FST_ERR_CTP_BODY_TOO_LARGE → {error:"payload_too_large", max_bytes}
+	// Every other error falls back to a generic 500 envelope so nothing
+	// leaks a stack trace.
+	instance.setErrorHandler((err, req, reply) => {
+		const errCode = (err as { code?: string }).code
+		const status = (err as { statusCode?: number }).statusCode ?? 500
+
+		// Fastify's built-in JSON parser throws a SyntaxError (wrapped
+		// with statusCode 400) when the request body is malformed JSON.
+		// Depending on version it may surface with code
+		// FST_ERR_CTP_INVALID_JSON, or as a plain SyntaxError. Treat all
+		// those as `validation_failed` with an `invalid_json` issue so
+		// the SPA's fetch error path has stable shape.
+		const looksLikeJsonParseError =
+			errCode === "FST_ERR_CTP_INVALID_JSON" ||
+			err instanceof SyntaxError ||
+			(status === 400 && /JSON|json|Unexpected token/i.test(err.message))
+
+		if (looksLikeJsonParseError) {
+			const issues: ZodIssueWire[] = [
+				{
+					code: "invalid_json",
+					message: err.message || "Request body is not valid JSON",
+					path: [],
+				},
+			]
+			const payload: ValidationError = { error: "validation_failed", issues }
+			reply.status(400).send(payload)
+			return
+		}
+
+		if (status === 413) {
+			const path = (req.url ?? "/").split("?")[0]
+			const cap =
+				req.method === "POST" &&
+				/^\/api\/feedback\/[^/]+\/[^/]+\/?$/.test(path)
+					? FEEDBACK_CREATE_MAX_BYTES
+					: DEFAULT_BODY_MAX_BYTES
+			reply.status(413).send({ error: "payload_too_large", max_bytes: cap })
+			return
+		}
+
+		reply.status(status).send({
+			error: "internal_error",
+			message: err.message,
+		})
+	})
+
+	// ── WebSocket upgrade ──────────────────────────────────────────────
+
+	instance.register(async (ws) => {
+		ws.get<{ Params: { sessionId: string } }>(
+			"/ws/session/:sessionId",
+			{ websocket: true },
+			(socket, req) => {
+				const { sessionId } = req.params
+				if (isRemoteReviewEnabled()) {
+					const token = (req.query as Record<string, string | undefined>)?.t
+					if (!token) {
+						socket.close(4401, "unauthorized")
+						return
+					}
+					const verified = verifyTunnelJWT(token, sessionId)
+					if (!verified.ok) {
+						socket.close(4401, "unauthorized")
+						return
+					}
+				}
+				const session = getSession(sessionId)
+				if (!session) {
+					socket.close(4404, "session not found")
+					return
+				}
+				wsConnections.set(sessionId, socket)
+				logClose(`upgrade ACCEPT session=${sessionId}`)
+				socket.on("message", (raw: Buffer | ArrayBuffer | Buffer[]) => {
+					if (!allowWsFrame(socket)) {
+						socket.close(1008, "rate limit")
+						return
+					}
+					const text = Array.isArray(raw)
+						? Buffer.concat(raw as Buffer[]).toString("utf8")
+						: typeof raw === "string"
+							? raw
+							: Buffer.from(raw as ArrayBuffer).toString("utf8")
+					handleWebSocketMessage(sessionId, text)
+				})
+				socket.on("close", () => {
+					if (wsConnections.get(sessionId) === socket) {
+						wsConnections.delete(sessionId)
+					}
+				})
+				socket.on("error", () => {
+					if (wsConnections.get(sessionId) === socket) {
+						wsConnections.delete(sessionId)
+					}
+				})
+			},
 		)
-	}
+	})
 
-	// DELETE /api/feedback/:intent/:stage/:id
-	if (feedbackItemMatch && req.method === "DELETE") {
-		const auth = requireTunnelAuth(req, null)
-		if (!auth.ok) return auth.response
-		return handleFeedbackDelete(
-			feedbackItemMatch[1],
-			feedbackItemMatch[2],
-			feedbackItemMatch[3],
-			req,
-		)
-	}
-
-	// GET /health — tunnel keepalive check
-	if (path === "/health" && req.method === "GET") {
-		return new Response("ok", { status: 200 })
-	}
-
-	return new Response("Not Found", { status: 404 })
+	return instance
 }
 
-/**
- * Loopback address assertion — v1 transport invariant.
- *
- * Every route in haiku-api/routes.ts declares `transport: 'loopback'`.
- * The listening socket MUST bind to 127.0.0.1 or ::1. A non-loopback bind
- * is treated as a security incident: the process exits non-zero so the
- * operator sees the failure rather than silently exposing the review UI
- * on a public interface.
- *
- * The assertion is gated by `HAIKU_TRANSPORT_ASSERT` (default on). Tests
- * that want to exercise the failure path spawn a child process and can
- * force a non-loopback bind via `HAIKU_FORCE_BIND_ADDR`.
- */
+// ── Lifecycle ──────────────────────────────────────────────────────────
+
 function assertLoopbackBind(address: string): void {
 	if (process.env.HAIKU_TRANSPORT_ASSERT === "0") return
 	const loopback = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"])
@@ -2031,154 +1685,26 @@ function assertLoopbackBind(address: string): void {
 }
 
 export async function startHttpServer(): Promise<number> {
-	if (httpServer && actualPort !== null) {
-		return actualPort
+	if (app && actualPort !== null) return actualPort
+
+	app = await buildApp()
+	const bindAddr = process.env.HAIKU_FORCE_BIND_ADDR || "127.0.0.1"
+	const address = await app.listen({ host: bindAddr, port: 0 })
+	// Parse the returned listen URL to extract port / address.
+	const urlMatch = address.match(/^https?:\/\/(\[?[^\]]*\]?|[^:]+):(\d+)/)
+	if (urlMatch) {
+		actualPort = Number.parseInt(urlMatch[2], 10)
+		assertLoopbackBind(urlMatch[1].replace(/^\[|\]$/g, ""))
 	}
-
-	// Use port 0 to let the OS pick a random available port
-	const requestedPort = 0
-	const maxAttempts = 1
-
-	for (let i = 0; i < maxAttempts; i++) {
-		const port = requestedPort + i
-		try {
-			await listenOnPort(port)
-			// For port 0, the OS assigns the actual port — read it from the server
-			const addr = httpServer?.address()
-			if (addr && typeof addr === "object") {
-				actualPort = addr.port
-				assertLoopbackBind(addr.address)
-			} else {
-				actualPort = port === 0 ? port : port
-			}
-			console.error(
-				`Review HTTP server listening on http://127.0.0.1:${actualPort}`,
-			)
-			return actualPort as number
-		} catch (err: unknown) {
-			if (
-				err instanceof Error &&
-				"code" in err &&
-				(err as NodeJS.ErrnoException).code === "EADDRINUSE"
-			) {
-				continue
-			}
-			throw err
+	if (actualPort === null) {
+		const addrInfo = app.server.address()
+		if (addrInfo && typeof addrInfo === "object") {
+			actualPort = addrInfo.port
+			assertLoopbackBind(addrInfo.address)
 		}
 	}
-
-	throw new Error(
-		`Could not find available port (tried ${requestedPort}-${requestedPort + maxAttempts - 1})`,
+	console.error(
+		`Review HTTP server listening on http://127.0.0.1:${actualPort}`,
 	)
-}
-
-function listenOnPort(port: number): Promise<void> {
-	return new Promise((resolve, reject) => {
-		const server = createServer(async (req, res) => {
-			// Build a Web API Request from the incoming Node request.
-			// Use the Host header so the URL has the actual port even when
-			// the requested port was 0 (OS-assigned).
-			const host = req.headers.host ?? `127.0.0.1:${port}`
-			const url = `http://${host}${req.url ?? "/"}`
-			const headers = new Headers()
-			for (const [key, value] of Object.entries(req.headers)) {
-				if (value) {
-					if (Array.isArray(value)) {
-						for (const v of value) headers.append(key, v)
-					} else {
-						headers.set(key, value)
-					}
-				}
-			}
-
-			let body: ArrayBuffer | null = null
-			let tooLarge = false
-			if (req.method !== "GET" && req.method !== "HEAD") {
-				// Stream-count bytes so oversize bodies get rejected with 413 before
-				// we allocate the full buffer. The per-route cap (e.g. feedback
-				// 128 KiB) is tighter and enforced inside parseJsonBody.
-				const chunks: Buffer[] = []
-				let total = 0
-				for await (const chunk of req) {
-					const buf =
-						typeof chunk === "string" ? Buffer.from(chunk) : (chunk as Buffer)
-					total += buf.length
-					if (total > DEFAULT_BODY_MAX_BYTES) {
-						tooLarge = true
-						// Drain remaining chunks so the client connection stays healthy,
-						// then stop accumulating.
-						break
-					}
-					chunks.push(buf)
-				}
-				if (tooLarge) {
-					res.writeHead(413, { "Content-Type": "application/json" })
-					res.end(
-						JSON.stringify({
-							error: "payload_too_large",
-							max_bytes: DEFAULT_BODY_MAX_BYTES,
-						}),
-					)
-					return
-				}
-				const buf = Buffer.concat(chunks)
-				body = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
-			}
-
-			const webRequest = new Request(url, {
-				method: req.method ?? "GET",
-				headers,
-				body,
-			})
-
-			try {
-				let webResponse = await handleRequest(webRequest)
-				// Network-layer: apply CORS + E2E encryption to all responses.
-				// The Origin header is forwarded to withCors so it can emit the
-				// allow-list-matched value (or omit ACAO entirely for
-				// disallowed origins). See withCors for the invariants.
-				const sessionId = extractSessionId(new URL(webRequest.url).pathname)
-				const requestOrigin = webRequest.headers.get("origin")
-				webResponse = await withE2E(
-					withCors(webResponse, requestOrigin),
-					sessionId,
-				)
-				res.writeHead(
-					webResponse.status,
-					Object.fromEntries(webResponse.headers.entries()),
-				)
-				const responseBody = await webResponse.arrayBuffer()
-				res.end(Buffer.from(responseBody))
-			} catch (err) {
-				// No body content is logged by default — only the error message
-				// and the request path. Both are in the allow-list below. Any
-				// addition here must be reviewed for leak potential.
-				console.error(
-					"[http] handler error method=%s path=%s err=%s",
-					req.method,
-					req.url,
-					err instanceof Error ? err.message : String(err),
-				)
-				res.writeHead(500)
-				res.end("Internal Server Error")
-			}
-		})
-
-		// Handle WebSocket upgrade requests
-		server.on("upgrade", (req, socket, head) => {
-			handleUpgrade(req, socket, head)
-		})
-
-		server.once("error", (err) => {
-			reject(err)
-		})
-
-		// Bind address: default loopback. Test harnesses may override via
-		// HAIKU_FORCE_BIND_ADDR to exercise the transport-invariant exit path.
-		const bindAddr = process.env.HAIKU_FORCE_BIND_ADDR || "127.0.0.1"
-		server.listen(port, bindAddr, () => {
-			httpServer = server
-			resolve()
-		})
-	})
+	return actualPort as number
 }

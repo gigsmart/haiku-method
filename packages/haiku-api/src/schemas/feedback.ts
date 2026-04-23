@@ -20,6 +20,8 @@ import { z } from "zod"
 import {
 	AuthorTypeSchema,
 	FeedbackOriginSchema,
+	FeedbackReplySchema,
+	FeedbackResolutionSchema,
 	FeedbackStatusSchema,
 } from "./common.js"
 
@@ -58,6 +60,17 @@ export const FeedbackItemSchema = z
 			.describe(
 				"Unit slug whose feedback-assessor hat certified closure, or null while open.",
 			),
+		resolution: FeedbackResolutionSchema.nullable()
+			.optional()
+			.describe(
+				"Routing hint for the feedback resolver. null/unset = router defaults to stage_revisit.",
+			),
+		replies: z
+			.array(FeedbackReplySchema)
+			.optional()
+			.describe(
+				"Thread of replies on this feedback item. Empty / missing = no replies yet.",
+			),
 	})
 	.describe("Wire shape of a feedback item")
 export type FeedbackItem = z.infer<typeof FeedbackItemSchema>
@@ -89,6 +102,11 @@ export const FeedbackAnchorSchema = z
 	.describe("Pin anchor metadata for visual annotations")
 export type FeedbackAnchor = z.infer<typeof FeedbackAnchorSchema>
 
+/** Max size of an inline attachment `data:` URL. Generous enough for a
+ *  1280×800 PNG wireframe screenshot (~200-800 KB); bigger feedback
+ *  bodies are rejected 413 at the HTTP layer. */
+export const FEEDBACK_ATTACHMENT_MAX_BYTES = 6_000_000
+
 /** POST /api/feedback/:intent/:stage request body. */
 export const FeedbackCreateRequestSchema = z
 	.object({
@@ -104,6 +122,26 @@ export const FeedbackCreateRequestSchema = z
 			),
 		source_ref: z.string().max(1_000).nullable().optional(),
 		anchor: FeedbackAnchorSchema.optional(),
+		resolution: FeedbackResolutionSchema.optional().describe(
+			"Author's preferred resolution path. Router defaults to stage_revisit when omitted.",
+		),
+		/** Optional image attachment captured by the review UI — typically
+		 *  a vector SVG of the reviewer's drawn strokes, but also
+		 *  accepts PNG / JPEG / WebP for externally-sourced raster
+		 *  annotations. Shipped as a `data:image/<mime>;base64,...` URL
+		 *  and persisted server-side as a sidecar file next to the
+		 *  feedback markdown. */
+		attachment_data_url: z
+			.string()
+			.max(FEEDBACK_ATTACHMENT_MAX_BYTES)
+			.regex(
+				/^data:image\/(png|jpeg|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/,
+				{
+					message:
+						"attachment_data_url must be a base64-encoded data URL for png/jpeg/webp/svg+xml",
+				},
+			)
+			.optional(),
 	})
 	.describe("POST /api/feedback/:intent/:stage request body")
 export type FeedbackCreateRequest = z.infer<typeof FeedbackCreateRequestSchema>
@@ -126,15 +164,23 @@ export type FeedbackCreateResponse = z.infer<
 >
 
 /** PUT /api/feedback/:intent/:stage/:id request body.
- *  At least one of `status` / `closed_by` must be provided — enforced by refine. */
+ *  At least one of `status` / `closed_by` / `resolution` must be provided. */
 export const FeedbackUpdateRequestSchema = z
 	.object({
 		status: FeedbackStatusSchema.optional(),
 		closed_by: z.string().max(200).optional(),
+		resolution: FeedbackResolutionSchema.nullable().optional(),
 	})
-	.refine((data) => data.status !== undefined || data.closed_by !== undefined, {
-		message: "At least one of 'status' or 'closed_by' must be provided",
-	})
+	.refine(
+		(data) =>
+			data.status !== undefined ||
+			data.closed_by !== undefined ||
+			data.resolution !== undefined,
+		{
+			message:
+				"At least one of 'status' / 'closed_by' / 'resolution' must be provided",
+		},
+	)
 	.describe("PUT /api/feedback/:intent/:stage/:id request body")
 export type FeedbackUpdateRequest = z.infer<typeof FeedbackUpdateRequestSchema>
 
@@ -162,4 +208,42 @@ export const FeedbackDeleteResponseSchema = z
 	.describe("DELETE /api/feedback/:intent/:stage/:id response body")
 export type FeedbackDeleteResponse = z.infer<
 	typeof FeedbackDeleteResponseSchema
+>
+
+/** POST /api/feedback/:intent/:stage/:id/replies request body. */
+export const FeedbackReplyCreateRequestSchema = z
+	.object({
+		body: z.string().min(1).max(5_000),
+		author: z
+			.string()
+			.max(200)
+			.optional()
+			.describe(
+				"Optional author hint. When omitted the server stamps 'user' or the agent name from session context.",
+			),
+		/** If true, the reply transitions the parent feedback to `answered`
+		 *  in the same write. Used by the agent's `feedback_answer` action
+		 *  and by the reviewer's "reply & close" action. */
+		close_as_answered: z.boolean().optional(),
+	})
+	.describe("POST /api/feedback/:intent/:stage/:id/replies request body")
+export type FeedbackReplyCreateRequest = z.infer<
+	typeof FeedbackReplyCreateRequestSchema
+>
+
+/** POST /api/feedback/:intent/:stage/:id/replies response body. */
+export const FeedbackReplyCreateResponseSchema = z
+	.object({
+		feedback_id: z.string(),
+		reply_index: z
+			.number()
+			.int()
+			.nonnegative()
+			.describe("Zero-based index of the new reply inside replies[]."),
+		status: FeedbackStatusSchema,
+		message: z.string(),
+	})
+	.describe("POST /api/feedback/:intent/:stage/:id/replies response body")
+export type FeedbackReplyCreateResponse = z.infer<
+	typeof FeedbackReplyCreateResponseSchema
 >
