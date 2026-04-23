@@ -14,10 +14,10 @@ inputs:
   - stages/design/artifacts/aria-landmark-spec.md
   - stages/design/artifacts/aria-live-sequencing-spec.md
   - stages/design/artifacts/state-signaling-inventory.html
-status: completed
-bolt: 1
-hat: reviewer
-started_at: '2026-04-21T15:00:33Z'
+status: pending
+bolt: 0
+hat: ''
+started_at: null
 hat_started_at: '2026-04-21T15:35:45Z'
 iterations:
   - hat: planner
@@ -48,7 +48,7 @@ outputs:
   - packages/haiku-ui/test-fixtures/question-session.json
   - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
   - packages/haiku-ui/tests/a11y-pages.spec.tsx
-completed_at: '2026-04-21T15:43:18Z'
+completed_at: null
 model: sonnet
 ---
 # Question page + Direction page refactors

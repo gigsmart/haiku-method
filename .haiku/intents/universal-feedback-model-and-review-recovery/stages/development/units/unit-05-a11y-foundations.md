@@ -16,10 +16,10 @@ inputs:
   - stages/design/artifacts/skip-link-spec.html
   - stages/design/artifacts/touch-target-audit.md
   - stages/design/artifacts/motion-and-reduced-motion-spec.md
-status: completed
-bolt: 1
-hat: reviewer
-started_at: '2026-04-21T06:58:35Z'
+status: pending
+bolt: 0
+hat: ''
+started_at: null
 hat_started_at: '2026-04-21T07:22:39Z'
 iterations:
   - hat: planner
@@ -52,7 +52,7 @@ outputs:
   - packages/haiku-ui/src/a11y/reduced-motion.ts
   - packages/haiku-ui/src/a11y/touch-target.ts
   - packages/haiku-ui/src/index.css
-completed_at: '2026-04-21T07:25:29Z'
+completed_at: null
 model: sonnet
 ---
 # A11y foundations

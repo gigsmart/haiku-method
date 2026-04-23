@@ -10,10 +10,10 @@ inputs:
   - knowledge/DESIGN-TOKENS.md
   - stages/design/DESIGN-BRIEF.md
   - stages/design/artifacts/contrast-and-type-audit.md
-status: completed
-bolt: 1
-hat: reviewer
-started_at: '2026-04-21T06:19:55Z'
+status: pending
+bolt: 0
+hat: ''
+started_at: null
 hat_started_at: '2026-04-21T06:51:47Z'
 iterations:
   - hat: planner
@@ -51,7 +51,7 @@ outputs:
   - packages/haiku-ui/tailwind.config.ts
   - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
   - packages/haiku-ui/vitest.config.ts
-completed_at: '2026-04-21T06:57:56Z'
+completed_at: null
 model: sonnet
 ---
 # Design token system

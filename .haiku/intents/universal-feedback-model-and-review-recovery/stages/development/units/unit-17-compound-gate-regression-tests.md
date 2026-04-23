@@ -1,5 +1,5 @@
 ---
-title: Compound [external, ask] gate regression tests
+title: 'Compound [external, ask] gate regression tests'
 type: regression
 depends_on: []
 quality_gates:
@@ -11,11 +11,13 @@ inputs:
   - stages/development/artifacts/legacy-gate-feedback-check.md
   - stages/development/artifacts/legacy-external-review-detection.md
 status: pending
-bolt: 1
-hat: implementer
+bolt: 0
+hat: ''
 closes:
   - FB-56
 model: sonnet
+started_at: null
+completed_at: null
 ---
 
 ## Summary

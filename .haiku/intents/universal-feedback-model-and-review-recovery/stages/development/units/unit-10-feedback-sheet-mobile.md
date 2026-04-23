@@ -11,10 +11,10 @@ inputs:
   - knowledge/DESIGN-TOKENS.md
   - stages/design/DESIGN-BRIEF.md
   - stages/design/artifacts/feedback-inline-mobile.html
-status: completed
-bolt: 1
-hat: reviewer
-started_at: '2026-04-21T15:00:28Z'
+status: pending
+bolt: 0
+hat: ''
+started_at: null
 hat_started_at: '2026-04-21T15:24:45Z'
 iterations:
   - hat: planner
@@ -39,7 +39,7 @@ outputs:
   - packages/haiku-ui/src/components/feedback/__tests__/FeedbackSheet.test.tsx
   - packages/haiku-ui/src/components/feedback/index.ts
   - packages/haiku-ui/src/index.css
-completed_at: '2026-04-21T15:41:11Z'
+completed_at: null
 model: sonnet
 ---
 # FeedbackSheet — mobile bottom sheet

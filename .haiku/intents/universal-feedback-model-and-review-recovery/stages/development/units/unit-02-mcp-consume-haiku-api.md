@@ -8,10 +8,10 @@ quality_gates:
   - test
 inputs:
   - knowledge/ARCHITECTURE.md
-status: completed
-bolt: 4
-hat: reviewer
-started_at: '2026-04-21T03:55:47Z'
+status: pending
+bolt: 0
+hat: ''
+started_at: null
 hat_started_at: '2026-04-21T04:56:00Z'
 iterations:
   - hat: planner
@@ -102,7 +102,7 @@ outputs:
   - packages/haiku/test/server-tools.test.mjs
   - stages/development/artifacts/unit-02-review-findings.md
   - packages/haiku/test/http-streams.test.mjs
-completed_at: '2026-04-21T04:59:02Z'
+completed_at: null
 model: sonnet
 ---
 # MCP consumes haiku-api

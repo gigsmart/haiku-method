@@ -12,10 +12,10 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
   - stages/design/artifacts/agent-feedback-toggle-spec.html
   - stages/design/artifacts/comments-list-with-agent-toggle.html
-status: completed
-bolt: 1
-hat: reviewer
-started_at: '2026-04-21T07:27:04Z'
+status: pending
+bolt: 0
+hat: ''
+started_at: null
 hat_started_at: '2026-04-21T07:55:58Z'
 iterations:
   - hat: planner
@@ -38,7 +38,7 @@ outputs:
   - >-
     packages/haiku-ui/src/components/feedback/__tests__/AgentFeedbackToggle.test.tsx
   - packages/haiku-ui/tests/audit-banned-patterns.test.ts
-completed_at: '2026-04-21T13:02:59Z'
+completed_at: null
 model: sonnet
 ---
 # AgentFeedbackToggle

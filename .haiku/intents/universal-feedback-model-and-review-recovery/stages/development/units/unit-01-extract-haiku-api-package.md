@@ -12,10 +12,10 @@ inputs:
   - knowledge/ARCHITECTURE.md
   - stages/design/DESIGN-BRIEF.md
   - knowledge/DESIGN-TOKENS.md
-status: completed
-bolt: 1
-hat: reviewer
-started_at: '2026-04-21T03:24:59Z'
+status: pending
+bolt: 0
+hat: ''
+started_at: null
 hat_started_at: '2026-04-21T03:43:50Z'
 iterations:
   - hat: planner
@@ -54,7 +54,7 @@ outputs:
   - packages/haiku-api/test/run-all.mjs
   - packages/haiku-api/test/schemas.test.mjs
   - packages/haiku-api/tsconfig.json
-completed_at: '2026-04-21T03:46:45Z'
+completed_at: null
 model: sonnet
 ---
 # Extract haiku-api package
