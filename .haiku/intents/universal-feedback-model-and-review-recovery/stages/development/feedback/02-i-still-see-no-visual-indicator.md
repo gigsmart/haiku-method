@@ -1,6 +1,6 @@
 ---
 title: I still see no visual indicator...
-status: pending
+status: rejected
 origin: user-chat
 author: user
 author_type: human
