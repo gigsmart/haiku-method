@@ -1,6 +1,6 @@
 ---
 title: 'agent-feedback-toggle-spec: Nope'
-status: pending
+status: rejected
 origin: user-visual
 author: user
 author_type: human
@@ -17,4 +17,3 @@ attachment: 20-agent-feedback-toggle-spec-nope.png
 Nope
 
 ![annotation](/api/feedback-attachment/universal-feedback-model-and-review-recovery/design/20-agent-feedback-toggle-spec-nope.png)
-
