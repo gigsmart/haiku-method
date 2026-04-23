@@ -8,8 +8,8 @@
   "gate_outcome": null,
   "visits": 1,
   "elaboration_turns": 2,
-  "pre_review_dispatched": false,
-  "pre_review_dispatched_at": null,
+  "pre_review_dispatched": true,
+  "pre_review_dispatched_at": "2026-04-23T23:14:05Z",
   "pre_review_reviewers_acknowledged": false,
   "pre_review_reviewers_acknowledged_at": null,
   "pre_review_skipped_no_agents": false
