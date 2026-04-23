@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import * as Sentry from "@sentry/nextjs"
 import Link from "next/link"
+import { useEffect, useState } from "react"
 
 export default function BrowseError({
 	error,
@@ -11,6 +12,12 @@ export default function BrowseError({
 	reset: () => void
 }) {
 	const [showDetails, setShowDetails] = useState(false)
+
+	useEffect(() => {
+		Sentry.captureException(error, {
+			tags: { component: "haiku-browse", kind: "error-boundary" },
+		})
+	}, [error])
 
 	return (
 		<div className="flex min-h-[60vh] flex-col items-center justify-center px-4">

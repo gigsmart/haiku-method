@@ -13,8 +13,11 @@ import {
 	writeFileSync,
 } from "node:fs"
 import { join, resolve } from "node:path"
+import {
+	dedupeFrontmatterKeys,
+	isDuplicateKeyError,
+} from "@haiku/shared/frontmatter"
 import matter from "gray-matter"
-import yaml from "js-yaml"
 import { getPendingVersion, hasPendingUpdate } from "./auto-update.js"
 import { features, resolvePluginRoot } from "./config.js"
 import { UNIT_FIELDS } from "./fsm-fields.js"
@@ -114,10 +117,8 @@ export function applyAutoFixes(
 	}
 	for (const targetPath of dedupeTargets) {
 		const raw = readFileSync(targetPath, "utf8")
-		const dupes = findDuplicateFrontmatterKeys(raw)
-		if (dupes.length === 0) continue
-		const rewritten = dedupeFrontmatter(raw)
-		if (rewritten === raw) continue
+		const { text: rewritten, removed } = dedupeFrontmatterKeys(raw)
+		if (removed.length === 0) continue
 		writeFileSync(targetPath, rewritten)
 		const rel = targetPath.startsWith(join(intentRoot, slug))
 			? targetPath.slice(join(intentRoot, slug).length + 1)
@@ -125,7 +126,7 @@ export function applyAutoFixes(
 		applied.push({
 			intent: slug,
 			field: `${rel}:frontmatter`,
-			description: `Deduped frontmatter keys: ${dupes.join(", ")}`,
+			description: `Deduped frontmatter keys: ${removed.join(", ")}`,
 		})
 	}
 	// Issues flagged for duplicate keys are resolved by the rewrite above;
@@ -134,8 +135,9 @@ export function applyAutoFixes(
 		(i) => !i.field.endsWith(":frontmatter-duplicate-keys"),
 	)
 
+	// Read after the dedupe pre-pass so matter() doesn't choke on duplicate keys.
 	const raw = readFileSync(intentPath, "utf8")
-	const parsed = matter(raw, { engines: { yaml: permissiveYamlEngine } })
+	const parsed = matter(raw)
 	const data = parsed.data
 	const body = parsed.content
 	let changed = false
@@ -538,7 +540,7 @@ function scanOneIntent(
 
 	// a0. Duplicate frontmatter keys (YAML parses leniently but the file is
 	// malformed — auto-fix rewrites with last-wins semantics).
-	const intentDupes = findDuplicateFrontmatterKeys(raw)
+	const { removed: intentDupes } = dedupeFrontmatterKeys(raw)
 	if (intentDupes.length > 0) {
 		issues.push({
 			intent: slug,
@@ -859,7 +861,7 @@ function scanOneIntent(
 					})
 				}
 				const unitRaw = readFileSync(join(repairUnitsDir, f.name), "utf8")
-				const unitDupes = findDuplicateFrontmatterKeys(unitRaw)
+				const { removed: unitDupes } = dedupeFrontmatterKeys(unitRaw)
 				if (unitDupes.length > 0) {
 					issues.push({
 						intent: slug,
@@ -1759,76 +1761,27 @@ function normalizeDates(
 	return result
 }
 
-// Permissive YAML engine for gray-matter: `json: true` makes js-yaml accept
-// duplicate mapping keys (last value wins, matching JSON.parse semantics) so a
-// single corrupted intent doesn't crash the whole FSM. haiku_repair's integrity
-// scan flags these files so they get rewritten with deduped frontmatter.
-const permissiveYamlEngine = {
-	parse: (input: string) => yaml.load(input, { json: true }) as object,
-	stringify: (obj: object) => yaml.dump(obj),
-}
-
 export function parseFrontmatter(raw: string): {
 	data: Record<string, unknown>
 	body: string
 } {
-	try {
-		const { data, content } = matter(raw, {
-			engines: { yaml: permissiveYamlEngine },
-		})
+	// Auto-recover from duplicate top-level YAML keys by keeping the last
+	// occurrence and reparsing. haiku_repair separately flags these files so
+	// they get rewritten on disk; this keeps the FSM running in the meantime.
+	const tryParse = (text: string) => {
+		const { data, content } = matter(text)
 		return {
 			data: normalizeDates(data as Record<string, unknown>),
 			body: content.trim(),
 		}
-	} catch {
-		// Last-ditch fallback: strip the frontmatter so downstream code still sees
-		// the body. The integrity scan will pick this up as a missing-fields issue
-		// and haiku_repair will overwrite the file.
-		const stripped = raw.replace(/^---\n[\s\S]*?\n---\n?/, "")
-		return { data: {}, body: stripped.trim() }
 	}
-}
-
-/**
- * Detect whether a YAML block contains duplicate top-level mapping keys.
- * Used by haiku_repair to flag intents/units for rewrite. Only scans
- * top-level keys (the frontmatter in haiku files is flat), which covers the
- * known failure modes (e.g. duplicate `inputs:`).
- */
-export function findDuplicateFrontmatterKeys(raw: string): string[] {
-	const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/)
-	if (!fmMatch) return []
-	const seen = new Map<string, number>()
-	const dupes = new Set<string>()
-	for (const line of fmMatch[1].split("\n")) {
-		// Only top-level keys: no leading whitespace, `key:` shape.
-		const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*:/)
-		if (!m) continue
-		const key = m[1]
-		seen.set(key, (seen.get(key) ?? 0) + 1)
-		if ((seen.get(key) ?? 0) > 1) dupes.add(key)
-	}
-	return [...dupes]
-}
-
-/**
- * Rewrite a frontmatter-bearing document with duplicate top-level keys deduped
- * (last occurrence wins for scalars; arrays are unioned). Returns the rewritten
- * document, or the original string unchanged if no duplicates were found.
- */
-export function dedupeFrontmatter(raw: string): string {
-	const dupes = findDuplicateFrontmatterKeys(raw)
-	if (dupes.length === 0) return raw
 	try {
-		const parsed = matter(raw, { engines: { yaml: permissiveYamlEngine } })
-		// gray-matter's stringify re-emits with the same YAML engine, which now
-		// has only one instance of each key because js-yaml already resolved
-		// duplicates on parse.
-		return matter.stringify(parsed.content, parsed.data, {
-			engines: { yaml: permissiveYamlEngine },
-		})
-	} catch {
-		return raw
+		return tryParse(raw)
+	} catch (err) {
+		if (!isDuplicateKeyError(err)) throw err
+		const { text, removed } = dedupeFrontmatterKeys(raw)
+		if (removed.length === 0) throw err
+		return tryParse(text)
 	}
 }
 

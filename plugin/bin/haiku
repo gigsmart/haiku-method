@@ -6116,7 +6116,7 @@ var require_ms = __commonJS({
 // ../../node_modules/debug/src/common.js
 var require_common = __commonJS({
   "../../node_modules/debug/src/common.js"(exports2, module2) {
-    function setup(env) {
+    function setup(env2) {
       createDebug.debug = createDebug;
       createDebug.default = createDebug;
       createDebug.coerce = coerce2;
@@ -6125,8 +6125,8 @@ var require_common = __commonJS({
       createDebug.enabled = enabled;
       createDebug.humanize = require_ms();
       createDebug.destroy = destroy;
-      Object.keys(env).forEach((key) => {
-        createDebug[key] = env[key];
+      Object.keys(env2).forEach((key) => {
+        createDebug[key] = env2[key];
       });
       createDebug.names = [];
       createDebug.skips = [];
@@ -6480,7 +6480,7 @@ var require_supports_color = __commonJS({
     var os3 = __require("os");
     var tty = __require("tty");
     var hasFlag = require_has_flag();
-    var { env } = process;
+    var { env: env2 } = process;
     var flagForceColor;
     if (hasFlag("no-color") || hasFlag("no-colors") || hasFlag("color=false") || hasFlag("color=never")) {
       flagForceColor = 0;
@@ -6488,14 +6488,14 @@ var require_supports_color = __commonJS({
       flagForceColor = 1;
     }
     function envForceColor() {
-      if ("FORCE_COLOR" in env) {
-        if (env.FORCE_COLOR === "true") {
+      if ("FORCE_COLOR" in env2) {
+        if (env2.FORCE_COLOR === "true") {
           return 1;
         }
-        if (env.FORCE_COLOR === "false") {
+        if (env2.FORCE_COLOR === "false") {
           return 0;
         }
-        return env.FORCE_COLOR.length === 0 ? 1 : Math.min(Number.parseInt(env.FORCE_COLOR, 10), 3);
+        return env2.FORCE_COLOR.length === 0 ? 1 : Math.min(Number.parseInt(env2.FORCE_COLOR, 10), 3);
       }
     }
     function translateLevel(level) {
@@ -6530,7 +6530,7 @@ var require_supports_color = __commonJS({
         return 0;
       }
       const min = forceColor || 0;
-      if (env.TERM === "dumb") {
+      if (env2.TERM === "dumb") {
         return min;
       }
       if (process.platform === "win32") {
@@ -6540,34 +6540,34 @@ var require_supports_color = __commonJS({
         }
         return 1;
       }
-      if ("CI" in env) {
-        if (["TRAVIS", "CIRCLECI", "APPVEYOR", "GITLAB_CI", "GITHUB_ACTIONS", "BUILDKITE", "DRONE"].some((sign) => sign in env) || env.CI_NAME === "codeship") {
+      if ("CI" in env2) {
+        if (["TRAVIS", "CIRCLECI", "APPVEYOR", "GITLAB_CI", "GITHUB_ACTIONS", "BUILDKITE", "DRONE"].some((sign) => sign in env2) || env2.CI_NAME === "codeship") {
           return 1;
         }
         return min;
       }
-      if ("TEAMCITY_VERSION" in env) {
-        return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0;
+      if ("TEAMCITY_VERSION" in env2) {
+        return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env2.TEAMCITY_VERSION) ? 1 : 0;
       }
-      if (env.COLORTERM === "truecolor") {
+      if (env2.COLORTERM === "truecolor") {
         return 3;
       }
-      if ("TERM_PROGRAM" in env) {
-        const version3 = Number.parseInt((env.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
-        switch (env.TERM_PROGRAM) {
+      if ("TERM_PROGRAM" in env2) {
+        const version3 = Number.parseInt((env2.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
+        switch (env2.TERM_PROGRAM) {
           case "iTerm.app":
             return version3 >= 3 ? 3 : 2;
           case "Apple_Terminal":
             return 2;
         }
       }
-      if (/-256(color)?$/i.test(env.TERM)) {
+      if (/-256(color)?$/i.test(env2.TERM)) {
         return 2;
       }
-      if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env.TERM)) {
+      if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env2.TERM)) {
         return 1;
       }
-      if ("COLORTERM" in env) {
+      if ("COLORTERM" in env2) {
         return 1;
       }
       return min;
@@ -14766,11 +14766,11 @@ var init_client = __esm({
        */
       sendEvent(event, hint = {}) {
         this.emit("beforeSendEvent", event, hint);
-        let env = createEventEnvelope(event, this._dsn, this._options._metadata, this._options.tunnel);
+        let env2 = createEventEnvelope(event, this._dsn, this._options._metadata, this._options.tunnel);
         for (const attachment of hint.attachments || []) {
-          env = addItemToEnvelope(env, createAttachmentEnvelopeItem(attachment));
+          env2 = addItemToEnvelope(env2, createAttachmentEnvelopeItem(attachment));
         }
-        this.sendEnvelope(env).then((sendResponse) => this.emit("afterSendEvent", event, sendResponse));
+        this.sendEnvelope(env2).then((sendResponse) => this.emit("afterSendEvent", event, sendResponse));
       }
       /**
        * Send a session or session aggregrates to Sentry.
@@ -14795,8 +14795,8 @@ var init_client = __esm({
           session.environment = session.environment || clientEnvironmentOption;
         }
         this.emit("beforeSendSession", session);
-        const env = createSessionEnvelope(session, this._dsn, this._options._metadata, this._options.tunnel);
-        this.sendEnvelope(env);
+        const env2 = createSessionEnvelope(session, this._dsn, this._options._metadata, this._options.tunnel);
+        this.sendEnvelope(env2);
       }
       /**
        * Record on the client that an event got dropped (ie, an event that will not be sent to Sentry).
@@ -45814,13 +45814,7 @@ var init_config = __esm({
       // DSN at build time. Using str("HAIKU_SENTRY_DSN_MCP", "") here would route
       // through process.env[name] (dynamic access), which --define cannot rewrite,
       // leaving shipped binaries with an empty DSN.
-      sentryDsn: "https://7c8c74eb8aa4b065a79765c8eb14f1c3@sentry.ops.gigsmart.com/1011",
-      otlpEndpoint: str2(
-        "OTEL_EXPORTER_OTLP_ENDPOINT",
-        "http://localhost:4317"
-      ).replace(/\/$/, ""),
-      otlpHeadersRaw: str2("OTEL_EXPORTER_OTLP_HEADERS", ""),
-      resourceAttrsRaw: str2("OTEL_RESOURCE_ATTRIBUTES", "")
+      sentryDsn: "https://7c8c74eb8aa4b065a79765c8eb14f1c3@sentry.ops.gigsmart.com/1011"
     };
   }
 });
@@ -45846,7 +45840,7 @@ var init_version3 = __esm({
   "src/version.ts"() {
     "use strict";
     init_config();
-    MCP_VERSION = true ? "1.105.4" : "dev";
+    MCP_VERSION = true ? "1.105.5" : "dev";
   }
 });
 
@@ -60007,20 +60001,20 @@ var require_compile = __commonJS({
     var util_1 = require_util();
     var validate_1 = require_validate();
     var SchemaEnv = class {
-      constructor(env) {
+      constructor(env2) {
         var _a;
         this.refs = {};
         this.dynamicAnchors = {};
         let schema;
-        if (typeof env.schema == "object")
-          schema = env.schema;
-        this.schema = env.schema;
-        this.schemaId = env.schemaId;
-        this.root = env.root || this;
-        this.baseId = (_a = env.baseId) !== null && _a !== void 0 ? _a : (0, resolve_1.normalizeId)(schema === null || schema === void 0 ? void 0 : schema[env.schemaId || "$id"]);
-        this.schemaPath = env.schemaPath;
-        this.localRefs = env.localRefs;
-        this.meta = env.meta;
+        if (typeof env2.schema == "object")
+          schema = env2.schema;
+        this.schema = env2.schema;
+        this.schemaId = env2.schemaId;
+        this.root = env2.root || this;
+        this.baseId = (_a = env2.baseId) !== null && _a !== void 0 ? _a : (0, resolve_1.normalizeId)(schema === null || schema === void 0 ? void 0 : schema[env2.schemaId || "$id"]);
+        this.schemaPath = env2.schemaPath;
+        this.localRefs = env2.localRefs;
+        this.meta = env2.meta;
         this.$async = schema === null || schema === void 0 ? void 0 : schema.$async;
         this.refs = {};
       }
@@ -60204,15 +60198,15 @@ var require_compile = __commonJS({
           baseId = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schId);
         }
       }
-      let env;
+      let env2;
       if (typeof schema != "boolean" && schema.$ref && !(0, util_1.schemaHasRulesButRef)(schema, this.RULES)) {
         const $ref = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schema.$ref);
-        env = resolveSchema.call(this, root2, $ref);
+        env2 = resolveSchema.call(this, root2, $ref);
       }
       const { schemaId } = this.opts;
-      env = env || new SchemaEnv({ schema, schemaId, root: root2, baseId });
-      if (env.schema !== env.root.schema)
-        return env;
+      env2 = env2 || new SchemaEnv({ schema, schemaId, root: root2, baseId });
+      if (env2.schema !== env2.root.schema)
+        return env2;
       return void 0;
     }
   }
@@ -61613,8 +61607,8 @@ var require_ref = __commonJS({
       schemaType: "string",
       code(cxt) {
         const { gen, schema: $ref, it } = cxt;
-        const { baseId, schemaEnv: env, validateName, opts, self: self2 } = it;
-        const { root: root2 } = env;
+        const { baseId, schemaEnv: env2, validateName, opts, self: self2 } = it;
+        const { root: root2 } = env2;
         if (($ref === "#" || $ref === "#/") && baseId === root2.baseId)
           return callRootRef();
         const schOrEnv = compile_1.resolveRef.call(self2, root2, baseId, $ref);
@@ -61624,8 +61618,8 @@ var require_ref = __commonJS({
           return callValidate(schOrEnv);
         return inlineRefSchema(schOrEnv);
         function callRootRef() {
-          if (env === root2)
-            return callRef(cxt, validateName, env, env.$async);
+          if (env2 === root2)
+            return callRef(cxt, validateName, env2, env2.$async);
           const rootName = gen.scopeValue("root", { ref: root2 });
           return callRef(cxt, (0, codegen_1._)`${rootName}.validate`, root2, root2.$async);
         }
@@ -61655,14 +61649,14 @@ var require_ref = __commonJS({
     exports2.getValidate = getValidate;
     function callRef(cxt, v2, sch, $async) {
       const { gen, it } = cxt;
-      const { allErrors, schemaEnv: env, opts } = it;
+      const { allErrors, schemaEnv: env2, opts } = it;
       const passCxt = opts.passContext ? names_1.default.this : codegen_1.nil;
       if ($async)
         callAsyncRef();
       else
         callSyncRef();
       function callAsyncRef() {
-        if (!env.$async)
+        if (!env2.$async)
           throw new Error("async schema referenced by sync schema");
         const valid = gen.let("valid");
         gen.try(() => {
@@ -67449,7 +67443,7 @@ var require_ms2 = __commonJS({
 // ../../node_modules/localtunnel/node_modules/debug/src/common.js
 var require_common2 = __commonJS({
   "../../node_modules/localtunnel/node_modules/debug/src/common.js"(exports2, module2) {
-    function setup(env) {
+    function setup(env2) {
       createDebug.debug = createDebug;
       createDebug.default = createDebug;
       createDebug.coerce = coerce2;
@@ -67458,8 +67452,8 @@ var require_common2 = __commonJS({
       createDebug.enabled = enabled;
       createDebug.humanize = require_ms2();
       createDebug.destroy = destroy;
-      Object.keys(env).forEach((key) => {
-        createDebug[key] = env[key];
+      Object.keys(env2).forEach((key) => {
+        createDebug[key] = env2[key];
       });
       createDebug.names = [];
       createDebug.skips = [];
@@ -70506,6 +70500,61 @@ var init_markdown = __esm({
   "src/markdown.ts"() {
     "use strict";
     init_marked_esm();
+  }
+});
+
+// ../shared/src/frontmatter.ts
+function dedupeFrontmatterKeys(raw) {
+  const m2 = raw.match(/^---\r?\n([\s\S]*?)\r?\n---(\r?\n[\s\S]*)?$/);
+  if (!m2) return { text: raw, removed: [] };
+  const { cleaned, removed } = dedupeTopLevelYamlKeys(m2[1]);
+  if (removed.length === 0) return { text: raw, removed: [] };
+  return { text: `---
+${cleaned}
+---${m2[2] ?? ""}`, removed };
+}
+function dedupeTopLevelYamlKeys(yamlBlock) {
+  const lines = yamlBlock.split(/\r?\n/);
+  const sections = [];
+  let current = null;
+  for (const line of lines) {
+    const m2 = line.match(/^([A-Za-z_][A-Za-z0-9_-]*)\s*:/);
+    const isTopLevelKey = m2 != null && !line.startsWith(" ") && !line.startsWith("	");
+    if (isTopLevelKey && m2) {
+      if (current) sections.push(current);
+      current = { key: m2[1], text: [line] };
+    } else if (current) {
+      current.text.push(line);
+    } else {
+      sections.push({ key: null, text: [line] });
+    }
+  }
+  if (current) sections.push(current);
+  const lastIdx = /* @__PURE__ */ new Map();
+  const counts = /* @__PURE__ */ new Map();
+  for (let i = 0; i < sections.length; i++) {
+    const k2 = sections[i].key;
+    if (!k2) continue;
+    lastIdx.set(k2, i);
+    counts.set(k2, (counts.get(k2) ?? 0) + 1);
+  }
+  const removed = [];
+  for (const [k2, n] of counts) if (n > 1) removed.push(k2);
+  const out5 = [];
+  for (let i = 0; i < sections.length; i++) {
+    const s = sections[i];
+    if (s.key == null) out5.push(...s.text);
+    else if (lastIdx.get(s.key) === i) out5.push(...s.text);
+  }
+  return { cleaned: out5.join("\n"), removed };
+}
+function isDuplicateKeyError(err) {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /duplicated mapping key/i.test(msg);
+}
+var init_frontmatter = __esm({
+  "../shared/src/frontmatter.ts"() {
+    "use strict";
   }
 });
 
@@ -73995,6 +74044,20 @@ var require_gray_matter = __commonJS({
 // src/parser.ts
 import { readFile as readFile3, readdir as readdir2 } from "node:fs/promises";
 import { basename as basename2, join as join8 } from "node:path";
+function matterWithDedupe(raw, filePath) {
+  try {
+    return (0, import_gray_matter.default)(raw);
+  } catch (err) {
+    if (!isDuplicateKeyError(err)) throw err;
+    const { text, removed } = dedupeFrontmatterKeys(raw);
+    if (removed.length === 0) throw err;
+    const parsed = (0, import_gray_matter.default)(text);
+    console.warn(
+      `[haiku] Recovered duplicate YAML keys in ${filePath}: kept last occurrence of ${removed.join(", ")}`
+    );
+    return parsed;
+  }
+}
 function normalizeFrontmatter(data) {
   const result = { ...data };
   for (const key in result) {
@@ -74017,7 +74080,7 @@ async function parseIntent(intentDir3) {
   try {
     const filePath = join8(intentDir3, "intent.md");
     const raw = await readFile3(filePath, "utf-8");
-    const { data, content } = (0, import_gray_matter.default)(raw);
+    const { data, content } = matterWithDedupe(raw, filePath);
     const frontmatter = normalizeFrontmatter(data);
     const title = extractTitle(content);
     const bodyWithoutTitle = stripTitle(content);
@@ -74041,7 +74104,7 @@ async function parseIntent(intentDir3) {
 async function parseUnit(filePath) {
   try {
     const raw = await readFile3(filePath, "utf-8");
-    const { data, content } = (0, import_gray_matter.default)(raw);
+    const { data, content } = matterWithDedupe(raw, filePath);
     const frontmatter = normalizeFrontmatter(data);
     const title = extractTitle(content);
     const bodyWithoutTitle = stripTitle(content);
@@ -74225,6 +74288,7 @@ var import_gray_matter, OUTPUT_IMAGE_EXTS, OUTPUT_HTML_EXTS;
 var init_parser = __esm({
   "src/parser.ts"() {
     "use strict";
+    init_frontmatter();
     import_gray_matter = __toESM(require_gray_matter(), 1);
     init_markdown();
     OUTPUT_IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"];
@@ -75585,24 +75649,191 @@ var init_studio_reader = __esm({
 });
 
 // src/telemetry.ts
-function parseHeaders(raw) {
-  const h = {};
-  for (const pair of raw.split(",").filter(Boolean)) {
-    const [k2, v2] = pair.split("=", 2);
-    if (k2 && v2) h[k2] = v2;
-  }
-  return h;
+import { spawnSync } from "node:child_process";
+import { readFileSync as readFileSync6 } from "node:fs";
+import { homedir } from "node:os";
+import { join as join14 } from "node:path";
+function env(name) {
+  return (process.env[name] ?? "").trim();
 }
-function parseResourceAttrs(raw) {
-  const attrs = [{ key: "service.name", value: { stringValue: "haiku" } }];
-  for (const pair of raw.split(",").filter(Boolean)) {
-    const [k2, v2] = pair.split("=", 2);
-    if (k2 && v2) attrs.push({ key: k2, value: { stringValue: v2 } });
+function parseHeaders(raw) {
+  const out5 = {};
+  if (!raw) return out5;
+  for (const pair of raw.split(",")) {
+    const trimmed = pair.trim();
+    if (!trimmed) continue;
+    const eq2 = trimmed.indexOf("=");
+    if (eq2 <= 0) continue;
+    const key = trimmed.slice(0, eq2).trim();
+    const valueRaw = trimmed.slice(eq2 + 1).trim();
+    if (!key) continue;
+    let value = valueRaw;
+    try {
+      value = decodeURIComponent(valueRaw);
+    } catch {
+    }
+    out5[key] = value;
+  }
+  return out5;
+}
+function resolveEndpoint() {
+  const signal = env("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT");
+  if (signal) return signal;
+  const base = (env("OTEL_EXPORTER_OTLP_ENDPOINT") || "http://localhost:4318").replace(/\/$/, "");
+  return `${base}/v1/logs`;
+}
+function resolveHeaders() {
+  const signalRaw = env("OTEL_EXPORTER_OTLP_LOGS_HEADERS");
+  if (signalRaw) return parseHeaders(signalRaw);
+  return parseHeaders(env("OTEL_EXPORTER_OTLP_HEADERS"));
+}
+function resolveProtocol() {
+  const signal = env("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL");
+  if (signal) return signal;
+  const generic = env("OTEL_EXPORTER_OTLP_PROTOCOL");
+  return generic || "http/json";
+}
+function resolveTimeoutMs() {
+  const signal = Number(env("OTEL_EXPORTER_OTLP_LOGS_TIMEOUT"));
+  if (Number.isFinite(signal) && signal > 0) return signal;
+  const generic = Number(env("OTEL_EXPORTER_OTLP_TIMEOUT"));
+  if (Number.isFinite(generic) && generic > 0) return generic;
+  return 1e4;
+}
+function resolveLogsExporter() {
+  return env("OTEL_LOGS_EXPORTER").toLowerCase() || "otlp";
+}
+function readJsonFile(path) {
+  try {
+    const raw = readFileSync6(path, "utf8");
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed;
+    }
+  } catch {
+  }
+  return null;
+}
+function loadClaudeCodeSettings() {
+  const merged = {};
+  const home = homedir();
+  const cwd2 = process.cwd();
+  const candidates = [
+    home ? join14(home, ".claude", "settings.json") : null,
+    join14(cwd2, ".claude", "settings.json"),
+    join14(cwd2, ".claude", "settings.local.json")
+  ].filter((p) => p !== null);
+  for (const p of candidates) {
+    const parsed = readJsonFile(p);
+    if (parsed) Object.assign(merged, parsed);
+  }
+  return merged;
+}
+function resolveOtelHeadersHelperPath() {
+  const settings = loadClaudeCodeSettings();
+  const value = settings.otelHeadersHelper;
+  return typeof value === "string" ? value.trim() : "";
+}
+function helperDebounceMs() {
+  const raw = Number(env("CLAUDE_CODE_OTEL_HEADERS_HELPER_DEBOUNCE_MS"));
+  if (Number.isFinite(raw) && raw > 0) return raw;
+  return HELPER_DEBOUNCE_DEFAULT_MS;
+}
+function invokeHelper(path) {
+  const [command, ...args2] = path.split(/\s+/).filter(Boolean);
+  if (!command) return null;
+  const result = spawnSync(command, args2, {
+    encoding: "utf8",
+    timeout: 1e4
+  });
+  if (result.status !== 0) {
+    const stderr = (result.stderr || "").trim();
+    console.error(
+      `[haiku/telemetry] otelHeadersHelper exited ${result.status}${stderr ? `: ${stderr}` : ""}`
+    );
+    return null;
+  }
+  const stdout = (result.stdout || "").trim();
+  if (!stdout) {
+    console.error(
+      "[haiku/telemetry] otelHeadersHelper did not return a valid value"
+    );
+    return null;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch (e) {
+    console.error(
+      `[haiku/telemetry] otelHeadersHelper output is not valid JSON: ${e instanceof Error ? e.message : String(e)}`
+    );
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    console.error(
+      "[haiku/telemetry] otelHeadersHelper must return a JSON object with string key-value pairs"
+    );
+    return null;
+  }
+  const validated = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    if (typeof value !== "string") {
+      console.error(
+        `[haiku/telemetry] otelHeadersHelper returned non-string value for key "${key}": ${typeof value}`
+      );
+      return null;
+    }
+    validated[key] = value;
+  }
+  return validated;
+}
+function resolveHelperHeaders() {
+  const ttl = helperDebounceMs();
+  if (helperHeadersCache !== null && Date.now() - helperHeadersFetchedAt < ttl) {
+    return helperHeadersCache;
+  }
+  const path = resolveOtelHeadersHelperPath();
+  if (!path) {
+    helperHeadersCache = {};
+    helperHeadersFetchedAt = Date.now();
+    return helperHeadersCache;
+  }
+  const fresh = invokeHelper(path);
+  if (fresh) {
+    helperHeadersCache = fresh;
+    helperHeadersFetchedAt = Date.now();
+    return fresh;
+  }
+  return helperHeadersCache ?? {};
+}
+function resolveResourceAttrs() {
+  const map = /* @__PURE__ */ new Map();
+  map.set("service.name", "haiku");
+  for (const pair of env("OTEL_RESOURCE_ATTRIBUTES").split(",")) {
+    const trimmed = pair.trim();
+    if (!trimmed) continue;
+    const eq2 = trimmed.indexOf("=");
+    if (eq2 <= 0) continue;
+    const key = trimmed.slice(0, eq2).trim();
+    const valueRaw = trimmed.slice(eq2 + 1).trim();
+    if (!key) continue;
+    let value = valueRaw;
+    try {
+      value = decodeURIComponent(valueRaw);
+    } catch {
+    }
+    map.set(key, value);
+  }
+  const serviceName = env("OTEL_SERVICE_NAME");
+  if (serviceName) map.set("service.name", serviceName);
+  const attrs = [];
+  for (const [key, value] of map) {
+    attrs.push({ key, value: { stringValue: value } });
   }
   return attrs;
 }
 function emitTelemetry(eventName, attributes = {}) {
-  if (!ENABLED) return;
+  if (!WILL_SEND) return;
   const timeNanos = `${Date.now()}000000`;
   const logAttrs = [
     { key: "event.name", value: { stringValue: eventName } },
@@ -75632,37 +75863,62 @@ function emitTelemetry(eventName, attributes = {}) {
       }
     ]
   });
-  fetch(`${ENDPOINT}/v1/logs`, {
+  const helperHeaders = resolveHelperHeaders();
+  const mergedHeaders = {
+    "Content-Type": "application/json",
+    ...HEADERS,
+    ...helperHeaders
+  };
+  fetch(ENDPOINT, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...HEADERS },
+    headers: mergedHeaders,
     body: payload,
-    signal: AbortSignal.timeout(5e3)
+    signal: AbortSignal.timeout(TIMEOUT_MS)
   }).catch(() => {
   });
 }
-var ENABLED, ENDPOINT, HEADERS, RESOURCE_ATTRS;
+var ENABLED, HELPER_DEBOUNCE_DEFAULT_MS, helperHeadersCache, helperHeadersFetchedAt, ENDPOINT, HEADERS, PROTOCOL, TIMEOUT_MS, RESOURCE_ATTRS, exporterKind, EXPORTER_SENDS, PROTOCOL_SENDS, WILL_SEND;
 var init_telemetry = __esm({
   "src/telemetry.ts"() {
     "use strict";
     init_config();
     ENABLED = features.telemetry;
-    ENDPOINT = observability.otlpEndpoint;
-    HEADERS = parseHeaders(observability.otlpHeadersRaw);
-    RESOURCE_ATTRS = parseResourceAttrs(observability.resourceAttrsRaw);
+    HELPER_DEBOUNCE_DEFAULT_MS = 174e4;
+    helperHeadersCache = null;
+    helperHeadersFetchedAt = 0;
+    ENDPOINT = resolveEndpoint();
+    HEADERS = resolveHeaders();
+    PROTOCOL = resolveProtocol();
+    TIMEOUT_MS = resolveTimeoutMs();
+    RESOURCE_ATTRS = resolveResourceAttrs();
+    exporterKind = resolveLogsExporter();
+    EXPORTER_SENDS = exporterKind === "otlp";
+    PROTOCOL_SENDS = PROTOCOL === "http/json";
+    if (ENABLED && !EXPORTER_SENDS && exporterKind !== "none") {
+      console.error(
+        `[haiku/telemetry] OTEL_LOGS_EXPORTER="${exporterKind}" not supported \u2014 telemetry disabled. Use "otlp" or unset.`
+      );
+    }
+    if (ENABLED && EXPORTER_SENDS && !PROTOCOL_SENDS) {
+      console.error(
+        `[haiku/telemetry] OTLP protocol "${PROTOCOL}" not supported \u2014 only http/json is implemented. Telemetry disabled.`
+      );
+    }
+    WILL_SEND = ENABLED && EXPORTER_SENDS && PROTOCOL_SENDS;
   }
 });
 
 // src/state-tools.ts
-import { execFileSync as execFileSync2, execSync, spawnSync } from "node:child_process";
+import { execFileSync as execFileSync2, execSync, spawnSync as spawnSync2 } from "node:child_process";
 import {
   existsSync as existsSync8,
   mkdirSync as mkdirSync4,
-  readFileSync as readFileSync6,
+  readFileSync as readFileSync7,
   readdirSync as readdirSync3,
   statSync as statSync2,
   writeFileSync as writeFileSync3
 } from "node:fs";
-import { join as join14, resolve as resolve3 } from "node:path";
+import { join as join15, resolve as resolve3 } from "node:path";
 function intentTitleNeedsRepair(title) {
   if (typeof title !== "string") return true;
   const trimmed = title.trim();
@@ -75672,9 +75928,9 @@ function intentTitleNeedsRepair(title) {
   return false;
 }
 function applyAutoFixes(intentRoot, slug, issues) {
-  const intentPath = join14(intentRoot, slug, "intent.md");
+  const intentPath = join15(intentRoot, slug, "intent.md");
   if (!existsSync8(intentPath)) return { applied: [], remaining: issues };
-  const raw = readFileSync6(intentPath, "utf8");
+  const raw = readFileSync7(intentPath, "utf8");
   const parsed = (0, import_gray_matter2.default)(raw);
   const data = parsed.data;
   const body = parsed.content;
@@ -75787,16 +76043,16 @@ function applyAutoFixes(intentRoot, slug, issues) {
   if (changed) {
     writeFileSync3(intentPath, import_gray_matter2.default.stringify(body, data));
   }
-  const stagesDir = join14(intentRoot, slug, "stages");
+  const stagesDir = join15(intentRoot, slug, "stages");
   if (existsSync8(stagesDir)) {
     for (const stageEntry of readdirSync3(stagesDir, { withFileTypes: true })) {
       if (!stageEntry.isDirectory()) continue;
-      const unitsDir = join14(stagesDir, stageEntry.name, "units");
+      const unitsDir = join15(stagesDir, stageEntry.name, "units");
       if (!existsSync8(unitsDir)) continue;
       for (const unitEntry of readdirSync3(unitsDir, { withFileTypes: true })) {
         if (!unitEntry.isFile() || !unitEntry.name.endsWith(".md")) continue;
-        const unitPath2 = join14(unitsDir, unitEntry.name);
-        const unitRaw = readFileSync6(unitPath2, "utf8");
+        const unitPath2 = join15(unitsDir, unitEntry.name);
+        const unitRaw = readFileSync7(unitPath2, "utf8");
         const unitParsed = (0, import_gray_matter2.default)(unitRaw);
         if ("type" in unitParsed.data) {
           const { type: _removed, ...rest } = unitParsed.data;
@@ -75820,7 +76076,7 @@ function applyAutoFixes(intentRoot, slug, issues) {
     }
     const stageName = m2[1];
     const unitFile = m2[2];
-    const unitPath2 = join14(
+    const unitPath2 = join15(
       intentRoot,
       slug,
       "stages",
@@ -75838,7 +76094,7 @@ function applyAutoFixes(intentRoot, slug, issues) {
       inputsToWrite = upstreamMatch[1].split(",").map((s) => s.trim()).filter(Boolean);
     } else {
       const fallback = ["intent.md"];
-      const knowledgeDir = join14(intentRoot, slug, "knowledge");
+      const knowledgeDir = join15(intentRoot, slug, "knowledge");
       if (existsSync8(knowledgeDir)) {
         for (const f of readdirSync3(knowledgeDir)) {
           if (f.endsWith(".md")) fallback.push(`knowledge/${f}`);
@@ -75850,7 +76106,7 @@ function applyAutoFixes(intentRoot, slug, issues) {
       inputsRemaining.push(issue3);
       continue;
     }
-    const unitRaw = readFileSync6(unitPath2, "utf8");
+    const unitRaw = readFileSync7(unitPath2, "utf8");
     const unitParsed = (0, import_gray_matter2.default)(unitRaw);
     const existing = unitParsed.data.inputs || [];
     if (existing.length > 0) {
@@ -75874,8 +76130,8 @@ function applyAutoFixes(intentRoot, slug, issues) {
       const stageMatch = issue3.field.match(/^stages\/([^/]+)\/state\.json$/);
       if (stageMatch) {
         const stageName = stageMatch[1];
-        const stageDir2 = join14(intentRoot, slug, "stages", stageName);
-        const stateFile = join14(stageDir2, "state.json");
+        const stageDir2 = join15(intentRoot, slug, "stages", stageName);
+        const stateFile = join15(stageDir2, "state.json");
         mkdirSync4(stageDir2, { recursive: true });
         const now = (/* @__PURE__ */ new Date()).toISOString();
         const completedState = {
@@ -75947,14 +76203,14 @@ function gitLastCommitDateForRepair(filePath, gitCwd) {
 function buildStudioMap(root2) {
   const studioMap = /* @__PURE__ */ new Map();
   const pluginRoot = resolvePluginRoot();
-  const searchPaths = [join14(root2, "studios"), join14(pluginRoot, "studios")];
+  const searchPaths = [join15(root2, "studios"), join15(pluginRoot, "studios")];
   for (const base of searchPaths) {
     if (!existsSync8(base)) continue;
     for (const d of readdirSync3(base, { withFileTypes: true })) {
       if (!d.isDirectory() || studioMap.has(d.name)) continue;
-      const studioMd = join14(base, d.name, "STUDIO.md");
+      const studioMd = join15(base, d.name, "STUDIO.md");
       if (!existsSync8(studioMd)) continue;
-      const { data: stData } = parseFrontmatter(readFileSync6(studioMd, "utf8"));
+      const { data: stData } = parseFrontmatter(readFileSync7(studioMd, "utf8"));
       const stStages = Array.isArray(stData.stages) ? stData.stages : [];
       studioMap.set(d.name, stStages);
     }
@@ -75962,9 +76218,9 @@ function buildStudioMap(root2) {
   return { studioMap, searchPaths };
 }
 function scanOneIntent(intentsDir, slug, studioMap, searchPaths) {
-  const intentPath = join14(intentsDir, slug, "intent.md");
+  const intentPath = join15(intentsDir, slug, "intent.md");
   if (!existsSync8(intentPath)) return [];
-  const raw = readFileSync6(intentPath, "utf8");
+  const raw = readFileSync7(intentPath, "utf8");
   const { data: repairData } = parseFrontmatter(raw);
   const issues = [];
   if (!repairData.title || typeof repairData.title === "string" && repairData.title.trim() === "") {
@@ -76102,12 +76358,12 @@ function scanOneIntent(intentsDir, slug, studioMap, searchPaths) {
     });
   }
   if (Array.isArray(repairStages) && repairStages.length > 0) {
-    const repairStagesDir = join14(intentsDir, slug, "stages");
+    const repairStagesDir = join15(intentsDir, slug, "stages");
     const repairActiveStage = repairData.active_stage;
     const validStatuses = ["pending", "active", "completed"];
     for (const stageName of repairStages) {
-      const repairStageDir = join14(repairStagesDir, stageName);
-      const repairStateFile = join14(repairStageDir, "state.json");
+      const repairStageDir = join15(repairStagesDir, stageName);
+      const repairStateFile = join15(repairStageDir, "state.json");
       const activeIdx = repairActiveStage ? repairStages.indexOf(repairActiveStage) : -1;
       const thisIdx = repairStages.indexOf(stageName);
       const isBeforeActive = activeIdx > 0 && thisIdx < activeIdx;
@@ -76143,7 +76399,7 @@ function scanOneIntent(intentsDir, slug, studioMap, searchPaths) {
   }
   if (Array.isArray(repairStages)) {
     for (const stageName of repairStages) {
-      const repairUnitsDir = join14(
+      const repairUnitsDir = join15(
         intentsDir,
         slug,
         "stages",
@@ -76155,7 +76411,7 @@ function scanOneIntent(intentsDir, slug, studioMap, searchPaths) {
       if (repairStudio) {
         let stageInputs = null;
         for (const base of searchPaths) {
-          const stageMd = join14(
+          const stageMd = join15(
             base,
             repairStudio,
             "stages",
@@ -76164,7 +76420,7 @@ function scanOneIntent(intentsDir, slug, studioMap, searchPaths) {
           );
           if (!existsSync8(stageMd)) continue;
           const { data: stageData } = parseFrontmatter(
-            readFileSync6(stageMd, "utf8")
+            readFileSync7(stageMd, "utf8")
           );
           if (Array.isArray(stageData.inputs) && stageData.inputs.length > 0) {
             stageInputs = stageData.inputs;
@@ -76172,11 +76428,11 @@ function scanOneIntent(intentsDir, slug, studioMap, searchPaths) {
           break;
         }
         if (stageInputs) {
-          const intentPath2 = join14(intentsDir, slug);
+          const intentPath2 = join15(intentsDir, slug);
           for (const input of stageInputs) {
             for (const base of searchPaths) {
               for (const kind of ["discovery", "outputs"]) {
-                const artifactDir = join14(
+                const artifactDir = join15(
                   base,
                   repairStudio,
                   "stages",
@@ -76187,7 +76443,7 @@ function scanOneIntent(intentsDir, slug, studioMap, searchPaths) {
                 for (const f of readdirSync3(artifactDir).filter(
                   (af) => af.endsWith(".md")
                 )) {
-                  const raw2 = readFileSync6(join14(artifactDir, f), "utf8");
+                  const raw2 = readFileSync7(join15(artifactDir, f), "utf8");
                   const { data: aData } = parseFrontmatter(raw2);
                   const aName = aData.name || f.replace(/\.md$/, "");
                   const wanted = kind === "outputs" ? input.output : input.discovery;
@@ -76198,7 +76454,7 @@ function scanOneIntent(intentsDir, slug, studioMap, searchPaths) {
                     /^\.haiku\/intents\/\{intent-slug\}\//,
                     ""
                   );
-                  const absPath = join14(intentPath2, relPath);
+                  const absPath = join15(intentPath2, relPath);
                   if (existsSync8(absPath)) existingUpstreamPaths.push(relPath);
                 }
               }
@@ -76217,7 +76473,7 @@ function scanOneIntent(intentsDir, slug, studioMap, searchPaths) {
             fix: "Rename to match pattern: unit-NN-slug-name.md"
           });
         }
-        const unitRaw = readFileSync6(join14(repairUnitsDir, f.name), "utf8");
+        const unitRaw = readFileSync7(join15(repairUnitsDir, f.name), "utf8");
         const { data: unitData } = parseFrontmatter(unitRaw);
         if (!unitData.status) {
           issues.push({
@@ -76245,9 +76501,9 @@ function scanOneIntent(intentsDir, slug, studioMap, searchPaths) {
     }
   }
   if (isGitRepo()) {
-    const intentFilePath = join14(intentsDir, slug, "intent.md");
+    const intentFilePath = join15(intentsDir, slug, "intent.md");
     const gitCreated = gitFirstCommitDateForRepair(intentFilePath);
-    const gitLastModified = gitLastCommitDateForRepair(join14(intentsDir, slug));
+    const gitLastModified = gitLastCommitDateForRepair(join15(intentsDir, slug));
     const currentCreatedAt = repairData.created_at;
     const currentStartedAt = repairData.started_at;
     const currentCompletedAt = repairData.completed_at;
@@ -76313,7 +76569,7 @@ function scanOneIntent(intentsDir, slug, studioMap, searchPaths) {
 }
 function repairCwd(rootOverride, intentArg, autoApply) {
   const root2 = rootOverride ?? findHaikuRoot();
-  const intentsDir = join14(root2, "intents");
+  const intentsDir = join15(root2, "intents");
   if (!existsSync8(intentsDir)) {
     return {
       scanned: 0,
@@ -76328,7 +76584,7 @@ function repairCwd(rootOverride, intentArg, autoApply) {
   if (intentArg) {
     if (/[/\\]|\.\./.test(intentArg))
       throw new Error(`Invalid intent slug: "${intentArg}"`);
-    if (!existsSync8(join14(intentsDir, intentArg, "intent.md"))) {
+    if (!existsSync8(join15(intentsDir, intentArg, "intent.md"))) {
       return {
         scanned: 0,
         cleanIntents: [],
@@ -76340,7 +76596,7 @@ function repairCwd(rootOverride, intentArg, autoApply) {
     slugs = [intentArg];
   } else {
     slugs = readdirSync3(intentsDir, { withFileTypes: true }).filter(
-      (d) => d.isDirectory() && existsSync8(join14(intentsDir, d.name, "intent.md"))
+      (d) => d.isDirectory() && existsSync8(join15(intentsDir, d.name, "intent.md"))
     ).map((d) => d.name);
   }
   const allIssues = [];
@@ -76510,14 +76766,14 @@ function repairAllBranches(autoApply) {
       continue;
     }
     try {
-      const worktreeHaikuRoot = join14(worktreePath, ".haiku");
+      const worktreeHaikuRoot = join15(worktreePath, ".haiku");
       const result = repairCwd(worktreeHaikuRoot, void 0, autoApply);
       summary.scanned = result.scanned;
       summary.applied = result.applied;
       summary.remaining = result.remaining;
-      const intentMd = join14(worktreeHaikuRoot, "intents", slug, "intent.md");
+      const intentMd = join15(worktreeHaikuRoot, "intents", slug, "intent.md");
       if (existsSync8(intentMd)) {
-        const fm = parseFrontmatter(readFileSync6(intentMd, "utf8"));
+        const fm = parseFrontmatter(readFileSync7(intentMd, "utf8"));
         if (fm.data.status === "completed" && !isBranchMerged(branch, mainline)) {
           const issue3 = {
             intent: slug,
@@ -76593,13 +76849,13 @@ function repairArchivedOnMainline(activeBranches, mainline, autoApply) {
     return summary;
   }
   try {
-    const worktreeHaikuRoot = join14(worktreePath, ".haiku");
-    const intentsDir = join14(worktreeHaikuRoot, "intents");
+    const worktreeHaikuRoot = join15(worktreePath, ".haiku");
+    const intentsDir = join15(worktreeHaikuRoot, "intents");
     if (!existsSync8(intentsDir)) {
       return void 0;
     }
     const mainlineSlugs = readdirSync3(intentsDir, { withFileTypes: true }).filter(
-      (d) => d.isDirectory() && existsSync8(join14(intentsDir, d.name, "intent.md"))
+      (d) => d.isDirectory() && existsSync8(join15(intentsDir, d.name, "intent.md"))
     ).map((d) => d.name);
     const archivedSlugs = mainlineSlugs.filter((s) => !activeSet.has(s));
     if (archivedSlugs.length === 0) {
@@ -76774,10 +77030,10 @@ function isGitRepo() {
 }
 function runInlineQualityGates(intentSlug, unitPath2) {
   const root2 = findHaikuRoot();
-  const intentFile = join14(root2, "intents", intentSlug, "intent.md");
+  const intentFile = join15(root2, "intents", intentSlug, "intent.md");
   function readGates(filePath) {
     if (!existsSync8(filePath)) return [];
-    const raw = readFileSync6(filePath, "utf8");
+    const raw = readFileSync7(filePath, "utf8");
     const { data } = parseFrontmatter(raw);
     const gates = data.quality_gates;
     if (!Array.isArray(gates)) return [];
@@ -76830,25 +77086,25 @@ ${failures.map((f) => `- ${f.name}: '${f.command}' exited ${f.exit_code}${f.outp
 function findHaikuRoot() {
   let dir = process.cwd();
   for (let i = 0; i < 20; i++) {
-    if (existsSync8(join14(dir, ".haiku"))) return join14(dir, ".haiku");
-    const parent = join14(dir, "..");
+    if (existsSync8(join15(dir, ".haiku"))) return join15(dir, ".haiku");
+    const parent = join15(dir, "..");
     if (parent === dir) break;
     dir = parent;
   }
   throw new Error("No .haiku/ directory found");
 }
 function intentDir2(slug) {
-  return join14(findHaikuRoot(), "intents", slug);
+  return join15(findHaikuRoot(), "intents", slug);
 }
 function stageDir(slug, stage) {
-  return join14(intentDir2(slug), "stages", stage);
+  return join15(intentDir2(slug), "stages", stage);
 }
 function unitPath(slug, stage, unit) {
   const name = unit.endsWith(".md") ? unit : `${unit}.md`;
-  return join14(stageDir(slug, stage), "units", name);
+  return join15(stageDir(slug, stage), "units", name);
 }
 function stageStatePath(slug, stage) {
-  return join14(stageDir(slug, stage), "state.json");
+  return join15(stageDir(slug, stage), "state.json");
 }
 function normalizeDates(data) {
   const result = { ...data };
@@ -76871,16 +77127,16 @@ function listVisibleIntents(intentsDir, opts) {
   const includeArchived = opts?.includeArchived === true;
   const results = [];
   for (const d of readdirSync3(intentsDir)) {
-    const intentFile = join14(intentsDir, d, "intent.md");
+    const intentFile = join15(intentsDir, d, "intent.md");
     if (!existsSync8(intentFile)) continue;
-    const { data } = parseFrontmatter(readFileSync6(intentFile, "utf8"));
+    const { data } = parseFrontmatter(readFileSync7(intentFile, "utf8"));
     if (!includeArchived && data.archived === true) continue;
     results.push({ slug: d, data });
   }
   return results;
 }
 function setFrontmatterField(filePath, field, value) {
-  const raw = readFileSync6(filePath, "utf8");
+  const raw = readFileSync7(filePath, "utf8");
   const parsed = (0, import_gray_matter2.default)(raw);
   const updated = { ...parsed.data, [field]: value };
   writeFileSync3(
@@ -76909,10 +77165,10 @@ function getNestedField(obj, path) {
 }
 function readJson(path) {
   if (!existsSync8(path)) return {};
-  return JSON.parse(readFileSync6(path, "utf8"));
+  return JSON.parse(readFileSync7(path, "utf8"));
 }
 function writeJson(path, data) {
-  mkdirSync4(join14(path, ".."), { recursive: true });
+  mkdirSync4(join15(path, ".."), { recursive: true });
   writeFileSync3(path, `${JSON.stringify(data, null, 2)}
 `);
 }
@@ -76976,9 +77232,9 @@ function setRunNextHandler(handler) {
 }
 function resolveActiveStage(intent) {
   const root2 = findHaikuRoot();
-  const intentFile = join14(root2, "intents", intent, "intent.md");
+  const intentFile = join15(root2, "intents", intent, "intent.md");
   if (!existsSync8(intentFile)) return "";
-  const { data } = parseFrontmatter(readFileSync6(intentFile, "utf8"));
+  const { data } = parseFrontmatter(readFileSync7(intentFile, "utf8"));
   return data.active_stage || "";
 }
 function findUnitFile(intent, unit) {
@@ -76988,7 +77244,7 @@ function findUnitFile(intent, unit) {
     const p = unitPath(intent, activeStage, unit);
     if (existsSync8(p)) return { path: p, stage: activeStage };
   }
-  const stagesDir = join14(root2, "intents", intent, "stages");
+  const stagesDir = join15(root2, "intents", intent, "stages");
   if (!existsSync8(stagesDir)) return null;
   for (const stage of readdirSync3(stagesDir)) {
     const p = unitPath(intent, stage, unit);
@@ -76999,20 +77255,20 @@ function findUnitFile(intent, unit) {
 function resolveStageHats(intent, stage) {
   try {
     const root2 = findHaikuRoot();
-    const intentFile = join14(root2, "intents", intent, "intent.md");
+    const intentFile = join15(root2, "intents", intent, "intent.md");
     if (!existsSync8(intentFile)) return [];
-    const { data } = parseFrontmatter(readFileSync6(intentFile, "utf8"));
+    const { data } = parseFrontmatter(readFileSync7(intentFile, "utf8"));
     const studio = data.studio || "";
     if (!studio) return [];
     const pluginRoot = resolvePluginRoot();
     for (const base of [
-      join14(process.cwd(), ".haiku", "studios"),
-      join14(pluginRoot, "studios")
+      join15(process.cwd(), ".haiku", "studios"),
+      join15(pluginRoot, "studios")
     ]) {
-      const stageFile = join14(base, studio, "stages", stage, "STAGE.md");
+      const stageFile = join15(base, studio, "stages", stage, "STAGE.md");
       if (!existsSync8(stageFile)) continue;
       const { data: stageFm } = parseFrontmatter(
-        readFileSync6(stageFile, "utf8")
+        readFileSync7(stageFile, "utf8")
       );
       return stageFm.hats || [];
     }
@@ -77023,19 +77279,19 @@ function resolveStageHats(intent, stage) {
 function resolveStageScope(intent, stage) {
   try {
     const root2 = findHaikuRoot();
-    const intentFile = join14(root2, "intents", intent, "intent.md");
+    const intentFile = join15(root2, "intents", intent, "intent.md");
     if (!existsSync8(intentFile)) return "";
-    const { data } = parseFrontmatter(readFileSync6(intentFile, "utf8"));
+    const { data } = parseFrontmatter(readFileSync7(intentFile, "utf8"));
     const studio = data.studio || "";
     if (!studio) return "";
     const pluginRoot = resolvePluginRoot();
     for (const base of [
-      join14(process.cwd(), ".haiku", "studios"),
-      join14(pluginRoot, "studios")
+      join15(process.cwd(), ".haiku", "studios"),
+      join15(pluginRoot, "studios")
     ]) {
-      const stageFile = join14(base, studio, "stages", stage, "STAGE.md");
+      const stageFile = join15(base, studio, "stages", stage, "STAGE.md");
       if (!existsSync8(stageFile)) continue;
-      const raw = readFileSync6(stageFile, "utf8");
+      const raw = readFileSync7(stageFile, "utf8");
       const fm = parseFrontmatter(raw);
       const { content } = (0, import_gray_matter2.default)(raw);
       const desc = fm.data.description || stage;
@@ -77049,10 +77305,10 @@ function syncSessionMetadata(intent, stateFile) {
   if (!stateFile) return;
   try {
     const root2 = findHaikuRoot();
-    const intentFile = join14(root2, "intents", intent, "intent.md");
+    const intentFile = join15(root2, "intents", intent, "intent.md");
     if (!existsSync8(intentFile)) return;
     const { data: intentData } = parseFrontmatter(
-      readFileSync6(intentFile, "utf8")
+      readFileSync7(intentFile, "utf8")
     );
     const studio = intentData.studio || "";
     const activeStage = intentData.active_stage || "";
@@ -77066,13 +77322,13 @@ function syncSessionMetadata(intent, stateFile) {
     let hat = null;
     let bolt = null;
     if (activeStage) {
-      const unitsDir = join14(stageDir(intent, activeStage), "units");
+      const unitsDir = join15(stageDir(intent, activeStage), "units");
       if (existsSync8(unitsDir)) {
         for (const f of readdirSync3(unitsDir).filter(
           (f2) => f2.endsWith(".md")
         )) {
           const { data: unitData } = parseFrontmatter(
-            readFileSync6(join14(unitsDir, f), "utf8")
+            readFileSync7(join15(unitsDir, f), "utf8")
           );
           if (unitData.status === "active") {
             activeUnit = f.replace(".md", "");
@@ -77087,12 +77343,12 @@ function syncSessionMetadata(intent, stateFile) {
     if (studio && activeStage) {
       const pluginRoot = resolvePluginRoot();
       for (const base of [
-        join14(process.cwd(), ".haiku", "studios"),
-        join14(pluginRoot, "studios")
+        join15(process.cwd(), ".haiku", "studios"),
+        join15(pluginRoot, "studios")
       ]) {
-        const sf = join14(base, studio, "stages", activeStage, "STAGE.md");
+        const sf = join15(base, studio, "stages", activeStage, "STAGE.md");
         if (!existsSync8(sf)) continue;
-        const { data: stageFm } = parseFrontmatter(readFileSync6(sf, "utf8"));
+        const { data: stageFm } = parseFrontmatter(readFileSync7(sf, "utf8"));
         stageDescription = stageFm.description || activeStage;
         break;
       }
@@ -77120,9 +77376,9 @@ function handleStateTool(name, args2) {
   switch (name) {
     // ── Intent ──
     case "haiku_intent_get": {
-      const file = join14(intentDir2(args2.slug), "intent.md");
+      const file = join15(intentDir2(args2.slug), "intent.md");
       if (!existsSync8(file)) return text("");
-      const { data } = parseFrontmatter(readFileSync6(file, "utf8"));
+      const { data } = parseFrontmatter(readFileSync7(file, "utf8"));
       const val = data[args2.field];
       return text(
         val == null ? "" : typeof val === "object" ? JSON.stringify(val) : String(val)
@@ -77130,7 +77386,7 @@ function handleStateTool(name, args2) {
     }
     case "haiku_intent_list": {
       const root2 = findHaikuRoot();
-      const intentsDir = join14(root2, "intents");
+      const intentsDir = join15(root2, "intents");
       if (!existsSync8(intentsDir)) return text("[]");
       const includeArchived = args2.include_archived === true;
       const entries = listVisibleIntents(intentsDir, { includeArchived });
@@ -77163,7 +77419,7 @@ function handleStateTool(name, args2) {
         args2.unit
       );
       if (!existsSync8(path)) return text("");
-      const { data } = parseFrontmatter(readFileSync6(path, "utf8"));
+      const { data } = parseFrontmatter(readFileSync7(path, "utf8"));
       const val = data[args2.field];
       return text(
         val == null ? "" : typeof val === "object" ? JSON.stringify(val) : String(val)
@@ -77190,14 +77446,14 @@ function handleStateTool(name, args2) {
       return text("ok");
     }
     case "haiku_unit_list": {
-      const dir = join14(
+      const dir = join15(
         stageDir(args2.intent, args2.stage),
         "units"
       );
       if (!existsSync8(dir)) return text("[]");
       const files = readdirSync3(dir).filter((f) => f.endsWith(".md"));
       const units = files.map((f) => {
-        const { data } = parseFrontmatter(readFileSync6(join14(dir, f), "utf8"));
+        const { data } = parseFrontmatter(readFileSync7(join15(dir, f), "utf8"));
         return {
           name: f.replace(".md", ""),
           status: data.status,
@@ -77220,7 +77476,7 @@ function handleStateTool(name, args2) {
       const uPath = unitPath(args2.intent, stage, args2.unit);
       if (existsSync8(uPath)) {
         const { data: existingFm } = parseFrontmatter(
-          readFileSync6(uPath, "utf8")
+          readFileSync7(uPath, "utf8")
         );
         if (existingFm.status === "active") {
           const scope2 = resolveStageScope(args2.intent, stage);
@@ -77282,7 +77538,7 @@ ${scope}` : "ok") + pushWarning(gitResult));
         );
       const advPath = unitInfo.path;
       const advStage = unitInfo.stage;
-      const unitRaw = readFileSync6(advPath, "utf8");
+      const unitRaw = readFileSync7(advPath, "utf8");
       const { data: unitFm } = parseFrontmatter(unitRaw);
       if (unitFm.status === "completed") {
         return text(
@@ -77429,7 +77685,7 @@ ${scope}` : "ok") + pushWarning(gitResult));
           discreteStage
         );
         if (!mergeResult.success) {
-          const worktreePath = join14(
+          const worktreePath = join15(
             process.cwd(),
             ".haiku",
             "worktrees",
@@ -77539,7 +77795,7 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
       const failPath = rejectInfo.path;
       const rejectStage = rejectInfo.stage;
       const { data: failData } = parseFrontmatter(
-        readFileSync6(failPath, "utf8")
+        readFileSync7(failPath, "utf8")
       );
       const currentHat = failData.hat || "";
       const currentBolt = failData.bolt || 1;
@@ -77610,7 +77866,7 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
         args2.stage,
         args2.unit
       );
-      const { data } = parseFrontmatter(readFileSync6(path, "utf8"));
+      const { data } = parseFrontmatter(readFileSync7(path, "utf8"));
       const current = data.bolt || 0;
       const MAX_BOLTS_INC = 5;
       if (current + 1 > MAX_BOLTS_INC) {
@@ -77635,19 +77891,19 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
     }
     // ── Knowledge ──
     case "haiku_knowledge_list": {
-      const dir = join14(intentDir2(args2.intent), "knowledge");
+      const dir = join15(intentDir2(args2.intent), "knowledge");
       if (!existsSync8(dir)) return text("[]");
       const files = readdirSync3(dir).filter((f) => f.endsWith(".md"));
       return text(JSON.stringify(files));
     }
     case "haiku_knowledge_read": {
-      const path = join14(
+      const path = join15(
         intentDir2(args2.intent),
         "knowledge",
         args2.name
       );
       if (!existsSync8(path)) return text("");
-      return text(readFileSync6(path, "utf8"));
+      return text(readFileSync7(path, "utf8"));
     }
     // ── Studio ──
     case "haiku_studio_list": {
@@ -77694,9 +77950,9 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
       const studio = resolveStudio(args2.studio);
       if (!studio) return text("");
       const sgName = args2.stage;
-      const stageFile = join14(studio.path, "stages", sgName, "STAGE.md");
+      const stageFile = join15(studio.path, "stages", sgName, "STAGE.md");
       if (!existsSync8(stageFile)) return text("");
-      const raw = readFileSync6(stageFile, "utf8");
+      const raw = readFileSync7(stageFile, "utf8");
       const { data, body } = parseFrontmatter(raw);
       return text(
         JSON.stringify(
@@ -77717,11 +77973,11 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
       const field = args2.field;
       let settingsPath = "";
       try {
-        settingsPath = join14(findHaikuRoot(), "settings.yml");
+        settingsPath = join15(findHaikuRoot(), "settings.yml");
       } catch {
       }
       if (!settingsPath || !existsSync8(settingsPath)) return text("");
-      const raw = readFileSync6(settingsPath, "utf8");
+      const raw = readFileSync7(settingsPath, "utf8");
       const settings = parseYaml(raw);
       const val = getNestedField(settings, field);
       if (val == null) return text("");
@@ -77735,7 +77991,7 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
       } catch {
         return text("No intents found. Use /haiku:start to create one.");
       }
-      const intentsDir = join14(root2, "intents");
+      const intentsDir = join15(root2, "intents");
       if (!existsSync8(intentsDir))
         return text("No intents found. Use /haiku:start to create one.");
       const entries = listVisibleIntents(intentsDir);
@@ -77755,10 +78011,10 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
         out5 += `- Mode: ${data.mode || "interactive"}
 `;
         const isDiscrete = data.mode === "discrete" || data.mode === "hybrid";
-        const stagesPath = join14(intentsDir, slug, "stages");
+        const stagesPath = join15(intentsDir, slug, "stages");
         if (existsSync8(stagesPath)) {
           const stages = readdirSync3(stagesPath).filter(
-            (s) => existsSync8(join14(stagesPath, s, "state.json"))
+            (s) => existsSync8(join15(stagesPath, s, "state.json"))
           );
           const stagesFromBranches = [];
           if (isDiscrete && isGitRepo()) {
@@ -77782,7 +78038,7 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
           if (allStages.length > 0) {
             out5 += "\n| Stage | Status | Phase |\n|-------|--------|-------|\n";
             for (const s of stages) {
-              const state = readJson(join14(stagesPath, s, "state.json"));
+              const state = readJson(join15(stagesPath, s, "state.json"));
               out5 += `| ${s} | ${state.status || "pending"} | ${state.phase || ""} |
 `;
             }
@@ -77805,14 +78061,14 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
               }
             }
             for (const s of stages) {
-              const unitsDir = join14(stagesPath, s, "units");
+              const unitsDir = join15(stagesPath, s, "units");
               if (!existsSync8(unitsDir)) continue;
               const unitFiles = readdirSync3(unitsDir).filter(
                 (f) => f.endsWith(".md")
               );
               const unitsWithModel = unitFiles.map((f) => {
                 const { data: data2 } = parseFrontmatter(
-                  readFileSync6(join14(unitsDir, f), "utf8")
+                  readFileSync7(join15(unitsDir, f), "utf8")
                 );
                 return {
                   name: f.replace(".md", ""),
@@ -77843,7 +78099,7 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
       } catch {
         return text("No .haiku directory found.");
       }
-      const intentsDir = join14(root2, "intents");
+      const intentsDir = join15(root2, "intents");
       if (!existsSync8(intentsDir)) return text("No intents found.");
       const entries = listVisibleIntents(intentsDir);
       const median = (arr) => {
@@ -77878,17 +78134,17 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
 `;
         const stageBolts = /* @__PURE__ */ new Map();
         for (const intent of intents) {
-          const stagesPath = join14(intentsDir, intent.slug, "stages");
+          const stagesPath = join15(intentsDir, intent.slug, "stages");
           if (!existsSync8(stagesPath)) continue;
           for (const stage of readdirSync3(stagesPath)) {
-            const unitsDir = join14(stagesPath, stage, "units");
+            const unitsDir = join15(stagesPath, stage, "units");
             if (!existsSync8(unitsDir)) continue;
             if (!stageBolts.has(stage)) stageBolts.set(stage, []);
             for (const f of readdirSync3(unitsDir).filter(
               (f2) => f2.endsWith(".md")
             )) {
               const { data: ud } = parseFrontmatter(
-                readFileSync6(join14(unitsDir, f), "utf8")
+                readFileSync7(join15(unitsDir, f), "utf8")
               );
               if (typeof ud.bolt === "number")
                 stageBolts.get(stage)?.push(ud.bolt);
@@ -77914,11 +78170,11 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
       } catch {
         return text("No .haiku directory found.");
       }
-      const intentFile = join14(root2, "intents", intentSlug, "intent.md");
+      const intentFile = join15(root2, "intents", intentSlug, "intent.md");
       if (!existsSync8(intentFile))
         return text(`Intent '${intentSlug}' not found.`);
       const { data: intentData } = parseFrontmatter(
-        readFileSync6(intentFile, "utf8")
+        readFileSync7(intentFile, "utf8")
       );
       let out5 = "## Intent Metadata\n";
       out5 += `- Slug: ${intentSlug}
@@ -77933,11 +78189,11 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
 `;
       out5 += `- Completed: ${intentData.completed_at || "in progress"}
 `;
-      const stagesPath = join14(root2, "intents", intentSlug, "stages");
+      const stagesPath = join15(root2, "intents", intentSlug, "stages");
       if (existsSync8(stagesPath)) {
         out5 += "\n## Per-Stage Summary\n";
         for (const stage of readdirSync3(stagesPath)) {
-          const state = readJson(join14(stagesPath, stage, "state.json"));
+          const state = readJson(join15(stagesPath, stage, "state.json"));
           out5 += `
 ### ${stage}
 `;
@@ -77949,7 +78205,7 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
 `;
           out5 += `- Completed: ${state.completed_at || "in progress"}
 `;
-          const unitsDir = join14(stagesPath, stage, "units");
+          const unitsDir = join15(stagesPath, stage, "units");
           if (existsSync8(unitsDir)) {
             const unitFiles = readdirSync3(unitsDir).filter(
               (f) => f.endsWith(".md")
@@ -77959,7 +78215,7 @@ ${hatScope}` : `advanced to ${nextHat}`) + pushWarning(advGit)
             const unitDetails = [];
             for (const f of unitFiles) {
               const { data: ud } = parseFrontmatter(
-                readFileSync6(join14(unitsDir, f), "utf8")
+                readFileSync7(join15(unitsDir, f), "utf8")
               );
               const uName = f.replace(".md", "");
               const uBolt = ud.bolt || 0;
@@ -78025,7 +78281,7 @@ ${content}
     case "haiku_review": {
       let base = getMainlineBranch();
       try {
-        const upstream = spawnSync(
+        const upstream = spawnSync2(
           "git",
           ["rev-parse", "--abbrev-ref", "@{upstream}"],
           { encoding: "utf8", stdio: "pipe" }
@@ -78039,19 +78295,19 @@ ${content}
       let stat = "";
       let changedFiles = "";
       try {
-        const diffResult = spawnSync("git", ["diff", `${base}...HEAD`], {
+        const diffResult = spawnSync2("git", ["diff", `${base}...HEAD`], {
           encoding: "utf8",
           stdio: "pipe",
           maxBuffer: 10 * 1024 * 1024
         });
         diff = diffResult.stdout || "";
-        const statResult = spawnSync(
+        const statResult = spawnSync2(
           "git",
           ["diff", "--stat", `${base}...HEAD`],
           { encoding: "utf8", stdio: "pipe" }
         );
         stat = statResult.stdout || "";
-        const namesResult = spawnSync(
+        const namesResult = spawnSync2(
           "git",
           ["diff", "--name-only", `${base}...HEAD`],
           { encoding: "utf8", stdio: "pipe" }
@@ -78068,19 +78324,19 @@ ${content}
       let reviewGuidelines = "";
       const cwd2 = process.cwd();
       for (const name2 of ["REVIEW.md", "CLAUDE.md"]) {
-        const p = join14(cwd2, name2);
+        const p = join15(cwd2, name2);
         if (existsSync8(p)) {
           reviewGuidelines += `
 ### ${name2}
-${readFileSync6(p, "utf8").slice(0, 5e3)}
+${readFileSync7(p, "utf8").slice(0, 5e3)}
 `;
         }
       }
       let reviewAgents = "";
       try {
-        const settingsPath = join14(findHaikuRoot(), "settings.yml");
+        const settingsPath = join15(findHaikuRoot(), "settings.yml");
         if (existsSync8(settingsPath)) {
-          const settings = parseYaml(readFileSync6(settingsPath, "utf8"));
+          const settings = parseYaml(readFileSync7(settingsPath, "utf8"));
           const agents = getNestedField(settings, "review_agents");
           if (agents)
             reviewAgents = `
@@ -78133,7 +78389,7 @@ ${diff || "No changes detected."}
       } catch {
         return text("No .haiku directory found.");
       }
-      const backlogDir = join14(root2, "backlog");
+      const backlogDir = join15(root2, "backlog");
       switch (action) {
         case "list": {
           if (!existsSync8(backlogDir)) return text("No backlog items found.");
@@ -78142,7 +78398,7 @@ ${diff || "No changes detected."}
           let out5 = "# Backlog\n\n| # | Item | Priority | Created |\n|---|------|----------|---------|\n";
           for (let i = 0; i < files.length; i++) {
             const { data } = parseFrontmatter(
-              readFileSync6(join14(backlogDir, files[i]), "utf8")
+              readFileSync7(join15(backlogDir, files[i]), "utf8")
             );
             out5 += `| ${i + 1} | ${files[i].replace(".md", "")} | ${data.priority || "unset"} | ${data.created_at || "unknown"} |
 `;
@@ -78173,7 +78429,7 @@ created_at: ${timestamp()}
           if (files.length === 0) return text("No backlog items to review.");
           let out5 = "## Backlog Review\n\nPresent each item to the user and ask: **Keep / Reprioritize / Drop / Promote / Skip**\n\n";
           for (let i = 0; i < files.length; i++) {
-            const raw = readFileSync6(join14(backlogDir, files[i]), "utf8");
+            const raw = readFileSync7(join15(backlogDir, files[i]), "utf8");
             const { data, body } = parseFrontmatter(raw);
             out5 += `### ${i + 1}. ${files[i].replace(".md", "")}
 `;
@@ -78211,7 +78467,7 @@ created_at: ${timestamp()}
       } catch {
         return text("No .haiku directory found.");
       }
-      const seedsDir = join14(root2, "seeds");
+      const seedsDir = join15(root2, "seeds");
       switch (action) {
         case "list": {
           if (!existsSync8(seedsDir)) return text("No seeds found.");
@@ -78220,7 +78476,7 @@ created_at: ${timestamp()}
           const groups = /* @__PURE__ */ new Map();
           for (const f of files) {
             const { data } = parseFrontmatter(
-              readFileSync6(join14(seedsDir, f), "utf8")
+              readFileSync7(join15(seedsDir, f), "utf8")
             );
             const status = data.status || "planted";
             if (!groups.has(status)) groups.set(status, []);
@@ -78260,7 +78516,7 @@ created_at: ${timestamp()}
           const files = readdirSync3(seedsDir).filter((f) => f.endsWith(".md"));
           const planted = files.filter((f) => {
             const { data } = parseFrontmatter(
-              readFileSync6(join14(seedsDir, f), "utf8")
+              readFileSync7(join15(seedsDir, f), "utf8")
             );
             return data.status === "planted";
           });
@@ -78268,7 +78524,7 @@ created_at: ${timestamp()}
           let out5 = "## Seed Check\n\nEvaluate each planted seed's trigger condition against the current project state:\n\n";
           for (const f of planted) {
             const { data, body } = parseFrontmatter(
-              readFileSync6(join14(seedsDir, f), "utf8")
+              readFileSync7(join15(seedsDir, f), "utf8")
             );
             out5 += `### ${f.replace(".md", "")}
 `;
@@ -78293,24 +78549,24 @@ created_at: ${timestamp()}
       let changelogPath = "";
       const pluginRoot = resolvePluginRoot();
       if (pluginRoot) {
-        const p = join14(pluginRoot, "CHANGELOG.md");
+        const p = join15(pluginRoot, "CHANGELOG.md");
         if (existsSync8(p)) changelogPath = p;
       }
       if (!changelogPath) {
         let dir = process.cwd();
         for (let i = 0; i < 20; i++) {
-          const p = join14(dir, "CHANGELOG.md");
+          const p = join15(dir, "CHANGELOG.md");
           if (existsSync8(p)) {
             changelogPath = p;
             break;
           }
-          const parent = join14(dir, "..");
+          const parent = join15(dir, "..");
           if (parent === dir) break;
           dir = parent;
         }
       }
       if (!changelogPath) return text("No CHANGELOG.md found.");
-      const changelog = readFileSync6(changelogPath, "utf8");
+      const changelog = readFileSync7(changelogPath, "utf8");
       const versionPattern = /^## \[([^\]]+)\]/gm;
       const matches = [];
       let match = versionPattern.exec(changelog);
@@ -81494,8 +81750,8 @@ import { spawn as spawn2 } from "child_process";
 import { createInterface as createInterface2 } from "readline";
 import * as fs from "fs";
 import { stat as statPromise, open } from "fs/promises";
-import { join as join15 } from "path";
-import { homedir } from "os";
+import { join as join16 } from "path";
+import { homedir as homedir2 } from "os";
 import { dirname as dirname6, join as join22 } from "path";
 import { cwd } from "process";
 import { realpathSync as realpathSync2 } from "fs";
@@ -81782,7 +82038,7 @@ function shouldShowDebugMessage(message, filter) {
   return shouldShowDebugCategories(categories, filter);
 }
 function getClaudeConfigHomeDir() {
-  return process.env.CLAUDE_CONFIG_DIR ?? join15(homedir(), ".claude");
+  return process.env.CLAUDE_CONFIG_DIR ?? join16(homedir2(), ".claude");
 }
 function isEnvTruthy(envVar) {
   if (!envVar)
@@ -85060,7 +85316,7 @@ function query({
     cwd: cwd2,
     disallowedTools = [],
     tools,
-    env,
+    env: env2,
     executable = isRunningWithBun() ? "bun" : "node",
     executableArgs = [],
     extraArgs = {},
@@ -85086,7 +85342,7 @@ function query({
     strictMcpConfig
   } = rest;
   const jsonSchema = outputFormat?.type === "json_schema" ? outputFormat.schema : void 0;
-  let processEnv = env;
+  let processEnv = env2;
   if (!processEnv) {
     processEnv = { ...process.env };
   }
@@ -87968,20 +88224,20 @@ var init_sdk3 = __esm({
       var util_1 = require_util2();
       var validate_1 = require_validate2();
       class SchemaEnv {
-        constructor(env) {
+        constructor(env2) {
           var _a;
           this.refs = {};
           this.dynamicAnchors = {};
           let schema;
-          if (typeof env.schema == "object")
-            schema = env.schema;
-          this.schema = env.schema;
-          this.schemaId = env.schemaId;
-          this.root = env.root || this;
-          this.baseId = (_a = env.baseId) !== null && _a !== void 0 ? _a : (0, resolve_1.normalizeId)(schema === null || schema === void 0 ? void 0 : schema[env.schemaId || "$id"]);
-          this.schemaPath = env.schemaPath;
-          this.localRefs = env.localRefs;
-          this.meta = env.meta;
+          if (typeof env2.schema == "object")
+            schema = env2.schema;
+          this.schema = env2.schema;
+          this.schemaId = env2.schemaId;
+          this.root = env2.root || this;
+          this.baseId = (_a = env2.baseId) !== null && _a !== void 0 ? _a : (0, resolve_1.normalizeId)(schema === null || schema === void 0 ? void 0 : schema[env2.schemaId || "$id"]);
+          this.schemaPath = env2.schemaPath;
+          this.localRefs = env2.localRefs;
+          this.meta = env2.meta;
           this.$async = schema === null || schema === void 0 ? void 0 : schema.$async;
           this.refs = {};
         }
@@ -88164,15 +88420,15 @@ var init_sdk3 = __esm({
             baseId = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schId);
           }
         }
-        let env;
+        let env2;
         if (typeof schema != "boolean" && schema.$ref && !(0, util_1.schemaHasRulesButRef)(schema, this.RULES)) {
           const $ref = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, schema.$ref);
-          env = resolveSchema.call(this, root2, $ref);
+          env2 = resolveSchema.call(this, root2, $ref);
         }
         const { schemaId } = this.opts;
-        env = env || new SchemaEnv({ schema, schemaId, root: root2, baseId });
-        if (env.schema !== env.root.schema)
-          return env;
+        env2 = env2 || new SchemaEnv({ schema, schemaId, root: root2, baseId });
+        if (env2.schema !== env2.root.schema)
+          return env2;
         return;
       }
     });
@@ -89469,8 +89725,8 @@ var init_sdk3 = __esm({
         schemaType: "string",
         code(cxt) {
           const { gen, schema: $ref, it } = cxt;
-          const { baseId, schemaEnv: env, validateName, opts, self: self2 } = it;
-          const { root: root2 } = env;
+          const { baseId, schemaEnv: env2, validateName, opts, self: self2 } = it;
+          const { root: root2 } = env2;
           if (($ref === "#" || $ref === "#/") && baseId === root2.baseId)
             return callRootRef();
           const schOrEnv = compile_1.resolveRef.call(self2, root2, baseId, $ref);
@@ -89480,8 +89736,8 @@ var init_sdk3 = __esm({
             return callValidate(schOrEnv);
           return inlineRefSchema(schOrEnv);
           function callRootRef() {
-            if (env === root2)
-              return callRef(cxt, validateName, env, env.$async);
+            if (env2 === root2)
+              return callRef(cxt, validateName, env2, env2.$async);
             const rootName = gen.scopeValue("root", { ref: root2 });
             return callRef(cxt, (0, codegen_1._)`${rootName}.validate`, root2, root2.$async);
           }
@@ -89511,14 +89767,14 @@ var init_sdk3 = __esm({
       exports2.getValidate = getValidate;
       function callRef(cxt, v2, sch, $async) {
         const { gen, it } = cxt;
-        const { allErrors, schemaEnv: env, opts } = it;
+        const { allErrors, schemaEnv: env2, opts } = it;
         const passCxt = opts.passContext ? names_1.default.this : codegen_1.nil;
         if ($async)
           callAsyncRef();
         else
           callSyncRef();
         function callAsyncRef() {
-          if (!env.$async)
+          if (!env2.$async)
             throw new Error("async schema referenced by sync schema");
           const valid = gen.let("valid");
           gen.try(() => {
@@ -91884,16 +92140,16 @@ var init_sdk3 = __esm({
         return isRunningWithBun() ? "bun" : "node";
       }
       spawnLocalProcess(spawnOptions) {
-        const { command, args: args2, cwd: cwd2, env, signal } = spawnOptions;
-        const stderrMode = env.DEBUG_CLAUDE_AGENT_SDK || this.options.stderr ? "pipe" : "ignore";
+        const { command, args: args2, cwd: cwd2, env: env2, signal } = spawnOptions;
+        const stderrMode = env2.DEBUG_CLAUDE_AGENT_SDK || this.options.stderr ? "pipe" : "ignore";
         const childProcess = spawn2(command, args2, {
           cwd: cwd2,
           stdio: ["pipe", "pipe", stderrMode],
           signal,
-          env,
+          env: env2,
           windowsHide: true
         });
-        if (env.DEBUG_CLAUDE_AGENT_SDK || this.options.stderr) {
+        if (env2.DEBUG_CLAUDE_AGENT_SDK || this.options.stderr) {
           childProcess.stderr.on("data", (data) => {
             const message = data.toString();
             logForSdkDebugging(message);
@@ -91928,7 +92184,7 @@ var init_sdk3 = __esm({
             executableArgs = [],
             extraArgs = {},
             pathToClaudeCodeExecutable,
-            env = { ...process.env },
+            env: env2 = { ...process.env },
             maxThinkingTokens,
             maxTurns,
             maxBudgetUsd,
@@ -91974,7 +92230,7 @@ var init_sdk3 = __esm({
           if (jsonSchema) {
             args2.push("--json-schema", jsonStringify(jsonSchema));
           }
-          if (env.DEBUG_CLAUDE_AGENT_SDK) {
+          if (env2.DEBUG_CLAUDE_AGENT_SDK) {
             args2.push("--debug-to-stderr");
           }
           if (canUseTool) {
@@ -92059,14 +92315,14 @@ var init_sdk3 = __esm({
               args2.push(`--${flag2}`, value);
             }
           }
-          if (!env.CLAUDE_CODE_ENTRYPOINT) {
-            env.CLAUDE_CODE_ENTRYPOINT = "sdk-ts";
+          if (!env2.CLAUDE_CODE_ENTRYPOINT) {
+            env2.CLAUDE_CODE_ENTRYPOINT = "sdk-ts";
           }
-          delete env.NODE_OPTIONS;
-          if (env.DEBUG_CLAUDE_AGENT_SDK) {
-            env.DEBUG = "1";
+          delete env2.NODE_OPTIONS;
+          if (env2.DEBUG_CLAUDE_AGENT_SDK) {
+            env2.DEBUG = "1";
           } else {
-            delete env.DEBUG;
+            delete env2.DEBUG;
           }
           const isNative = isNativeBinary(pathToClaudeCodeExecutable);
           const spawnCommand = isNative ? pathToClaudeCodeExecutable : executable;
@@ -92075,7 +92331,7 @@ var init_sdk3 = __esm({
             command: spawnCommand,
             args: spawnArgs,
             cwd: cwd2,
-            env,
+            env: env2,
             signal: this.abortController.signal
           };
           if (this.options.spawnClaudeCodeProcess) {
@@ -102484,8 +102740,8 @@ var repair_agent_exports = {};
 __export(repair_agent_exports, {
   runRepairAgent: () => runRepairAgent
 });
-import { existsSync as existsSync10, readFileSync as readFileSync8, readdirSync as readdirSync5 } from "node:fs";
-import { join as join16 } from "node:path";
+import { existsSync as existsSync10, readFileSync as readFileSync9, readdirSync as readdirSync5 } from "node:fs";
+import { join as join17 } from "node:path";
 async function runRepairAgent(diagnosis) {
   let query2;
   try {
@@ -102747,21 +103003,21 @@ After making all repairs, summarize:
   return sections.join("\n\n");
 }
 function readStageDefinitions(studioDir) {
-  const stagesDir = join16(studioDir, "stages");
+  const stagesDir = join17(studioDir, "stages");
   if (!existsSync10(stagesDir)) return "(no stages directory found)";
   const stages = [];
   let entries;
   try {
     entries = readdirSync5(stagesDir).filter(
-      (d) => existsSync10(join16(stagesDir, d, "STAGE.md"))
+      (d) => existsSync10(join17(stagesDir, d, "STAGE.md"))
     );
   } catch {
     return "(could not read stages directory)";
   }
   for (const stageName of entries) {
-    const stageMd = join16(stagesDir, stageName, "STAGE.md");
+    const stageMd = join17(stagesDir, stageName, "STAGE.md");
     try {
-      const raw = readFileSync8(stageMd, "utf8");
+      const raw = readFileSync9(stageMd, "utf8");
       const { data: stageFm } = (0, import_gray_matter3.default)(raw);
       const frontmatter = Object.keys(stageFm).length > 0 ? Object.entries(stageFm).map(([k2, v2]) => `${k2}: ${JSON.stringify(v2)}`).join("\n") : "(no frontmatter)";
       stages.push(`### ${stageName}
@@ -102777,25 +103033,25 @@ ${frontmatter}
 }
 function findMissingDiscoveryArtifacts(diagnosis) {
   const missing = [];
-  const stagesDir = join16(diagnosis.studioDir, "stages");
+  const stagesDir = join17(diagnosis.studioDir, "stages");
   if (!existsSync10(stagesDir)) return missing;
   const discoveryLocations = {};
   let stageEntries;
   try {
     stageEntries = readdirSync5(stagesDir).filter(
-      (d) => existsSync10(join16(stagesDir, d, "STAGE.md"))
+      (d) => existsSync10(join17(stagesDir, d, "STAGE.md"))
     );
   } catch {
     return missing;
   }
   for (const stageName of stageEntries) {
-    const discoveryDir = join16(stagesDir, stageName, "discovery");
+    const discoveryDir = join17(stagesDir, stageName, "discovery");
     if (!existsSync10(discoveryDir)) continue;
     try {
       for (const file of readdirSync5(discoveryDir).filter(
         (f) => f.endsWith(".md")
       )) {
-        const { data } = (0, import_gray_matter3.default)(readFileSync8(join16(discoveryDir, file), "utf8"));
+        const { data } = (0, import_gray_matter3.default)(readFileSync9(join17(discoveryDir, file), "utf8"));
         const name = data.name || file.replace(/\.md$/, "").toLowerCase();
         const location = data.location || "";
         if (location) {
@@ -102805,17 +103061,17 @@ function findMissingDiscoveryArtifacts(diagnosis) {
     } catch {
     }
   }
-  const activeStageMd = join16(stagesDir, diagnosis.activeStage, "STAGE.md");
+  const activeStageMd = join17(stagesDir, diagnosis.activeStage, "STAGE.md");
   if (!existsSync10(activeStageMd)) return missing;
   try {
-    const raw = readFileSync8(activeStageMd, "utf8");
+    const raw = readFileSync9(activeStageMd, "utf8");
     const { data: stageFm } = (0, import_gray_matter3.default)(raw);
     const inputs = stageFm.inputs || [];
     for (const input of inputs) {
       if (input.discovery) {
         const localPath = discoveryLocations[input.discovery];
         if (localPath) {
-          const fullPath = join16(diagnosis.intentDir, localPath);
+          const fullPath = join17(diagnosis.intentDir, localPath);
           if (!existsSync10(fullPath)) {
             missing.push({
               name: input.discovery,
@@ -102843,15 +103099,15 @@ import { execFileSync as execFileSync3, execSync as execSync2 } from "node:child
 import {
   existsSync as existsSync11,
   mkdirSync as mkdirSync6,
-  readFileSync as readFileSync9,
+  readFileSync as readFileSync10,
   readdirSync as readdirSync6,
   rmSync as rmSync3,
   writeFileSync as writeFileSync4
 } from "node:fs";
-import { join as join17, resolve as resolve4 } from "node:path";
+import { join as join18, resolve as resolve4 } from "node:path";
 function readFrontmatter(filePath) {
   if (!existsSync11(filePath)) return {};
-  const raw = readFileSync9(filePath, "utf8");
+  const raw = readFileSync10(filePath, "utf8");
   const { data } = parseFrontmatter(raw);
   return data;
 }
@@ -102860,10 +103116,10 @@ function resolveStudioStages(studio) {
   if (info) return info.stages;
   const pluginRoot = resolvePluginRoot();
   for (const base of [
-    join17(process.cwd(), ".haiku", "studios"),
-    join17(pluginRoot, "studios")
+    join18(process.cwd(), ".haiku", "studios"),
+    join18(pluginRoot, "studios")
   ]) {
-    const studioFile = join17(base, studio, "STUDIO.md");
+    const studioFile = join18(base, studio, "STUDIO.md");
     if (existsSync11(studioFile)) {
       const fm = readFrontmatter(studioFile);
       return fm.stages || [];
@@ -102876,10 +103132,10 @@ function resolveStageHats2(studio, stage) {
   const dir = info ? info.dir : studio;
   const pluginRoot = resolvePluginRoot();
   for (const base of [
-    join17(process.cwd(), ".haiku", "studios"),
-    join17(pluginRoot, "studios")
+    join18(process.cwd(), ".haiku", "studios"),
+    join18(pluginRoot, "studios")
   ]) {
-    const stageFile = join17(base, dir, "stages", stage, "STAGE.md");
+    const stageFile = join18(base, dir, "stages", stage, "STAGE.md");
     if (existsSync11(stageFile)) {
       const fm = readFrontmatter(stageFile);
       return fm.hats || [];
@@ -102892,10 +103148,10 @@ function resolveStageReview(studio, stage) {
   const dir = info ? info.dir : studio;
   const pluginRoot = resolvePluginRoot();
   for (const base of [
-    join17(process.cwd(), ".haiku", "studios"),
-    join17(pluginRoot, "studios")
+    join18(process.cwd(), ".haiku", "studios"),
+    join18(pluginRoot, "studios")
   ]) {
-    const stageFile = join17(base, dir, "stages", stage, "STAGE.md");
+    const stageFile = join18(base, dir, "stages", stage, "STAGE.md");
     if (existsSync11(stageFile)) {
       const fm = readFrontmatter(stageFile);
       const review2 = fm.review;
@@ -102910,10 +103166,10 @@ function stageReviewIncludes(studio, stage, kind) {
   const dir = info ? info.dir : studio;
   const pluginRoot = resolvePluginRoot();
   for (const base of [
-    join17(process.cwd(), ".haiku", "studios"),
-    join17(pluginRoot, "studios")
+    join18(process.cwd(), ".haiku", "studios"),
+    join18(pluginRoot, "studios")
   ]) {
-    const stageFile = join17(base, dir, "stages", stage, "STAGE.md");
+    const stageFile = join18(base, dir, "stages", stage, "STAGE.md");
     if (existsSync11(stageFile)) {
       const fm = readFrontmatter(stageFile);
       const review2 = fm.review;
@@ -102928,12 +103184,12 @@ function resolveStageMetadata(studio, stage) {
   const dir = info ? info.dir : studio;
   const pluginRoot = resolvePluginRoot();
   for (const base of [
-    join17(process.cwd(), ".haiku", "studios"),
-    join17(pluginRoot, "studios")
+    join18(process.cwd(), ".haiku", "studios"),
+    join18(pluginRoot, "studios")
   ]) {
-    const stageFile = join17(base, dir, "stages", stage, "STAGE.md");
+    const stageFile = join18(base, dir, "stages", stage, "STAGE.md");
     if (existsSync11(stageFile)) {
-      const raw = readFileSync9(stageFile, "utf8");
+      const raw = readFileSync10(stageFile, "utf8");
       const fm = readFrontmatter(stageFile);
       const { content } = (0, import_gray_matter4.default)(raw);
       return {
@@ -102981,15 +103237,15 @@ function checkExternalApproval(url) {
 function validateStageOutputs(slug, stage, studio) {
   const pluginRoot = resolvePluginRoot();
   for (const base of [
-    join17(process.cwd(), ".haiku", "studios"),
-    join17(pluginRoot, "studios")
+    join18(process.cwd(), ".haiku", "studios"),
+    join18(pluginRoot, "studios")
   ]) {
-    const outputsDir = join17(base, studio, "stages", stage, "outputs");
+    const outputsDir = join18(base, studio, "stages", stage, "outputs");
     if (!existsSync11(outputsDir)) continue;
     const outputDefs = readdirSync6(outputsDir).filter((f) => f.endsWith(".md"));
     const missing = [];
     for (const f of outputDefs) {
-      const raw = readFileSync9(join17(outputsDir, f), "utf8");
+      const raw = readFileSync10(join18(outputsDir, f), "utf8");
       const { data } = (0, import_gray_matter4.default)(raw);
       const required3 = data.required !== false;
       if (!required3) continue;
@@ -102997,7 +103253,7 @@ function validateStageOutputs(slug, stage, studio) {
       if (!location) continue;
       if (location.startsWith("(")) continue;
       const resolved = location.replace("{intent-slug}", slug);
-      const absPath = join17(process.cwd(), resolved);
+      const absPath = join18(process.cwd(), resolved);
       if (resolved.endsWith("/")) {
         if (!existsSync11(absPath) || readdirSync6(absPath).filter((e) => e !== ".gitkeep").length === 0) {
           missing.push({ name: data.name || f, location: resolved });
@@ -103058,7 +103314,7 @@ function readPhaseOverride(studio, stage, phase) {
   validateIdentifier(studio, "studio");
   validateIdentifier(stage, "stage");
   for (const base of studioSearchPaths2()) {
-    const file = join17(
+    const file = join18(
       base,
       studio,
       "stages",
@@ -103067,7 +103323,7 @@ function readPhaseOverride(studio, stage, phase) {
       `${phase.toUpperCase()}.md`
     );
     if (existsSync11(file)) {
-      return parseFrontmatter(readFileSync9(file, "utf8"));
+      return parseFrontmatter(readFileSync10(file, "utf8"));
     }
   }
   return null;
@@ -103075,17 +103331,17 @@ function readPhaseOverride(studio, stage, phase) {
 function validateDiscoveryArtifacts(slug, stage, studio) {
   const pluginRoot = resolvePluginRoot();
   for (const base of [
-    join17(process.cwd(), ".haiku", "studios"),
-    join17(pluginRoot, "studios")
+    join18(process.cwd(), ".haiku", "studios"),
+    join18(pluginRoot, "studios")
   ]) {
-    const discoveryDir = join17(base, studio, "stages", stage, "discovery");
+    const discoveryDir = join18(base, studio, "stages", stage, "discovery");
     if (!existsSync11(discoveryDir)) continue;
     const discoveryDefs = readdirSync6(discoveryDir).filter(
       (f) => f.endsWith(".md")
     );
     const missing = [];
     for (const f of discoveryDefs) {
-      const raw = readFileSync9(join17(discoveryDir, f), "utf8");
+      const raw = readFileSync10(join18(discoveryDir, f), "utf8");
       const { data } = (0, import_gray_matter4.default)(raw);
       const required3 = data.required !== false;
       if (!required3) continue;
@@ -103093,7 +103349,7 @@ function validateDiscoveryArtifacts(slug, stage, studio) {
       if (!location) continue;
       if (location.startsWith("(")) continue;
       const resolved = location.replace("{intent-slug}", slug);
-      const absPath = join17(process.cwd(), resolved);
+      const absPath = join18(process.cwd(), resolved);
       if (resolved.endsWith("/")) {
         if (!existsSync11(absPath) || readdirSync6(absPath).filter((e) => e !== ".gitkeep").length === 0) {
           missing.push({ name: data.name || f, location: resolved });
@@ -103121,7 +103377,7 @@ The elaboration phase must produce these artifacts. Go back and create them, the
   return null;
 }
 function validateUnitNaming(intentDirPath, stage) {
-  const unitsDir = join17(intentDirPath, "stages", stage, "units");
+  const unitsDir = join18(intentDirPath, "stages", stage, "units");
   if (!existsSync11(unitsDir)) return null;
   const allFiles = readdirSync6(unitsDir).filter((f) => f.endsWith(".md"));
   if (allFiles.length === 0) return null;
@@ -103179,13 +103435,13 @@ Rename the files to match the convention, then call \`haiku_run_next { intent: "
   return null;
 }
 function validateUnitInputs(intentDirPath, stage) {
-  const unitsDir = join17(intentDirPath, "stages", stage, "units");
+  const unitsDir = join18(intentDirPath, "stages", stage, "units");
   if (!existsSync11(unitsDir)) return null;
   const unitFiles = readdirSync6(unitsDir).filter((f) => f.endsWith(".md"));
   if (unitFiles.length === 0) return null;
   const missing = [];
   for (const f of unitFiles) {
-    const fm = readFrontmatter(join17(unitsDir, f));
+    const fm = readFrontmatter(join18(unitsDir, f));
     const status = fm.status || "";
     if (["complete", "skipped", "failed"].includes(status)) continue;
     const inputs = fm.inputs || fm.refs || [];
@@ -103214,8 +103470,8 @@ Add \`inputs:\` to each unit's frontmatter with paths relative to the intent dir
 }
 function runQualityGates(slug, stage) {
   const root2 = findHaikuRoot();
-  const iDir = join17(root2, "intents", slug);
-  const intentFile = join17(iDir, "intent.md");
+  const iDir = join18(root2, "intents", slug);
+  const intentFile = join18(iDir, "intent.md");
   let repoRoot;
   try {
     repoRoot = execSync2("git rev-parse --show-toplevel", {
@@ -103236,12 +103492,12 @@ function runQualityGates(slug, stage) {
     }));
   }
   const allGates = parseGates(intentFile);
-  const unitsDir = join17(iDir, "stages", stage, "units");
+  const unitsDir = join18(iDir, "stages", stage, "units");
   if (existsSync11(unitsDir)) {
     for (const f of readdirSync6(unitsDir).filter(
       (f2) => f2.startsWith("unit-") && f2.endsWith(".md")
     )) {
-      allGates.push(...parseGates(join17(unitsDir, f)));
+      allGates.push(...parseGates(join18(unitsDir, f)));
     }
   }
   const seen = /* @__PURE__ */ new Set();
@@ -103282,7 +103538,7 @@ function runQualityGates(slug, stage) {
   return failures;
 }
 function resolveEffectiveBranchMode(slug, stage) {
-  const intentFile = join17(intentDir2(slug), "intent.md");
+  const intentFile = join18(intentDir2(slug), "intent.md");
   const intent = readFrontmatter(intentFile);
   const mode = intent.mode || "continuous";
   const studio = intent.studio || "";
@@ -103300,7 +103556,7 @@ function resolveEffectiveBranchMode(slug, stage) {
   return stageIdx >= thresholdIdx ? "continuous" : "discrete";
 }
 function findPreviousStage(slug, stage) {
-  const intentFile = join17(intentDir2(slug), "intent.md");
+  const intentFile = join18(intentDir2(slug), "intent.md");
   const intent = readFrontmatter(intentFile);
   const studio = intent.studio || "";
   const allStages = resolveStudioStages(studio);
@@ -103310,7 +103566,7 @@ function findPreviousStage(slug, stage) {
   return idx > 0 ? studioStages[idx - 1] : void 0;
 }
 function fsmStartStage(slug, stage) {
-  const intentFile = join17(intentDir2(slug), "intent.md");
+  const intentFile = join18(intentDir2(slug), "intent.md");
   const intent = readFrontmatter(intentFile);
   const branchMode = resolveEffectiveBranchMode(slug, stage);
   if (branchMode === "discrete") {
@@ -103403,7 +103659,7 @@ function fsmCompleteStage(slug, stage, gateOutcome) {
 }
 function fsmAdvanceStage(slug, currentStage, nextStage) {
   fsmCompleteStage(slug, currentStage, "advanced");
-  const intentFile = join17(intentDir2(slug), "intent.md");
+  const intentFile = join18(intentDir2(slug), "intent.md");
   if (existsSync11(intentFile)) {
     setFrontmatterField(intentFile, "active_stage", nextStage);
   }
@@ -103419,7 +103675,7 @@ function fsmGateAsk(slug, stage) {
   sealIntentState(slug);
 }
 function fsmIntentComplete(slug) {
-  const intentFile = join17(intentDir2(slug), "intent.md");
+  const intentFile = join18(intentDir2(slug), "intent.md");
   if (existsSync11(intentFile)) {
     setFrontmatterField(intentFile, "status", "completed");
     setFrontmatterField(intentFile, "completed_at", timestamp());
@@ -103430,8 +103686,8 @@ function fsmIntentComplete(slug) {
 }
 function runNext(slug) {
   const root2 = findHaikuRoot();
-  const iDir = join17(root2, "intents", slug);
-  const intentFile = join17(iDir, "intent.md");
+  const iDir = join18(root2, "intents", slug);
+  const intentFile = join18(iDir, "intent.md");
   if (!existsSync11(intentFile)) {
     return { action: "error", message: `Intent '${slug}' not found` };
   }
@@ -103494,7 +103750,7 @@ function runNext(slug) {
     const incompletePrior = [];
     for (let i = 0; i < activeIdx; i++) {
       const prevState = readJson(
-        join17(iDir, "stages", studioStages[i], "state.json")
+        join18(iDir, "stages", studioStages[i], "state.json")
       );
       const prevStatus = prevState.status || "pending";
       if (prevStatus !== "completed") {
@@ -103502,7 +103758,7 @@ function runNext(slug) {
       }
     }
     if (incompletePrior.length > 0) {
-      const activeUnitsDir = join17(iDir, "stages", currentStage, "units");
+      const activeUnitsDir = join18(iDir, "stages", currentStage, "units");
       const activeUnitFiles = existsSync11(activeUnitsDir) ? readdirSync6(activeUnitsDir).filter((f) => f.endsWith(".md")) : [];
       if (activeUnitFiles.length > 0) {
         const synthesized = [];
@@ -103510,14 +103766,14 @@ function runNext(slug) {
         const now = timestamp();
         const intentStarted = intent.started_at || intent.created_at || now;
         for (const stageName of incompletePrior) {
-          const priorUnitsDir = join17(iDir, "stages", stageName, "units");
+          const priorUnitsDir = join18(iDir, "stages", stageName, "units");
           const priorUnitFiles = existsSync11(priorUnitsDir) ? readdirSync6(priorUnitsDir).filter((f) => f.endsWith(".md")) : [];
           if (priorUnitFiles.length > 0) {
             needsManualReview.push(stageName);
           } else {
-            const stageDir2 = join17(iDir, "stages", stageName);
+            const stageDir2 = join18(iDir, "stages", stageName);
             mkdirSync6(stageDir2, { recursive: true });
-            const statePath = join17(stageDir2, "state.json");
+            const statePath = join18(stageDir2, "state.json");
             writeJson(statePath, {
               stage: stageName,
               status: "completed",
@@ -103531,14 +103787,14 @@ function runNext(slug) {
           }
         }
         const activeStageState = readJson(
-          join17(iDir, "stages", currentStage, "state.json")
+          join18(iDir, "stages", currentStage, "state.json")
         );
         const activePhase = activeStageState.phase || "";
         let phaseRegressed = false;
         const missingInputs = [];
         if (activePhase === "execute") {
           for (const f of activeUnitFiles) {
-            const fm = readFrontmatter(join17(activeUnitsDir, f));
+            const fm = readFrontmatter(join18(activeUnitsDir, f));
             const unitStatus = fm.status || "";
             if (["completed", "skipped", "failed"].includes(unitStatus))
               continue;
@@ -103548,7 +103804,7 @@ function runNext(slug) {
           if (missingInputs.length > 0) {
             activeStageState.phase = "elaborate";
             writeJson(
-              join17(iDir, "stages", currentStage, "state.json"),
+              join18(iDir, "stages", currentStage, "state.json"),
               activeStageState
             );
             phaseRegressed = true;
@@ -103623,7 +103879,7 @@ Additionally, phase was regressed from 'execute' to 'elaborate' because some uni
     }
     currentStage = next;
   }
-  const stageState = readJson(join17(iDir, "stages", currentStage, "state.json"));
+  const stageState = readJson(join18(iDir, "stages", currentStage, "state.json"));
   const phase = stageState.phase || "";
   const stageStatus = stageState.status || "pending";
   if (!phase || stageStatus === "pending") {
@@ -103631,7 +103887,7 @@ Additionally, phase was regressed from 'execute' to 'elaborate' because some uni
     const follows = intent.follows || "";
     const parentKnowledge = [];
     if (follows && currentStage === studioStages[0]) {
-      const parentKnowledgeDir = join17(root2, "intents", follows, "knowledge");
+      const parentKnowledgeDir = join18(root2, "intents", follows, "knowledge");
       if (existsSync11(parentKnowledgeDir)) {
         parentKnowledge.push(
           ...readdirSync6(parentKnowledgeDir).filter((f) => f.endsWith(".md"))
@@ -103659,15 +103915,15 @@ Additionally, phase was regressed from 'execute' to 'elaborate' because some uni
     };
   }
   if (phase === "elaborate" || phase === "decompose") {
-    const unitsDir = join17(iDir, "stages", currentStage, "units");
+    const unitsDir = join18(iDir, "stages", currentStage, "units");
     const hasUnits = existsSync11(unitsDir) && readdirSync6(unitsDir).filter((f) => f.endsWith(".md")).length > 0;
     const pluginRoot = resolvePluginRoot();
     let elaborationMode = "collaborative";
     for (const base of [
-      join17(process.cwd(), ".haiku", "studios"),
-      join17(pluginRoot, "studios")
+      join18(process.cwd(), ".haiku", "studios"),
+      join18(pluginRoot, "studios")
     ]) {
-      const stageFile = join17(base, studio, "stages", currentStage, "STAGE.md");
+      const stageFile = join18(base, studio, "stages", currentStage, "STAGE.md");
       if (existsSync11(stageFile)) {
         const fm = readFrontmatter(stageFile);
         elaborationMode = fm.elaboration || "collaborative";
@@ -103676,7 +103932,7 @@ Additionally, phase was regressed from 'execute' to 'elaborate' because some uni
     }
     const elaborationTurns = stageState.elaboration_turns || 0;
     const updatedTurns = elaborationTurns + 1;
-    writeJson(join17(iDir, "stages", currentStage, "state.json"), {
+    writeJson(join18(iDir, "stages", currentStage, "state.json"), {
       ...stageState,
       elaboration_turns: updatedTurns
     });
@@ -103702,11 +103958,11 @@ Additionally, phase was regressed from 'execute' to 'elaborate' because some uni
       };
     }
     {
-      const unitsDir2 = join17(iDir, "stages", currentStage, "units");
+      const unitsDir2 = join18(iDir, "stages", currentStage, "units");
       const unitFiles = readdirSync6(unitsDir2).filter((f) => f.endsWith(".md"));
       const nodeIds = new Set(unitFiles.map((f) => f.replace(".md", "")));
       const dagNodes = unitFiles.map((f) => {
-        const fm = readFrontmatter(join17(unitsDir2, f));
+        const fm = readFrontmatter(join18(unitsDir2, f));
         return {
           id: f.replace(".md", ""),
           status: fm.status || "pending"
@@ -103717,7 +103973,7 @@ Additionally, phase was regressed from 'execute' to 'elaborate' because some uni
       for (const n of dagNodes) dagAdj.set(n.id, []);
       const unresolvedDeps = [];
       for (const f of unitFiles) {
-        const fm = readFrontmatter(join17(unitsDir2, f));
+        const fm = readFrontmatter(join18(unitsDir2, f));
         const id = f.replace(".md", "");
         for (const dep of fm.depends_on || []) {
           if (nodeIds.has(dep)) {
@@ -103780,7 +104036,7 @@ Fix the depends_on fields, then call \`haiku_run_next { intent: "${slug}" }\` ag
         };
       }
     }
-    const stagesDir = join17(iDir, "stages");
+    const stagesDir = join18(iDir, "stages");
     if (existsSync11(stagesDir)) {
       for (const stageEntry of readdirSync6(stagesDir, { withFileTypes: true }).filter((e) => e.isDirectory()).sort((a, b2) => a.name.localeCompare(b2.name))) {
         if (stageEntry.name === currentStage) continue;
@@ -104140,11 +104396,11 @@ function runNextComposite(slug, intent, _intentDirPath) {
   };
 }
 function listUnits(intentDirPath, stage) {
-  const unitsDir = join17(intentDirPath, "stages", stage, "units");
+  const unitsDir = join18(intentDirPath, "stages", stage, "units");
   if (!existsSync11(unitsDir)) return [];
   const files = readdirSync6(unitsDir).filter((f) => f.endsWith(".md"));
   const units = files.map((f) => {
-    const fm = readFrontmatter(join17(unitsDir, f));
+    const fm = readFrontmatter(join18(unitsDir, f));
     return {
       name: f.replace(".md", ""),
       status: fm.status || "pending",
@@ -104207,8 +104463,8 @@ function currentWaveNumber(units, unitWave, totalWaves) {
 }
 function revisit(slug, requestedStage) {
   const root2 = findHaikuRoot();
-  const iDir = join17(root2, "intents", slug);
-  const intentFile = join17(iDir, "intent.md");
+  const iDir = join18(root2, "intents", slug);
+  const intentFile = join18(iDir, "intent.md");
   if (!existsSync11(intentFile)) {
     return { action: "error", message: `Intent '${slug}' not found` };
   }
@@ -104288,11 +104544,11 @@ function revisitCurrentStage(slug, iDir, _intentFile, currentActiveStage) {
   stageState.gate_entered_at = null;
   stageState.gate_outcome = null;
   writeJson(path, stageState);
-  const unitsDir = join17(iDir, "stages", currentActiveStage, "units");
+  const unitsDir = join18(iDir, "stages", currentActiveStage, "units");
   if (existsSync11(unitsDir)) {
     const files = readdirSync6(unitsDir).filter((f) => f.endsWith(".md"));
     for (const f of files) {
-      const unitFile = join17(unitsDir, f);
+      const unitFile = join18(unitsDir, f);
       setFrontmatterField(unitFile, "status", "pending");
       setFrontmatterField(unitFile, "bolt", 0);
       setFrontmatterField(unitFile, "hat", "");
@@ -104339,11 +104595,11 @@ function revisitEarlierStage(slug, iDir, intentFile, fromStage, targetStage) {
     gate_outcome: null
   };
   writeJson(targetPath, data);
-  const unitsDir = join17(iDir, "stages", targetStage, "units");
+  const unitsDir = join18(iDir, "stages", targetStage, "units");
   if (existsSync11(unitsDir)) {
     const files = readdirSync6(unitsDir).filter((f) => f.endsWith(".md"));
     for (const f of files) {
-      const unitFile = join17(unitsDir, f);
+      const unitFile = join18(unitsDir, f);
       setFrontmatterField(unitFile, "status", "pending");
       setFrontmatterField(unitFile, "bolt", 0);
       setFrontmatterField(unitFile, "hat", "");
@@ -104707,12 +104963,12 @@ These may not have been produced yet, or may have been saved to a different loca
       }
       const discoveryFiles = /* @__PURE__ */ new Map();
       for (const base of [...studioSearchPaths2()].reverse()) {
-        const discoveryDir = join17(base, studio, "stages", stage, "discovery");
+        const discoveryDir = join18(base, studio, "stages", stage, "discovery");
         if (!existsSync11(discoveryDir)) continue;
         for (const f of readdirSync6(discoveryDir).filter(
           (f2) => f2.endsWith(".md")
         )) {
-          discoveryFiles.set(f, readFileSync9(join17(discoveryDir, f), "utf8"));
+          discoveryFiles.set(f, readFileSync10(join18(discoveryDir, f), "utf8"));
         }
       }
       if (discoveryFiles.size > 0) {
@@ -104721,8 +104977,8 @@ These may not have been produced yet, or may have been saved to a different loca
           ([f]) => `\`${f.replace(/\.md$/i, "").toLowerCase()}\``
         );
         const plural = artifacts.length !== 1 ? "s" : "";
-        const intentFile = join17(dir, "intent.md");
-        const intentContent = existsSync11(intentFile) ? readFileSync9(intentFile, "utf8") : "";
+        const intentFile = join18(dir, "intent.md");
+        const intentContent = existsSync11(intentFile) ? readFileSync10(intentFile, "utf8") : "";
         const stageScope = stageDef?.body || stage;
         let fanOutText = `## Discovery Fan-Out (REQUIRED)
 
@@ -104838,9 +105094,9 @@ Files MUST be named \`unit-NN-slug.md\` where:
 Files that don't match this pattern will not appear in the review UI and will block advancement.`
       );
       try {
-        const settingsPath = join17(process.cwd(), ".haiku", "settings.yml");
+        const settingsPath = join18(process.cwd(), ".haiku", "settings.yml");
         if (existsSync11(settingsPath)) {
-          const settingsRaw = readFileSync9(settingsPath, "utf8");
+          const settingsRaw = readFileSync10(settingsPath, "utf8");
           if (settingsRaw.includes("ticketing")) {
             sections.push(
               "## Ticketing Integration\n\nA ticketing provider is configured. During elaboration:\n1. Create an epic for this intent (or link to existing one if `epic:` is set in intent.md)\n2. For each unit created, create a ticket linked to the epic\n3. Store ticket key in unit frontmatter: `ticket: PROJ-123`\n4. Map unit `depends_on` to ticket blocked-by relationships\n5. Include the H\xB7AI\xB7K\xB7U browse link in ticket descriptions\n\nSee ticketing provider instructions for details on content format and status mapping."
@@ -104859,7 +105115,7 @@ Files that don't match this pattern will not appear in the review UI and will bl
       const hats = action.hats || [];
       const bolt = action.bolt || 1;
       const stageDef = readStageDef(studio, stage);
-      const unitFile = join17(
+      const unitFile = join18(
         dir,
         "stages",
         stage,
@@ -104870,7 +105126,7 @@ Files that don't match this pattern will not appear in the review UI and will bl
       let unitInputs = [];
       let unitModel = void 0;
       if (existsSync11(unitFile)) {
-        const { data, body } = parseFrontmatter(readFileSync9(unitFile, "utf8"));
+        const { data, body } = parseFrontmatter(readFileSync10(unitFile, "utf8"));
         unitContent = body;
         unitInputs = data.inputs || data.refs || [];
         unitModel = data.model || void 0;
@@ -104933,8 +105189,8 @@ ${sanitizeForContext(hatContent, `hat definition: ${hat}`)}`
           const refResolved = resolve4(dir, ref);
           if (!refResolved.startsWith(`${dirResolved}/`) && refResolved !== dirResolved)
             continue;
-          if (existsSync11(join17(dir, ref))) {
-            const content = readFileSync9(join17(dir, ref), "utf8");
+          if (existsSync11(join18(dir, ref))) {
+            const content = readFileSync10(join18(dir, ref), "utf8");
             inputParts.push(
               `### ${ref}
 
@@ -105051,9 +105307,9 @@ The \`advance_hat\` result tells you what to do next (next hat, next unit, or ph
       }
       if (action.action === "start_unit") {
         try {
-          const settingsPath = join17(process.cwd(), ".haiku", "settings.yml");
+          const settingsPath = join18(process.cwd(), ".haiku", "settings.yml");
           if (existsSync11(settingsPath)) {
-            const settingsRaw = readFileSync9(settingsPath, "utf8");
+            const settingsRaw = readFileSync10(settingsPath, "utf8");
             if (settingsRaw.includes("ticketing")) {
               sections.push(
                 `### Ticketing
@@ -105163,7 +105419,7 @@ ${sanitizeForContext(r.content?.slice(0, 2e3) ?? "", `upstream input: ${r.stage}
           `## Parallel Execution: ${units.length} units in ${stage}${wave !== void 0 ? ` \u2014 Wave ${wave}/${totalWaves ?? "?"}` : ""}`
         );
         for (const unitName of units) {
-          const unitFile = join17(
+          const unitFile = join18(
             dir,
             "stages",
             stage,
@@ -105174,7 +105430,7 @@ ${sanitizeForContext(r.content?.slice(0, 2e3) ?? "", `upstream input: ${r.stage}
           let unitInputs = [];
           if (existsSync11(unitFile)) {
             const { data, body } = parseFrontmatter(
-              readFileSync9(unitFile, "utf8")
+              readFileSync10(unitFile, "utf8")
             );
             unitContent = body;
             unitInputs = data.inputs || data.refs || [];
@@ -105187,8 +105443,8 @@ ${sanitizeForContext(r.content?.slice(0, 2e3) ?? "", `upstream input: ${r.stage}
               const refResolved = resolve4(dir, ref);
               if (!refResolved.startsWith(`${dirResolved}/`) && refResolved !== dirResolved)
                 continue;
-              if (existsSync11(join17(dir, ref))) {
-                const content = readFileSync9(join17(dir, ref), "utf8");
+              if (existsSync11(join18(dir, ref))) {
+                const content = readFileSync10(join18(dir, ref), "utf8");
                 inputParts.push(
                   `### ${ref}
 
@@ -105715,7 +105971,7 @@ async function handleOrchestratorTool(name, args2) {
     if (args2.external_review_url) {
       try {
         const root2 = findHaikuRoot();
-        const intentFile = join17(root2, "intents", slug, "intent.md");
+        const intentFile = join18(root2, "intents", slug, "intent.md");
         if (existsSync11(intentFile)) {
           const intentFm = readFrontmatter(intentFile);
           const activeStage = intentFm.active_stage || "";
@@ -105786,7 +106042,7 @@ async function handleOrchestratorTool(name, args2) {
     let intentMeta = {};
     try {
       const iDir = intentDir2(slug);
-      const intentRaw = readFileSync9(join17(iDir, "intent.md"), "utf8");
+      const intentRaw = readFileSync10(join18(iDir, "intent.md"), "utf8");
       const parsed = parseFrontmatter(intentRaw);
       intentMeta = parsed.data;
     } catch {
@@ -105843,7 +106099,7 @@ IMPORTANT: Ask the user WHERE they submitted the work for review (PR URL, MR lin
           });
         if (reviewResult.decision === "approved") {
           if (gateContext === "intent_review") {
-            const intentFilePath = join17(
+            const intentFilePath = join18(
               process.cwd(),
               intentDirPath,
               "intent.md"
@@ -105950,10 +106206,10 @@ IMPORTANT: Ask the user WHERE they submitted the work for review (PR URL, MR lin
         console.error(`[haiku] gate_review failed: ${errorMsg}`);
         reportError(err, { intent: slug, stage });
         try {
-          const logDir = join17(process.cwd(), ".haiku", "logs");
+          const logDir = join18(process.cwd(), ".haiku", "logs");
           mkdirSync6(logDir, { recursive: true });
           writeFileSync4(
-            join17(logDir, "gate-review-error.log"),
+            join18(logDir, "gate-review-error.log"),
             `${(/* @__PURE__ */ new Date()).toISOString()}
 intent: ${slug}
 stage: ${stage}
@@ -106012,7 +106268,7 @@ ${errorStack}
               const feedback = elicitResult.content.feedback || "";
               if (decision === "approve") {
                 if (gateContext === "intent_review") {
-                  const intentFilePath = join17(
+                  const intentFilePath = join18(
                     process.cwd(),
                     intentDirPath,
                     "intent.md"
@@ -106116,7 +106372,7 @@ ${errorStack}
       try {
         const { runRepairAgent: runRepairAgent2 } = await Promise.resolve().then(() => (init_repair_agent(), repair_agent_exports));
         const root2 = findHaikuRoot();
-        const iDir = join17(root2, "intents", slug);
+        const iDir = join18(root2, "intents", slug);
         const studioInfo = resolveStudio(intentStudio);
         const studioDir = studioInfo?.path;
         if (!studioDir) {
@@ -106225,8 +106481,8 @@ ${errorStack}
       }
     }
     const root2 = findHaikuRoot();
-    const iDir = join17(root2, "intents", slug);
-    if (existsSync11(join17(iDir, "intent.md"))) {
+    const iDir = join18(root2, "intents", slug);
+    if (existsSync11(join18(iDir, "intent.md"))) {
       return text(
         JSON.stringify({
           error: "intent_exists",
@@ -106235,8 +106491,8 @@ ${errorStack}
         })
       );
     }
-    mkdirSync6(join17(iDir, "knowledge"), { recursive: true });
-    mkdirSync6(join17(iDir, "stages"), { recursive: true });
+    mkdirSync6(join18(iDir, "knowledge"), { recursive: true });
+    mkdirSync6(join18(iDir, "stages"), { recursive: true });
     const context2 = args2.context;
     const mode = args2.mode || "continuous";
     const stagesOverride = args2.stages;
@@ -106257,12 +106513,12 @@ ${stagesOverride.map((s) => `  - ${s}`).join("\n")}`] : [],
       ...descriptionBody ? [descriptionBody, ""] : [],
       ...context2 ? [context2, ""] : []
     ].join("\n");
-    writeFileSync4(join17(iDir, "intent.md"), intentContent);
+    writeFileSync4(join18(iDir, "intent.md"), intentContent);
     if (context2) {
-      const knowledgeDir = join17(iDir, "knowledge");
+      const knowledgeDir = join18(iDir, "knowledge");
       mkdirSync6(knowledgeDir, { recursive: true });
       writeFileSync4(
-        join17(knowledgeDir, "CONVERSATION-CONTEXT.md"),
+        join18(knowledgeDir, "CONVERSATION-CONTEXT.md"),
         `# Conversation Context
 
 ${context2}
@@ -106289,8 +106545,8 @@ ${context2}
   if (name === "haiku_select_studio") {
     const slug = args2.intent;
     const root2 = findHaikuRoot();
-    const iDir = join17(root2, "intents", slug);
-    const intentFile = join17(iDir, "intent.md");
+    const iDir = join18(root2, "intents", slug);
+    const intentFile = join18(iDir, "intent.md");
     if (!existsSync11(intentFile)) {
       return text(
         JSON.stringify({
@@ -106299,11 +106555,11 @@ ${context2}
         })
       );
     }
-    const stagesDir = join17(iDir, "stages");
+    const stagesDir = join18(iDir, "stages");
     if (existsSync11(stagesDir)) {
       for (const entry of readdirSync6(stagesDir, { withFileTypes: true })) {
         if (!entry.isDirectory()) continue;
-        const statePath = join17(stagesDir, entry.name, "state.json");
+        const statePath = join18(stagesDir, entry.name, "state.json");
         if (existsSync11(statePath)) {
           const state = readJson(statePath);
           if (state.status && state.status !== "pending") {
@@ -106529,8 +106785,8 @@ ${studioDescriptions}`
   if (name === "haiku_intent_reset") {
     const slug = args2.intent;
     const root2 = findHaikuRoot();
-    const iDir = join17(root2, "intents", slug);
-    const intentFile = join17(iDir, "intent.md");
+    const iDir = join18(root2, "intents", slug);
+    const intentFile = join18(iDir, "intent.md");
     if (!existsSync11(intentFile)) {
       return {
         content: [
@@ -106539,7 +106795,7 @@ ${studioDescriptions}`
         isError: true
       };
     }
-    const raw = readFileSync9(intentFile, "utf8");
+    const raw = readFileSync10(intentFile, "utf8");
     const { data, body } = parseFrontmatter(raw);
     const title = data.title || "";
     const description = body.replace(/^#\s+.*\n+/, "").trim() || title;
@@ -106580,9 +106836,9 @@ Description: "${description}"`,
       };
     }
     let conversationContext = "";
-    const ctxFile = join17(iDir, "knowledge", "CONVERSATION-CONTEXT.md");
+    const ctxFile = join18(iDir, "knowledge", "CONVERSATION-CONTEXT.md");
     if (existsSync11(ctxFile)) {
-      conversationContext = readFileSync9(ctxFile, "utf8").replace(
+      conversationContext = readFileSync10(ctxFile, "utf8").replace(
         /^# Conversation Context\n\n/,
         ""
       );
@@ -106607,7 +106863,7 @@ Description: "${description}"`,
   if (name === "haiku_intent_archive") {
     const slug = args2.intent;
     const root2 = findHaikuRoot();
-    const intentFile = join17(root2, "intents", slug, "intent.md");
+    const intentFile = join18(root2, "intents", slug, "intent.md");
     if (!existsSync11(intentFile)) {
       return {
         content: [
@@ -106616,7 +106872,7 @@ Description: "${description}"`,
         isError: true
       };
     }
-    const { data } = parseFrontmatter(readFileSync9(intentFile, "utf8"));
+    const { data } = parseFrontmatter(readFileSync10(intentFile, "utf8"));
     if (data.archived === true) {
       return text(
         JSON.stringify(
@@ -106649,7 +106905,7 @@ Description: "${description}"`,
   if (name === "haiku_intent_unarchive") {
     const slug = args2.intent;
     const root2 = findHaikuRoot();
-    const intentFile = join17(root2, "intents", slug, "intent.md");
+    const intentFile = join18(root2, "intents", slug, "intent.md");
     if (!existsSync11(intentFile)) {
       return {
         content: [
@@ -106658,7 +106914,7 @@ Description: "${description}"`,
         isError: true
       };
     }
-    const raw = readFileSync9(intentFile, "utf8");
+    const raw = readFileSync10(intentFile, "utf8");
     const parsed = (0, import_gray_matter4.default)(raw);
     if (parsed.data.archived !== true) {
       return text(
@@ -106905,8 +107161,8 @@ var init_prompts = __esm({
 });
 
 // src/prompts/skill-bridge.ts
-import { existsSync as existsSync12, readFileSync as readFileSync10, readdirSync as readdirSync7 } from "node:fs";
-import { join as join18 } from "node:path";
+import { existsSync as existsSync12, readFileSync as readFileSync11, readdirSync as readdirSync7 } from "node:fs";
+import { join as join19 } from "node:path";
 function registerSkillPrompts() {
   let count = 0;
   registerPrompt({
@@ -106937,7 +107193,7 @@ function registerSkillPrompts() {
     );
     return count;
   }
-  const skillsDir = join18(pluginRoot, "skills");
+  const skillsDir = join19(pluginRoot, "skills");
   if (!existsSync12(skillsDir)) {
     console.error(
       `[haiku] Registered ${count} prompt(s) (skills dir not found \u2014 skills not bridged)`
@@ -106947,9 +107203,9 @@ function registerSkillPrompts() {
   const entries = readdirSync7(skillsDir, { withFileTypes: true });
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
-    const skillFile = join18(skillsDir, entry.name, "SKILL.md");
+    const skillFile = join19(skillsDir, entry.name, "SKILL.md");
     if (!existsSync12(skillFile)) continue;
-    const raw = readFileSync10(skillFile, "utf8");
+    const raw = readFileSync11(skillFile, "utf8");
     const { data, body } = parseFrontmatter(raw);
     const skillName = data.name || entry.name;
     const skillDesc = data.description || "";
@@ -107008,7 +107264,7 @@ var init_skill_bridge = __esm({
 var server_exports = {};
 import { spawn as spawn3 } from "node:child_process";
 import { readFile as readFile4 } from "node:fs/promises";
-import { dirname as dirname7, join as join19, resolve as resolve5 } from "node:path";
+import { dirname as dirname7, join as join20, resolve as resolve5 } from "node:path";
 async function handleToolCall(request2) {
   const { name, arguments: args2 } = request2.params;
   if (name === "haiku_run_next" || name === "haiku_revisit" || name === "haiku_intent_create" || name === "haiku_select_studio" || name === "haiku_intent_reset" || name === "haiku_intent_archive" || name === "haiku_intent_unarchive") {
@@ -107247,7 +107503,7 @@ async function handleToolCall(request2) {
     if (updatedDirectionSession && updatedDirectionSession.session_type === "design_direction" && updatedDirectionSession.status === "answered" && updatedDirectionSession.selection) {
       try {
         const root2 = findHaikuRoot();
-        const intentFile = join19(root2, "intents", input.intent_slug, "intent.md");
+        const intentFile = join20(root2, "intents", input.intent_slug, "intent.md");
         const intentRaw = await readFile4(intentFile, "utf-8");
         const intentFm = parseFrontmatter(intentRaw);
         const activeStage = intentFm.data.active_stage || "";
@@ -107739,19 +107995,19 @@ var init_server3 = __esm({
 import {
   appendFileSync as appendFileSync3,
   existsSync as existsSync13,
-  readFileSync as readFileSync11
+  readFileSync as readFileSync12
 } from "node:fs";
-import { join as join20 } from "node:path";
+import { join as join21 } from "node:path";
 async function contextMonitor(input, _pluginRoot2) {
   const totalTokens = Number(input.total_tokens ?? 0);
   const maxTokens = Number(input.max_tokens ?? 0);
   if (totalTokens === 0 || maxTokens === 0) return;
   const remaining = Math.floor((maxTokens - totalTokens) * 100 / maxTokens);
   const sessionId = process.env.CLAUDE_SESSION_ID ?? "unknown";
-  const debounceFile = join20("/tmp", `context-monitor-${sessionId}`);
+  const debounceFile = join21("/tmp", `context-monitor-${sessionId}`);
   let debounceContent = "";
   if (existsSync13(debounceFile)) {
-    debounceContent = readFileSync11(debounceFile, "utf8");
+    debounceContent = readFileSync12(debounceFile, "utf8");
   }
   if (remaining <= 25) {
     if (!debounceContent.includes("25")) {
@@ -107782,22 +108038,22 @@ import { execSync as execSync3 } from "node:child_process";
 import {
   existsSync as existsSync14,
   mkdirSync as mkdirSync7,
-  readFileSync as readFileSync12,
+  readFileSync as readFileSync13,
   readdirSync as readdirSync8,
   statSync as statSync4,
   writeFileSync as writeFileSync6
 } from "node:fs";
-import { dirname as dirname8, join as join21 } from "node:path";
+import { dirname as dirname8, join as join23 } from "node:path";
 function readFrontmatterField(filePath, field) {
   if (!existsSync14(filePath)) return "";
-  const content = readFileSync12(filePath, "utf8");
+  const content = readFileSync13(filePath, "utf8");
   const match = content.match(new RegExp(`^${field}:\\s*(.+)$`, "m"));
   return match ? match[1].trim().replace(/^["']|["']$/g, "") : "";
 }
 function readJson2(filePath) {
   if (!existsSync14(filePath)) return {};
   try {
-    return JSON.parse(readFileSync12(filePath, "utf8"));
+    return JSON.parse(readFileSync13(filePath, "utf8"));
   } catch {
     return {};
   }
@@ -107811,15 +108067,15 @@ function findActiveIntent() {
   } catch {
     repoRoot = process.cwd();
   }
-  const intentsDir = join21(repoRoot, ".haiku", "intents");
+  const intentsDir = join23(repoRoot, ".haiku", "intents");
   if (!existsSync14(intentsDir)) return null;
   const dirs = readdirSync8(intentsDir);
   for (const d of dirs) {
-    const intentFile = join21(intentsDir, d, "intent.md");
+    const intentFile = join23(intentsDir, d, "intent.md");
     if (!existsSync14(intentFile)) continue;
     const status = readFrontmatterField(intentFile, "status");
     if (status === "active") {
-      return join21(intentsDir, d);
+      return join23(intentsDir, d);
     }
   }
   return null;
@@ -107847,14 +108103,14 @@ function getRepoRoot() {
 }
 function findUnitFiles(intentDir3) {
   const results = [];
-  const stagesDir = join21(intentDir3, "stages");
+  const stagesDir = join23(intentDir3, "stages");
   if (!existsSync14(stagesDir)) return results;
   for (const stage of readdirSync8(stagesDir)) {
-    const unitsDir = join21(stagesDir, stage, "units");
+    const unitsDir = join23(stagesDir, stage, "units");
     if (!existsSync14(unitsDir) || !statSync4(unitsDir).isDirectory()) continue;
     for (const file of readdirSync8(unitsDir)) {
       if (file.startsWith("unit-") && file.endsWith(".md")) {
-        results.push(join21(unitsDir, file));
+        results.push(join23(unitsDir, file));
       }
     }
   }
@@ -107862,7 +108118,7 @@ function findUnitFiles(intentDir3) {
 }
 function readFrontmatterArray(filePath, field) {
   if (!existsSync14(filePath)) return [];
-  const content = readFileSync12(filePath, "utf8");
+  const content = readFileSync13(filePath, "utf8");
   const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
   if (!fmMatch) return [];
   const frontmatter = fmMatch[1];
@@ -107905,7 +108161,7 @@ function readFrontmatterArray(filePath, field) {
 }
 function setFrontmatterField2(filePath, field, value) {
   if (!existsSync14(filePath)) return;
-  let content = readFileSync12(filePath, "utf8");
+  let content = readFileSync13(filePath, "utf8");
   const regex = new RegExp(`^(${field}:)\\s*.+$`, "m");
   if (regex.test(content)) {
     content = content.replace(regex, `$1 ${value}`);
@@ -107917,7 +108173,7 @@ function setFrontmatterField2(filePath, field, value) {
 }
 function checkAllCriteria(filePath, section) {
   if (!existsSync14(filePath)) return;
-  let content = readFileSync12(filePath, "utf8");
+  let content = readFileSync13(filePath, "utf8");
   if (!section) {
     content = content.replace(/- \[ \]/g, "- [x]");
   } else {
@@ -107936,9 +108192,9 @@ function checkAllCriteria(filePath, section) {
   writeFileSync6(filePath, content);
 }
 function checkIntentCriteria(intentDir3) {
-  const intentFile = join21(intentDir3, "intent.md");
+  const intentFile = join23(intentDir3, "intent.md");
   if (existsSync14(intentFile)) {
-    const content = readFileSync12(intentFile, "utf8");
+    const content = readFileSync13(intentFile, "utf8");
     if (content.includes("## Success Criteria")) {
       checkAllCriteria(intentFile, "Success Criteria");
     } else if (content.includes("## Completion Criteria")) {
@@ -107946,8 +108202,8 @@ function checkIntentCriteria(intentDir3) {
     }
   }
   for (const f of [
-    join21(intentDir3, "completion-criteria.md"),
-    join21(intentDir3, "state", "completion-criteria.md")
+    join23(intentDir3, "completion-criteria.md"),
+    join23(intentDir3, "state", "completion-criteria.md")
   ]) {
     if (existsSync14(f)) checkAllCriteria(f);
   }
@@ -107959,7 +108215,7 @@ var init_utils13 = __esm({
 });
 
 // src/hooks/enforce-iteration.ts
-import { basename as basename4, join as join23 } from "node:path";
+import { basename as basename4, join as join24 } from "node:path";
 function out(s) {
   process.stdout.write(`${s}
 `);
@@ -107982,7 +108238,7 @@ async function enforceIteration(_input, _pluginRoot2) {
   const activeStage = readFrontmatterField(intentFile, "active_stage");
   if (!activeStage) return;
   const stageState = readJson2(
-    join23(intentDir3, "stages", activeStage, "state.json")
+    join24(intentDir3, "stages", activeStage, "state.json")
   );
   const stageStatus = stageState.status ?? "";
   const unitFiles = findUnitFiles(intentDir3);
@@ -108184,8 +108440,8 @@ var init_guard_fsm_fields = __esm({
 });
 
 // src/hooks/inject-context.ts
-import { existsSync as existsSync15, readFileSync as readFileSync13, readdirSync as readdirSync9 } from "node:fs";
-import { join as join24 } from "node:path";
+import { existsSync as existsSync15, readFileSync as readFileSync14, readdirSync as readdirSync9 } from "node:fs";
+import { join as join25 } from "node:path";
 function out3(s) {
   process.stdout.write(`${s}
 `);
@@ -108195,9 +108451,9 @@ function pathToSlug(fsPath) {
 }
 function resolveStateFile(sessionId) {
   if (!sessionId) return null;
-  const configDir = process.env.CLAUDE_CONFIG_DIR || join24(process.env.HOME || "", ".claude");
+  const configDir = process.env.CLAUDE_CONFIG_DIR || join25(process.env.HOME || "", ".claude");
   const projectSlug = pathToSlug(process.cwd());
-  const stateFile = join24(
+  const stateFile = join25(
     configDir,
     "projects",
     projectSlug,
@@ -108210,20 +108466,20 @@ function resolveStateFile(sessionId) {
 function getRepoRoot2() {
   let dir = process.cwd();
   for (let i = 0; i < 20; i++) {
-    if (existsSync15(join24(dir, ".haiku"))) return dir;
-    const parent = join24(dir, "..");
+    if (existsSync15(join25(dir, ".haiku"))) return dir;
+    const parent = join25(dir, "..");
     if (parent === dir) break;
     dir = parent;
   }
   return process.cwd();
 }
 function findActiveSlug(root2) {
-  const intentsDir = join24(root2, ".haiku", "intents");
+  const intentsDir = join25(root2, ".haiku", "intents");
   if (!existsSync15(intentsDir)) return null;
   for (const slug of readdirSync9(intentsDir)) {
-    const file = join24(intentsDir, slug, "intent.md");
+    const file = join25(intentsDir, slug, "intent.md");
     if (!existsSync15(file)) continue;
-    const { data } = (0, import_gray_matter5.default)(readFileSync13(file, "utf8"));
+    const { data } = (0, import_gray_matter5.default)(readFileSync14(file, "utf8"));
     if (data.status === "active") {
       return { slug, stage: data.active_stage || "" };
     }
@@ -108288,7 +108544,7 @@ var init_inject_context = __esm({
 });
 
 // src/hooks/inject-state-file.ts
-import { join as join25 } from "node:path";
+import { join as join26 } from "node:path";
 function pathToSlug2(fsPath) {
   return fsPath.replace(/^\//, "-").replace(/[/.]/g, "-");
 }
@@ -108317,9 +108573,9 @@ async function injectStateFile(input) {
   const injected = {};
   const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID;
   if (sessionId) {
-    const configDir = process.env.CLAUDE_CONFIG_DIR || join25(process.env.HOME || "", ".claude");
+    const configDir = process.env.CLAUDE_CONFIG_DIR || join26(process.env.HOME || "", ".claude");
     const projectSlug = pathToSlug2(process.cwd());
-    injected.state_file = join25(
+    injected.state_file = join26(
       configDir,
       "projects",
       projectSlug,
@@ -108363,13 +108619,13 @@ var init_prompt_guard = __esm({
 // src/hooks/quality-gate.ts
 import { execSync as execSync4 } from "node:child_process";
 import { existsSync as existsSync16, readdirSync as readdirSync10 } from "node:fs";
-import { join as join26, resolve as resolve7 } from "node:path";
+import { join as join27, resolve as resolve7 } from "node:path";
 function findActiveUnitInStage(intentDir3, stage) {
-  const unitsDir = join26(intentDir3, "stages", stage, "units");
+  const unitsDir = join27(intentDir3, "stages", stage, "units");
   if (!existsSync16(unitsDir)) return null;
   for (const file of readdirSync10(unitsDir)) {
     if (file.startsWith("unit-") && file.endsWith(".md")) {
-      const filePath = join26(unitsDir, file);
+      const filePath = join27(unitsDir, file);
       const status = readFrontmatterField(filePath, "status");
       if (status === "active") return filePath;
     }
@@ -108387,7 +108643,7 @@ async function qualityGate(input, _pluginRoot2) {
   const activeStage = readFrontmatterField(intentFile, "active_stage");
   if (!activeStage) return;
   const stageState = readJson2(
-    join26(intentDir3, "stages", activeStage, "state.json")
+    join27(intentDir3, "stages", activeStage, "state.json")
   );
   const stageStatus = stageState.status ?? "";
   if (intentStatus === "completed" || stageStatus === "completed" || stageStatus === "blocked")
@@ -108489,14 +108745,14 @@ var init_redirect_plan_mode = __esm({
 
 // src/hooks/subagent-context.ts
 import { execSync as execSync5 } from "node:child_process";
-import { existsSync as existsSync17, readFileSync as readFileSync14 } from "node:fs";
-import { basename as basename5, join as join27 } from "node:path";
+import { existsSync as existsSync17, readFileSync as readFileSync15 } from "node:fs";
+import { basename as basename5, join as join28 } from "node:path";
 function out4(s) {
   process.stdout.write(`${s}
 `);
 }
 function readHatInstructions(hatName, stageName, studioName, pluginRoot) {
-  const projectHatFile = join27(
+  const projectHatFile = join28(
     process.cwd(),
     ".haiku",
     "studios",
@@ -108506,7 +108762,7 @@ function readHatInstructions(hatName, stageName, studioName, pluginRoot) {
     "hats",
     `${hatName}.md`
   );
-  const pluginHatFile = join27(
+  const pluginHatFile = join28(
     pluginRoot,
     "studios",
     studioName,
@@ -108522,7 +108778,7 @@ function readHatInstructions(hatName, stageName, studioName, pluginRoot) {
     hatFile = pluginHatFile;
   }
   if (!hatFile) return "";
-  const content = readFileSync14(hatFile, "utf8");
+  const content = readFileSync15(hatFile, "utf8");
   const parts = content.split("---");
   if (parts.length >= 3) {
     return parts.slice(2).join("---").trim();
@@ -108530,7 +108786,7 @@ function readHatInstructions(hatName, stageName, studioName, pluginRoot) {
   return content;
 }
 function readHatMetadata(hatName, stageName, studioName, pluginRoot) {
-  const projectHatFile = join27(
+  const projectHatFile = join28(
     process.cwd(),
     ".haiku",
     "studios",
@@ -108540,7 +108796,7 @@ function readHatMetadata(hatName, stageName, studioName, pluginRoot) {
     "hats",
     `${hatName}.md`
   );
-  const pluginHatFile = join27(
+  const pluginHatFile = join28(
     pluginRoot,
     "studios",
     studioName,
@@ -108559,7 +108815,7 @@ function readHatMetadata(hatName, stageName, studioName, pluginRoot) {
   };
 }
 function getHatSequence(stageName, studioName, pluginRoot) {
-  const stageFile = join27(
+  const stageFile = join28(
     pluginRoot,
     "studios",
     studioName,
@@ -108567,7 +108823,7 @@ function getHatSequence(stageName, studioName, pluginRoot) {
     stageName,
     "STAGE.md"
   );
-  const projectStageFile = join27(
+  const projectStageFile = join28(
     process.cwd(),
     ".haiku",
     "studios",
@@ -108580,7 +108836,7 @@ function getHatSequence(stageName, studioName, pluginRoot) {
   if (existsSync17(projectStageFile)) targetFile = projectStageFile;
   else if (existsSync17(stageFile)) targetFile = stageFile;
   if (!targetFile) return "planner \u2192 builder \u2192 reviewer";
-  const content = readFileSync14(targetFile, "utf8");
+  const content = readFileSync15(targetFile, "utf8");
   const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
   if (!fmMatch) return "planner \u2192 builder \u2192 reviewer";
   const fm = fmMatch[1];
@@ -108622,7 +108878,7 @@ async function generateSubagentContext(_input, pluginRoot) {
   const intentDir3 = findActiveIntent();
   if (!intentDir3) return;
   const intentSlug = basename5(intentDir3);
-  const intentFile = join27(intentDir3, "intent.md");
+  const intentFile = join28(intentDir3, "intent.md");
   const intentStatus = readFrontmatterField(intentFile, "status");
   const activeStage = readFrontmatterField(intentFile, "active_stage") || "development";
   const studio = readFrontmatterField(intentFile, "studio") || "software";
@@ -108674,23 +108930,23 @@ async function generateSubagentContext(_input, pluginRoot) {
   out4(statusLine);
   out4("");
   if (existsSync17(intentFile)) {
-    const intentContent = readFileSync14(intentFile, "utf8");
+    const intentContent = readFileSync15(intentFile, "utf8");
     out4("### Intent");
     out4("");
     out4(intentContent);
     out4("");
   }
-  const criteriaFile = join27(intentDir3, "completion-criteria.md");
+  const criteriaFile = join28(intentDir3, "completion-criteria.md");
   if (existsSync17(criteriaFile)) {
-    const criteria = readFileSync14(criteriaFile, "utf8");
+    const criteria = readFileSync15(criteriaFile, "utf8");
     out4("### Completion Criteria");
     out4("");
     out4(criteria);
     out4("");
   }
-  const discoveryFile = join27(intentDir3, "discovery.md");
+  const discoveryFile = join28(intentDir3, "discovery.md");
   if (existsSync17(discoveryFile)) {
-    const discoveryContent = readFileSync14(discoveryFile, "utf8");
+    const discoveryContent = readFileSync15(discoveryFile, "utf8");
     const headers = discoveryContent.split("\n").filter((l) => l.startsWith("## "));
     if (headers.length > 0) {
       out4("### Discovery Log");
@@ -108945,8 +109201,8 @@ var init_subagent_hook = __esm({
 });
 
 // src/hooks/track-outputs.ts
-import { existsSync as existsSync18, readFileSync as readFileSync15, readdirSync as readdirSync12, writeFileSync as writeFileSync7 } from "node:fs";
-import { join as join28, relative as relative2, resolve as resolve8 } from "node:path";
+import { existsSync as existsSync18, readFileSync as readFileSync16, readdirSync as readdirSync12, writeFileSync as writeFileSync7 } from "node:fs";
+import { join as join29, relative as relative2, resolve as resolve8 } from "node:path";
 async function trackOutputs(input, _pluginRoot2) {
   const toolInput = input.tool_input || {};
   const filePath = toolInput.file_path || "";
@@ -108963,13 +109219,13 @@ async function trackOutputs(input, _pluginRoot2) {
     if (rest.startsWith("units/")) return;
     if (rest === "state.json") return;
   }
-  const intentDir3 = join28(process.cwd(), ".haiku", "intents", intentSlug);
+  const intentDir3 = join29(process.cwd(), ".haiku", "intents", intentSlug);
   if (!existsSync18(intentDir3)) return;
   const relPath = relative2(intentDir3, absPath);
   const targetStage = stageMatch ? stageMatch[1] : null;
   const activeUnitPath = targetStage ? findActiveUnitInStage2(intentDir3, targetStage) || findAnyActiveUnit(intentDir3) : findAnyActiveUnit(intentDir3);
   if (!activeUnitPath) return;
-  const unitRaw = readFileSync15(activeUnitPath, "utf8");
+  const unitRaw = readFileSync16(activeUnitPath, "utf8");
   const { data, content } = (0, import_gray_matter6.default)(unitRaw);
   const outputs = data.outputs || [];
   if (outputs.includes(relPath)) return;
@@ -108979,17 +109235,17 @@ async function trackOutputs(input, _pluginRoot2) {
   writeFileSync7(activeUnitPath, updated);
 }
 function findActiveUnitInStage2(intentDir3, stage) {
-  const unitsDir = join28(intentDir3, "stages", stage, "units");
+  const unitsDir = join29(intentDir3, "stages", stage, "units");
   if (!existsSync18(unitsDir)) return null;
   for (const f of readdirSync12(unitsDir).filter((u3) => u3.endsWith(".md"))) {
-    const unitPath2 = join28(unitsDir, f);
-    const { data } = (0, import_gray_matter6.default)(readFileSync15(unitPath2, "utf8"));
+    const unitPath2 = join29(unitsDir, f);
+    const { data } = (0, import_gray_matter6.default)(readFileSync16(unitPath2, "utf8"));
     if (data.status === "active") return unitPath2;
   }
   return null;
 }
 function findAnyActiveUnit(intentDir3) {
-  const stagesDir = join28(intentDir3, "stages");
+  const stagesDir = join29(intentDir3, "stages");
   if (!existsSync18(stagesDir)) return null;
   for (const stage of readdirSync12(stagesDir, { withFileTypes: true })) {
     if (!stage.isDirectory()) continue;
@@ -109008,14 +109264,14 @@ var init_track_outputs = __esm({
 
 // src/hooks/workflow-guard.ts
 import { existsSync as existsSync19, readdirSync as readdirSync13 } from "node:fs";
-import { join as join29 } from "node:path";
+import { join as join30 } from "node:path";
 function findActiveIntent2() {
-  const intentsDir = join29(process.cwd(), ".haiku", "intents");
+  const intentsDir = join30(process.cwd(), ".haiku", "intents");
   if (!existsSync19(intentsDir)) return null;
   const dirs = readdirSync13(intentsDir).filter(
-    (d) => existsSync19(join29(intentsDir, d, "intent.md"))
+    (d) => existsSync19(join30(intentsDir, d, "intent.md"))
   );
-  return dirs.length === 1 ? join29(intentsDir, dirs[0]) : null;
+  return dirs.length === 1 ? join30(intentsDir, dirs[0]) : null;
 }
 async function workflowGuard(input, _pluginRoot2) {
   const toolName = input.tool_name;
@@ -109041,10 +109297,10 @@ var hooks_exports = {};
 __export(hooks_exports, {
   runHook: () => runHook
 });
-import { readFileSync as readFileSync16 } from "node:fs";
+import { readFileSync as readFileSync17 } from "node:fs";
 function readStdin() {
   try {
-    return readFileSync16(0, "utf8");
+    return readFileSync17(0, "utf8");
   } catch {
     return "";
   }
@@ -109133,13 +109389,13 @@ import {
   cpSync,
   existsSync as existsSync20,
   mkdirSync as mkdirSync8,
-  readFileSync as readFileSync17,
+  readFileSync as readFileSync18,
   readdirSync as readdirSync14,
   writeFileSync as writeFileSync8
 } from "node:fs";
-import { basename as basename6, join as join30 } from "node:path";
+import { basename as basename6, join as join31 } from "node:path";
 function readFrontmatter2(filePath) {
-  const raw = readFileSync17(filePath, "utf8");
+  const raw = readFileSync18(filePath, "utf8");
   const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!match) return { data: {}, body: raw };
   const data = {};
@@ -109193,15 +109449,15 @@ function gitLastCommitDate(path) {
 async function runMigrate(args2) {
   const dryRun = args2.includes("--dry-run");
   const cwd2 = process.cwd();
-  const oldDir = join30(cwd2, ".ai-dlc");
-  const newDir = join30(cwd2, ".haiku", "intents");
+  const oldDir = join31(cwd2, ".ai-dlc");
+  const newDir = join31(cwd2, ".haiku", "intents");
   if (!existsSync20(oldDir)) {
     console.log("No .ai-dlc/ directory found. Nothing to migrate.");
     return;
   }
   const entries = readdirSync14(oldDir).filter((d) => {
-    const path = join30(oldDir, d);
-    return existsSync20(join30(path, "intent.md"));
+    const path = join31(oldDir, d);
+    return existsSync20(join31(path, "intent.md"));
   });
   if (entries.length === 0) {
     console.log("No intents found in .ai-dlc/. Nothing to migrate.");
@@ -109257,11 +109513,11 @@ async function runMigrate(args2) {
   let migrated = 0;
   let skipped = 0;
   for (const slug of primarySlugs) {
-    const srcDir = join30(oldDir, slug);
-    const destDir = join30(newDir, slug);
+    const srcDir = join31(oldDir, slug);
+    const destDir = join31(newDir, slug);
     const force = args2.includes("--force");
     if (existsSync20(destDir)) {
-      const hasStages = existsSync20(join30(destDir, "stages"));
+      const hasStages = existsSync20(join31(destDir, "stages"));
       if (hasStages && !force) {
         console.log(`  SKIP: ${slug} (already migrated with stages)`);
         skipped++;
@@ -109272,12 +109528,12 @@ async function runMigrate(args2) {
       }
     }
     const { data: intentFm, body: intentBody } = readFrontmatter2(
-      join30(srcDir, "intent.md")
+      join31(srcDir, "intent.md")
     );
     const status = intentFm.status || "active";
     const title = intentBody.match(/^# (.+)$/m)?.[1] || slug;
     const parentSlug = followsMap.get(slug) || "";
-    const gitCreated = gitFirstCommitDate(join30(srcDir, "intent.md"));
+    const gitCreated = gitFirstCommitDate(join31(srcDir, "intent.md"));
     const gitLastModified = gitLastCommitDate(srcDir);
     const fmCreated = intentFm.created || "";
     const startedAt = gitCreated || (fmCreated ? `${fmCreated}T00:00:00Z` : timestamp2());
@@ -109287,7 +109543,7 @@ async function runMigrate(args2) {
       migrated++;
       continue;
     }
-    mkdirSync8(join30(destDir, "knowledge"), { recursive: true });
+    mkdirSync8(join31(destDir, "knowledge"), { recursive: true });
     const allStages = [
       "inception",
       "design",
@@ -109315,7 +109571,7 @@ async function runMigrate(args2) {
       "-tests": "development"
     };
     for (const related of relatedSlugs) {
-      const relatedDir = join30(oldDir, related);
+      const relatedDir = join31(oldDir, related);
       const suffix = passSuffixes.find((s) => related.endsWith(s)) || "";
       sourceDirs.push({
         dir: relatedDir,
@@ -109330,7 +109586,7 @@ async function runMigrate(args2) {
       );
       for (const unitFile of unitFiles) {
         const { data: unitFm, body: unitBody } = readFrontmatter2(
-          join30(sourceDir, unitFile)
+          join31(sourceDir, unitFile)
         );
         const pass = unitFm.pass || "";
         const stage = pass ? passToStage[pass] || "development" : defaultStage || "development";
@@ -109339,20 +109595,20 @@ async function runMigrate(args2) {
         totalUnitCount++;
       }
       if (sourceDir !== srcDir) {
-        if (existsSync20(join30(sourceDir, "discovery.md"))) {
+        if (existsSync20(join31(sourceDir, "discovery.md"))) {
           const relSlug = basename6(sourceDir);
           if (!dryRun) {
             cpSync(
-              join30(sourceDir, "discovery.md"),
-              join30(destDir, "knowledge", `${relSlug}-discovery.md`)
+              join31(sourceDir, "discovery.md"),
+              join31(destDir, "knowledge", `${relSlug}-discovery.md`)
             );
           }
         }
-        if (existsSync20(join30(sourceDir, "mockups")) && !dryRun) {
-          const artifactsDir = join30(destDir, "stages", "design", "artifacts");
+        if (existsSync20(join31(sourceDir, "mockups")) && !dryRun) {
+          const artifactsDir = join31(destDir, "stages", "design", "artifacts");
           mkdirSync8(artifactsDir, { recursive: true });
           try {
-            cpSync(join30(sourceDir, "mockups"), artifactsDir, {
+            cpSync(join31(sourceDir, "mockups"), artifactsDir, {
               recursive: true
             });
           } catch {
@@ -109365,7 +109621,7 @@ async function runMigrate(args2) {
     const epic = intentFm.epic || "";
     if (status === "completed" || status === "complete") {
       writeFileSync8(
-        join30(destDir, "intent.md"),
+        join31(destDir, "intent.md"),
         `---
 title: "${title}"
 studio: software
@@ -109383,24 +109639,24 @@ ${intentBody}
 `
       );
       for (const stage of allStages) {
-        mkdirSync8(join30(destDir, "stages", stage, "units"), { recursive: true });
+        mkdirSync8(join31(destDir, "stages", stage, "units"), { recursive: true });
         writeFileSync8(
-          join30(destDir, "stages", stage, "state.json"),
+          join31(destDir, "stages", stage, "state.json"),
           `${JSON.stringify({ stage, status: "completed", phase: "gate", started_at: `${startedAt}`, completed_at: `${completedAt}`, gate_entered_at: null, gate_outcome: "advanced" }, null, 2)}
 `
         );
       }
       for (const [stage, units] of unitsByStage) {
-        mkdirSync8(join30(destDir, "stages", stage, "units"), { recursive: true });
+        mkdirSync8(join31(destDir, "stages", stage, "units"), { recursive: true });
         for (const { file, fm, body } of units) {
           const uStatus = fm.status || "pending";
           const uDeps = fm.depends_on || [];
           const uDiscipline = fm.discipline || "fullstack";
-          const uUpdated = fm.last_updated || gitFirstCommitDate(join30(srcDir, file)) || null;
+          const uUpdated = fm.last_updated || gitFirstCommitDate(join31(srcDir, file)) || null;
           const uTicket = fm.ticket || "";
           const uBranch = fm.branch || "";
           writeFileSync8(
-            join30(destDir, "stages", stage, "units", file),
+            join31(destDir, "stages", stage, "units", file),
             `---
 name: ${basename6(file, ".md")}
 type: ${uDiscipline}
@@ -109430,7 +109686,7 @@ ${body}
       });
       const firstStageWithUnits = allStages.find((s) => unitsByStage.has(s)) || "";
       writeFileSync8(
-        join30(destDir, "intent.md"),
+        join31(destDir, "intent.md"),
         `---
 title: "${title}"
 studio: software
@@ -109448,10 +109704,10 @@ ${intentBody}
 `
       );
       for (const stage of allStages) {
-        mkdirSync8(join30(destDir, "stages", stage, "units"), { recursive: true });
+        mkdirSync8(join31(destDir, "stages", stage, "units"), { recursive: true });
         if (unitsByStage.has(stage)) {
           writeFileSync8(
-            join30(destDir, "stages", stage, "state.json"),
+            join31(destDir, "stages", stage, "state.json"),
             `${JSON.stringify(
               {
                 stage,
@@ -109474,11 +109730,11 @@ ${intentBody}
           const uStatus = fm.status || "pending";
           const uDeps = fm.depends_on || [];
           const uDiscipline = fm.discipline || "fullstack";
-          const uUpdated = fm.last_updated || gitFirstCommitDate(join30(srcDir, file)) || null;
+          const uUpdated = fm.last_updated || gitFirstCommitDate(join31(srcDir, file)) || null;
           const uTicket = fm.ticket || "";
           const uBranch = fm.branch || "";
           writeFileSync8(
-            join30(destDir, "stages", stage, "units", file),
+            join31(destDir, "stages", stage, "units", file),
             `---
 name: ${basename6(file, ".md")}
 type: ${uDiscipline}
@@ -109502,25 +109758,25 @@ ${body}
         `  MIGRATED: ${slug} (active, stage: ${mappedStage || "inception"}, ${totalUnitCount} units across ${unitsByStage.size} stage(s))${mergeNoteActive}`
       );
     }
-    if (existsSync20(join30(srcDir, "discovery.md"))) {
+    if (existsSync20(join31(srcDir, "discovery.md"))) {
       cpSync(
-        join30(srcDir, "discovery.md"),
-        join30(destDir, "knowledge", "DISCOVERY.md")
+        join31(srcDir, "discovery.md"),
+        join31(destDir, "knowledge", "DISCOVERY.md")
       );
     }
-    if (existsSync20(join30(srcDir, "knowledge"))) {
+    if (existsSync20(join31(srcDir, "knowledge"))) {
       try {
-        cpSync(join30(srcDir, "knowledge"), join30(destDir, "knowledge"), {
+        cpSync(join31(srcDir, "knowledge"), join31(destDir, "knowledge"), {
           recursive: true
         });
       } catch {
       }
     }
-    if (existsSync20(join30(srcDir, "mockups"))) {
-      const artifactsDir = join30(destDir, "stages", "design", "artifacts");
+    if (existsSync20(join31(srcDir, "mockups"))) {
+      const artifactsDir = join31(destDir, "stages", "design", "artifacts");
       mkdirSync8(artifactsDir, { recursive: true });
       try {
-        cpSync(join30(srcDir, "mockups"), artifactsDir, { recursive: true });
+        cpSync(join31(srcDir, "mockups"), artifactsDir, { recursive: true });
       } catch {
       }
     }

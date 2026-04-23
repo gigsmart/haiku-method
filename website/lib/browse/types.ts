@@ -1,5 +1,9 @@
+import {
+	dedupeFrontmatterKeys,
+	isDuplicateKeyError,
+} from "@haiku/shared/frontmatter"
+import * as Sentry from "@sentry/nextjs"
 import matter from "gray-matter"
-import yaml from "js-yaml"
 
 // Re-export shared types from @haiku/shared
 export type {
@@ -39,30 +43,62 @@ export interface BrowseProvider {
 	clearBranchCache?(): void
 }
 
-// Permissive YAML engine: accepts duplicate mapping keys (last value wins, matching
-// JSON.parse semantics) so malformed frontmatter from upstream writers doesn't crash
-// the browse UI. If parsing still fails, fall back to empty frontmatter so the body
-// is still readable.
-const permissiveYaml = {
-	parse: (input: string) => yaml.load(input, { json: true }) as object,
-	stringify: (obj: object) => yaml.dump(obj),
+export function parseFrontmatter(raw: string): { data: Record<string, unknown>; content: string } {
+	const parsed = matter(raw)
+	return { data: parsed.data as Record<string, unknown>, content: parsed.content.trim() }
 }
 
-export function parseFrontmatter(raw: string): { data: Record<string, unknown>; content: string } {
+/**
+ * Parse frontmatter, returning null on malformed YAML instead of throwing.
+ * On duplicate-key errors, auto-recovers by keeping the last occurrence of each
+ * top-level key and reparsing. Reports both recovered and unrecovered parse
+ * failures to Sentry so broken files surface in monitoring.
+ */
+export function safeParseFrontmatter(
+	raw: string,
+	context: { provider: string; path: string; slug?: string; branch?: string },
+): { data: Record<string, unknown>; content: string } | null {
 	try {
-		const parsed = matter(raw, { engines: { yaml: permissiveYaml } })
-		return { data: parsed.data as Record<string, unknown>, content: parsed.content.trim() }
-	} catch (err) {
-		if (typeof window !== "undefined") {
-			import("@sentry/nextjs")
-				.then((Sentry) => {
-					Sentry.captureException(err, { tags: { area: "browse.parseFrontmatter" } })
-				})
-				.catch(() => {})
+		return parseFrontmatter(raw)
+	} catch (e) {
+		if (isDuplicateKeyError(e)) {
+			const { text, removed } = dedupeFrontmatterKeys(raw)
+			if (removed.length > 0) {
+				try {
+					const parsed = parseFrontmatter(text)
+					console.warn(
+						`[haiku-browse] Recovered from duplicate keys at ${context.path}: kept last occurrence of ${removed.join(", ")}`,
+					)
+					Sentry.captureMessage(`Duplicate YAML keys auto-recovered: ${removed.join(", ")}`, {
+						level: "warning",
+						tags: { component: "haiku-browse", provider: context.provider, kind: "frontmatter-dedupe" },
+						extra: { slug: context.slug, branch: context.branch, path: context.path, removed },
+					})
+					return parsed
+				} catch {
+					// Dedupe didn't help — fall through to unrecoverable error
+				}
+			}
 		}
-		// Strip the frontmatter block (best-effort) so the body is still useful.
-		const stripped = raw.replace(/^---\n[\s\S]*?\n---\n?/, "")
-		return { data: {}, content: stripped.trim() }
+		const err = e instanceof Error ? e : new Error(String(e))
+		console.error(`[haiku-browse] Failed to parse frontmatter at ${context.path}:`, err.message)
+		// Send top-level YAML key names only (no values) — frontmatter can contain
+		// user content, team/branch names, or credential-adjacent fields that
+		// shouldn't leave the host environment.
+		const keyMatches = raw.match(/^([A-Za-z_][A-Za-z0-9_-]*):/gm) ?? []
+		const frontmatterKeys = Array.from(
+			new Set(keyMatches.map((k) => k.replace(/:$/, ""))),
+		)
+		Sentry.captureException(err, {
+			tags: { component: "haiku-browse", provider: context.provider, kind: "frontmatter-parse" },
+			extra: {
+				slug: context.slug,
+				branch: context.branch,
+				path: context.path,
+				frontmatterKeys,
+			},
+		})
+		return null
 	}
 }
 

@@ -9,7 +9,7 @@ import type {
 	HaikuStageState,
 	HaikuUnit,
 } from "./types"
-import { normalizeIntentStatus, parseFrontmatter, parseUnit } from "./types"
+import { normalizeIntentStatus, parseFrontmatter, parseUnit, safeParseFrontmatter } from "./types"
 import { parseSettingsYaml } from "./resolve-links"
 
 import type { operationsBatchBlobsQuery$data } from "./graphql/gitlab/__generated__/operationsBatchBlobsQuery.graphql"
@@ -219,13 +219,22 @@ export class GitLabProvider implements BrowseProvider {
 		return { prUrl: null, prStatus: null, prNumber: null }
 	}
 
-	/** Parse raw intent.md text into a HaikuIntent with optional branch/MR metadata. */
+	/** Parse raw intent.md text into a HaikuIntent with optional branch/MR metadata.
+	 *  Returns null if the frontmatter is malformed — the parse error is reported to Sentry
+	 *  so broken intent files surface in monitoring without breaking the whole portfolio view. */
 	private parseIntentFromRaw(
 		slug: string,
 		rawText: string,
 		meta?: { branch?: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null },
-	): HaikuIntent {
-		const { data, content } = parseFrontmatter(rawText)
+	): HaikuIntent | null {
+		const parsed = safeParseFrontmatter(rawText, {
+			provider: "gitlab",
+			path: `.haiku/intents/${slug}/intent.md`,
+			slug,
+			branch: meta?.branch,
+		})
+		if (!parsed) return null
+		const { data, content } = parsed
 		const studio = (data.studio as string) || "ideation"
 		const stages = (data.stages as string[]) || []
 
@@ -350,6 +359,7 @@ export class GitLabProvider implements BrowseProvider {
 				prStatus,
 				prNumber,
 			})
+			if (!intent) return
 			intentsBySlug.set(slug, intent)
 			this.intentBranchMap.set(slug, branchName)
 			this.intentMetaMap.set(slug, { branch: branchName, prUrl, prStatus, prNumber })
@@ -434,6 +444,7 @@ export class GitLabProvider implements BrowseProvider {
 			if (!rawText) continue
 
 			const intent = this.parseIntentFromRaw(slug, rawText)
+			if (!intent) continue
 			intents.push(intent)
 		}
 
