@@ -1,4 +1,5 @@
 import matter from "gray-matter"
+import yaml from "js-yaml"
 
 // Re-export shared types from @haiku/shared
 export type {
@@ -38,9 +39,31 @@ export interface BrowseProvider {
 	clearBranchCache?(): void
 }
 
+// Permissive YAML engine: accepts duplicate mapping keys (last value wins, matching
+// JSON.parse semantics) so malformed frontmatter from upstream writers doesn't crash
+// the browse UI. If parsing still fails, fall back to empty frontmatter so the body
+// is still readable.
+const permissiveYaml = {
+	parse: (input: string) => yaml.load(input, { json: true }) as object,
+	stringify: (obj: object) => yaml.dump(obj),
+}
+
 export function parseFrontmatter(raw: string): { data: Record<string, unknown>; content: string } {
-	const parsed = matter(raw)
-	return { data: parsed.data as Record<string, unknown>, content: parsed.content.trim() }
+	try {
+		const parsed = matter(raw, { engines: { yaml: permissiveYaml } })
+		return { data: parsed.data as Record<string, unknown>, content: parsed.content.trim() }
+	} catch (err) {
+		if (typeof window !== "undefined") {
+			import("@sentry/nextjs")
+				.then((Sentry) => {
+					Sentry.captureException(err, { tags: { area: "browse.parseFrontmatter" } })
+				})
+				.catch(() => {})
+		}
+		// Strip the frontmatter block (best-effort) so the body is still useful.
+		const stripped = raw.replace(/^---\n[\s\S]*?\n---\n?/, "")
+		return { data: {}, content: stripped.trim() }
+	}
 }
 
 /** Parse a unit's frontmatter + content into a HaikuUnit */

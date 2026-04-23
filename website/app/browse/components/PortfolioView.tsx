@@ -1,5 +1,6 @@
 "use client"
 
+import * as Sentry from "@sentry/nextjs"
 import { createSearchIndex } from "@/lib/browse/search"
 import type { SearchDocument } from "@/lib/browse/search"
 import {
@@ -312,6 +313,9 @@ export function PortfolioView({
 			} catch (e) {
 				if (cancelled) return
 				console.error("[haiku-browse] Failed to list intents:", e)
+				Sentry.captureException(e, {
+					tags: { area: "browse.listIntents", provider: provider.name },
+				})
 				setIntentError(`Failed to load intents: ${(e as Error).message}`)
 			}
 
@@ -543,6 +547,10 @@ export function PortfolioView({
 					router.push(browseUrl({ intent: slug }))
 				}
 			} catch (e) {
+				Sentry.captureException(e, {
+					tags: { area: "browse.getIntent", provider: provider.name },
+					extra: { slug },
+				})
 				setIntentError(
 					`Error loading intent "${slug}": ${(e as Error).message}`,
 				)

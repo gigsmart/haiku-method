@@ -33,6 +33,22 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", app
 const root = document.getElementById("root")!;
 createRoot(root).render(
   <StrictMode>
-    <App />
+    <Sentry.ErrorBoundary
+      fallback={({ error }) => (
+        <div style={{ padding: "2rem", fontFamily: "system-ui, sans-serif" }}>
+          <h1 style={{ fontSize: "1.25rem", fontWeight: 600 }}>
+            Something went wrong
+          </h1>
+          <p style={{ color: "#57534e", marginTop: "0.5rem" }}>
+            The error has been reported. Refresh to try again.
+          </p>
+          <pre style={{ marginTop: "1rem", fontSize: "0.75rem", color: "#a8a29e" }}>
+            {(error as Error)?.message}
+          </pre>
+        </div>
+      )}
+    >
+      <App />
+    </Sentry.ErrorBoundary>
   </StrictMode>,
 );
