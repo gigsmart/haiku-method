@@ -2,7 +2,7 @@
 title: >-
   When going back to a previous stage in the stepper, there is no visual
   indicatio
-status: pending
+status: fixing
 origin: user-chat
 author: user
 author_type: human
@@ -11,9 +11,9 @@ iteration: 1
 visit: 1
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
-resolution: null
+resolution: inline_fix
 replies: []
 ---
 
