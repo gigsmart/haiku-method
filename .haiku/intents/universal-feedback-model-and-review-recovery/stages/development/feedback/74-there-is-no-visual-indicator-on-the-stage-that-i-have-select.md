@@ -2,7 +2,7 @@
 title: >-
   There is no visual indicator on the stage that I have selected in the header
   bar
-status: pending
+status: fixing
 origin: user-chat
 author: user
 author_type: human
@@ -11,7 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
