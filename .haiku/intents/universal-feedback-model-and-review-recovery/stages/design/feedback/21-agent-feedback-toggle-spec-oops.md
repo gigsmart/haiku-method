@@ -1,6 +1,6 @@
 ---
 title: 'agent-feedback-toggle-spec: Oops'
-status: pending
+status: rejected
 origin: user-visual
 author: user
 author_type: human
@@ -17,4 +17,3 @@ attachment: 21-agent-feedback-toggle-spec-oops.png
 Oops
 
 ![annotation](/api/feedback-attachment/universal-feedback-model-and-review-recovery/design/21-agent-feedback-toggle-spec-oops.png)
-
