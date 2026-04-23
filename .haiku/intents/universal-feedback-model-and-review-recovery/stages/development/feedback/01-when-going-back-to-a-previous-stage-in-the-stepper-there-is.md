@@ -2,7 +2,7 @@
 title: >-
   When going back to a previous stage in the stepper, there is no visual
   indicatio
-status: fixing
+status: addressed
 origin: user-chat
 author: user
 author_type: human
