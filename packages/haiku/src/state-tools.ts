@@ -19,7 +19,6 @@ import {
 } from "@haiku/shared/frontmatter"
 import matter from "gray-matter"
 import { getPendingVersion, hasPendingUpdate } from "./auto-update.js"
-import { reportError } from "./sentry.js"
 import { features, resolvePluginRoot } from "./config.js"
 import { UNIT_FIELDS } from "./fsm-fields.js"
 import {
@@ -40,6 +39,7 @@ import {
 import { getCapabilities } from "./harness.js"
 import { escalate } from "./model-selection.js"
 import { validateSlugArgs } from "./prompts/helpers.js"
+import { reportError } from "./sentry.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
 import { sealIntentState } from "./state-integrity.js"
 import {
@@ -105,7 +105,9 @@ export function applyAutoFixes(
 	const dedupeTargets: string[] = [intentPath]
 	const stagesDirForDedupe = join(intentRoot, slug, "stages")
 	if (existsSync(stagesDirForDedupe)) {
-		for (const stageEntry of readdirSync(stagesDirForDedupe, { withFileTypes: true })) {
+		for (const stageEntry of readdirSync(stagesDirForDedupe, {
+			withFileTypes: true,
+		})) {
 			if (!stageEntry.isDirectory()) continue
 			const unitsDir = join(stagesDirForDedupe, stageEntry.name, "units")
 			if (!existsSync(unitsDir)) continue
