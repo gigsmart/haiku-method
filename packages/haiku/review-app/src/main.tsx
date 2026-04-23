@@ -40,7 +40,7 @@ createRoot(root).render(
             Something went wrong
           </h1>
           <p style={{ color: "#57534e", marginTop: "0.5rem" }}>
-            The error has been reported. Refresh to try again.
+            Refresh to try again.
           </p>
           <pre style={{ marginTop: "1rem", fontSize: "0.75rem", color: "#a8a29e" }}>
             {(error as Error)?.message}

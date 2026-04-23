@@ -23,6 +23,11 @@ process.on("unhandledRejection", (reason) => {
 	const err = reason instanceof Error ? reason : new Error(String(reason))
 	reportError(err, { context: "unhandledRejection" })
 	console.error("unhandledRejection:", reason)
+	// Match the uncaughtException path: flush queued Sentry events, then exit.
+	// Without this, short-lived subcommands (hook, migrate) would exit before the
+	// in-memory event is sent, and the long-lived MCP server would keep running
+	// in a degraded state with no Sentry breadcrumb of the rejection.
+	flushSentry().finally(() => process.exit(1))
 })
 
 const [cmd, ...args] = process.argv.slice(2)

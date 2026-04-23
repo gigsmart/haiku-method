@@ -19,6 +19,7 @@ import {
 } from "@haiku/shared/frontmatter"
 import matter from "gray-matter"
 import { getPendingVersion, hasPendingUpdate } from "./auto-update.js"
+import { reportError } from "./sentry.js"
 import { features, resolvePluginRoot } from "./config.js"
 import { UNIT_FIELDS } from "./fsm-fields.js"
 import {
@@ -1781,6 +1782,12 @@ export function parseFrontmatter(raw: string): {
 		if (!isDuplicateKeyError(err)) throw err
 		const { text, removed } = dedupeFrontmatterKeys(raw)
 		if (removed.length === 0) throw err
+		// Report the recovery so we can see which files are drifting and how often
+		// — the file is still live with deduped values until haiku_repair rewrites it.
+		reportError(err, {
+			context: "parseFrontmatter:dedup-recovery",
+			removed_keys: removed,
+		})
 		return tryParse(text)
 	}
 }
