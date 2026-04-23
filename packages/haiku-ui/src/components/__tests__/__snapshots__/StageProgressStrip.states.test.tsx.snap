@@ -68,7 +68,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -128,7 +128,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -140,6 +140,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
             aria-label="Stage product, current"
             class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
             data-stage="product"
+            data-viewing="true"
             title="product (current)"
             type="button"
           >
@@ -178,7 +179,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -228,7 +229,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -278,7 +279,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -303,6 +304,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
             aria-label="Stage inception, current"
             class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
             data-stage="inception"
+            data-viewing="true"
             title="inception (completed)"
             type="button"
           >
@@ -341,7 +343,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -401,7 +403,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -427,7 +429,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               >
                 <div
                   aria-hidden="true"
-                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-400 dark:border-stone-500 flex items-center justify-center hover:border-teal-400 dark:hover:border-teal-400 transition-colors"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 flex items-center justify-center transition-colors border-stone-400 dark:border-stone-500 hover:border-teal-400 dark:hover:border-teal-400"
                 >
                   <span
                     class="text-xs font-semibold text-stone-600 dark:text-stone-400"
@@ -450,7 +452,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -500,7 +502,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -550,7 +552,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -623,7 +625,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -683,7 +685,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -743,7 +745,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -803,7 +805,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -815,6 +817,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
             aria-label="Stage review, current"
             class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
             data-stage="review"
+            data-viewing="true"
             title="review (completed)"
             type="button"
           >
@@ -853,7 +856,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -926,7 +929,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -986,7 +989,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -998,6 +1001,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
             aria-label="Stage product, current"
             class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
             data-stage="product"
+            data-viewing="true"
             title="product (current)"
             type="button"
           >
@@ -1036,7 +1040,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1086,7 +1090,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1136,7 +1140,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1209,7 +1213,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1269,7 +1273,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1281,6 +1285,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
             aria-label="Stage product, current"
             class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
             data-stage="product"
+            data-viewing="true"
             title="product (current)"
             type="button"
           >
@@ -1319,7 +1324,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1345,7 +1350,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               >
                 <div
                   aria-hidden="true"
-                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 border-stone-400 dark:border-stone-500 flex items-center justify-center hover:border-teal-400 dark:hover:border-teal-400 transition-colors"
+                  class="w-6 h-6 rounded-full bg-white dark:bg-stone-900 border-2 flex items-center justify-center transition-colors border-stone-400 dark:border-stone-500 hover:border-teal-400 dark:hover:border-teal-400"
                 >
                   <span
                     class="text-xs font-semibold text-stone-600 dark:text-stone-400"
@@ -1368,7 +1373,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1418,7 +1423,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1443,6 +1448,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
             aria-label="Stage inception, current"
             class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
             data-stage="inception"
+            data-viewing="true"
             title="inception (completed)"
             type="button"
           >
@@ -1481,7 +1487,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1541,7 +1547,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1591,7 +1597,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1641,7 +1647,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1691,7 +1697,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1716,6 +1722,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
             aria-label="Stage inception, current"
             class="group w-full flex flex-col items-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 cursor-pointer hover:scale-[1.02] hover:border-teal-400"
             data-stage="inception"
+            data-viewing="true"
             title="inception (completed)"
             type="button"
           >
@@ -1754,7 +1761,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>
@@ -1804,7 +1811,7 @@ exports[`StageProgressStrip — state matrix > renders every documented state ce
               aria-hidden="true"
               class="mt-1 text-xs font-medium uppercase tracking-wider leading-none text-transparent select-none"
             >
-               
+               
             </span>
           </button>
         </li>

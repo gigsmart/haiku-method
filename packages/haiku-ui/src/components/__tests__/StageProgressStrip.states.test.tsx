@@ -201,4 +201,85 @@ describe("StageProgressStrip — state matrix", () => {
 		await user.click(screen.getByTitle("design (future)"))
 		expect(onStageClick).not.toHaveBeenCalled()
 	})
+
+	// ── FB-01: "you are here" indicator when viewing a previous stage ─────────
+	//
+	// When the reviewer clicks the stepper to go back to a previous (completed)
+	// stage, the FSM-current stage keeps its teal diamond, and the VIEWED stage
+	// picks up a teal ring + underlined label + `aria-current="location"` +
+	// "viewing" sublabel so the reviewer can see where they are without losing
+	// sight of the FSM pointer.
+
+	it("viewing-different: completed stage gains teal ring + underline + location marker", () => {
+		render(
+			<StageProgressStrip
+				stages={STAGES}
+				currentStage="product"
+				viewingStage="inception"
+			/>,
+		)
+		const viewed = screen.getByTitle("inception (completed) — viewing")
+		expect(viewed.getAttribute("aria-current")).toBe("location")
+		expect(viewed.getAttribute("aria-label")).toMatch(/currently viewing/)
+		expect(viewed.getAttribute("data-viewing")).toBe("true")
+		// Label gets the teal underline treatment
+		expect(viewed.textContent).toContain("inception")
+		const labelSpan = viewed.querySelector("span.underline")
+		expect(labelSpan).not.toBeNull()
+		expect(labelSpan?.className).toContain("decoration-teal-500")
+		// Sublabel slot reads "viewing"
+		expect(viewed.textContent).toMatch(/viewing/i)
+		// Marker picks up a thick teal ring
+		const marker = viewed.querySelector('[aria-hidden="true"].rounded-full')
+		expect(marker?.className).toMatch(/ring-4/)
+		expect(marker?.className).toMatch(/ring-teal-400/)
+	})
+
+	it("viewing-different: FSM-current stage still carries aria-current='step'", () => {
+		render(
+			<StageProgressStrip
+				stages={STAGES}
+				currentStage="product"
+				viewingStage="inception"
+			/>,
+		)
+		const fsmCurrent = screen.getByTitle("product (current)")
+		expect(fsmCurrent.getAttribute("aria-current")).toBe("step")
+	})
+
+	it("viewing-same-as-current: no duplicate 'location' marker", () => {
+		render(
+			<StageProgressStrip
+				stages={STAGES}
+				currentStage="product"
+				viewingStage="product"
+			/>,
+		)
+		const fsmCurrent = screen.getByTitle("product (current)")
+		expect(fsmCurrent.getAttribute("aria-current")).toBe("step")
+		// No stage should report aria-current="location" when viewing == current
+		for (const s of STAGES) {
+			const btn = screen.queryByTitle(`${s.name} (${s.status})`)
+			if (btn && btn !== fsmCurrent) {
+				expect(btn.getAttribute("aria-current")).toBeNull()
+			}
+		}
+	})
+
+	it("viewing-different: viewing a visited future stage gains teal ring on the outlined circle", () => {
+		render(
+			<StageProgressStrip
+				stages={STAGES.map((s) =>
+					s.name === "development" ? { ...s, status: "future", visits: 1 } : s,
+				)}
+				currentStage="product"
+				viewingStage="development"
+			/>,
+		)
+		const viewed = screen.getByTitle("development (future) — viewing")
+		expect(viewed.getAttribute("aria-current")).toBe("location")
+		const marker = viewed.querySelector('[aria-hidden="true"].rounded-full')
+		expect(marker?.className).toMatch(/ring-4/)
+		expect(marker?.className).toMatch(/ring-teal-400/)
+	})
 })
