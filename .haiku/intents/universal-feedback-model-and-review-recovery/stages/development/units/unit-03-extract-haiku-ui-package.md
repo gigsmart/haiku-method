@@ -10,10 +10,10 @@ quality_gates:
   - build
 inputs:
   - knowledge/ARCHITECTURE.md
-status: pending
-bolt: 0
-hat: ''
-started_at: null
+status: completed
+bolt: 2
+hat: reviewer
+started_at: '2026-04-21T05:00:32Z'
 hat_started_at: '2026-04-21T06:12:23Z'
 iterations:
   - hat: planner
@@ -108,7 +108,7 @@ outputs:
   - packages/haiku/scripts/build-review-app.mjs
   - stages/development/artifacts/unit-03-review-findings-bolt-2.md
   - plugin/bin/haiku
-completed_at: null
+completed_at: '2026-04-21T06:19:07Z'
 model: sonnet
 ---
 # Extract haiku-ui package

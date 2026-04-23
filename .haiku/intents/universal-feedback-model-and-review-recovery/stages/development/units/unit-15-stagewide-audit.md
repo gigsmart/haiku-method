@@ -28,10 +28,10 @@ inputs:
   - stages/design/artifacts/keyboard-shortcut-map.html
   - stages/design/artifacts/aria-live-sequencing-spec.md
   - stages/design/artifacts/aria-landmark-spec.md
-status: pending
-bolt: 0
-hat: ''
-started_at: null
+status: completed
+bolt: 1
+hat: reviewer
+started_at: '2026-04-21T19:27:51Z'
 hat_started_at: '2026-04-21T20:10:06Z'
 iterations:
   - hat: planner
@@ -95,7 +95,7 @@ outputs:
   - packages/haiku-ui/src/shell/ShellLayout.tsx
   - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
   - stages/development/artifacts/unit-15-review-findings.md
-completed_at: null
+completed_at: '2026-04-21T20:18:05Z'
 model: sonnet
 ---
 # Stage-wide audit

@@ -13,10 +13,10 @@ inputs:
   - stages/design/DESIGN-BRIEF.md
   - stages/design/artifacts/annotation-popover-states.html
   - stages/design/artifacts/annotation-gesture-spec.html
-status: pending
-bolt: 0
-hat: ''
-started_at: null
+status: completed
+bolt: 1
+hat: reviewer
+started_at: '2026-04-21T18:51:58Z'
 hat_started_at: '2026-04-21T19:21:09Z'
 iterations:
   - hat: planner
@@ -46,7 +46,7 @@ outputs:
   - packages/haiku-ui/tests/annotation-perf.spec.tsx
   - packages/haiku-ui/tests/audit-banned-patterns.test.ts
   - stages/development/artifacts/unit-13-review-findings.md
-completed_at: null
+completed_at: '2026-04-21T19:27:15Z'
 model: sonnet
 ---
 # Annotation canvas UX

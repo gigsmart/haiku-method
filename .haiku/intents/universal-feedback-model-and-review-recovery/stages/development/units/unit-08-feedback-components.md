@@ -13,10 +13,10 @@ inputs:
   - stages/design/artifacts/feedback-card-states.html
   - stages/design/artifacts/state-coverage-grid.md
   - stages/design/artifacts/feedback-lifecycle-transitions.html
-status: pending
-bolt: 0
-hat: ''
-started_at: null
+status: completed
+bolt: 2
+hat: reviewer
+started_at: '2026-04-21T07:27:01Z'
 hat_started_at: '2026-04-21T13:25:33Z'
 iterations:
   - hat: planner
@@ -89,7 +89,7 @@ outputs:
   - packages/haiku-ui/src/components/feedback/tokens.ts
   - packages/haiku-ui/src/components/feedback/useFeedbackListKeyboardNav.ts
   - stages/development/artifacts/unit-08-review-notes.md
-completed_at: null
+completed_at: '2026-04-21T13:36:40Z'
 model: sonnet
 ---
 # Feedback component cluster

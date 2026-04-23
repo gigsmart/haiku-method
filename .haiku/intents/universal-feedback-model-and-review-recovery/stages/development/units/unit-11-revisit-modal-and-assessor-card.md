@@ -17,10 +17,10 @@ inputs:
   - stages/design/artifacts/assessor-summary-card.html
   - stages/design/artifacts/review-flow-with-feedback-assessor.html
   - stages/design/artifacts/rollback-reason-banner.html
-status: pending
-bolt: 0
-hat: ''
-started_at: null
+status: completed
+bolt: 1
+hat: reviewer
+started_at: '2026-04-21T15:00:31Z'
 hat_started_at: '2026-04-21T15:29:25Z'
 iterations:
   - hat: planner
@@ -43,7 +43,7 @@ outputs:
   - packages/haiku-ui/src/components/RevisitModal.tsx
   - packages/haiku-ui/src/components/__tests__/AssessorSummaryCard.test.tsx
   - packages/haiku-ui/src/components/__tests__/RevisitModal.test.tsx
-completed_at: null
+completed_at: '2026-04-21T15:41:46Z'
 model: sonnet
 ---
 # RevisitModal + AssessorSummaryCard

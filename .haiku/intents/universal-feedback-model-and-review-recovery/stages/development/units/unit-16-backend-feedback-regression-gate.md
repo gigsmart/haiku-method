@@ -16,10 +16,6 @@ inputs:
   - features/revisit-with-reasons.feature
 status: pending
 model: sonnet
-bolt: 0
-hat: ''
-started_at: null
-completed_at: null
 ---
 
 # Backend feedback-model regression gate

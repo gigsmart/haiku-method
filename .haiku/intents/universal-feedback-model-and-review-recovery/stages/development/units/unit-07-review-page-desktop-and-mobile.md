@@ -15,10 +15,10 @@ inputs:
   - stages/design/artifacts/comment-to-feedback-flow.html
   - stages/design/artifacts/state-coverage-grid.md
   - stages/design/artifacts/footer-button-copy-spec.md
-status: pending
-bolt: 0
-hat: ''
-started_at: null
+status: completed
+bolt: 2
+hat: reviewer
+started_at: '2026-04-21T15:00:25Z'
 hat_started_at: '2026-04-21T17:40:19Z'
 iterations:
   - hat: planner
@@ -66,7 +66,7 @@ outputs:
   - packages/haiku-ui/tests/__snapshots__/parity.spec.tsx.snap
   - packages/haiku-ui/vitest.config.ts
   - stages/development/artifacts/unit-07-review-findings.md
-completed_at: null
+completed_at: '2026-04-21T18:51:26Z'
 model: sonnet
 ---
 # Review page — desktop + mobile
