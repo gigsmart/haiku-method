@@ -1,6 +1,6 @@
 ---
 title: 'agent-feedback-toggle-spec: Hi'
-status: pending
+status: rejected
 origin: user-visual
 author: user
 author_type: human
@@ -17,4 +17,3 @@ attachment: 22-agent-feedback-toggle-spec-hi.png
 Hi
 
 ![annotation](/api/feedback-attachment/universal-feedback-model-and-review-recovery/design/22-agent-feedback-toggle-spec-hi.png)
-
