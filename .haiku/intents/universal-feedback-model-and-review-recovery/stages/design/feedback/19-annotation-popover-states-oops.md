@@ -1,6 +1,6 @@
 ---
 title: 'annotation-popover-states: oops'
-status: pending
+status: rejected
 origin: user-visual
 author: user
 author_type: human
@@ -17,4 +17,3 @@ attachment: 19-annotation-popover-states-oops.png
 oops
 
 ![annotation](./19-annotation-popover-states-oops.png)
-
