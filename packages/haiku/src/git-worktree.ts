@@ -491,14 +491,31 @@ function checkoutOrCreate(branch: string, baseBranch?: string): string {
 }
 
 /**
- * Create the intent branch (continuous mode) and switch to it.
- * If branch already exists, just switch.
- * No-op in non-git environments.
- * Returns the branch name.
+ * Ensure the intent's consolidation branch `haiku/<slug>/main` exists.
+ * Does NOT check it out — if main already exists, this is a no-op; if
+ * it doesn't, we create it with `git branch <name>` (pointing at the
+ * current HEAD, which the caller is responsible for positioning —
+ * `haiku_intent_create` checks out the repo mainline first so main is
+ * forked from a neutral base).
+ *
+ * The no-checkout contract is load-bearing: this function runs at the
+ * top of every `fsmStartStage` tick, and earlier revisions that used
+ * `checkoutOrCreate` here would shove HEAD back to `haiku/<slug>/main`
+ * on every FSM tick, even while work was in-flight on a stage branch.
+ * That wiped editor state, threw away test runs, and forced manual
+ * `git switch` every time the session resumed. Merging main is the
+ * caller's job (via `mergeStageBranchIntoMain`'s temp-worktree path or
+ * `mergeStageBranchForward`) — never by flipping the working tree here.
+ *
+ * No-op in non-git environments. Returns the branch name.
  */
 export function createIntentBranch(slug: string): string {
-	if (!isGitRepo()) return `haiku/${slug}/main`
-	return checkoutOrCreate(`haiku/${slug}/main`)
+	const branch = `haiku/${slug}/main`
+	if (!isGitRepo()) return branch
+	if (branchExists(branch)) return branch
+	// Create the branch pointing at the current HEAD without switching.
+	run(["git", "branch", branch])
+	return branch
 }
 
 /**
