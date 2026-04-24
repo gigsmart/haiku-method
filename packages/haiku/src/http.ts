@@ -771,6 +771,39 @@ async function buildApp(): Promise<FastifyInstance> {
 		// permissive so our existing handlers can deal with raw buffers
 		// when needed (e.g. E2E-encrypted payloads on ingress, if ever).
 		disableRequestLogging: true,
+		// Correlation ID per request. Honour an inbound X-Request-Id when
+		// the caller (reverse proxy, browser, tunnel) already minted one
+		// so a single ID spans the whole hop chain; otherwise generate a
+		// fresh UUID. This gives feedback CRUD + revisit handlers a stable
+		// reqId to tag log lines with (see logFeedbackAction below).
+		genReqId: (req) => {
+			const incoming = req.headers["x-request-id"]
+			if (
+				typeof incoming === "string" &&
+				incoming.length > 0 &&
+				incoming.length <= 128
+			) {
+				return incoming
+			}
+			if (Array.isArray(incoming) && incoming[0]) {
+				const first = incoming[0]
+				if (first.length > 0 && first.length <= 128) return first
+			}
+			return randomUUID()
+		},
+		requestIdHeader: "x-request-id",
+	})
+
+	// Expose the request ID back to the client via X-Request-Id response
+	// header so reviewers can grep logs for a specific click. The header
+	// is set on every response (success or error) before the body is
+	// sent, so 4xx/5xx responses carry the same correlation ID the
+	// server logged.
+	instance.addHook("onSend", async (req, reply, payload) => {
+		if (!reply.getHeader("x-request-id")) {
+			reply.header("x-request-id", req.id)
+		}
+		return payload
 	})
 
 	// CORS — only emit headers when remote review is enabled.
@@ -1747,6 +1780,11 @@ export async function startHttpServer(): Promise<number> {
 	console.error(
 		`Review HTTP server listening on http://127.0.0.1:${actualPort}`,
 	)
+	// Post-listen initialization has completed. Flip the readiness flag
+	// so `/health` transitions from 503 `"starting"` to 200 `"ok"`. Any
+	// probe arriving between listen() and this line (or while buildApp()
+	// was running) gets 503, which is the correct signal.
+	ready = true
 	return actualPort as number
 }
 

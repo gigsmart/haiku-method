@@ -19,7 +19,11 @@ import {
 } from "./auto-update.js"
 import { stripWildcardAllowedOrigins } from "./config.js"
 import { ensureOnStageBranch } from "./git-worktree.js"
-import { closeSessionConnection, startHttpServer } from "./http.js"
+import {
+	closeSessionConnection,
+	startHttpServer,
+	stopHttpServer,
+} from "./http.js"
 import {
 	buildDAG,
 	parseAllUnits,
@@ -1202,20 +1206,55 @@ async function main() {
 }
 
 // Graceful shutdown
-process.on("SIGINT", async () => {
-	console.error("Shutting down...")
-	stopUpdateChecker()
-	await server.close()
-	await flushSentry()
-	process.exit(0)
+//
+// Order matters here:
+//   1. Stop the background update checker so it can't start new work.
+//   2. Close the MCP stdio `Server` so we stop accepting new MCP calls.
+//   3. Close the Fastify HTTP+WebSocket server so in-flight feedback/
+//      revisit/review requests get to finish and WS clients see a
+//      clean `1001 Going Away` (via `stopHttpServer` → per-session
+//      `closeSessionConnection`) instead of a TCP RST. Fastify's
+//      `close()` drains pending requests before releasing the socket.
+//   4. Flush Sentry so any errors surfaced during (2)/(3) get reported.
+//   5. `process.exit(0)`.
+//
+// We guard against a hung shutdown with a hard timeout — if any phase
+// stalls for more than SHUTDOWN_TIMEOUT_MS we fall back to a forced
+// exit rather than leaving the process wedged.
+const SHUTDOWN_TIMEOUT_MS = 10_000
+let shuttingDown = false
+async function gracefulShutdown(signal: string): Promise<void> {
+	if (shuttingDown) return
+	shuttingDown = true
+	console.error(`Shutting down (${signal})...`)
+	const hardExit = setTimeout(() => {
+		console.error(
+			`Graceful shutdown exceeded ${SHUTDOWN_TIMEOUT_MS}ms — forcing exit`,
+		)
+		process.exit(1)
+	}, SHUTDOWN_TIMEOUT_MS)
+	hardExit.unref()
+	try {
+		stopUpdateChecker()
+		await server.close()
+		await stopHttpServer()
+		await flushSentry()
+	} catch (err) {
+		console.error(
+			`Error during graceful shutdown: ${err instanceof Error ? err.message : String(err)}`,
+		)
+	} finally {
+		clearTimeout(hardExit)
+		process.exit(0)
+	}
+}
+
+process.on("SIGINT", () => {
+	void gracefulShutdown("SIGINT")
 })
 
-process.on("SIGTERM", async () => {
-	console.error("Shutting down...")
-	stopUpdateChecker()
-	await server.close()
-	await flushSentry()
-	process.exit(0)
+process.on("SIGTERM", () => {
+	void gracefulShutdown("SIGTERM")
 })
 
 // MCP server entry point — invoked by: haiku mcp
