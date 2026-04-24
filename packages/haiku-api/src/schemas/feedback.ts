@@ -118,7 +118,7 @@ export const FeedbackCreateRequestSchema = z
 			.max(200)
 			.optional()
 			.describe(
-				"Optional authorship hint. The server currently overwrites this with the authenticated session author; the field is reserved for future use when the handler begins to honor it.",
+				"Ignored by the server — retained for backward compatibility only. The HTTP feedback-create handler always stamps `user` as the author for HTTP-sourced submissions (see packages/haiku/src/http.ts:1526). Do NOT rely on this field to convey identity: there is no session-context author resolution today, so honoring client-supplied values would let any HTTP caller forge authorship. Treat any value submitted here as untrusted data that crosses into the server trust boundary and is discarded.",
 			),
 		source_ref: z.string().max(1_000).nullable().optional(),
 		anchor: FeedbackAnchorSchema.optional(),
