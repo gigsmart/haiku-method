@@ -125,15 +125,22 @@ const wsConnections = new Map<string, WsWebSocket>()
 
 // Per-session rate-limit state — sliding-window message timestamps.
 const wsRateState = new WeakMap<WsWebSocket, number[]>()
-const WS_RATE_LIMIT_PER_SEC = Number.parseInt(
-	process.env.HAIKU_WS_RATE_LIMIT ?? "20",
-	10,
-)
+// Default WebSocket frame rate limit (frames per second per socket).
+// HAIKU_WS_RATE_LIMIT is a TEST OVERRIDE only — not a production tunable. It
+// accepts any integer and is clamped to a minimum of 1 so the rate limiter
+// can NEVER be disabled through environment configuration. Values <= 0, NaN,
+// or unparseable strings fall back to the default (20).
+const WS_RATE_LIMIT_DEFAULT = 20
+const WS_RATE_LIMIT_PER_SEC = ((): number => {
+	const raw = process.env.HAIKU_WS_RATE_LIMIT
+	if (raw === undefined) return WS_RATE_LIMIT_DEFAULT
+	const parsed = Number.parseInt(raw, 10)
+	if (!Number.isFinite(parsed) || parsed <= 0) return WS_RATE_LIMIT_DEFAULT
+	// Hard floor of 1 — the rate limiter is ALWAYS on.
+	return Math.max(parsed, 1)
+})()
 
 function allowWsFrame(socket: WsWebSocket): boolean {
-	if (!Number.isFinite(WS_RATE_LIMIT_PER_SEC) || WS_RATE_LIMIT_PER_SEC <= 0) {
-		return true
-	}
 	const now = Date.now()
 	const windowStart = now - 1000
 	const prior = wsRateState.get(socket) ?? []
