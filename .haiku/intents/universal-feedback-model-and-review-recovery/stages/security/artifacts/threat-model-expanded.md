@@ -19,6 +19,23 @@ The implementation revealed three trust boundaries not fully characterized in un
 | Subagent ↔ MCP server | MCP server process | Claude Task subagents | Subagents have full MCP tool access by inheritance |
 | HTTP server ↔ filesystem | Filesystem (git-tracked) | HTTP handler code | All writes must go through writeFeedbackFile, not raw fs |
 | Additive elaborate ↔ FSM state | FSM orchestrator | Agent-supplied `closes:` claims | Agent claims to close feedback; FSM validates independently |
+| Feedback reply endpoint ↔ MCP | HTTP handler (`appendFeedbackReply`) | Caller-supplied `author` string, `close_as_answered` flag | **HTTP-only surface** — no MCP equivalent. Replies are asymmetric with CRUD: feedback create/update/delete exist on both MCP and HTTP; reply exists only on HTTP. `author_type: "human"` is hardcoded on every reply regardless of caller identity. `close_as_answered: true` transitions parent `pending → answered` in a single write (elevated privilege relative to reply-only). |
+
+---
+
+## Endpoint Surface Inventory (HTTP feedback API)
+
+Explicit enumeration of every HTTP endpoint that mutates feedback state, to ensure every surface lives inside a STRIDE entry below:
+
+| Method | Path | Handler | Writes | STRIDE coverage |
+|---|---|---|---|---|
+| POST | `/api/feedback/:intent/:stage` | `handleFeedbackPost` | Creates new feedback file; hardcodes `author: "user"`, `origin: "user-visual"`, `author_type: "human"` | S2 (unit-01 base + remote-mode auth gates) |
+| PUT | `/api/feedback/:intent/:stage/:feedbackId` | `handleFeedbackPut` | Updates `status` / notes on existing feedback | S2, E2 |
+| DELETE | `/api/feedback/:intent/:stage/:feedbackId` | `handleFeedbackDelete` | Deletes a feedback file | S2, E2 |
+| POST | `/api/feedback/:intent/:stage/:feedbackId/attachments` | attachment upload handler | Writes a binary attachment under the feedback's `attachments/` directory | I-3 (attachments) |
+| POST | `/api/feedback/:intent/:stage/:feedbackId/replies` | inline handler in `http.ts:1743-1838` using `appendFeedbackReply` | Appends a reply to the parent feedback's `replies:` array; optionally transitions parent `pending → answered` via `close_as_answered` | **S3, E3** (below) |
+
+The reply endpoint is HTTP-only by design (no MCP equivalent). Agents that need to close a question-origin feedback item instead go through the standard `haiku_feedback_update` path, which routes through `updateFeedbackFile`'s caller-context guards.
 
 ---
 
@@ -78,6 +95,45 @@ These tests appear to pass at runtime only because the re-exec subprocess patter
 This is surfaced as a development-stage feedback item. The security control (JWT required + JWT-claim session binding) is correctly implemented; only the tests describing it are stale.
 
 **Status:** Mitigated in remote mode. Local mode accepted. Tests require update (see development feedback).
+
+---
+
+#### S3: Caller-supplied `author` on reply endpoint — attribution spoofing
+**Threat:** The reply endpoint (`POST /api/feedback/:intent/:stage/:feedbackId/replies`, `http.ts:1743-1838`) accepts an optional `author` string from the request body and forwards it unchanged into `appendFeedbackReply`:
+
+```ts
+appendFeedbackReply(intent, stage, feedbackId, {
+  author: parsed.data.author ?? "user",   // caller-supplied, no server override
+  author_type: "human",                    // hardcoded regardless of caller
+  body: parsed.data.body,
+}, { close_as_answered: parsed.data.close_as_answered === true })
+```
+
+This is **asymmetric** with the create endpoint (`handleFeedbackPost`), which ignores any caller-supplied author and hardcodes `author: "user"`. On the reply endpoint, a caller reaching the HTTP boundary can claim to be any named human (e.g., `author: "security-team-lead"`, `author: "@jane"`). The reply then appears in the feedback thread attributed to that name, in git commit messages (`feedback: reply on FB-NN in stage`), and in the SPA reply list.
+
+`author_type: "human"` is hardcoded — an agent cannot use this endpoint to masquerade as human *at the type level*, but the `author` *string* is free-form. The attribution spoof is name-level, not role-level.
+
+**Likelihood:** Low (requires HTTP-boundary access; in tunnel mode requires valid JWT + sid-bound session).
+**Impact:** Low-to-Medium (misleading attribution in discussion threads; not a gate-blocker creation path and not a privilege escalation by itself).
+
+**Mitigation (current):**
+- In tunnel mode, `verifyFeedbackMutationAuth` requires a JWT whose `sid` claim binds to a session for the target intent. Only callers who already hold a valid session can write any reply.
+- In local mode, this is accepted — anyone with localhost access is trusted (same threat posture as direct filesystem edits, mitigated by the git commit audit trail).
+- `author_type: "human"` is server-hardcoded; cannot be spoofed to `agent` to impersonate the review subagent or to `system` to impersonate the orchestrator.
+- Reply bodies are size-capped (5,000 char schema cap + `FEEDBACK_BODY_MAX_BYTES` body limit), bounding any single spoofed-author payload.
+
+**Accepted residual risk (LOW):** The `author` string is a display-name annotation, not an authorization claim. Authorization is carried by JWT + session binding; attribution is a separate concern. A reviewer working through the SPA has already authenticated at the session layer — the `author` field lets them tag the reply with a meaningful display name (e.g., team-lead initials) when multiple humans share a review session. The design tradeoff is: we accept display-name flexibility in exchange for not requiring a full identity system in v1.
+
+**v2 recommendation:**
+- Server-derive `author` from an authenticated session identity (e.g., `session.reviewer_handle`) instead of trusting the request body. Require callers to update session metadata, not per-request author strings.
+- If multi-reviewer per session remains desired, bind display names to session-registered handles rather than free-form strings.
+
+**Verification evidence:**
+- `http.ts:1743-1838` — reply handler source; `parsed.data.author ?? "user"` is the pass-through.
+- `http.ts:1785` — `author_type: "human"` hardcoded.
+- In remote mode, `verifyFeedbackMutationAuth` at `http.ts:1768` gates the path.
+
+**Status:** Accepted residual (LOW). v2 follow-up to tie `author` to authenticated session identity.
 
 ---
 
@@ -221,6 +277,42 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 
 ---
 
+#### E3: `close_as_answered` on reply endpoint — status transition via reply path
+**Threat:** The reply endpoint accepts `close_as_answered: true`, which transitions the parent feedback item from `pending` → `answered` in the same write that appends the reply (`http.ts:1788`, `appendFeedbackReply` with `{ close_as_answered: true }`). This is a higher-privilege operation than appending a reply alone — `answered` items no longer block the gate in the same way `pending` items do, and the transition happens through a different code path than the standard `updateFeedbackFile` caller-context guards.
+
+Concretely: in **local mode** (no tunnel, no JWT), any process that can reach the loopback HTTP server can close any feedback item — including agent-authored feedback that the agent itself could not close via MCP — by POSTing to the reply endpoint with `close_as_answered: true`. The standard MCP update path enforces `callerContext` guards (agents cannot close human-authored items); the reply-endpoint path bypasses that contract by routing through `appendFeedbackReply` instead of `updateFeedbackFile`.
+
+In **remote/tunnel mode**, the path is gated by:
+1. `requireTunnelAuth` — rejects missing/invalid JWT with 401.
+2. `verifyFeedbackMutationAuth` — rejects JWTs whose `sid` claim does not bind to a session for the target intent with 403.
+
+**Likelihood:** Low (remote mode requires valid JWT + session; local mode requires local machine access).
+**Impact:** Medium (can transition parent status without going through `updateFeedbackFile` guards; `answered` removes the gate block on question-origin items).
+
+**Mitigation (current):**
+- `author_type: "human"` is hardcoded on the reply, and the resulting status transition is therefore attributed to a human reviewer — consistent with the design intent that `close_as_answered` is the "reviewer replies and closes the question" UX path.
+- In remote mode, the full JWT + session binding path protects the endpoint (same as PUT/DELETE).
+- `close_as_answered` only transitions to `answered`, not to `closed`. Human-authored gate-blocking feedback with `status: pending` for "Request Changes" reasons still requires explicit closure via `updateFeedbackFile` and cannot be bypassed through this path — `answered` is a distinct status reserved for `user-question` origin feedback where a conversational answer closes the thread.
+- The state write still goes through `writeFeedbackFile`'s validation and git-commit trail (`gitCommitStateBackgroundPush` fires on success), so the transition is audit-logged.
+
+**Accepted residual risk (LOW for remote mode, MEDIUM for local mode):**
+- **Remote mode:** Mitigated by JWT + session binding. Acceptable residual.
+- **Local mode:** Accepted. Same threat posture as any other HTTP endpoint in local mode — localhost is treated as trusted. An attacker with loopback access can already edit feedback files directly or run `git commit`.
+
+**v2 recommendations:**
+- Funnel `close_as_answered` through `updateFeedbackFile` (or a shared helper that applies the caller-context guards) so the same author-type logic that prevents agents from closing human-authored items applies here too. Currently, the reply path and the update path have divergent guard sets — consolidate them.
+- Restrict `close_as_answered` to feedback items whose `origin` is in the question family (e.g., `user-question`, `agent-question`). Replies on adversarial-review findings should not be able to use this flag to silently transition status.
+- Add an explicit E3-specific test in `http-feedback-strict-auth.test.mjs` that asserts `close_as_answered: true` on a non-question feedback item returns 400 (once v2 restriction lands).
+
+**Verification evidence:**
+- `http.ts:1743-1838` — reply handler source.
+- `http.ts:1788` — `close_as_answered` flag pass-through.
+- `state-tools.ts:appendFeedbackReply` — the write helper; the status transition is a side-effect of the flag, not routed through `updateFeedbackFile`.
+
+**Status:** Partially mitigated. Remote mode LOW residual. Local mode MEDIUM residual accepted. v2 hardening identified.
+
+---
+
 ## 2. Insider Threat Analysis
 
 ### I-1: Developer with direct filesystem access
@@ -311,6 +403,8 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 | WebSocket session loss | Known v1 limitation | v2: debounced persistence |
 | Visits counter | Present and visible | v2: max_visits threshold |
 | JWT forgery | Standard JWT with tunnel URL + session binding | Standard library risk |
+| Reply endpoint `author` field (S3) | `author_type: "human"` hardcoded; JWT + session binding in remote mode | Caller-supplied display-name `author` string; v2 tie to authenticated session identity |
+| Reply endpoint `close_as_answered` (E3) | Remote: JWT + session binding; local: trusted-host model; git audit trail | Local mode can transition status through a different path than `updateFeedbackFile` guards; v2 consolidate under shared guard |
 | Insider threat | Git audit trail; branch protection recommended | Out of scope for v1 |
 | Supply chain | No new dependencies; pin gray-matter; run npm audit | Ongoing dependency management |
 
@@ -324,4 +418,6 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 | WebSocket drop before submission loses draft comments | LOW | v2: debounced persistence |
 | No visits cap | LOW | v2: max_visits threshold |
 | YAML prototype pollution in gray-matter | LOW | Pin to js-yaml >= 4.x; run npm audit in CI |
+| Reply endpoint `author` string is caller-supplied display name (S3) | LOW | `author_type: "human"` is hardcoded; only the display-name string is free-form. Authorization lives in JWT + session binding. v2: derive from authenticated session. |
+| Reply endpoint `close_as_answered` bypasses `updateFeedbackFile` guards in local mode (E3) | MEDIUM (local) / LOW (remote) | Remote mode protected by JWT + session binding. Local mode accepts trusted-host posture. v2: route through shared caller-context guard; restrict to question-origin items. |
 | Insider threat (direct filesystem access) | ACCEPTED | Developer tool; git trail provides detection; out of scope v1 |

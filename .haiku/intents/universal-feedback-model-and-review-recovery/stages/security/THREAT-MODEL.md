@@ -2,8 +2,10 @@
 
 STRIDE analysis of the feedback model's attack surface, plus OWASP Top 10 verification.
 
-Date: 2026-04-15
+Date: 2026-04-15 (reply endpoint cross-reference added 2026-04-24)
 Scope: Feedback file creation/mutation (MCP tools + HTTP API), gate-phase enforcement, review-UI pipeline, external-PR detection.
+
+**Reply endpoint (HTTP-only):** `POST /api/feedback/:intent/:stage/:feedbackId/replies` introduced during implementation is analyzed in `artifacts/threat-model-expanded.md` (§ Trust Boundaries + S3 + E3). The base threat model below covers feedback CRUD; the reply endpoint is asymmetric (HTTP-only, no MCP equivalent) and is characterized separately to avoid conflating CRUD and thread-append surfaces.
 
 ---
 
