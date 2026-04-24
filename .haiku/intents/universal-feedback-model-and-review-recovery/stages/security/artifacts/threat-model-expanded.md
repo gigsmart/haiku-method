@@ -17,8 +17,11 @@ The implementation revealed three trust boundaries not fully characterized in un
 | SPA ↔ HTTP server (local) | HTTP server process | Browser / review app | Loopback only; no auth in local mode |
 | Tunnel proxy ↔ HTTP server | HTTP server JWT verification | External network (proxied tunnel) | HAIKU_REMOTE_REVIEW=1; JWT + JWT-claim session binding |
 | Subagent ↔ MCP server | MCP server process | Claude Task subagents | Subagents have full MCP tool access by inheritance |
-| HTTP server ↔ filesystem | Filesystem (git-tracked) | HTTP handler code | All writes must go through writeFeedbackFile, not raw fs |
+| HTTP server ↔ filesystem (writes) | Filesystem (git-tracked) | HTTP handler code | All writes must go through writeFeedbackFile, not raw fs |
+| HTTP server ↔ filesystem (attachment reads) | Filesystem under `feedbackRoot` | Caller-supplied `filename` on `/api/feedback-attachment/:intent/:stage/:filename` (E4) | `intent`/`stage` via `isValidSlug`; `filename` via whitelist regex + `serveUnderRoot` realpath escape check. Regex alone is insufficient (permits `foo.bar.png`); realpath is the authoritative traversal guard. |
 | Additive elaborate ↔ FSM state | FSM orchestrator | Agent-supplied `closes:` claims | Agent claims to close feedback; FSM validates independently |
+
+See base `THREAT-MODEL.md §0` for the full entry-point inventory (E1–E4 + MCP tools) with per-endpoint validation chains.
 
 ---
 
@@ -130,6 +133,29 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 ---
 
 ### I — Information Disclosure (Extended)
+
+#### I0: Attachment endpoint path traversal via `filename` param
+**Threat:** `/api/feedback-attachment/:intent/:stage/:filename` (E4) reads a binary file from `.haiku/intents/{intent}/stages/{stage}/feedback/{filename}` based on a caller-supplied `filename`. If validation is insufficient, an attacker could read arbitrary files on the host (e.g. `../../../../etc/passwd`, SSH keys, other intents' secrets).
+
+**Likelihood:** Low (requires reaching the HTTP server + passing tunnel JWT in remote mode)
+**Impact:** High (arbitrary file read under the user account running the MCP server)
+
+**Mitigation (layered, see base `THREAT-MODEL.md §3b`):**
+1. `requireTunnelAuth` gates access when `HAIKU_REMOTE_REVIEW=1` — no unauthenticated reader in tunnel mode.
+2. `isValidSlug(intent)` and `isValidSlug(stage)` reject `..`, `/`, `\` in those URL segments.
+3. Whitelist regex on `filename`: `^[A-Za-z0-9._-]+\.(png|jpg|jpeg|webp|svg)$`. Rejects path separators and non-image extensions outright.
+4. `serveUnderRoot(reply, feedbackRoot, filename)` joins under `feedbackRoot`, calls `fs.realpath`, and refuses to serve if the resolved path escapes `feedbackRoot`. This is the authoritative traversal guard — symlinks, case-folding quirks, and regex-permitted oddities like `foo.bar.png` are all handled correctly because realpath fails closed.
+
+**Known regex oddity:** The regex permits filenames with multiple dots in the stem (e.g. `foo.bar.png`). This is harmless because (a) `writeFeedbackFile` is the only writer under `feedbackRoot` and it controls the basename via `slugifyTitle`, so attacker-controlled multi-dot names never land there, and (b) even if one did, realpath resolution would succeed only for a file actually under `feedbackRoot`.
+
+**Verification evidence:**
+- `http.ts:1463-1488` — regex + `serveUnderRoot` chain.
+- `serveUnderRoot` realpath escape check rejects resolved paths outside `feedbackRoot`.
+- `isValidSlug` tests cover `..`, `/`, `\` rejection for the path segments that carry it.
+
+**Status:** Mitigated. Realpath is the security boundary; regex is a cheap upstream filter.
+
+---
 
 #### I1: CORS wildcard in tunnel mode leaks review UI content to any origin
 **Threat:** When `HAIKU_REMOTE_REVIEW=1` and no `allowedOrigins` is configured, the CORS header `Access-Control-Allow-Origin: *` could be returned, allowing any web page to cross-fetch review session data including feedback content.
@@ -306,6 +332,7 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 | Surface | Hardening Applied | Residual Risk |
 |---|---|---|
 | HTTP feedback mutations (remote mode) | JWT tunnel auth (FB-30), session header guard (FB-20), CORS origin check (FB-36) | Session UUID bookmarks (very low) |
+| HTTP feedback-attachment read (E4) | `requireTunnelAuth` + `isValidSlug` on intent/stage + whitelist regex on filename + `serveUnderRoot` realpath escape check | Regex permits `foo.bar.png`-style names; realpath is the authoritative guard (very low) |
 | `closes:` validation | feedback-assessor hat auto-injected for all units with `closes:` | Agent `addressed` status on human items allows auto-gate pass |
 | `haiku_revisit` reasons | writeFeedbackFile constrains write path; reasons always `origin: agent` | No count cap (v2 enhancement needed) |
 | WebSocket session loss | Known v1 limitation | v2: debounced persistence |
