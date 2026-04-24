@@ -1,3 +1,8 @@
+import {
+	dedupeFrontmatterKeys,
+	isDuplicateKeyError,
+} from "@haiku/shared/frontmatter"
+import * as Sentry from "@sentry/nextjs"
 import matter from "gray-matter"
 
 // Re-export shared types from @haiku/shared
@@ -50,6 +55,60 @@ export function parseFrontmatter(raw: string): {
 	return {
 		data: parsed.data as Record<string, unknown>,
 		content: parsed.content.trim(),
+	}
+}
+
+/**
+ * Parse frontmatter, returning null on malformed YAML instead of throwing.
+ * On duplicate-key errors, auto-recovers by keeping the last occurrence of each
+ * top-level key and reparsing. Reports both recovered and unrecovered parse
+ * failures to Sentry so broken files surface in monitoring.
+ */
+export function safeParseFrontmatter(
+	raw: string,
+	context: { provider: string; path: string; slug?: string; branch?: string },
+): { data: Record<string, unknown>; content: string } | null {
+	try {
+		return parseFrontmatter(raw)
+	} catch (e) {
+		if (isDuplicateKeyError(e)) {
+			const { text, removed } = dedupeFrontmatterKeys(raw)
+			if (removed.length > 0) {
+				try {
+					const parsed = parseFrontmatter(text)
+					console.warn(
+						`[haiku-browse] Recovered from duplicate keys at ${context.path}: kept last occurrence of ${removed.join(", ")}`,
+					)
+					Sentry.captureMessage(`Duplicate YAML keys auto-recovered: ${removed.join(", ")}`, {
+						level: "warning",
+						tags: { component: "haiku-browse", provider: context.provider, kind: "frontmatter-dedupe" },
+						extra: { slug: context.slug, branch: context.branch, path: context.path, removed },
+					})
+					return parsed
+				} catch {
+					// Dedupe didn't help — fall through to unrecoverable error
+				}
+			}
+		}
+		const err = e instanceof Error ? e : new Error(String(e))
+		console.error(`[haiku-browse] Failed to parse frontmatter at ${context.path}:`, err.message)
+		// Send top-level YAML key names only (no values) — frontmatter can contain
+		// user content, team/branch names, or credential-adjacent fields that
+		// shouldn't leave the host environment.
+		const keyMatches = raw.match(/^([A-Za-z_][A-Za-z0-9_-]*):/gm) ?? []
+		const frontmatterKeys = Array.from(
+			new Set(keyMatches.map((k) => k.replace(/:$/, ""))),
+		)
+		Sentry.captureException(err, {
+			tags: { component: "haiku-browse", provider: context.provider, kind: "frontmatter-parse" },
+			extra: {
+				slug: context.slug,
+				branch: context.branch,
+				path: context.path,
+				frontmatterKeys,
+			},
+		})
+		return null
 	}
 }
 

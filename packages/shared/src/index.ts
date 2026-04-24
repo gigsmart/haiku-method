@@ -1,5 +1,12 @@
 // Types
 
+// Frontmatter YAML utilities (duplicate-key recovery)
+export {
+  dedupeFrontmatterKeys,
+  dedupeTopLevelYamlKeys,
+  isDuplicateKeyError,
+} from "./frontmatter";
+
 // Components (re-exported for convenience — also available via @haiku/shared/components)
 export {
 	CriteriaChecklist,

@@ -1,32 +1,32 @@
 {
-	"name": "haiku",
-	"owner": {
-		"name": "GigSmart",
-		"url": "https://gigsmart.com"
-	},
-	"metadata": {
-		"description": "H·AI·K·U — universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation.",
-		"version": "1.106.0"
-	},
-	"plugins": [
-		{
-			"name": "haiku",
-			"description": "H·AI·K·U methodology — universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation.",
-			"source": "./plugin",
-			"category": "Pattern",
-			"keywords": [
-				"haiku",
-				"haiku-method",
-				"lifecycle",
-				"orchestration",
-				"methodology",
-				"workflow",
-				"iteration",
-				"completion-criteria",
-				"hat-switching",
-				"context-preservation",
-				"human-ai-collaboration"
-			]
-		}
-	]
+  "name": "haiku",
+  "owner": {
+    "name": "GigSmart",
+    "url": "https://gigsmart.com"
+  },
+  "metadata": {
+    "description": "H·AI·K·U — universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation.",
+    "version": "1.105.6"
+  },
+  "plugins": [
+    {
+      "name": "haiku",
+      "description": "H·AI·K·U methodology — universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation.",
+      "source": "./plugin",
+      "category": "Pattern",
+      "keywords": [
+        "haiku",
+        "haiku-method",
+        "lifecycle",
+        "orchestration",
+        "methodology",
+        "workflow",
+        "iteration",
+        "completion-criteria",
+        "hat-switching",
+        "context-preservation",
+        "human-ai-collaboration"
+      ]
+    }
+  ]
 }
