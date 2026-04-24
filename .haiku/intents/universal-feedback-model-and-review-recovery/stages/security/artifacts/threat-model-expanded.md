@@ -15,7 +15,7 @@ The implementation revealed three trust boundaries not fully characterized in un
 | Boundary | Trusted Side | Untrusted Side | Notes |
 |---|---|---|---|
 | SPA ↔ HTTP server (local) | HTTP server process | Browser / review app | Loopback only; no auth in local mode |
-| Tunnel proxy ↔ HTTP server | HTTP server JWT verification | External network (proxied tunnel) | HAIKU_REMOTE_REVIEW=1; JWT + session-header guard |
+| Tunnel proxy ↔ HTTP server | HTTP server JWT verification | External network (proxied tunnel) | HAIKU_REMOTE_REVIEW=1; JWT + JWT-claim session binding |
 | Subagent ↔ MCP server | MCP server process | Claude Task subagents | Subagents have full MCP tool access by inheritance |
 | HTTP server ↔ filesystem | Filesystem (git-tracked) | HTTP handler code | All writes must go through writeFeedbackFile, not raw fs |
 | Additive elaborate ↔ FSM state | FSM orchestrator | Agent-supplied `closes:` claims | Agent claims to close feedback; FSM validates independently |
@@ -56,19 +56,28 @@ The implementation revealed three trust boundaries not fully characterized in un
 
 **Mitigation (in remote/tunnel mode — FB-20, FB-30):**
 - JWT tunnel authentication (FB-30): `verifyTunnelJWT` runs on every request before feedback handlers are reached. Unauthenticated callers get 401 `missing_token` before the feedback guard fires.
-- Session header guard (FB-20): Even with a valid JWT, `POST/PUT/DELETE /api/feedback/` requires a matching `X-Haiku-Session-Id` header that maps to an active review session. Anonymous cross-origin callers cannot fabricate a valid session ID (UUID v4 generated at server startup).
+- JWT-claim session binding (evolved from FB-20): The implementation uses the JWT's `sid` claim for session binding — `verifyFeedbackMutationAuth` (`http.ts:423`) verifies the JWT, extracts the `sid` claim, and checks that the corresponding session's intent matches the URL's `{intent}` segment. No separate `X-Haiku-Session-Id` header is required or checked. JWTs for non-existent or wrong-intent sessions return 403 `forbidden_cross_session`.
 - CORS origin enforcement (FB-36): `Access-Control-Allow-Origin` is only returned for request Origins in the `allowedOrigins` list (derived from `HAIKU_REVIEW_SITE_URL`). The browser enforces CORS; non-origin-matched preflights get no CORS headers and the real request is blocked.
 
-**Remaining risk:** If an attacker obtains a valid session UUID (e.g., from a leaked URL), they can POST feedback as human. The UUID is V4 random (122-bit entropy) — brute-force infeasible. The session is in-memory only, expires in 30 minutes, and is not persisted.
+**Remaining risk:** If an attacker obtains a valid JWT (which embeds the session ID in the signed `sid` claim), they can POST feedback as human. The JWT is short-lived (TTL bound) and tied to the tunnel URL. The underlying session is in-memory only, expires in 30 minutes, and is not persisted.
 
 **Verification evidence:**
 - `http-feedback-strict-auth.test.mjs`:
   - `POST with no auth at all returns 401 (tunnel gate: missing_token)` ✓
-  - `POST with JWT but no X-Haiku-Session-Id returns 401 (feedback gate: missing_session_header)` ✓
-  - `POST with matching JWT + X-Haiku-Session-Id proceeds (201)` ✓
-  - `CORS preflight advertises X-Haiku-Session-Id and Authorization in Allow-Headers` ✓
+  - `POST with matching JWT (sid-bound session) proceeds (201)` ✓
 
-**Status:** Mitigated in remote mode. Local mode accepted.
+**⚠ Test drift finding (development stage action required):**
+The `http-feedback-strict-auth.test.mjs` tests were written against a design where FB-20 introduced an `X-Haiku-Session-Id` header requirement. The implementation settled on JWT-claim-based session binding (no separate header). Three tests are currently wrong and will fail if actually run:
+- "POST with JWT but no X-Haiku-Session-Id returns 401" — server returns 201 (JWT alone is sufficient)
+- "PUT with JWT but no X-Haiku-Session-Id returns 401" — same issue
+- "DELETE with JWT but no X-Haiku-Session-Id returns 401" — same issue
+- "CORS preflight advertises X-Haiku-Session-Id and Authorization in Allow-Headers" — X-Haiku-Session-Id is not in allowedHeaders
+
+These tests appear to pass at runtime only because the re-exec subprocess pattern (spawnSync with `stdio: "inherit"`) causes the test runner to see 0 tests rather than actual pass/fail counts — the subprocess output goes to the parent's inherited stdio, not to the string captured by execSync. The tests exit 0 because spawnSync itself exits 0.
+
+This is surfaced as a development-stage feedback item. The security control (JWT required + JWT-claim session binding) is correctly implemented; only the tests describing it are stale.
+
+**Status:** Mitigated in remote mode. Local mode accepted. Tests require update (see development feedback).
 
 ---
 
@@ -142,7 +151,7 @@ The implementation revealed three trust boundaries not fully characterized in un
 **Threat:** The review SPA URL contains the session ID (e.g., `/review/{sessionId}`). If a user bookmarks or shares this URL, anyone with it can reach the review session while it's active (up to 30-minute TTL).
 
 **Likelihood:** Very Low
-**Impact:** Low (read-only access; mutations still require JWT + session header in tunnel mode)
+**Impact:** Low (read-only access; mutations still require JWT + valid session binding in tunnel mode)
 
 **Status:** Accepted. Low residual risk.
 

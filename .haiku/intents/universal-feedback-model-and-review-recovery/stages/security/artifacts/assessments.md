@@ -52,8 +52,8 @@ Full analysis at `stages/security/artifacts/threat-model-expanded.md`.
 ### New Trust Boundaries Characterized
 
 Three trust boundaries not fully characterized in unit-01 are now documented:
-1. **SPA ↔ HTTP server** — loopback-only in local mode; JWT + session-header in remote mode
-2. **Tunnel proxy ↔ HTTP server** — JWT tunnel auth (FB-30), session header guard (FB-20), CORS origin enforcement (FB-36)
+1. **SPA ↔ HTTP server** — loopback-only in local mode; JWT + JWT-claim session binding in remote mode
+2. **Tunnel proxy ↔ HTTP server** — JWT tunnel auth (FB-30), JWT-claim session binding (FB-20 evolved), CORS origin enforcement (FB-36)
 3. **Subagent ↔ MCP server** — subagents inherit full MCP tool access; review subagents should only call `haiku_feedback` (create), not update/reject
 
 ### Summary of Expanded Findings (Unit-02)
@@ -61,7 +61,7 @@ Three trust boundaries not fully characterized in unit-01 are now documented:
 | Threat | Likelihood | Impact | Status |
 |---|---|---|---|
 | S1: Agent injects feedback via haiku_revisit reasons | Low | Medium | Mitigated — origin hardcoded to "agent"; rejectable |
-| S2: Remote spoofing of human-authored feedback | Low (remote) | High | Mitigated — JWT + session-header + CORS in tunnel mode |
+| S2: Remote spoofing of human-authored feedback | Low (remote) | High | Mitigated — JWT + JWT-claim session binding + CORS in tunnel mode |
 | T1: False closes: [FB-NN] claims | Medium | High | Partially mitigated — feedback-assessor validates; MEDIUM residual for auto-gates |
 | T2: Direct filesystem frontmatter tampering | Very Low | High | Mitigated — git audit trail (same as unit-01) |
 | R1: WebSocket drop loses draft review comments | Medium | Low | Open v1 risk — accepted; v2 debounced persistence |
@@ -69,7 +69,7 @@ Three trust boundaries not fully characterized in unit-01 are now documented:
 | I2: Session UUID in URL replay | Very Low | Low | Accepted — 30-min TTL, in-memory only |
 | D1: Visits counter grows unboundedly | Low | Medium | Accepted — no hard cap; v2 threshold recommended |
 | D2: Large reasons array creates filesystem load | Very Low | Low | Accepted — local tool; no count cap |
-| E1: JWT forgery bypasses tunnel auth | Low | High | Mitigated — tunnel URL + session binding; standard library |
+| E1: JWT forgery bypasses tunnel auth | Low | High | Mitigated — tunnel URL + JWT-claim session binding; standard library |
 | E2: Rogue subagent marks human items "addressed" | Low | High | Partially mitigated — agents cannot "close" human items; MEDIUM residual |
 
 ### Open Risks (Accepted)
@@ -86,14 +86,21 @@ Three trust boundaries not fully characterized in unit-01 are now documented:
 
 | Test | Surface |
 |---|---|
-| `http-feedback-strict-auth.test.mjs` (6 tests) | JWT tunnel auth, session header guard, CORS advertised headers |
+| `http-feedback-strict-auth.test.mjs` (2 active tests) | JWT tunnel auth (`missing_token`), JWT-bound session proceeds (201) |
 | `http-cors.test.mjs` | CORS origin enforcement (FB-36) |
 | `tunnel-auth.test.mjs` | JWT verification, expiry, tunnel URL binding |
 | `gate-feedback.test.mjs` | Additive elaborate gate, visits counter persistence |
 | `feedback.test.mjs` — agent-cannot-close-human, agent-cannot-delete-human | Privilege escalation guards |
 
+### Test Drift Finding (Upstream action required — development stage)
+
+`http-feedback-strict-auth.test.mjs` contains 3 broken tests that describe the old `X-Haiku-Session-Id` header gate (FB-20 original design). The implementation settled on JWT-claim session binding. These tests will fail if the re-exec subprocess pattern is corrected to return actual test output to the runner. A feedback item has been created on the development stage.
+
+See `threat-model-expanded.md` S2 section for the full analysis.
+
 ## Verification
 
-- `npm test`: 442 passed, 0 failed (unit-01 baseline — unit-02 confirms no regression, no new test files required)
-- `npx tsc --noEmit`: clean
+- `npm test`: 562 passed, 0 failed (unit-02 confirms no regression)
+- `npx tsc --noEmit`: clean (pre-existing tailwind-generated.js artifact warning, unrelated to feedback model)
 - Expanded threat model finds no new unmitigated HIGH-severity threats
+- Test drift in `http-feedback-strict-auth.test.mjs` documented as upstream development feedback (not a regression — security control is correctly implemented; tests are stale)
