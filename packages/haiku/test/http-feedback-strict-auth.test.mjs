@@ -1,10 +1,14 @@
 #!/usr/bin/env npx tsx
-// Strict-mode feedback mutation auth test (FB-20 regression guard).
+// Strict-mode feedback mutation auth test (FB-20 / FB-30 regression guard).
 //
 // When `HAIKU_REMOTE_REVIEW=1` the public tunnel is live and the server MUST
-// reject POST/PUT/DELETE /api/feedback/... without `X-Haiku-Session-Id` as
-// 401. Before FB-20 this was a fail-open soft gate — any unauthenticated
-// cross-origin caller could poison review state.
+// reject POST/PUT/DELETE /api/feedback/... without a valid bearer JWT as 401.
+// The auth model uses JWT-claim-based session binding: the JWT's `sid` claim
+// identifies the session, so no separate `X-Haiku-Session-Id` header is
+// required or checked. Before FB-20 this was a fail-open soft gate — any
+// unauthenticated cross-origin caller could poison review state. FB-30 added
+// JWT bearer auth at the tunnel layer; the feedback mutation gate enforces
+// session-intent binding via the same JWT.
 //
 // This file is the subprocess entrypoint: it runs the assertions with
 // HAIKU_REMOTE_REVIEW=1 in its own env. run-all.mjs invokes it directly via
@@ -203,54 +207,66 @@ async function run() {
 		},
 	)
 
+	// The session binding is JWT-claim-based: the JWT's `sid` claim must
+	// map to an active session whose intent matches the URL. A JWT for a
+	// *different* session (wrong sid) should be forbidden.
 	await test(
-		"POST with JWT but no X-Haiku-Session-Id returns 401 (feedback gate: missing_session_header)",
+		"POST with JWT for wrong session returns 403 (feedback gate: intent_mismatch or unknown_session)",
 		async () => {
+			// Mint a JWT for a session id that doesn't exist.
+			const badToken = mintJWT("nonexistent-session-id")
 			const res = await fetch(
 				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
 				{
 					method: "POST",
-					headers: { "Content-Type": "application/json", ...authz },
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${badToken}`,
+					},
 					body: JSON.stringify({ title: "unauth", body: "x" }),
 				},
 			)
-			assert.strictEqual(res.status, 401)
+			assert.strictEqual(res.status, 403)
 			const data = await res.json()
-			assert.strictEqual(data.error, "unauthorized")
-			assert.strictEqual(data.reason, "missing_session_header")
+			assert.strictEqual(data.error, "forbidden_cross_session")
 		},
 	)
 
 	await test(
-		"PUT with JWT but no X-Haiku-Session-Id returns 401",
+		"PUT with JWT for wrong session returns 403",
 		async () => {
+			const badToken = mintJWT("nonexistent-session-id")
 			const res = await fetch(
 				`${baseUrl}/api/feedback/${intentSlug}/${stageName}/${seeded.feedback_id}`,
 				{
 					method: "PUT",
-					headers: { "Content-Type": "application/json", ...authz },
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${badToken}`,
+					},
 					body: JSON.stringify({ status: "addressed" }),
 				},
 			)
-			assert.strictEqual(res.status, 401)
+			assert.strictEqual(res.status, 403)
 			const data = await res.json()
-			assert.strictEqual(data.error, "unauthorized")
+			assert.strictEqual(data.error, "forbidden_cross_session")
 		},
 	)
 
 	await test(
-		"DELETE with JWT but no X-Haiku-Session-Id returns 401",
+		"DELETE with JWT for wrong session returns 403",
 		async () => {
+			const badToken = mintJWT("nonexistent-session-id")
 			const res = await fetch(
 				`${baseUrl}/api/feedback/${intentSlug}/${stageName}/${seeded.feedback_id}`,
-				{ method: "DELETE", headers: authz },
+				{ method: "DELETE", headers: { Authorization: `Bearer ${badToken}` } },
 			)
-			assert.strictEqual(res.status, 401)
+			assert.strictEqual(res.status, 403)
 		},
 	)
 
 	await test(
-		"POST with matching JWT + X-Haiku-Session-Id proceeds (201)",
+		"POST with matching JWT (sid-bound session) proceeds (201)",
 		async () => {
 			const res = await fetch(
 				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
@@ -258,7 +274,6 @@ async function run() {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
-						"X-Haiku-Session-Id": session.session_id,
 						...authz,
 					},
 					body: JSON.stringify({ title: "authed", body: "x" }),
@@ -269,7 +284,7 @@ async function run() {
 	)
 
 	await test(
-		"CORS preflight advertises X-Haiku-Session-Id and Authorization in Allow-Headers",
+		"CORS preflight advertises Authorization in Allow-Headers (FB-30 bearer token gate)",
 		async () => {
 			// Real browser preflights always carry an Origin header. Since FB-36
 			// made withCors gate ACAH on an allow-listed Origin, the test must
@@ -288,12 +303,10 @@ async function run() {
 			// 204 with CORS middleware applied.
 			assert.strictEqual(res.status, 204)
 			const allow = res.headers.get("access-control-allow-headers") ?? ""
-			assert.ok(
-				/x-haiku-session-id/i.test(allow),
-				`Access-Control-Allow-Headers missing X-Haiku-Session-Id — got "${allow}"`,
-			)
 			// FB-30: Authorization is the tunnel-auth bearer header the SPA
-			// now attaches on every tunnel-reachable call.
+			// now attaches on every tunnel-reachable call. The JWT's sid claim
+			// provides session binding, so no separate X-Haiku-Session-Id is
+			// required or advertised.
 			assert.ok(
 				/authorization/i.test(allow),
 				`Access-Control-Allow-Headers missing Authorization — got "${allow}"`,

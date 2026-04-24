@@ -56,17 +56,19 @@ The implementation revealed three trust boundaries not fully characterized in un
 
 **Mitigation (in remote/tunnel mode — FB-20, FB-30):**
 - JWT tunnel authentication (FB-30): `verifyTunnelJWT` runs on every request before feedback handlers are reached. Unauthenticated callers get 401 `missing_token` before the feedback guard fires.
-- Session header guard (FB-20): Even with a valid JWT, `POST/PUT/DELETE /api/feedback/` requires a matching `X-Haiku-Session-Id` header that maps to an active review session. Anonymous cross-origin callers cannot fabricate a valid session ID (UUID v4 generated at server startup).
+- JWT-claim session binding (FB-20, evolved implementation): Even with a valid JWT, `POST/PUT/DELETE /api/feedback/` requires the JWT's `sid` claim to map to an active review session whose `intent_slug` matches the URL's `{intent}` path segment. This is implemented in `verifyFeedbackMutationAuth` (`http.ts:423`). No separate `X-Haiku-Session-Id` header is required or checked — the JWT's signed claim is the sole session binding. A JWT for a non-existent or wrong-intent session returns 403 `forbidden_cross_session`.
 - CORS origin enforcement (FB-36): `Access-Control-Allow-Origin` is only returned for request Origins in the `allowedOrigins` list (derived from `HAIKU_REVIEW_SITE_URL`). The browser enforces CORS; non-origin-matched preflights get no CORS headers and the real request is blocked.
 
-**Remaining risk:** If an attacker obtains a valid session UUID (e.g., from a leaked URL), they can POST feedback as human. The UUID is V4 random (122-bit entropy) — brute-force infeasible. The session is in-memory only, expires in 30 minutes, and is not persisted.
+**Remaining risk:** If an attacker obtains a valid JWT (which embeds the session ID), they can POST feedback as human. The JWT is short-lived (TTL bound) and tied to the tunnel URL. The underlying session is in-memory only, expires in 30 minutes, and is not persisted.
 
 **Verification evidence:**
 - `http-feedback-strict-auth.test.mjs`:
   - `POST with no auth at all returns 401 (tunnel gate: missing_token)` ✓
-  - `POST with JWT but no X-Haiku-Session-Id returns 401 (feedback gate: missing_session_header)` ✓
-  - `POST with matching JWT + X-Haiku-Session-Id proceeds (201)` ✓
-  - `CORS preflight advertises X-Haiku-Session-Id and Authorization in Allow-Headers` ✓
+  - `POST with JWT for wrong session returns 403 (feedback gate: intent_mismatch or unknown_session)` ✓
+  - `PUT with JWT for wrong session returns 403` ✓
+  - `DELETE with JWT for wrong session returns 403` ✓
+  - `POST with matching JWT (sid-bound session) proceeds (201)` ✓
+  - `CORS preflight advertises Authorization in Allow-Headers (FB-30 bearer token gate)` ✓
 
 **Status:** Mitigated in remote mode. Local mode accepted.
 
@@ -142,7 +144,7 @@ The implementation revealed three trust boundaries not fully characterized in un
 **Threat:** The review SPA URL contains the session ID (e.g., `/review/{sessionId}`). If a user bookmarks or shares this URL, anyone with it can reach the review session while it's active (up to 30-minute TTL).
 
 **Likelihood:** Very Low
-**Impact:** Low (read-only access; mutations still require JWT + session header in tunnel mode)
+**Impact:** Low (read-only access; mutations still require JWT + valid session binding in tunnel mode)
 
 **Status:** Accepted. Low residual risk.
 
