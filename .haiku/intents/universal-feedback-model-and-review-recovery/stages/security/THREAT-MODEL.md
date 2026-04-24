@@ -46,10 +46,11 @@ The feedback model introduces or touches the following HTTP entry points. Each o
 - `deriveAuthorType()` is the sole determinant — no tool handler accepts `author_type` as an input parameter.
 - `HUMAN_ORIGINS` set is hardcoded (state-tools.ts:1994).
 - `handleStateTool("haiku_feedback", ...)` never passes caller-supplied `author_type` to `writeFeedbackFile`.
-- HTTP feedback-create endpoint (`handleFeedbackPost`, http.ts:1526) hardcodes `author: "user"` and uses `user-visual` origin — **correct pattern**.
+- HTTP feedback-create endpoint (`handleFeedbackPost`, http.ts:1526) hardcodes `author: "user"` and uses `user-visual` origin — **correct pattern**. The `author` field on `FeedbackCreateRequestSchema` (packages/haiku-api/src/schemas/feedback.ts) is accepted by the Zod validator for backward compatibility, but the handler does not propagate `parsed.data.author` into `writeFeedbackFile` — it is discarded at the trust boundary. The schema `describe()` text reflects this explicitly (FB-03 fix) so future developers do not re-introduce a session-context author resolution without also adding authenticated identity propagation.
 - HTTP feedback-reply endpoint (http.ts:1784) currently takes `author` from the request body (`parsed.data.author ?? "user"`) — **tracked as FB-01, required fix: hardcode `author: "user"` to match create path**.
 - Test: `feedback.test.mjs` verifies `author_type: "agent"` for MCP-created items and `author_type: "human"` for HTTP-created items. A regression test must be added asserting that a reply POST with a client-supplied `author` value is ignored and `"user"` is written.
 
+<<<<<<< HEAD
 #### Trust boundary: `FeedbackCreateRequestSchema.author` is a suppressed client input (intentional)
 
 **Surface:** `FeedbackCreateRequestSchema` (packages/haiku-api/src/schemas/feedback.ts:116-123) accepts an optional `author` string from clients. The handler at `packages/haiku/src/http.ts:1522-1530` **ignores** `parsed.data.author` entirely and hardcodes `author: "user"` into the call to `writeFeedbackFile`.
@@ -76,6 +77,9 @@ The feedback model introduces or touches the following HTTP entry points. Each o
 - `FeedbackCreateRequestSchema` has no test coverage asserting the field round-trips, because it intentionally does not.
 
 **Status:** Mitigated by suppression. Guardrail documented for future maintainers.
+=======
+**Trust boundary crossing:** HTTP request body → Zod validation (`FeedbackCreateRequestSchema`) → handler. The `title`, `body`, `origin`, `source_ref`, `anchor`, `resolution`, and `attachment_data_url` fields cross the boundary and are persisted after validation. The `author` field crosses the boundary but is **dropped** before persistence — server always stamps `"user"`. Any reviewer adding new persisted-author logic MUST also add authenticated-session identity resolution; otherwise this field becomes a spoofing vector.
+>>>>>>> haiku/universal-feedback-model-and-review-recovery/fix-security-FB-03
 
 ---
 
