@@ -2,7 +2,7 @@
 title: >-
   FEEDBACK_CREATE_MAX_BYTES (8 MiB) creates large disk-write attack surface with
   no per-IP or per-session rate cap
-status: fixing
+status: closed
 origin: adversarial-review
 author: mitigation-effectiveness
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-24T14:42:42Z'
 iteration: 1
 visit: 1
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-16:bolt-1'
 bolt: 1
 upstream_stage: null
 resolution: null
