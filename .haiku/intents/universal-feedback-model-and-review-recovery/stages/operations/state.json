@@ -1,19 +1,19 @@
 {
   "stage": "operations",
-  "status": "active",
+  "status": "completed",
   "phase": "gate",
   "started_at": "2026-04-24T03:54:51Z",
-  "completed_at": null,
+  "completed_at": "2026-04-24T12:51:43Z",
   "gate_entered_at": null,
-  "gate_outcome": null,
+  "gate_outcome": "advanced",
   "visits": 1,
   "iterations": [
     {
       "index": 1,
       "started_at": "2026-04-24T03:54:51Z",
-      "completed_at": null,
+      "completed_at": "2026-04-24T12:51:43Z",
       "trigger": "initial",
-      "result": null
+      "result": "advanced"
     }
   ],
   "pre_review_dispatched": true,
