@@ -1,6 +1,6 @@
 ---
 title: No dashboards or runbooks exist for the new feedback lifecycle operations
-status: fixing
+status: rejected
 origin: adversarial-review
 author: observability
 author_type: agent
@@ -29,3 +29,7 @@ There are also no runbooks for the new failure modes introduced:
 - The `SESSION_CANCEL_LOG_PATH = "/tmp/haiku-session-cancel.log"` file at `packages/haiku/src/http.ts:106` has no documented runbook explaining what the log means or how to act on it
 
 **Fix:** At minimum, add a runbook entry (even inline in the code or in a `docs/runbooks/` file) for the revisit 409 failure mode and the session cancel log. If a dashboard exists for the review server, add panels for the new feedback routes.
+
+---
+
+**Rejection reason:** Out of scope for this intent. Dashboards and runbooks are Grafana/Datadog boards and ops documentation — deliverables of a production-operations rollout, not part of the feedback-persistence + review-recovery work. Deferring to a follow-up intent that also covers FB-03 (metrics) and FB-07 (rollback procedure).
