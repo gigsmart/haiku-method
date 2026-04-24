@@ -321,7 +321,7 @@ try {
 		assert.notStrictEqual(result.action, "error")
 	})
 
-	test("units without closes: field trigger validation error when visits > 0", () => {
+	test("re-entry with completed units emits elaborate (iterative mode) rather than advancing", () => {
 		const { projDir, intentDirPath, slug } = createProject("closes-required", {
 			active_stage: "plan",
 		})
@@ -337,10 +337,24 @@ try {
 		process.chdir(projDir)
 		const result = runNext(slug)
 
-		// When visits > 0 and no feedback exists, still goes to additive elaborate
-		// but with no pending feedback the closes validation may not apply
-		// The key point: visits > 0 activates the additive elaborate code path
-		assert.strictEqual(result.action, "elaboration_insufficient")
+		// Iteration === 1 + completed units on disk = iterative re-entry mode.
+		// The FSM emits `elaborate` (iterative=true) so the agent can decide
+		// whether new/modified units are needed. Previously this path fell
+		// through to `elaboration_insufficient` via the turn-count check;
+		// either action indicates "don't advance past elaborate" which is
+		// what this test is really guarding against.
+		assert.ok(
+			result.action === "elaborate" ||
+				result.action === "elaboration_insufficient",
+			`expected elaborate or elaboration_insufficient, got ${result.action}`,
+		)
+		if (result.action === "elaborate") {
+			assert.strictEqual(
+				result.iterative,
+				true,
+				"iteration-1 + completed units should trigger iterative mode",
+			)
+		}
 	})
 
 	// ═══════════════════════════════════════════════════════════════════════

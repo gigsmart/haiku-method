@@ -2639,6 +2639,118 @@ export function runNext(slug: string): OrchestratorAction {
 			}
 		}
 
+		// ── Re-entry iterative elaborate ───────────────────────────────────
+		// When the stage is entered with pre-existing completed units (e.g.
+		// a fresh fsmStartStage after intent iteration, or the user coming
+		// back through a stage that was previously finished), do NOT skip
+		// elaborate. Completed units are knowledge, not rework. Emit an
+		// iterative-mode elaborate action so the agent:
+		//   - sees the completed units as context
+		//   - decides whether the intent has evolved enough to warrant new
+		//     units, revisions to pending units, or no changes at all
+		//   - signals "no changes needed" by calling run_next without adding
+		//     new units — the FSM detects the no-op via the snapshot below
+		//     and advances directly to gate (skips pre_review + execute).
+		//
+		// Snapshot state lives on stage state: `elaborate_snapshot_taken`
+		// (bool) + `elaborate_entry_unit_count` (number). They are cleared
+		// either when the agent actually adds units (proceed through normal
+		// flow) or when we advance to the next phase.
+		const existingUnits = hasUnits ? listUnits(iDir, currentStage) : []
+		const completedUnitsList = existingUnits.filter(
+			(u) => u.status === "completed",
+		)
+		const pendingUnitsList = existingUnits.filter(
+			(u) => u.status !== "completed",
+		)
+		const iterativeEntryIteration = getStageIterationCount(stageState)
+		const snapshotTaken = Boolean(stageState.elaborate_snapshot_taken)
+		const snapshotCount = stageState.elaborate_entry_unit_count as
+			| number
+			| undefined
+
+		// Iterative re-entry only fires on iteration === 1 (fresh
+		// fsmStartStage entry where completed units already exist on
+		// disk from a prior intent cycle). For iteration > 1, the
+		// additive-elaborate mode below handles revisit-with-feedback
+		// semantics including `closes:` validation — don't short-circuit
+		// past it.
+		if (
+			iterativeEntryIteration === 1 &&
+			completedUnitsList.length > 0 &&
+			!snapshotTaken
+		) {
+			// Fresh re-entry into a stage that has completed work. Take the
+			// snapshot and emit iterative elaborate.
+			writeJson(join(iDir, "stages", currentStage, "state.json"), {
+				...stageState,
+				elaborate_snapshot_taken: true,
+				elaborate_entry_unit_count: existingUnits.length,
+			})
+			return {
+				action: "elaborate",
+				intent: slug,
+				studio,
+				stage: currentStage,
+				elaboration: elaborationMode,
+				iteration: getStageIterationCount(stageState),
+				visits: getStageIterationCount(stageState),
+				iterative: true,
+				completed_units: completedUnitsList.map((u) => u.name),
+				pending_units: pendingUnitsList.map((u) => u.name),
+				stage_metadata: resolveStageMetadata(studio, currentStage),
+				message: `Re-entering stage '${currentStage}' with ${completedUnitsList.length} completed unit(s) from prior iteration(s). Treat completed work as knowledge; decide whether this iteration needs new or modified units.`,
+			}
+		}
+
+		if (snapshotTaken) {
+			// Second tick after iterative elaborate. Compare unit count
+			// against snapshot to decide: advance, or proceed through
+			// normal validation.
+			const addedCount =
+				existingUnits.length - (snapshotCount ?? existingUnits.length)
+			const hasPending = pendingUnitsList.length > 0
+
+			// Clear snapshot either way — we're moving past the iterative
+			// decision point.
+			const clearedState = { ...stageState }
+			delete (clearedState as Record<string, unknown>)
+				.elaborate_snapshot_taken
+			delete (clearedState as Record<string, unknown>)
+				.elaborate_entry_unit_count
+
+			if (addedCount === 0 && !hasPending) {
+				// Agent declared no-op — no new or modified units needed
+				// for this iteration. Advance directly to the gate; skip
+				// pre_review (nothing new to review) and execute (all units
+				// completed in a prior iteration). Post-execute review is
+				// also skipped because artifacts haven't changed. The human
+				// sees the gate and can approve or request changes.
+				clearedState.phase = "gate"
+				writeJson(
+					join(iDir, "stages", currentStage, "state.json"),
+					clearedState,
+				)
+				fsmAdvancePhase(slug, currentStage, "gate")
+				return {
+					action: "advance_phase",
+					intent: slug,
+					studio,
+					stage: currentStage,
+					from_phase: "elaborate",
+					to_phase: "gate",
+					message: `No new units needed for this iteration of '${currentStage}' — advancing directly to the gate.`,
+				}
+			}
+
+			// New or revised units exist — persist cleared snapshot and fall
+			// through to normal validation + pre_review flow below.
+			writeJson(
+				join(iDir, "stages", currentStage, "state.json"),
+				clearedState,
+			)
+		}
+
 		if (!hasUnits) {
 			return {
 				action: "elaborate",
@@ -3028,9 +3140,13 @@ export function runNext(slug: string): OrchestratorAction {
 
 		// All units valid — either auto-advance or open review gate before execution.
 		//
-		// For stages with review: auto, skip the gate
-		// entirely and advance directly to execution. This is critical for
-		// autonomous workflows where the user should not be interrupted.
+		// Spec-gate rule (elaborate → execute boundary):
+		//   - Discrete intent mode: ALWAYS ask (every stage's specs get human
+		//     sign-off in discrete — matches the per-stage-branch / per-stage
+		//     PR model).
+		//   - Continuous/hybrid intent mode: ASK unless the stage's own
+		//     review type is `auto` — `auto` stages skip both the spec gate
+		//     and the stage gate by design (studio trusts the FSM).
 		//
 		// For the first stage of a fresh intent (not yet reviewed), this gate
 		// doubles as the intent review — CC review agents have already run
@@ -3040,10 +3156,12 @@ export function runNext(slug: string): OrchestratorAction {
 		const intentReviewed = intent.intent_reviewed as boolean
 		const isIntentReview = currentStage === studioStages[0] && !intentReviewed
 		const stageReviewType = resolveStageReview(studio, currentStage)
+		const intentMode = (intent.mode as string) || "continuous"
+		const specGateAsks =
+			intentMode === "discrete" ? true : stageReviewType !== "auto"
 
 		// Auto gates: skip review UI and advance directly to execution.
-		// Discrete mode affects branching strategy, not review type semantics.
-		if (stageReviewType === "auto") {
+		if (!specGateAsks) {
 			if (isIntentReview) {
 				setFrontmatterField(intentFile, "intent_reviewed", true)
 				gitCommitState(`haiku: intent ${slug} auto-approved`)
@@ -5362,6 +5480,8 @@ function buildRunInstructions(
 			const iteration =
 				(action.iteration as number) || (action.visits as number) || 0
 			const completedUnits = (action.completed_units as string[]) || []
+			const pendingUnitsList = (action.pending_units as string[]) || []
+			const iterative = Boolean(action.iterative)
 			const pendingFeedback =
 				(action.pending_feedback as Array<{
 					feedback_id: string
@@ -5372,6 +5492,94 @@ function buildRunInstructions(
 					file: string
 				}>) || []
 			const validationError = action.validation_error as string | undefined
+
+			// Iterative re-entry mode: stage was entered with completed units
+			// from a prior iteration. The agent decides whether this iteration
+			// needs new/modified work, with completed units treated as
+			// knowledge (not rework).
+			if (iterative) {
+				sections.push(
+					`## Iterative Re-Entry: ${stage} (iteration #${iteration})`,
+				)
+				if (stageDef) {
+					sections.push(`${stageDef.body}`)
+				}
+				sections.push(
+					`You're re-entering this stage with prior work already landed on the stage branch. **Completed units below are knowledge** — their artifacts are part of the current stage baseline and must NOT be re-done or modified. Your job is to decide whether this iteration of the intent needs new work, and if so, draft new units for it.`,
+				)
+
+				if (completedUnits.length > 0) {
+					const completedLines: string[] = [
+						`### Completed Units (knowledge — read-only)`,
+						"",
+					]
+					for (const name of completedUnits) {
+						const unitFile = join(
+							dir,
+							"stages",
+							stage,
+							"units",
+							`${name}.md`,
+						)
+						if (!existsSync(unitFile)) {
+							completedLines.push(`- **${name}** — _(file missing)_`)
+							continue
+						}
+						const fm = readFrontmatter(unitFile)
+						const title = (fm.title as string) || name
+						const hat = (fm.hat as string) || ""
+						const outputs = Array.isArray(fm.outputs)
+							? (fm.outputs as string[])
+							: []
+						const summary = [
+							`- **${name}** — ${title}`,
+							hat ? `  - hat: \`${hat}\`` : null,
+							outputs.length > 0
+								? `  - outputs: ${outputs.map((o) => `\`${o}\``).join(", ")}`
+								: null,
+							`  - file: \`.haiku/intents/${slug}/stages/${stage}/units/${name}.md\``,
+						]
+							.filter(Boolean)
+							.join("\n")
+						completedLines.push(summary)
+					}
+					sections.push(completedLines.join("\n"))
+				}
+
+				if (pendingUnitsList.length > 0) {
+					sections.push(
+						`### Pending Units (targets for this iteration)\n\n${pendingUnitsList.map((n) => `- \`${n}\``).join("\n")}\n\nThese units exist but haven't been executed. If they're still relevant, leave them. Revise their specs if the intent has evolved. Reject individual units by deleting their file (not advised unless clearly obsolete).`,
+					)
+				}
+
+				// Universal FSM contracts still apply
+				sections.push(FSM_CONTRACTS_ELABORATE_BLOCK)
+
+				// Prior-stage enumeration + inputs + feedback context follow
+				// the same logic as fresh elaborate — fall through after the
+				// iterative header and the decision block below.
+				sections.push(
+					[
+						"### Decide — what does this iteration need?",
+						"",
+						"**Step 1: Enumerate what changed.** Since the prior iteration of this stage:",
+						`- Which preceding stages' artifacts have been added, revised, or removed? (Look under \`.haiku/intents/${slug}/stages/*/\`.)`,
+						`- Has \`.haiku/intents/${slug}/intent.md\` evolved?`,
+						`- Is there new feedback from downstream stages that affects this stage's scope?`,
+						"",
+						"**Step 2: Decide the response.** Based on what changed, pick one:",
+						"",
+						"**A. New units are needed.** Draft them as `unit-NN-<slug>.md` under `.haiku/intents/.../stages/<stage>/units/`. Continue the file-naming sequence from the highest existing number. Each new unit's `inputs:` MUST reference the prior-stage artifacts it builds on. Then call `haiku_run_next`.",
+						"",
+						"**B. Pending units need revision.** Edit their `.md` files in place (the FSM guard permits editing units whose `status` is NOT `completed`). Then call `haiku_run_next`.",
+						"",
+						"**C. No changes needed — nothing has evolved that warrants new work in this stage.** Call `haiku_run_next` immediately without adding or modifying any units. The FSM compares the pre-elaborate unit count to the post-elaborate count; if unchanged AND no pending units exist, it advances directly to the gate (skipping pre-review + execute + review — there's nothing new to review or execute).",
+						"",
+						"**Be honest about C.** If the intent genuinely hasn't evolved in ways that affect this stage, choosing C is correct. Making busy-work units just to look thorough wastes effort and creates maintenance drag.",
+					].join("\n"),
+				)
+				break
+			}
 
 			// Revisit mode (iteration > 1): emit a focused additive-elaboration
 			// block instead of re-running discovery/input-resolution. The prior
@@ -7535,16 +7743,24 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					inlineFile(mandatePath, `Mandate: ${name}`),
 					"",
 					"## Pre-Execute Scope (SPEC REVIEW)",
-					"Artifacts do NOT exist yet. Review the unit .md files listed below and find **spec-level bugs that would cause a rejection cycle after execute**:",
+					"Review the unit .md files under the units directory. You will find both pending and completed units there. Your job is to find **spec-level bugs in PENDING units or COVERAGE GAPS** that would cause a rejection cycle after execute.",
+					"",
+					"**Scope rules (STRICT):**",
+					"- **Pending units (status != `completed`)** are your review targets. Flag spec-level issues.",
+					"- **Completed units (status = `completed`)** are **context/knowledge, not targets**. Their work has already been executed, validated, and merged. You may READ them to understand what the stage already addresses, but you MUST NOT raise findings against them — no suggestions to rename, rewrite criteria, change `quality_gates`, expand `inputs:`, etc. That work is done.",
+					"- **Coverage gaps** — if completed + pending units together leave a gap in what your mandate requires (e.g. an entry point not threat-modeled, a metric the mandate demands not defined), suggest a **NEW UNIT** to fill the gap. Never suggest editing a completed unit.",
+					"",
+					"**Look for in pending / new units:**",
 					"",
 					"- **Missing inputs**: unit declares a sweep/audit but its `inputs:` list only covers a subset of files the rule must apply to. Flag when enforcement scope < rule scope.",
 					"- **Prose-only gates**: `quality_gates:` entries that are strings instead of executable `{name, command}` objects. These won't actually enforce anything — the FSM skips them.",
 					"- **Unfalsifiable criteria**: 'responsive design done' vs 'breakpoints at 375/768/1280 with screenshots'. Gates must be measurable.",
-					"- **Sibling conflicts**: two units claim to produce or modify the same output with different rules.",
-					"- **Missing `closes:`**: on revisit cycles, every new unit MUST reference at least one pending FB via `closes: [FB-NN]`.",
+					"- **Sibling conflicts**: two pending units claim to produce or modify the same output with different rules.",
+					"- **Missing `closes:`** on revisit cycles: every new pending unit MUST reference at least one pending FB via `closes: [FB-NN]`.",
+					"- **Coverage gaps**: completed + pending together miss something in-scope for your mandate. Suggest a new unit.",
 					"",
 					"## Write scope (STRICT)",
-					"**You MUST NOT edit any file, and you MUST NOT call `haiku_feedback`.** Pre-execute review has no artifacts to critique — nothing has been built. Persisted feedback is for post-execute work only. Return your findings INLINE as your subagent response; the parent agent will aggregate findings from all reviewers and edit the unit specs directly.",
+					"**You MUST NOT edit any file, and you MUST NOT call `haiku_feedback`.** Pre-execute review has no artifacts to critique — nothing has been built for pending units yet. Persisted feedback is for post-execute work only. Return your findings INLINE as your subagent response; the parent agent will aggregate findings from all reviewers and edit the pending unit specs directly (or draft new units for coverage gaps).",
 					"",
 					"## Output format (MANDATORY)",
 					"",
@@ -7552,20 +7768,22 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					"",
 					"```",
 					"## Finding: <short-title>",
-					"**Affected unit:** <unit-filename>",
+					'**Affected unit:** <unit-filename> (or "NEW UNIT NEEDED" for coverage gaps)',
 					"**Location:** <file:line> (if applicable)",
 					"**Issue:** <what's wrong in specific terms>",
 					"**Suggested fix:** <diff-level concrete proposal — not vague>",
 					"```",
 					"",
-					"If you find no issues, return exactly: `No findings.`",
+					"If no issues in pending units and no coverage gaps, return exactly: `No findings.`",
 					"",
 					"## Instructions",
 					"",
-					`1. Read every unit file under \`${unitsDir}\`.`,
-					"2. Identify concrete spec issues per the mandate above.",
-					"3. Concrete fixes accelerate resolution: don't write 'scope too narrow' — write 'Replace `inputs: [7 files]` with `inputs: stages/.../artifacts/`'.",
-					"4. Return findings in the format above. Do NOT call `haiku_feedback` — persistence is not wanted here.",
+					`1. Read every unit file under \`${unitsDir}\`. Partition by status: completed (context) vs pending (targets).`,
+					"2. Skim completed units to understand what the stage already addresses — this is knowledge.",
+					"3. Identify concrete spec issues in PENDING units per the mandate above.",
+					"4. Identify COVERAGE GAPS — things the mandate requires that neither completed nor pending units address. Propose new units by filename + intent.",
+					"5. Concrete fixes accelerate resolution: don't write 'scope too narrow' — write the exact replacement.",
+					"6. Do NOT critique completed units. Do NOT call `haiku_feedback` — persistence is not wanted here.",
 				]
 
 				const preReviewModel = resolveReviewAgentModel({
