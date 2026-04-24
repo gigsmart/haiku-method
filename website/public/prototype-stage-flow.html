@@ -4154,36 +4154,6 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
       ],
       instructions: `Calls \`_openReviewAndWait()\`, which **blocks** the MCP tool call until the user clicks \`Approve\` or \`Request Changes\` in the web UI. On approve → \`phase\` advances to \`execute\`. On reject → ${isFirst ? "`phase` resets to `pending`" : "`phase` stays at `elaborate`"}.`,
     },
-    "gate-to-execute": {
-      injection: [
-        { hook: "MCP tool result", target: "agent's `tool_use_result`", what: "`start_unit`/`start_units` produces a single self-contained `<subagent tool=\"Agent\">` block per unit — hat instructions, unit spec, stage scope, output requirements all embedded. Parent-only instructions (advance_hat handling) are outside the tags." },
-        { hook: "inject-context", target: "next agent prompt prepend", what: "current unit's frontmatter, the active hat's `hats/{hat}.md` content, allowed file paths — all embedded inside the `<subagent>` block" },
-        { hook: "inject-state-file", target: "`.haiku/_inject.md`", what: "full state.json + active unit metadata for the agent to consult" },
-        { hook: "readPhaseOverride()", target: "agent prompt prepend", what: "**Phase override injection** — `phases/EXECUTION.md` is read via `readPhaseOverride()` and injected during `start_unit`/`continue_unit`/`start_units`, embedded inside the `<subagent>` block." },
-        { hook: "readStageArtifactDefs()", target: "agent prompt prepend", what: "**Stage Output Requirements** — `readStageArtifactDefs()` loads output definitions from `outputs/*.md` and injects them as 'Stage Output Requirements' with name, location, format, and content guide per artifact — embedded inside each `<subagent>` block." },
-        { hook: "readStageDef()", target: "agent prompt", what: "**Stage body** — STAGE.md body injected with scope constraint ('stay within this stage's scope') — embedded inside the `<subagent>` block." },
-        { hook: "resolveStageInputs()", target: "agent prompt", what: "**Upstream context** — artifacts from prior stages not already in unit inputs are resolved and injected (up to 2000 chars each) — embedded inside the `<subagent>` block." },
-      ],
-      action: "advance_phase",
-      summary: "user approved specs — start wave 1",
-      payload: {
-        action: "advance_phase",
-        from: "elaborate",
-        to: "execute",
-        first_wave: stage.waves[0]?.units ?? [],
-      },
-      validations: [
-        "`gate_outcome === 'approved'`",
-        "All units still `pending` or `in_progress`",
-        "Worktrees provisioned per unit (one `git worktree` each)",
-      ],
-      writes: [
-        { path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`, change: "`phase: \"execute\"`, `gate_outcome: \"approved\"`" },
-        ...(isFirst ? [{ path: `.haiku/intents/{slug}/intent.md`, change: "frontmatter: `intent_reviewed: true` (first stage only)" }] : []),
-        { path: `.haiku/worktrees/{unit}/` , change: `git worktree created for each unit in wave 1 (${(stage.waves[0]?.units ?? []).join(", ")})` },
-      ],
-      instructions: "Spawn the first wave of units in parallel. `start_unit`/`start_units` returns one self-contained `<subagent tool=\"Agent\">` block per unit — all context (hat instructions, unit spec, stage scope, output requirements, upstream artifacts) embedded inside. Parent relays each block verbatim; parent-only instructions (advance_hat handling, wave coordination) are outside the `<subagent>` tags. Each unit runs in its own worktree under `.haiku/worktrees/{unit}`.",
-    },
     "hat-to-hat": {
       injection: [
         { hook: "MCP tool result", target: "subagent's `tool_use_result`", what: `next hat name (\`${opts.to}\`), \`hats/${opts.to}.md\` content, bolt counter` },
