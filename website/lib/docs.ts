@@ -112,11 +112,7 @@ const sectionDefinitions: { title: string; slugs: string[] }[] = [
 	},
 	{
 		title: "Adoption",
-		slugs: [
-			"adoption-roadmap",
-			"checklist-team-onboarding",
-			"assessment",
-		],
+		slugs: ["adoption-roadmap", "checklist-team-onboarding", "assessment"],
 	},
 	{
 		title: "Examples",

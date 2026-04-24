@@ -1,0 +1,4 @@
+[tools]
+biome = "latest"
+bun = "latest"
+node = "latest"

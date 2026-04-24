@@ -1,6 +1,5 @@
 "use client"
 
-import type { PaperHeading } from "@/lib/papers"
 import { diffLines, diffWords } from "diff"
 import Link from "next/link"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -10,6 +9,7 @@ import rehypeHighlight from "rehype-highlight"
 import rehypeRaw from "rehype-raw"
 import rehypeSlug from "rehype-slug"
 import remarkGfm from "remark-gfm"
+import type { PaperHeading } from "@/lib/papers"
 import { Mermaid } from "../components/Mermaid"
 import { usePaperChanges } from "../components/PaperChangesContext"
 
@@ -199,10 +199,7 @@ function shouldUseBlockDiff(content: string): boolean {
  * Escape HTML special characters in text for inline diffs
  */
 function escapeHtml(text: string): string {
-	return text
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
+	return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 }
 
 /**
@@ -254,7 +251,7 @@ function buildDiffMarkdown(
 
 		const hasMermaidPlaceholder = part.value.includes("data-mermaid-index=")
 
-		if (!part.added && !part.removed) {
+		if (!(part.added || part.removed)) {
 			result += part.value
 			i++
 		} else if (part.removed && lineDiff[i + 1]?.added) {
@@ -664,7 +661,11 @@ export function PaperContent({
 						</h2>
 						<ul className="space-y-1">
 							{toc.map((heading) => (
-								<TOCItem key={heading.id} heading={heading} activeId={activeId} />
+								<TOCItem
+									key={heading.id}
+									heading={heading}
+									activeId={activeId}
+								/>
 							))}
 						</ul>
 					</nav>
@@ -723,7 +724,11 @@ export function PaperContent({
 						</h2>
 						<ul className="space-y-1">
 							{toc.map((heading) => (
-								<TOCItem key={heading.id} heading={heading} activeId={activeId} />
+								<TOCItem
+									key={heading.id}
+									heading={heading}
+									activeId={activeId}
+								/>
 							))}
 						</ul>
 						<div className="mt-4 border-t border-stone-200 pt-4 dark:border-stone-700">

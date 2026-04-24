@@ -1,0 +1,237 @@
+{
+	"profiles": {
+		"tokens": {
+			"description": "unit-04 token-scoped banned-pattern audit — enforces the DESIGN-TOKENS §1.1a banned-pairs + §1.4 typography floor + §1.7 disabled-opacity ban + §2.6 canonical button verbs.",
+			"rules": [
+				{
+					"id": "banned-text-small",
+					"description": "text-[9px] / text-[10px] banned on user-facing info (WCAG 1.4.4 Resize Text)",
+					"pattern": "text-\\[(9|10)px\\]",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx,css}"],
+					"exclude": [
+						"**/__tests__/**",
+						"**/__snapshots__/**",
+						"**/*.test.{ts,tsx}",
+						"**/*.spec.{ts,tsx}"
+					]
+				},
+				{
+					"id": "banned-text-gray",
+					"description": "text-gray-* banned in SPA (use text-stone-* or semantic tokens)",
+					"pattern": "text-gray-\\d",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx,css}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-stone-400-light",
+					"description": "text-stone-400 without a dark: qualifier collapses below 4.5:1 on any light card surface (DESIGN-TOKENS §1.1a)",
+					"pattern": "(?<![:\\w-])text-stone-400\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-stone-400-on-stone-800-dark",
+					"description": "dark:text-stone-400 paired with dark:bg-stone-800 collapses to ~4.4:1 (AA FAIL for body text per DESIGN-TOKENS §1.1a). Lift to dark:text-stone-300 (≥ 10:1).",
+					"pattern": "dark:bg-stone-800\\b[^\"'`]*\\bdark:text-stone-400\\b|dark:text-stone-400\\b[^\"'`]*\\bdark:bg-stone-800\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-primary-teal-600-white",
+					"description": "bg-teal-600 paired with text-white on the same element fails WCAG 1.4.3 AA (3.74:1 < 4.5:1). Use bg-teal-700 text-white (5.47:1). See DESIGN-TOKENS §1.1b (FB-55).",
+					"pattern": "bg-teal-600\\b[^\"'`]*\\btext-white\\b|text-white\\b[^\"'`]*\\bbg-teal-600\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-primary-teal-500-white-dark",
+					"description": "dark:bg-teal-500 paired with text-white on the same element collapses to 2.49:1 — below both 3:1 UI-nontext floor and 4.5:1 text floor. Use dark:bg-teal-700 text-white. See DESIGN-TOKENS §1.1b (FB-55).",
+					"pattern": "dark:bg-teal-500\\b[^\"'`]*\\btext-white\\b|text-white\\b[^\"'`]*\\bdark:bg-teal-500\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-fab-badge-amber-100-amber-700",
+					"description": "FAB count badge `bg-amber-100 text-amber-700` = 3.68:1 — AA FAIL for 12px bold text per DESIGN-TOKENS §1.1a. Canonical pair is `bg-amber-100 text-amber-800` (6.37:1 AA pass). Scoped narrowly to FeedbackFloatingButton.tsx per FB-70 — the pair is legal elsewhere (e.g. button hover-bg surfaces on white). Matches the token pair in either order.",
+					"pattern": "bg-amber-100\\b[^\"'`]*\\btext-amber-700\\b|text-amber-700\\b[^\"'`]*\\bbg-amber-100\\b",
+					"scope": [
+						"packages/haiku-ui/src/components/feedback/FeedbackFloatingButton.tsx"
+					],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-pin-teal-500-white",
+					"description": "bg-teal-500 paired with text-white on AnnotationCanvas pin markers = 2.22:1 (WCAG 1.4.3 + 1.4.11 FAIL) per FB-58. Canonical pin fill is the rose-600 token via --color-annotation-pin-bg (see index.css @theme + annotation-pin PAIRS in audit-contrast.mjs). Scoped narrowly to AnnotationCanvas.tsx to avoid false positives on the unrelated focus-ring usages of teal-500 elsewhere.",
+					"pattern": "bg-teal-500\\b[^\"'`]*\\btext-white\\b|text-white\\b[^\"'`]*\\bbg-teal-500\\b",
+					"scope": ["packages/haiku-ui/src/components/AnnotationCanvas.tsx"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-opacity-state",
+					"description": "opacity-50|60|70 on interactive/card roots (use token-based disabled per DESIGN-TOKENS §1.7)",
+					"pattern": "\\bopacity-(50|60|70)\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-disabled-opacity",
+					"description": "disabled:opacity-* (any) banned — α-composite collapses text contrast below AA",
+					"pattern": "disabled:opacity-\\d",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-focus-ring-1",
+					"description": "focus:ring-1 banned (use focus-visible:ring-2)",
+					"pattern": "focus:ring-1\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx,css}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-sidebar-drift",
+					"description": "w-80 + (lg|xl):w-96 drift; use canonical w-[var(--sidebar-width)] xl:w-[var(--sidebar-width-xl)]",
+					"pattern": "w-80\\s+(lg|xl):w-96",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-content-max-literal",
+					"description": "max-w-[1400px] literal; use max-w-[var(--content-max)]",
+					"pattern": "max-w-\\[1400px\\]",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-button-verb-content",
+					"description": "Reject/Close/Address/Re-open banned as literal button text (DESIGN-TOKENS §2.6); canonical verbs are Dismiss / Verify & Close / Reopen",
+					"pattern": "<[Bb]utton[^>]*>\\s*(Reject|Close|Address|Re-open)\\s*</",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-button-verb-aria",
+					"description": "Reject/Close/Address/Re-open banned as aria-label (DESIGN-TOKENS §2.6)",
+					"pattern": "aria-label=[\"'](Reject|Close|Address|Re-open)[\"']",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				}
+			]
+		},
+		"stage-wide": {
+			"description": "unit-15 stage-wide audit superset — reserved. Adds the sharpened {origin} JSX regex and 'Show agent feedback' (?! inline) sentinel plus any downstream-component bans.",
+			"extends": "tokens",
+			"rules": [
+				{
+					"id": "banned-origin-jsx-bare",
+					"description": "bare {origin} JSX without originLabels[origin] — render the human label, not the raw slug (unit-15 / DESIGN-TOKENS §2.2)",
+					"pattern": "\\{origin\\}(?!Labels)",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-agent-feedback-toggle-copy",
+					"description": "copy must be 'Show agent feedback inline' (trailing word preserves the inline-interleaved semantics)",
+					"pattern": "\"Show agent feedback\"(?! inline)",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "require-agent-feedback-toggle-canonical",
+					"description": "AgentFeedbackToggle.tsx MUST contain the canonical 'Show agent feedback inline' string at least once (presence-side check per unit-09 Completion Criteria).",
+					"pattern": "Show agent feedback inline",
+					"requirePresence": true,
+					"scope": [
+						"packages/haiku-ui/src/components/feedback/AgentFeedbackToggle.tsx"
+					],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-pin-tabindex-negative",
+					"description": "tabindex=\"-1\" banned on AnnotationCanvas pin markers — unit-13 regression guard for the 'pin-markers-at-tabindex-negative-one' class of bug. Pin <button>s MUST carry tabindex=\"0\". Scope retargeted to runtime canvas after FB-11 cutover deleted the orphaned pages/review/AnnotationCanvas.tsx.",
+					"pattern": "tabindex=[\"']-1[\"']",
+					"scope": ["packages/haiku-ui/src/components/AnnotationCanvas.tsx"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-xss-sinks-annotation-path",
+					"description": "XSS sinks (dangerouslySetInnerHTML / innerHTML / eval / new Function / document.write) banned in the annotation review path — unit-13 XSS hardening.",
+					"pattern": "(dangerouslySetInnerHTML|innerHTML\\s*=|\\beval\\(|new Function\\(|document\\.write\\()",
+					"scope": ["packages/haiku-ui/src/pages/review/**/*.{ts,tsx}"],
+					"exclude": [
+						"**/__tests__/**",
+						"**/__snapshots__/**",
+						"**/*.test.{ts,tsx}",
+						"**/*.spec.{ts,tsx}"
+					]
+				},
+				{
+					"id": "banned-xss-sinks-stage-wide",
+					"description": "XSS sinks banned across haiku-ui and haiku-api source. Allow-list via inline `// audit-allow: <reason>`.",
+					"pattern": "(dangerouslySetInnerHTML|innerHTML\\s*=|\\beval\\(|new Function\\(|document\\.write\\()",
+					"scope": [
+						"packages/haiku-ui/src/**/*.{ts,tsx}",
+						"packages/haiku-api/src/**/*.ts"
+					],
+					"exclude": [
+						"**/__tests__/**",
+						"**/__snapshots__/**",
+						"**/*.test.{ts,tsx}",
+						"**/*.spec.{ts,tsx}"
+					]
+				},
+				{
+					"id": "banned-hyphenated-reopen",
+					"description": "Hyphenated 'Re-open' banned — DESIGN-TOKENS §2.6 canonical verb is 'Reopen' (one word). Case-sensitive so prose sentences with lowercase 're-open' pass.",
+					"pattern": "\\bRe-open\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-raw-hex",
+					"description": "Raw hex colors banned in haiku-ui sources. Tokens must route through CSS custom properties (index.css @theme) or Tailwind utilities. Allow-list via inline `// audit-allow: <reason>` for 3rd-party renderer configs (mermaid, xyflow, canvas 2D). FB-42: src/index.css is no longer blanket-excluded — every component-level hex must be promoted to a named token in @theme.",
+					"pattern": "#[0-9a-fA-F]{6}\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx,css}"],
+					"exclude": [
+						"**/__tests__/**",
+						"**/__snapshots__/**",
+						"**/*.test.{ts,tsx}",
+						"**/*.spec.{ts,tsx}",
+						"scripts/**"
+					]
+				},
+				{
+					"id": "banned-lg-w-96-solitary",
+					"description": "Solitary `lg:w-96` (without preceding `w-80`) banned on sidebar-relevant files — canonical breakpoint is `xl:w-96` or `w-[var(--sidebar-width)]`.",
+					"pattern": "(?<!\\bw-80\\s)\\blg:w-96\\b",
+					"scope": [
+						"packages/haiku-ui/src/pages/review/FeedbackSidebar.tsx",
+						"packages/haiku-ui/src/pages/review/index.tsx"
+					],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "require-focus-ring-on-role-tab",
+					"description": "Any file that renders role=\"tab\" MUST also apply focusRingClass (or an explicit focus-visible:ring-* class) so arrow-key-traversed tab buttons have a visible focus indicator (WCAG 2.4.7 Focus Visible). Regression guard for FB-67.",
+					"pattern": "(focusRingClass|focus-visible:ring-)",
+					"requirePresence": true,
+					"scope": ["packages/haiku-ui/src/components/Tabs.tsx"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-weak-teal-text-white",
+					"description": "FB-71 stage-wide regression guard — any `bg-teal-(100|200|300|400|500|600)` class paired with `text-white` on the same element fails WCAG AA (4.5:1). Canonical passing teal + white combinations are `bg-teal-700` (5.47:1) or `bg-teal-800` (7.26:1). Applied across the entire haiku-ui source so a new colored button or badge cannot silently reintroduce the FB-55 / FB-58 gap the per-component bans already catch. Matches either ordering within the same class attribute.",
+					"pattern": "bg-teal-(100|200|300|400|500|600)\\b[^\"'`]*\\btext-white\\b|text-white\\b[^\"'`]*\\bbg-teal-(100|200|300|400|500|600)\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				},
+				{
+					"id": "banned-weak-emerald-text-white",
+					"description": "FB-71 stage-wide regression guard — any `bg-emerald-(100|200|300|400|500|600)` paired with `text-white` on the same element fails WCAG AA (emerald-400 + white = 1.63:1 — FB-61; emerald-600 + white = 3.85:1). Canonical fix is `bg-emerald-700` text-white (5.10:1).",
+					"pattern": "bg-emerald-(100|200|300|400|500|600)\\b[^\"'`]*\\btext-white\\b|text-white\\b[^\"'`]*\\bbg-emerald-(100|200|300|400|500|600)\\b",
+					"scope": ["packages/haiku-ui/src/**/*.{ts,tsx}"],
+					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
+				}
+			]
+		}
+	}
+}

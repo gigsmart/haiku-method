@@ -1,0 +1,9 @@
+# OpenCode MCP configuration for H·AI·K·U
+# Add this to your OpenCode global config
+mcpServers:
+  haiku:
+    command: /path/to/haiku-method/plugin/bin/haiku
+    args:
+      - mcp
+      - --harness
+      - opencode

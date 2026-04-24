@@ -1,0 +1,28 @@
+{
+  "scanned": 10,
+  "coverage_floor": 40,
+  "coverage_collapse": true,
+  "missing_testids": [
+    {
+      "route": "review",
+      "testid": "feedback-summary-bar"
+    },
+    {
+      "route": "review",
+      "testid": "feedback-item"
+    },
+    {
+      "route": "review",
+      "testid": "feedback-list"
+    },
+    {
+      "route": "review",
+      "testid": "(route floor: expected ≥ 10 elements, got 2)"
+    },
+    {
+      "route": "question",
+      "testid": "(route floor: expected ≥ 3 elements, got 2)"
+    }
+  ],
+  "failures": []
+}

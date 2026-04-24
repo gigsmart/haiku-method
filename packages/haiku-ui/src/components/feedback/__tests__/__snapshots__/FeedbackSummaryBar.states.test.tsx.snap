@@ -1,0 +1,561 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FeedbackSummaryBar — state matrix > renders (active filter × status) + empty cells (snapshot) 1`] = `
+<div
+  data-token-hash="fa9f004f38d5ccf1"
+>
+  <div
+    data-cell="active-none"
+  >
+    <fieldset
+      aria-label="Feedback counts by status"
+      class="flex flex-wrap items-center gap-1.5 border-0 p-0 m-0 "
+      data-testid="feedback-summary-bar"
+    >
+      <button
+        aria-label="Filter by pending (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="pending"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-500"
+        />
+        <span>
+          Pending
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by addressed (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="addressed"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-500"
+        />
+        <span>
+          Addressed
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by answered (0)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="answered"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-teal-600 dark:bg-teal-400"
+        />
+        <span>
+          Answered
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          0
+        </span>
+      </button>
+      <button
+        aria-label="Filter by closed (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="closed"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-green-600 dark:bg-green-400"
+        />
+        <span>
+          Closed
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by rejected (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="rejected"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-stone-600 dark:bg-stone-400"
+        />
+        <span>
+          Rejected
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+    </fieldset>
+  </div>
+  <div
+    data-cell="active-pending"
+  >
+    <fieldset
+      aria-label="Feedback counts by status"
+      class="flex flex-wrap items-center gap-1.5 border-0 p-0 m-0 "
+      data-testid="feedback-summary-bar"
+    >
+      <button
+        aria-label="Filter by pending (5)"
+        aria-pressed="true"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="pending"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-500"
+        />
+        <span>
+          Pending
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by addressed (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="addressed"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-500"
+        />
+        <span>
+          Addressed
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by answered (0)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="answered"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-teal-600 dark:bg-teal-400"
+        />
+        <span>
+          Answered
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          0
+        </span>
+      </button>
+      <button
+        aria-label="Filter by closed (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="closed"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-green-600 dark:bg-green-400"
+        />
+        <span>
+          Closed
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by rejected (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="rejected"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-stone-600 dark:bg-stone-400"
+        />
+        <span>
+          Rejected
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+    </fieldset>
+  </div>
+  <div
+    data-cell="active-addressed"
+  >
+    <fieldset
+      aria-label="Feedback counts by status"
+      class="flex flex-wrap items-center gap-1.5 border-0 p-0 m-0 "
+      data-testid="feedback-summary-bar"
+    >
+      <button
+        aria-label="Filter by pending (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="pending"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-500"
+        />
+        <span>
+          Pending
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by addressed (5)"
+        aria-pressed="true"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="addressed"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-500"
+        />
+        <span>
+          Addressed
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by answered (0)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="answered"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-teal-600 dark:bg-teal-400"
+        />
+        <span>
+          Answered
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          0
+        </span>
+      </button>
+      <button
+        aria-label="Filter by closed (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="closed"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-green-600 dark:bg-green-400"
+        />
+        <span>
+          Closed
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by rejected (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="rejected"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-stone-600 dark:bg-stone-400"
+        />
+        <span>
+          Rejected
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+    </fieldset>
+  </div>
+  <div
+    data-cell="active-closed"
+  >
+    <fieldset
+      aria-label="Feedback counts by status"
+      class="flex flex-wrap items-center gap-1.5 border-0 p-0 m-0 "
+      data-testid="feedback-summary-bar"
+    >
+      <button
+        aria-label="Filter by pending (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="pending"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-500"
+        />
+        <span>
+          Pending
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by addressed (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="addressed"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-500"
+        />
+        <span>
+          Addressed
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by answered (0)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="answered"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-teal-600 dark:bg-teal-400"
+        />
+        <span>
+          Answered
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          0
+        </span>
+      </button>
+      <button
+        aria-label="Filter by closed (5)"
+        aria-pressed="true"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="closed"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-green-600 dark:bg-green-400"
+        />
+        <span>
+          Closed
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by rejected (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="rejected"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-stone-600 dark:bg-stone-400"
+        />
+        <span>
+          Rejected
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+    </fieldset>
+  </div>
+  <div
+    data-cell="active-rejected"
+  >
+    <fieldset
+      aria-label="Feedback counts by status"
+      class="flex flex-wrap items-center gap-1.5 border-0 p-0 m-0 "
+      data-testid="feedback-summary-bar"
+    >
+      <button
+        aria-label="Filter by pending (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="pending"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-amber-600 dark:bg-amber-500"
+        />
+        <span>
+          Pending
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by addressed (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="addressed"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-500"
+        />
+        <span>
+          Addressed
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by answered (0)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="answered"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-teal-600 dark:bg-teal-400"
+        />
+        <span>
+          Answered
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          0
+        </span>
+      </button>
+      <button
+        aria-label="Filter by closed (5)"
+        aria-pressed="false"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="closed"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-green-600 dark:bg-green-400"
+        />
+        <span>
+          Closed
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+      <button
+        aria-label="Filter by rejected (5)"
+        aria-pressed="true"
+        class="touch-target inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-status="rejected"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="h-2 w-2 rounded-full bg-stone-600 dark:bg-stone-400"
+        />
+        <span>
+          Rejected
+        </span>
+        <span
+          class="tabular-nums"
+        >
+          5
+        </span>
+      </button>
+    </fieldset>
+  </div>
+  <div
+    data-cell="empty"
+  />
+</div>
+`;

@@ -936,8 +936,8 @@
     slides[current].classList.remove('active');
     current = Math.max(0, Math.min(n, slides.length - 1));
     slides[current].classList.add('active');
-    progress.style.width = ((current + 1) / slides.length * 100) + '%';
-    counter.textContent = (current + 1) + ' / ' + slides.length;
+    progress.style.width = `${(current + 1) / slides.length * 100}%`;
+    counter.textContent = `${current + 1} / ${slides.length}`;
   }
 
   function next() { show(current + 1); }

@@ -1,31 +1,19 @@
 {
   "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "true",
-    "CLAUDE_PLUGIN_ROOT": "plugin"
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_PLUGIN_ROOT": "plugin",
+    "HAIKU_AUTO_UPDATE": "0"
   },
-  "teammateMode": "tmux",
   "enabledPlugins": {
-    "ai-dlc@ai-dlc": true,
-    "bushido@han": true,
-    "claude-plugin-development@han": true,
-    "core@han": true,
-    "han-plugins@han": true,
-    "markdown@han": true,
-    "typescript@han": true,
-    "vite@han": true
+    "haiku@haiku": true
   },
   "extraKnownMarketplaces": {
-    "han": {
-      "source": {
-        "source": "github",
-        "repo": "thebushidocollective/han"
-      }
-    },
     "haiku": {
       "source": {
         "source": "directory",
-        "path": "."
+        "path": "/Volumes/dev/src/github.com/gigsmart/haiku-method/.claude/worktrees/delegated-swimming-honey"
       }
     }
-  }
+  },
+  "teammateMode": "tmux"
 }

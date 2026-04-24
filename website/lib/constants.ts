@@ -7,7 +7,8 @@ export const SITE_NAME = "H·AI·K·U"
 export const SITE_DESCRIPTION =
 	"The software development profile of the H·AI·K·U universal lifecycle framework"
 export const SITE_AUTHOR = "GigSmart"
-export const GITHUB_REPO = process.env.NEXT_PUBLIC_REPO_SLUG ?? "gigsmart/haiku-method"
+export const GITHUB_REPO =
+	process.env.NEXT_PUBLIC_REPO_SLUG ?? "gigsmart/haiku-method"
 export const GITHUB_URL = `https://github.com/${GITHUB_REPO}`
 
 /**

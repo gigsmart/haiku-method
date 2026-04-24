@@ -1,16 +1,19 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getMethodologyPhase, getAllMethodologyPhases } from "@/lib/methodology"
 import { remark } from "remark"
 import remarkGfm from "remark-gfm"
 import html from "remark-html"
+import { getAllMethodologyPhases, getMethodologyPhase } from "@/lib/methodology"
 
 interface PhasePageProps {
 	params: Promise<{ phase: string }>
 }
 
-const phaseColors: Record<string, { bg: string; text: string; border: string; badge: string }> = {
+const phaseColors: Record<
+	string,
+	{ bg: string; text: string; border: string; badge: string }
+> = {
 	teal: {
 		bg: "bg-teal-50 dark:bg-teal-950/30",
 		text: "text-teal-700 dark:text-teal-300",
@@ -21,7 +24,8 @@ const phaseColors: Record<string, { bg: string; text: string; border: string; ba
 		bg: "bg-indigo-50 dark:bg-indigo-950/30",
 		text: "text-indigo-700 dark:text-indigo-300",
 		border: "border-indigo-200 dark:border-indigo-800",
-		badge: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+		badge:
+			"bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
 	},
 	amber: {
 		bg: "bg-amber-50 dark:bg-amber-950/30",
@@ -43,7 +47,9 @@ export async function generateStaticParams() {
 	}))
 }
 
-export async function generateMetadata({ params }: PhasePageProps): Promise<Metadata> {
+export async function generateMetadata({
+	params,
+}: PhasePageProps): Promise<Metadata> {
 	const { phase: slug } = await params
 	const phase = getMethodologyPhase(slug)
 	if (!phase) return { title: "Not Found" }
@@ -62,11 +68,15 @@ export default async function PhasePage({ params }: PhasePageProps) {
 	const allPhases = getAllMethodologyPhases()
 	const currentIndex = allPhases.findIndex((p) => p.slug === slug)
 	const prevPhase = currentIndex > 0 ? allPhases[currentIndex - 1] : null
-	const nextPhase = currentIndex < allPhases.length - 1 ? allPhases[currentIndex + 1] : null
+	const nextPhase =
+		currentIndex < allPhases.length - 1 ? allPhases[currentIndex + 1] : null
 
 	const colors = phaseColors[phase.color] || phaseColors.teal
 
-	const processedContent = await remark().use(remarkGfm).use(html).process(phase.content)
+	const processedContent = await remark()
+		.use(remarkGfm)
+		.use(html)
+		.process(phase.content)
 	const contentHtml = processedContent.toString()
 
 	return (
@@ -78,17 +88,32 @@ export default async function PhasePage({ params }: PhasePageProps) {
 						href="/methodology/"
 						className="mb-4 inline-flex items-center gap-1 text-sm text-stone-500 transition hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
 					>
-						<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+						<svg
+							className="h-4 w-4"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							aria-hidden="true"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M15 19l-7-7 7-7"
+							/>
 						</svg>
 						Methodology
 					</Link>
 					<div className="mb-4">
-						<span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${colors.badge}`}>
+						<span
+							className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${colors.badge}`}
+						>
 							Phase {phase.phase_number} of 4
 						</span>
 					</div>
-					<h1 className={`mb-3 text-4xl font-bold tracking-tight ${colors.text}`}>
+					<h1
+						className={`mb-3 text-4xl font-bold tracking-tight ${colors.text}`}
+					>
 						{phase.title}
 					</h1>
 					<p className="text-lg text-stone-600 dark:text-stone-400">
@@ -102,6 +127,7 @@ export default async function PhasePage({ params }: PhasePageProps) {
 				<div className="mx-auto max-w-3xl">
 					<div
 						className="prose prose-stone dark:prose-invert prose-headings:font-semibold prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-lg prose-h3:mt-6 prose-p:leading-relaxed"
+						// biome-ignore lint/security/noDangerouslySetInnerHtml: server-rendered markdown from the methodology content directory (author-controlled, not user input)
 						dangerouslySetInnerHTML={{ __html: contentHtml }}
 					/>
 				</div>
@@ -115,8 +141,19 @@ export default async function PhasePage({ params }: PhasePageProps) {
 							href={`/methodology/${prevPhase.slug}/`}
 							className="flex items-center gap-2 text-sm font-medium text-stone-600 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
 						>
-							<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+							<svg
+								className="h-4 w-4"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								aria-hidden="true"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M15 19l-7-7 7-7"
+								/>
 							</svg>
 							{prevPhase.title}
 						</Link>
@@ -129,8 +166,19 @@ export default async function PhasePage({ params }: PhasePageProps) {
 							className="flex items-center gap-2 text-sm font-medium text-stone-600 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
 						>
 							{nextPhase.title}
-							<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+							<svg
+								className="h-4 w-4"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								aria-hidden="true"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M9 5l7 7-7 7"
+								/>
 							</svg>
 						</Link>
 					) : (
@@ -139,8 +187,19 @@ export default async function PhasePage({ params }: PhasePageProps) {
 							className="flex items-center gap-2 text-sm font-medium text-stone-600 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
 						>
 							Back to Methodology
-							<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+							<svg
+								className="h-4 w-4"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								aria-hidden="true"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M9 5l7 7-7 7"
+								/>
 							</svg>
 						</Link>
 					)}

@@ -36,6 +36,7 @@ const args = [
 	"--platform=node",
 	"--format=esm",
 	"--tree-shaking=true",
+	"--minify",
 	"--sourcemap=external",
 	`--outfile=${outfile}`,
 	'--banner:js=import{createRequire}from"module";const require=createRequire(import.meta.url);',

@@ -1,0 +1,15 @@
+{
+	"session_id": "demo-free-text",
+	"session_type": "question",
+	"status": "pending",
+	"title": "Describe the mood",
+	"context": "Write a short paragraph describing the mood you want the landing page to convey.",
+	"questions": [
+		{
+			"question": "What mood should the hero section convey?",
+			"header": "Free-text answer — one paragraph is enough.",
+			"options": []
+		}
+	],
+	"image_urls": ["https://example.test/images/demo-free-text-hero.png"]
+}

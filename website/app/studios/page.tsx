@@ -1,6 +1,6 @@
-import { getStudiosGrouped } from "@/lib/studios"
 import type { Metadata } from "next"
 import Link from "next/link"
+import { getStudiosGrouped } from "@/lib/studios"
 
 export const metadata: Metadata = {
 	title: "Studios - H\u00b7AI\u00b7K\u00b7U",
@@ -8,7 +8,10 @@ export const metadata: Metadata = {
 		"Browse H\u00b7AI\u00b7K\u00b7U studios — domain-specific lifecycle templates for software, sales, marketing, compliance, and more.",
 }
 
-const categoryColors: Record<string, { border: string; bg: string; text: string }> = {
+const categoryColors: Record<
+	string,
+	{ border: string; bg: string; text: string }
+> = {
 	Engineering: {
 		border: "border-indigo-200 dark:border-indigo-800",
 		bg: "bg-indigo-50 dark:bg-indigo-950/30",
@@ -61,8 +64,8 @@ export default function StudiosPage() {
 					</h1>
 					<p className="text-lg text-stone-600 dark:text-stone-400">
 						Studios customize the H·AI·K·U lifecycle for specific domains. Each
-						studio defines stages, roles, review modes, and quality gates tailored
-						to how work actually flows in that field.
+						studio defines stages, roles, review modes, and quality gates
+						tailored to how work actually flows in that field.
 					</p>
 				</div>
 			</section>
@@ -72,15 +75,15 @@ export default function StudiosPage() {
 				<div className="mx-auto max-w-3xl">
 					<h2 className="mb-4 text-2xl font-bold">What is a Studio?</h2>
 					<p className="mb-4 text-stone-600 dark:text-stone-400">
-						A studio is a domain-specific configuration of the H·AI·K·U lifecycle.
-						It defines which stages work moves through, what roles (hats) the AI
-						agent adopts at each stage, and what quality gates must pass before work
-						advances.
+						A studio is a domain-specific configuration of the H·AI·K·U
+						lifecycle. It defines which stages work moves through, what roles
+						(hats) the AI agent adopts at each stage, and what quality gates
+						must pass before work advances.
 					</p>
 					<p className="text-stone-600 dark:text-stone-400">
-						H·AI·K·U ships with {Array.from(groups.values()).flat().length} built-in
-						studios across engineering, go-to-market, and general-purpose domains.
-						You can also{" "}
+						H·AI·K·U ships with {Array.from(groups.values()).flat().length}{" "}
+						built-in studios across engineering, go-to-market, and
+						general-purpose domains. You can also{" "}
 						<Link
 							href="/docs/customization/"
 							className="text-teal-600 underline decoration-teal-600/30 hover:decoration-teal-600 dark:text-teal-400"
@@ -96,7 +99,8 @@ export default function StudiosPage() {
 			<section className="px-4 py-16">
 				<div className="mx-auto max-w-5xl space-y-16">
 					{Array.from(groups.entries()).map(([category, studios]) => {
-						const colors = categoryColors[category] || categoryColors["General Purpose"]
+						const colors =
+							categoryColors[category] || categoryColors["General Purpose"]
 
 						return (
 							<div key={category}>
@@ -147,7 +151,13 @@ export default function StudiosPage() {
 													))}
 												</div>
 												<div className="mt-2 flex gap-4 text-xs text-stone-400 dark:text-stone-500">
-													<span>{studio.stageDefinitions.reduce((acc, s) => acc + s.hatDefinitions.length, 0)} hats</span>
+													<span>
+														{studio.stageDefinitions.reduce(
+															(acc, s) => acc + s.hatDefinitions.length,
+															0,
+														)}{" "}
+														hats
+													</span>
 													<span>auto-detected persistence</span>
 												</div>
 											</div>

@@ -40,7 +40,7 @@ export function getFileContributors(filePath: string): Contributor[] {
 				const match = line.match(/^\s*(\d+)\t(.+?)\s*<(.+?)>\s*$/)
 				if (match) {
 					return {
-						commits: parseInt(match[1], 10),
+						commits: Number.parseInt(match[1], 10),
 						name: match[2].trim(),
 						email: match[3].trim(),
 					}
@@ -49,7 +49,7 @@ export function getFileContributors(filePath: string): Contributor[] {
 				const simpleMatch = line.match(/^\s*(\d+)\t(.+)$/)
 				if (simpleMatch) {
 					return {
-						commits: parseInt(simpleMatch[1], 10),
+						commits: Number.parseInt(simpleMatch[1], 10),
 						name: simpleMatch[2].trim(),
 						email: "",
 					}

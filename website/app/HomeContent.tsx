@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { useCallback, useEffect, useState } from "react"
+import { useState } from "react"
 import {
 	BubbleOption,
 	CastCard,
@@ -10,8 +10,6 @@ import {
 	CriteriaCompare,
 	DeepDive,
 	ExchangeLabel,
-	FlowArrowInline,
-	FlowNode,
 	FuelGauge,
 	GateCards,
 	HatArrow,
@@ -593,8 +591,8 @@ export default function HomeContent({
 						forceOpen={isRef}
 					>
 						<p className="mb-3">
-							H·AI·K·U is a Claude plugin with a well-organized file
-							structure. Everything is self-contained.
+							H·AI·K·U is a Claude plugin with a well-organized file structure.
+							Everything is self-contained.
 						</p>
 						<div className="rounded-lg border border-gray-200 bg-gray-50 p-4 font-mono text-xs leading-relaxed dark:border-gray-700 dark:bg-gray-950">
 							<div>
@@ -609,7 +607,7 @@ export default function HomeContent({
 							<div className="pl-5">
 								<span className="font-semibold text-blue-500">studios/</span>{" "}
 								<span className="text-gray-400">
-									-- 120+ hat definitions in studios/*/stages/*/hats/
+									{"-- 120+ hat definitions in studios/*/stages/*/hats/"}
 								</span>
 							</div>
 							<div className="pl-5">
@@ -642,9 +640,7 @@ export default function HomeContent({
 							</div>
 							<div className="pl-5">
 								<span className="font-semibold text-blue-500">bin/</span>{" "}
-								<span className="text-gray-400">
-									-- Compiled haiku binary
-								</span>
+								<span className="text-gray-400">-- Compiled haiku binary</span>
 							</div>
 						</div>
 					</DeepDive>
@@ -848,11 +844,10 @@ export default function HomeContent({
 						>
 							<p className="text-xs text-gray-600 dark:text-gray-300">
 								<strong className="text-violet-500">New projects only:</strong>{" "}
-								A visual design direction picker guides you through choosing
-								an aesthetic -- Brutalist, Editorial, Dense, or Playful --
-								with tunable parameters. The selection produces a design
-								blueprint that shapes every wireframe and UI component
-								downstream.
+								A visual design direction picker guides you through choosing an
+								aesthetic -- Brutalist, Editorial, Dense, or Playful -- with
+								tunable parameters. The selection produces a design blueprint
+								that shapes every wireframe and UI component downstream.
 							</p>
 						</motion.div>
 
@@ -868,10 +863,22 @@ export default function HomeContent({
 							</p>
 							<div className="mb-3 grid gap-2 sm:grid-cols-2">
 								{[
-									{ name: "Brutalist", desc: "High contrast, raw borders, monospace" },
-									{ name: "Editorial", desc: "Magazine layouts, serif headings, whitespace" },
-									{ name: "Dense / Utilitarian", desc: "Packed info, dark theme, keyboard-first" },
-									{ name: "Playful / Warm", desc: "Rounded corners, vibrant colors, soft shadows" },
+									{
+										name: "Brutalist",
+										desc: "High contrast, raw borders, monospace",
+									},
+									{
+										name: "Editorial",
+										desc: "Magazine layouts, serif headings, whitespace",
+									},
+									{
+										name: "Dense / Utilitarian",
+										desc: "Packed info, dark theme, keyboard-first",
+									},
+									{
+										name: "Playful / Warm",
+										desc: "Rounded corners, vibrant colors, soft shadows",
+									},
 								].map((a) => (
 									<div
 										key={a.name}
@@ -1244,10 +1251,9 @@ export default function HomeContent({
 						</div>
 						<p className="text-xs text-gray-500 dark:text-gray-400">
 							The gates were detected from your repo tooling during{" "}
-							<code className="text-amber-500">/haiku:elaborate</code> and
-							saved to <code className="text-amber-500">intent.md</code>{" "}
-							frontmatter. The harness reads them and runs each command
-							synchronously —{" "}
+							<code className="text-amber-500">/haiku:elaborate</code> and saved
+							to <code className="text-amber-500">intent.md</code> frontmatter.
+							The harness reads them and runs each command synchronously —{" "}
 							<strong className="text-gray-700 dark:text-gray-300">
 								the agent literally cannot stop until all pass.
 							</strong>{" "}
@@ -1284,9 +1290,9 @@ export default function HomeContent({
 					>
 						When a <strong className="text-violet-500">design pass</strong> is
 						active, the same rotation applies -- but the Builder becomes a
-						Designer. Instead of production code, it produces wireframes,
-						design tokens, and component specs. The design blueprint from
-						elaboration feeds into every artifact.
+						Designer. Instead of production code, it produces wireframes, design
+						tokens, and component specs. The design blueprint from elaboration
+						feeds into every artifact.
 					</motion.p>
 
 					{/* Inner Loop */}
@@ -1312,9 +1318,9 @@ export default function HomeContent({
 					<FuelGauge />
 
 					<ChatBubble speaker="system">
-						The <code className="text-amber-500">enforce-iteration</code> hook fires
-						when a session ends. It checks what work remains. If units are still
-						in progress, it tells the next session to call{" "}
+						The <code className="text-amber-500">enforce-iteration</code> hook
+						fires when a session ends. It checks what work remains. If units are
+						still in progress, it tells the next session to call{" "}
 						<code className="text-amber-500">/haiku:pickup</code> to continue.
 						The AI never &ldquo;forgets&rdquo; mid-task.
 					</ChatBubble>
@@ -1325,8 +1331,8 @@ export default function HomeContent({
 						forceOpen={isRef}
 					>
 						<p className="mb-3">
-							H·AI·K·U uses a two-tier persistence model that separates permanent
-							project artifacts from temporary working state.
+							H·AI·K·U uses a two-tier persistence model that separates
+							permanent project artifacts from temporary working state.
 						</p>
 						<div className="grid gap-4 sm:grid-cols-2">
 							<div className="rounded-lg border border-green-300 bg-green-50/30 p-4 dark:border-green-800 dark:bg-green-950/10">
@@ -1825,8 +1831,7 @@ export default function HomeContent({
 									Auto-detects your VCS, hosting, CI/CD, and connected tools
 								</li>
 								<li>
-									Creates <code>.haiku/settings.yml</code> with your
-									preferences
+									Creates <code>.haiku/settings.yml</code> with your preferences
 								</li>
 								<li>You only run this once</li>
 							</ul>
@@ -2025,7 +2030,9 @@ export default function HomeContent({
 							Internal Subskills (run automatically)
 						</h4>
 						<p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
-							These are subskills under <code className="text-amber-500">execute/subskills/</code> -- they fire behind the scenes and are not user-invocable commands:
+							These are subskills under{" "}
+							<code className="text-amber-500">execute/subskills/</code> -- they
+							fire behind the scenes and are not user-invocable commands:
 						</p>
 						<div className="flex flex-wrap gap-1.5">
 							{[
@@ -2081,8 +2088,7 @@ export default function HomeContent({
 							</div>
 							<div>
 								<code>
-									/plugin install haiku@gigsmart-haiku-method --scope
-									project
+									/plugin install haiku@gigsmart-haiku-method --scope project
 								</code>
 							</div>
 						</div>
@@ -2259,7 +2265,12 @@ function PhaseSummary({
 	label,
 	labelColor,
 	desc,
-}: { icon: string; label: string; labelColor: string; desc: string }) {
+}: {
+	icon: string
+	label: string
+	labelColor: string
+	desc: string
+}) {
 	return (
 		<div className="text-center">
 			<div className="mb-1.5 text-xl">{icon}</div>
@@ -2283,7 +2294,11 @@ function WorkflowPill({
 	name,
 	flow,
 	recommended,
-}: { name: string; flow: string; recommended?: boolean }) {
+}: {
+	name: string
+	flow: string
+	recommended?: boolean
+}) {
 	return (
 		<div
 			className={`flex flex-wrap items-center gap-2.5 rounded-lg border px-3.5 py-2 text-sm ${
@@ -2309,7 +2324,11 @@ function DagUnit({
 	id,
 	name,
 	deps,
-}: { id: string; name: string; deps: string }) {
+}: {
+	id: string
+	name: string
+	deps: string
+}) {
 	return (
 		<div className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white p-2.5 dark:border-gray-700 dark:bg-gray-950">
 			<span className="min-w-[60px] text-sm font-bold text-amber-500">
@@ -2331,7 +2350,11 @@ function MiniCard({
 	title,
 	titleColor,
 	desc,
-}: { title: string; titleColor: string; desc: string }) {
+}: {
+	title: string
+	titleColor: string
+	desc: string
+}) {
 	return (
 		<div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-950">
 			<div className={`mb-1 text-xs font-semibold ${titleColor}`}>{title}</div>
@@ -2344,7 +2367,11 @@ function FinishStage({
 	num,
 	numColor,
 	children,
-}: { num: number; numColor: string; children: React.ReactNode }) {
+}: {
+	num: number
+	numColor: string
+	children: React.ReactNode
+}) {
 	return (
 		<motion.div
 			{...fadeIn}

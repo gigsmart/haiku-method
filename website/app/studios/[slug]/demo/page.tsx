@@ -1,7 +1,7 @@
-import { getDemoConfig, listExamples, loadExampleArtifacts } from "@/lib/demo"
-import { getAllStudios, getStudioBySlug } from "@/lib/studios"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { getDemoConfig, listExamples, loadExampleArtifacts } from "@/lib/demo"
+import { getAllStudios, getStudioBySlug } from "@/lib/studios"
 import { DemoClient } from "./DemoClient"
 
 interface Props {
@@ -30,7 +30,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 /** Pre-load all example configs + artifacts at build time */
 function loadAllExamples(slug: string) {
 	const examples = listExamples(slug)
-	const loaded: Record<string, { artifacts: Record<string, string> | null }> = {}
+	const loaded: Record<string, { artifacts: Record<string, string> | null }> =
+		{}
 	for (const name of examples) {
 		loaded[name] = {
 			artifacts: loadExampleArtifacts(slug, name),
@@ -59,7 +60,9 @@ export default async function StudioDemoPage({ params }: Props) {
 	return (
 		<DemoClient
 			config={config}
-			artifacts={defaultExample ? loaded[defaultExample]?.artifacts ?? null : null}
+			artifacts={
+				defaultExample ? (loaded[defaultExample]?.artifacts ?? null) : null
+			}
 			examples={examples}
 			exampleConfigs={exampleConfigs as Record<string, typeof config>}
 			exampleArtifacts={Object.fromEntries(

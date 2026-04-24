@@ -1,10 +1,10 @@
 "use client"
 
-import { useDemoEngine } from "@/lib/demo/engine"
-import type { DemoConfig } from "@/lib/demo/types"
 import { useCallback, useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { useDemoEngine } from "@/lib/demo/engine"
+import type { DemoConfig } from "@/lib/demo/types"
 
 interface Props {
 	config: DemoConfig
@@ -60,6 +60,7 @@ function renderTreeNodes(
 		const isHighlighted = fullPath === highlightedFile
 		const hasArtifact = !isDir && artifacts && fullPath in artifacts
 		items.push(
+			// biome-ignore lint/a11y/noStaticElementInteractions: row is interactive only when hasArtifact; role="button"+tabIndex+onKeyDown are conditionally wired below (no-op otherwise)
 			<div
 				key={fullPath}
 				data-path={fullPath}
@@ -230,10 +231,24 @@ function ArtifactViewer({
 
 // ── Main Component ──
 
-export function DemoClient({ config: initialConfig, artifacts: initialArtifacts, examples, exampleConfigs, exampleArtifacts }: Props) {
-	const [activeExample, setActiveExample] = useState<string | null>(examples?.[0] ?? null)
-	const config = activeExample && exampleConfigs?.[activeExample] ? exampleConfigs[activeExample] : initialConfig
-	const artifacts = activeExample && exampleArtifacts?.[activeExample] !== undefined ? exampleArtifacts![activeExample] : initialArtifacts
+export function DemoClient({
+	config: initialConfig,
+	artifacts: initialArtifacts,
+	examples,
+	exampleConfigs,
+	exampleArtifacts,
+}: Props) {
+	const [activeExample, setActiveExample] = useState<string | null>(
+		examples?.[0] ?? null,
+	)
+	const config =
+		activeExample && exampleConfigs?.[activeExample]
+			? exampleConfigs[activeExample]
+			: initialConfig
+	const artifacts =
+		activeExample && exampleArtifacts?.[activeExample] !== undefined
+			? exampleArtifacts?.[activeExample]
+			: initialArtifacts
 
 	const {
 		state,
@@ -267,7 +282,7 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 		if (terminalRef.current) {
 			terminalRef.current.scrollTop = terminalRef.current.scrollHeight
 		}
-	}, [state.messages.length, state.typing, state.fastForward])
+	}, [])
 
 	// Keyboard shortcuts
 	const handleKeyDown = useCallback(
@@ -326,11 +341,6 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 		return () => document.removeEventListener("keydown", handleKeyDown)
 	}, [handleKeyDown])
 
-	// Handle completion overlay trigger from __SHOW_COMPLETION__ system message
-	const isComplete =
-		state.messages.some((m) => m.text === "__SHOW_COMPLETION__") ||
-		state.completed
-
 	// Filter out the __SHOW_COMPLETION__ sentinel from displayed messages
 	const displayMessages = state.messages.filter(
 		(m) => m.text !== "__SHOW_COMPLETION__",
@@ -361,7 +371,7 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 		? "complete"
 		: state.activeStage || "ready"
 	const stageBadgeIsComplete = state.allStagesComplete
-	const stageBadgeIsIdle = !state.activeStage && !state.allStagesComplete
+	const stageBadgeIsIdle = !(state.activeStage || state.allStagesComplete)
 
 	return (
 		<div className="fixed inset-0 z-50 flex flex-col bg-stone-950 font-sans text-stone-200">
@@ -391,6 +401,7 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 
 					{/* Play/Pause button */}
 					<button
+						type="button"
 						onClick={togglePlayPause}
 						title="Play / Pause (Space)"
 						className={`cursor-pointer rounded-md border px-3.5 py-1.5 font-sans text-[13px] transition-all max-[600px]:px-2 max-[600px]:py-1 max-[600px]:text-[11px] ${
@@ -404,6 +415,7 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 
 					{/* Step backward/forward */}
 					<button
+						type="button"
 						onClick={stepBackward}
 						title="Step Back"
 						disabled={state.stepIndex === 0}
@@ -412,6 +424,7 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 						&#9664;
 					</button>
 					<button
+						type="button"
 						onClick={stepForward}
 						title="Step Forward"
 						disabled={state.stepIndex >= totalSteps}
@@ -424,6 +437,7 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 					<div className="flex gap-1 max-[900px]:hidden">
 						{[1, 2, 4].map((s) => (
 							<button
+								type="button"
 								key={s}
 								onClick={() => setSpeed(s)}
 								className={`cursor-pointer rounded border px-2.5 py-1 font-sans text-xs transition-all ${
@@ -439,6 +453,7 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 
 					{/* Restart button */}
 					<button
+						type="button"
 						onClick={reset}
 						title="Restart (R)"
 						className="cursor-pointer rounded-md border border-stone-700 bg-stone-900 px-3.5 py-1.5 font-sans text-[13px] text-stone-200 transition-all hover:border-teal-400 hover:text-teal-400 max-[600px]:px-2 max-[600px]:py-1 max-[600px]:text-[11px]"
@@ -458,7 +473,10 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 						>
 							{examples.map((name) => (
 								<option key={name} value={name}>
-									{name.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+									{name
+										.split("-")
+										.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+										.join(" ")}
 								</option>
 							))}
 						</select>
@@ -478,6 +496,7 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 			<div className="hidden shrink-0 border-b border-stone-800 bg-stone-950 max-[600px]:flex">
 				{(["terminal", "artifacts", "board"] as const).map((tab) => (
 					<button
+						type="button"
 						key={tab}
 						onClick={() => setMobileTab(tab)}
 						className={`flex-1 cursor-pointer border-b-2 bg-transparent py-2 font-sans text-xs font-semibold transition-all ${
@@ -526,6 +545,7 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 						className="flex-1 overflow-y-auto scroll-smooth p-4 font-mono text-[13px] leading-[1.7] max-[600px]:p-3 max-[600px]:text-xs max-[600px]:leading-[1.6] [&::-webkit-scrollbar-thumb]:rounded-sm [&::-webkit-scrollbar-thumb]:bg-stone-700 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1.5"
 					>
 						{displayMessages.map((msg, i) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: append-only terminal transcript — order is stable for the demo's lifetime
 							<div key={i} className="mb-3 demo-animate-in">
 								<div
 									className={`text-[11px] font-semibold uppercase tracking-widest ${
@@ -544,6 +564,7 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 											? "italic text-amber-400"
 											: "text-stone-200"
 									}`}
+									// biome-ignore lint/security/noDangerouslySetInnerHtml: escapeHtml runs on msg.text before injection — this is a safe HTML-entity re-render (lets us preserve line breaks via styled whitespace-pre-wrap without losing escape safety)
 									dangerouslySetInnerHTML={{ __html: escapeHtml(msg.text) }}
 								/>
 							</div>
@@ -572,6 +593,7 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 									stroke="currentColor"
 									strokeWidth="2"
 									className="h-3.5 w-3.5"
+									aria-hidden="true"
 								>
 									<polygon points="13 19 22 12 13 5" />
 									<polygon points="2 19 11 12 2 5" />
@@ -710,7 +732,7 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 										const isChecked = state.review.checkedIndexes.includes(i)
 										return (
 											<li
-												key={i}
+												key={criterion}
 												className="flex items-center gap-2 font-mono text-xs text-stone-400"
 											>
 												<span
@@ -758,6 +780,7 @@ export function DemoClient({ config: initialConfig, artifacts: initialArtifacts,
 			{viewingFile && artifacts && viewingFile in artifacts && (
 				<div className="fixed inset-0 z-[95] flex">
 					{/* Backdrop */}
+					{/* biome-ignore lint/a11y/useSemanticElements: a real <button> inside a fixed-inset flex backdrop collides with Tailwind's flex-1 layout; role="button" with Escape+click handlers gives equivalent semantics for a dismissal-only affordance */}
 					<div
 						className="flex-1 bg-stone-950/70"
 						onClick={closeFile}

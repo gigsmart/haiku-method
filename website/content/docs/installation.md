@@ -12,6 +12,8 @@ H·AI·K·U is distributed as a Claude plugin that works in both Claude Code and
 
 H·AI·K·U requires [Claude Code](https://claude.ai/code) or [Claude Cowork](https://claude.ai/cowork), Anthropic's AI-powered development environments. Ensure you have either Claude Code or Cowork installed and configured.
 
+H·AI·K·U also works with other MCP-compatible harnesses including Cursor, Windsurf, Gemini CLI, OpenCode, and Kiro. See [Other Harnesses](/docs/other-harnesses/) for setup instructions.
+
 ## Installation Methods
 
 ### Method 1: Via Plugin Install (Recommended)

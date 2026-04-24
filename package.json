@@ -1,15 +1,15 @@
 {
-  "name": "haiku-method",
-  "private": true,
-  "workspaces": ["website", "packages/haiku", "packages/shared"],
-  "scripts": {
-    "build": "bun run --filter '*' build",
-    "dev": "bun run --cwd website dev",
-    "lint": "biome check .",
-    "format": "biome format --write ."
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "playwright": "^1.58.2"
-  }
+	"name": "haiku-method",
+	"private": true,
+	"workspaces": ["website", "packages/haiku", "packages/haiku-api", "packages/haiku-ui", "packages/shared"],
+	"scripts": {
+		"build": "bun run --filter '*' build",
+		"dev": "bun run --cwd website dev",
+		"lint": "biome check .",
+		"format": "biome format --write ."
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.12",
+		"playwright": "^1.58.2"
+	}
 }

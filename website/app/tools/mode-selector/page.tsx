@@ -63,8 +63,8 @@ export default function ModeSelectorPage() {
 					About Operating Modes
 				</h2>
 				<p className="mb-4 text-stone-600 dark:text-stone-400">
-					H·AI·K·U defines three operating modes that determine the level of human
-					involvement during AI-assisted work:
+					H·AI·K·U defines three operating modes that determine the level of
+					human involvement during AI-assisted work:
 				</p>
 				<ul className="space-y-2 text-stone-600 dark:text-stone-400">
 					<li>

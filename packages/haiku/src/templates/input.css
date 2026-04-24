@@ -1,3 +1,31 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Dark mode: toggleable via `.dark` class on <html>, matches review-app. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Content sources — server-rendered HTML templates compiled from TypeScript. */
+@source "./*.ts";
+
+/* Safelist for class names constructed at runtime (dynamic lg:grid-cols-N). */
+@source inline("lg:grid-cols-1 lg:grid-cols-2 lg:grid-cols-3");
+
+/* Custom status / action colors preserved from tailwind.config.cjs v3. */
+@theme {
+	--color-status-completed: #16a34a;
+	--color-status-completed-light: #dcfce7;
+	--color-status-completed-dark: #166534;
+	--color-status-in-progress: #2563eb;
+	--color-status-in-progress-light: #dbeafe;
+	--color-status-in-progress-dark: #1e40af;
+	--color-status-pending: #6b7280;
+	--color-status-pending-light: #f3f4f6;
+	--color-status-pending-dark: #374151;
+	--color-status-blocked: #dc2626;
+	--color-status-blocked-light: #fee2e2;
+	--color-status-blocked-dark: #991b1b;
+	--color-approve: #16a34a;
+	--color-approve-hover: #15803d;
+	--color-changes: #d97706;
+	--color-changes-hover: #b45309;
+}

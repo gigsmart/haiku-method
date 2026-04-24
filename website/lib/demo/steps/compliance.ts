@@ -1,87 +1,991 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "compliance",
-  studio: "compliance",
-  stages: ["scope", "assess", "remediate", "document", "certify"],
-  completionText: "All 5 stages passed. soc2-type-ii-certification delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1000, actions: [{"type":"typing"}] },
-    { delay: 800, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"SOC 2 Type II certification for our SaaS platform"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: soc2-type-ii-certification..."}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: compliance. 5 stages: scope → assess → remediate → document → certify"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"scope"}, {"type":"msg","role":"agent","label":"agent","text":"Entering scope stage. Hat: compliance-analyst.\nWhat’s the target framework and which Trust Service Criteria are in scope?"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/scope/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"SOC 2 Type II. All five TSC: security, availability, processing integrity, confidentiality, and privacy. Our platform handles healthcare data so we need the full set."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"All five TSC — understood. Healthcare data means we’ll pay extra attention to confidentiality and privacy controls. Decomposing scope work..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/scope/units/unit-01-framework-mapping.md"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/scope/units/unit-02-system-inventory.md"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/scope/units/unit-03-scope-boundary.md"}, {"type":"card","stage":"scope","name":"framework-mapping","status":"in-progress"}, {"type":"card","stage":"scope","name":"system-inventory","status":""}, {"type":"card","stage":"scope","name":"scope-boundary","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: scope-definer. Framework mapping complete. 87 controls identified across 5 TSC categories:\n  • Security (CC): 33 controls\n  • Availability (A): 12 controls\n  • Processing Integrity (PI): 14 controls\n  • Confidentiality (C): 16 controls\n  • Privacy (P): 12 controls"}, {"type":"updateCard","stage":"scope","name":"framework-mapping","status":"completed"}, {"type":"updateCard","stage":"scope","name":"system-inventory","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"System inventory: 14 in-scope services, 3 data stores (PostgreSQL, Redis, S3), 2 third-party integrations (Stripe, Twilio). Data classification: PHI in PostgreSQL and S3, PII in all three stores."}, {"type":"updateCard","stage":"scope","name":"system-inventory","status":"completed"}, {"type":"updateCard","stage":"scope","name":"scope-boundary","status":"in-progress"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"I see your marketing website and blog are on separate infrastructure. Should those be in scope or excluded?"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Exclude them. They don’t touch customer data. Only the SaaS platform and its supporting infrastructure."}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Excluded with documented rationale. Scope boundary finalized."}, {"type":"updateCard","stage":"scope","name":"scope-boundary","status":"completed"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/knowledge/CONTROL-MAPPING.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Scope complete. Review gate: auto. All criteria met — advancing."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to assess stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"assess"}, {"type":"msg","role":"agent","label":"agent","text":"Entering assess stage. Hat: auditor.\nLoading control mapping..."}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/assess/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → scope/control-mapping (knowledge/CONTROL-MAPPING.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Evaluating 87 controls against current implementation. This is the big one..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/assess/units/unit-01-gap-analysis.md"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/assess/units/unit-02-risk-assessment.md"}, {"type":"card","stage":"assess","name":"gap-analysis","status":"in-progress"}, {"type":"card","stage":"assess","name":"risk-assessment","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"60"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: risk-assessor. Gap analysis complete. Results:\n  • Met: 61 controls (70%)\n  • Partially met: 18 controls (21%)\n  • Unmet: 8 controls (9%)\n\nCritical gaps:\n  1. No formal access review process (CC6.1)\n  2. Encryption at rest not enabled on Redis cache (CC6.7)\n  3. No incident response plan documented (CC7.3)\n  4. Missing data retention policy for PHI (P6.1)"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"user","label":"you","text":"The Redis gap is a surprise. I thought we enabled encryption everywhere. What’s cached there?"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Redis caches session tokens and some user profile data (names, emails). No PHI directly, but it’s still PII. The cache was provisioned before your encryption-at-rest policy was adopted. Easy fix — enable TLS and encryption at rest on the ElastiCache cluster."}, {"type":"updateCard","stage":"assess","name":"gap-analysis","status":"completed"}, {"type":"updateCard","stage":"assess","name":"risk-assessment","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Risk assessment scored all 26 gaps. 4 critical, 8 high, 14 medium. No low-risk items — everything unmet matters for certification."}, {"type":"updateCard","stage":"assess","name":"risk-assessment","status":"completed"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/knowledge/GAP-REPORT.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Assess stage complete. Review gate: ask."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Assess","intent":"","criteria":["87 controls evaluated with evidence","61 met, 18 partial, 8 unmet","4 critical gaps identified and risk-scored","Redis encryption gap flagged with PII exposure","Risk assessment uses consistent scoring methodology"],"gateType":"ask gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2200, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. Let’s fix these gaps."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to remediate stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"remediate"}, {"type":"msg","role":"agent","label":"agent","text":"Entering remediate stage. Hat: remediation-engineer.\nLoading gap report..."}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/remediate/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → assess/gap-report (knowledge/GAP-REPORT.md)"}, {"type":"msg","role":"agent","label":"agent","text":"26 gaps to remediate. Starting with the 4 critical items..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/remediate/units/unit-01-access-review.md"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/remediate/units/unit-02-redis-encryption.md"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/remediate/units/unit-03-incident-response-plan.md"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/remediate/units/unit-04-data-retention-policy.md"}, {"type":"card","stage":"remediate","name":"access-review","status":"in-progress"}, {"type":"card","stage":"remediate","name":"redis-encryption","status":""}, {"type":"card","stage":"remediate","name":"ir-plan","status":""}, {"type":"card","stage":"remediate","name":"retention-policy","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Access review process implemented:\n  • Quarterly access reviews with automated report generation\n  • Role-based access matrix documented for all 14 services\n  • Automated deprovisioning on termination via SCIM integration"}, {"type":"updateCard","stage":"remediate","name":"access-review","status":"completed"}, {"type":"updateCard","stage":"remediate","name":"redis-encryption","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Redis encryption enabled — TLS in-transit and AES-256 at rest on ElastiCache. Verified no session disruption during migration."}, {"type":"updateCard","stage":"remediate","name":"redis-encryption","status":"completed"}, {"type":"updateCard","stage":"remediate","name":"ir-plan","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: policy-writer. Incident response plan drafted. Do you want the escalation path to go through PagerDuty or your internal ticketing system?"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"PagerDuty for SEV-1 and SEV-2. Internal ticketing for SEV-3 and below. Make sure on-call rotation is referenced."}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Updated. IR plan references PagerDuty for critical incidents with on-call rotation schedule linked."}, {"type":"updateCard","stage":"remediate","name":"ir-plan","status":"completed"}, {"type":"updateCard","stage":"remediate","name":"retention-policy","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Data retention policy: PHI retained 7 years per HIPAA, PII retained per customer agreement with 30-day deletion on request. Automated purge jobs configured."}, {"type":"updateCard","stage":"remediate","name":"retention-policy","status":"completed"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/knowledge/REMEDIATION-LOG.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Remediate stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Approved. All critical gaps addressed."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to document stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"document"}, {"type":"msg","role":"agent","label":"agent","text":"Entering document stage. Hat: evidence-collector.\nLoading remediation log..."}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/document/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → remediate/remediation-log (knowledge/REMEDIATION-LOG.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Building evidence packages for all 87 controls. Each needs at least one artifact with timestamps and provenance..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/document/units/unit-01-evidence-collection.md"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/document/units/unit-02-audit-trail.md"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/document/units/unit-03-control-matrix.md"}, {"type":"card","stage":"document","name":"evidence-collection","status":"in-progress"}, {"type":"card","stage":"document","name":"audit-trail","status":""}, {"type":"card","stage":"document","name":"control-matrix","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"50"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Evidence collected for 87/87 controls. Artifacts include:\n  • Screenshots of access control configurations\n  • Terraform state files proving encryption settings\n  • Policy documents with approval signatures\n  • Log samples demonstrating monitoring and alerting\n  • Automated test results for CI/CD controls"}, {"type":"updateCard","stage":"document","name":"evidence-collection","status":"completed"}, {"type":"updateCard","stage":"document","name":"audit-trail","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: documentation-writer. Audit trail links every control through the full chain: scope definition → assessment finding → remediation action → verification evidence."}, {"type":"updateCard","stage":"document","name":"audit-trail","status":"completed"}, {"type":"updateCard","stage":"document","name":"control-matrix","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Control matrix organized for auditor navigation. Index page with cross-references to all evidence. Framework-compliant format."}, {"type":"updateCard","stage":"document","name":"control-matrix","status":"completed"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/knowledge/EVIDENCE-PACKAGE.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Document stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Evidence looks comprehensive. Proceed to certify."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to certify stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"certify"}, {"type":"msg","role":"agent","label":"agent","text":"Entering certify stage. Hat: audit-liaison.\nLoading evidence package..."}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/certify/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → document/evidence-package (knowledge/EVIDENCE-PACKAGE.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Preparing audit readiness package for the external auditor..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/certify/units/unit-01-audit-prep.md"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/stages/certify/units/unit-02-finding-resolution.md"}, {"type":"card","stage":"certify","name":"audit-prep","status":"in-progress"}, {"type":"card","stage":"certify","name":"finding-resolution","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Audit readiness checklist complete. All evidence is current, indexed, and mapped to the auditor’s standard request list. Running review agents from assess and remediate stages for final thoroughness check..."}, {"type":"updateCard","stage":"certify","name":"audit-prep","status":"completed"}, {"type":"updateCard","stage":"certify","name":"finding-resolution","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: finding-resolver. Pre-audit self-assessment found 2 minor items:\n  1. One access review screenshot is from staging, not production — replaced\n  2. Encryption evidence for S3 bucket was missing KMS key rotation proof — added\n\nBoth resolved. No critical findings."}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Await gate: waiting for external auditor to complete review..."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"Await resolved — external auditor completed review. 1 observation: recommend adding MFA to the CI/CD pipeline service account. Not a finding — observation only."}, {"type":"updateCard","stage":"certify","name":"finding-resolution","status":"completed"}, {"type":"file","path":".haiku/intents/soc2-type-ii-certification/knowledge/AUDIT-RESULT.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Certify stage complete. Review gate: external + await."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Certify","intent":"","criteria":["All evidence current and mapped to auditor request list","Pre-audit self-assessment: 2 minor items resolved","External auditor: clean report with 1 observation","No unaddressed critical findings","MFA observation noted for future improvement"],"gateType":"external gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2400, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"External review approved. SOC 2 Type II certification achieved."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for soc2-type-ii-certification.\n\nDelivered:\n  • Scope: 87 controls across 5 TSC, 14 services, 3 data stores\n  • Assessment: 61 met, 18 partial, 8 unmet — 4 critical gaps identified\n  • Remediation: access reviews, Redis encryption, IR plan, retention policy\n  • Documentation: evidence package with full audit trail for 87 controls\n  • Certification: clean audit report with 1 observation (MFA for CI/CD)\n\nIntent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "compliance",
+	studio: "compliance",
+	stages: ["scope", "assess", "remediate", "document", "certify"],
+	completionText: "All 5 stages passed. soc2-type-ii-certification delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1000, actions: [{ type: "typing" }] },
+		{
+			delay: 800,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "SOC 2 Type II certification for our SaaS platform",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: soc2-type-ii-certification...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: compliance. 5 stages: scope → assess → remediate → document → certify",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "scope" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering scope stage. Hat: compliance-analyst.\nWhat’s the target framework and which Trust Service Criteria are in scope?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/scope/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "SOC 2 Type II. All five TSC: security, availability, processing integrity, confidentiality, and privacy. Our platform handles healthcare data so we need the full set.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All five TSC — understood. Healthcare data means we’ll pay extra attention to confidentiality and privacy controls. Decomposing scope work...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/scope/units/unit-01-framework-mapping.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/scope/units/unit-02-system-inventory.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/scope/units/unit-03-scope-boundary.md",
+				},
+				{
+					type: "card",
+					stage: "scope",
+					name: "framework-mapping",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "scope", name: "system-inventory", status: "" },
+				{ type: "card", stage: "scope", name: "scope-boundary", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: scope-definer. Framework mapping complete. 87 controls identified across 5 TSC categories:\n  • Security (CC): 33 controls\n  • Availability (A): 12 controls\n  • Processing Integrity (PI): 14 controls\n  • Confidentiality (C): 16 controls\n  • Privacy (P): 12 controls",
+				},
+				{
+					type: "updateCard",
+					stage: "scope",
+					name: "framework-mapping",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "scope",
+					name: "system-inventory",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "System inventory: 14 in-scope services, 3 data stores (PostgreSQL, Redis, S3), 2 third-party integrations (Stripe, Twilio). Data classification: PHI in PostgreSQL and S3, PII in all three stores.",
+				},
+				{
+					type: "updateCard",
+					stage: "scope",
+					name: "system-inventory",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "scope",
+					name: "scope-boundary",
+					status: "in-progress",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "I see your marketing website and blog are on separate infrastructure. Should those be in scope or excluded?",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Exclude them. They don’t touch customer data. Only the SaaS platform and its supporting infrastructure.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Excluded with documented rationale. Scope boundary finalized.",
+				},
+				{
+					type: "updateCard",
+					stage: "scope",
+					name: "scope-boundary",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/knowledge/CONTROL-MAPPING.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Scope complete. Review gate: auto. All criteria met — advancing.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to assess stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "assess" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering assess stage. Hat: auditor.\nLoading control mapping...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/assess/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → scope/control-mapping (knowledge/CONTROL-MAPPING.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Evaluating 87 controls against current implementation. This is the big one...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/assess/units/unit-01-gap-analysis.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/assess/units/unit-02-risk-assessment.md",
+				},
+				{
+					type: "card",
+					stage: "assess",
+					name: "gap-analysis",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "assess", name: "risk-assessment", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "60" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: risk-assessor. Gap analysis complete. Results:\n  • Met: 61 controls (70%)\n  • Partially met: 18 controls (21%)\n  • Unmet: 8 controls (9%)\n\nCritical gaps:\n  1. No formal access review process (CC6.1)\n  2. Encryption at rest not enabled on Redis cache (CC6.7)\n  3. No incident response plan documented (CC7.3)\n  4. Missing data retention policy for PHI (P6.1)",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "The Redis gap is a surprise. I thought we enabled encryption everywhere. What’s cached there?",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Redis caches session tokens and some user profile data (names, emails). No PHI directly, but it’s still PII. The cache was provisioned before your encryption-at-rest policy was adopted. Easy fix — enable TLS and encryption at rest on the ElastiCache cluster.",
+				},
+				{
+					type: "updateCard",
+					stage: "assess",
+					name: "gap-analysis",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "assess",
+					name: "risk-assessment",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Risk assessment scored all 26 gaps. 4 critical, 8 high, 14 medium. No low-risk items — everything unmet matters for certification.",
+				},
+				{
+					type: "updateCard",
+					stage: "assess",
+					name: "risk-assessment",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/knowledge/GAP-REPORT.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Assess stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Assess",
+					intent: "",
+					criteria: [
+						"87 controls evaluated with evidence",
+						"61 met, 18 partial, 8 unmet",
+						"4 critical gaps identified and risk-scored",
+						"Redis encryption gap flagged with PII exposure",
+						"Risk assessment uses consistent scoring methodology",
+					],
+					gateType: "ask gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2200, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. Let’s fix these gaps.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to remediate stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "remediate" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering remediate stage. Hat: remediation-engineer.\nLoading gap report...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/remediate/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → assess/gap-report (knowledge/GAP-REPORT.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "26 gaps to remediate. Starting with the 4 critical items...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/remediate/units/unit-01-access-review.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/remediate/units/unit-02-redis-encryption.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/remediate/units/unit-03-incident-response-plan.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/remediate/units/unit-04-data-retention-policy.md",
+				},
+				{
+					type: "card",
+					stage: "remediate",
+					name: "access-review",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "remediate",
+					name: "redis-encryption",
+					status: "",
+				},
+				{ type: "card", stage: "remediate", name: "ir-plan", status: "" },
+				{
+					type: "card",
+					stage: "remediate",
+					name: "retention-policy",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Access review process implemented:\n  • Quarterly access reviews with automated report generation\n  • Role-based access matrix documented for all 14 services\n  • Automated deprovisioning on termination via SCIM integration",
+				},
+				{
+					type: "updateCard",
+					stage: "remediate",
+					name: "access-review",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "remediate",
+					name: "redis-encryption",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Redis encryption enabled — TLS in-transit and AES-256 at rest on ElastiCache. Verified no session disruption during migration.",
+				},
+				{
+					type: "updateCard",
+					stage: "remediate",
+					name: "redis-encryption",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "remediate",
+					name: "ir-plan",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: policy-writer. Incident response plan drafted. Do you want the escalation path to go through PagerDuty or your internal ticketing system?",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "PagerDuty for SEV-1 and SEV-2. Internal ticketing for SEV-3 and below. Make sure on-call rotation is referenced.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Updated. IR plan references PagerDuty for critical incidents with on-call rotation schedule linked.",
+				},
+				{
+					type: "updateCard",
+					stage: "remediate",
+					name: "ir-plan",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "remediate",
+					name: "retention-policy",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Data retention policy: PHI retained 7 years per HIPAA, PII retained per customer agreement with 30-day deletion on request. Automated purge jobs configured.",
+				},
+				{
+					type: "updateCard",
+					stage: "remediate",
+					name: "retention-policy",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/knowledge/REMEDIATION-LOG.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Remediate stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. All critical gaps addressed.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to document stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "document" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering document stage. Hat: evidence-collector.\nLoading remediation log...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/document/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → remediate/remediation-log (knowledge/REMEDIATION-LOG.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Building evidence packages for all 87 controls. Each needs at least one artifact with timestamps and provenance...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/document/units/unit-01-evidence-collection.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/document/units/unit-02-audit-trail.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/document/units/unit-03-control-matrix.md",
+				},
+				{
+					type: "card",
+					stage: "document",
+					name: "evidence-collection",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "document", name: "audit-trail", status: "" },
+				{ type: "card", stage: "document", name: "control-matrix", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "50" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Evidence collected for 87/87 controls. Artifacts include:\n  • Screenshots of access control configurations\n  • Terraform state files proving encryption settings\n  • Policy documents with approval signatures\n  • Log samples demonstrating monitoring and alerting\n  • Automated test results for CI/CD controls",
+				},
+				{
+					type: "updateCard",
+					stage: "document",
+					name: "evidence-collection",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "document",
+					name: "audit-trail",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: documentation-writer. Audit trail links every control through the full chain: scope definition → assessment finding → remediation action → verification evidence.",
+				},
+				{
+					type: "updateCard",
+					stage: "document",
+					name: "audit-trail",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "document",
+					name: "control-matrix",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Control matrix organized for auditor navigation. Index page with cross-references to all evidence. Framework-compliant format.",
+				},
+				{
+					type: "updateCard",
+					stage: "document",
+					name: "control-matrix",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/knowledge/EVIDENCE-PACKAGE.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Document stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Evidence looks comprehensive. Proceed to certify.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to certify stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "certify" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering certify stage. Hat: audit-liaison.\nLoading evidence package...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/certify/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → document/evidence-package (knowledge/EVIDENCE-PACKAGE.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Preparing audit readiness package for the external auditor...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/certify/units/unit-01-audit-prep.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/stages/certify/units/unit-02-finding-resolution.md",
+				},
+				{
+					type: "card",
+					stage: "certify",
+					name: "audit-prep",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "certify",
+					name: "finding-resolution",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Audit readiness checklist complete. All evidence is current, indexed, and mapped to the auditor’s standard request list. Running review agents from assess and remediate stages for final thoroughness check...",
+				},
+				{
+					type: "updateCard",
+					stage: "certify",
+					name: "audit-prep",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "certify",
+					name: "finding-resolution",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: finding-resolver. Pre-audit self-assessment found 2 minor items:\n  1. One access review screenshot is from staging, not production — replaced\n  2. Encryption evidence for S3 bucket was missing KMS key rotation proof — added\n\nBoth resolved. No critical findings.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Await gate: waiting for external auditor to complete review...",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Await resolved — external auditor completed review. 1 observation: recommend adding MFA to the CI/CD pipeline service account. Not a finding — observation only.",
+				},
+				{
+					type: "updateCard",
+					stage: "certify",
+					name: "finding-resolution",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/soc2-type-ii-certification/knowledge/AUDIT-RESULT.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Certify stage complete. Review gate: external + await.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Certify",
+					intent: "",
+					criteria: [
+						"All evidence current and mapped to auditor request list",
+						"Pre-audit self-assessment: 2 minor items resolved",
+						"External auditor: clean report with 1 observation",
+						"No unaddressed critical findings",
+						"MFA observation noted for future improvement",
+					],
+					gateType: "external gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2400, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "External review approved. SOC 2 Type II certification achieved.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for soc2-type-ii-certification.\n\nDelivered:\n  • Scope: 87 controls across 5 TSC, 14 services, 3 data stores\n  • Assessment: 61 met, 18 partial, 8 unmet — 4 critical gaps identified\n  • Remediation: access reviews, Redis encryption, IR plan, retention policy\n  • Documentation: evidence package with full audit trail for 87 controls\n  • Certification: clean audit report with 1 observation (MFA for CI/CD)\n\nIntent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

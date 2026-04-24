@@ -1,66 +1,736 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "project-management",
-  studio: "project-management",
-  stages: ["charter", "plan", "track", "report", "close"],
-  completionText: "All 5 stages passed. platform-v3-launch delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1200, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Manage the Platform v3 launch program"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: platform-v3-launch..."}, {"type":"file","path":".haiku/intents/platform-v3-launch/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: project-management. 5 stages: charter → plan → track → report → close"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"charter"}, {"type":"msg","role":"agent","label":"agent","text":"Entering charter stage. Hat: sponsor.\nWhat’s the business driver for v3? And who are the key stakeholders?"}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/charter/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Customer retention is dropping — v3 addresses the top 5 feature requests. Stakeholders: VP Product, VP Engineering, Head of CS, and the CTO as executive sponsor."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: scoper. Let me define scope boundaries. What’s explicitly out of scope?"}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/charter/units/unit-01-charter.md"}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/charter/units/unit-02-scope-definition.md"}, {"type":"card","stage":"charter","name":"charter","status":"in-progress"}, {"type":"card","stage":"charter","name":"scope-definition","status":""}] },
-    { delay: 1800, actions: [{"type":"msg","role":"user","label":"you","text":"Mobile app redesign is out — that’s a separate initiative. Also no pricing changes in v3."}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Charter complete:\n  • 5 in-scope features mapped to customer retention metrics\n  • 2 explicit exclusions with rationale\n  • Success criteria: 15% reduction in churn within 90 days of launch\n  • Stakeholder map with influence/interest levels and engagement approach\n  • Governance: bi-weekly steering committee, CTO escalation path"}, {"type":"file","path":".haiku/intents/platform-v3-launch/knowledge/PROJECT-CHARTER.md"}, {"type":"updateCard","stage":"charter","name":"charter","status":"completed"}, {"type":"updateCard","stage":"charter","name":"scope-definition","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"updateCard","stage":"charter","name":"scope-definition","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Charter stage complete. Review gate: external."}, {"type":"msg","role":"agent","label":"agent","text":"Sharing charter for CTO sign-off..."}] },
-    { delay: 1000, actions: [{"type":"showReview","title":"Charter","intent":"platform-v3-launch","criteria":["Scope boundaries defined with in/out-of-scope rationale","Success criteria quantified with measurement methods","Stakeholder map identifies engagement approach","Governance structure with escalation paths","Resource commitment authorized"],"gateType":"external"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2200, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"CTO approved charter. Resources authorized."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"plan"}, {"type":"msg","role":"agent","label":"agent","text":"Entering plan stage. Hat: planner.\nLoading charter..."}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/plan/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → charter/project-charter (knowledge/PROJECT-CHARTER.md)"}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/plan/units/unit-01-wbs.md"}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/plan/units/unit-02-resource-plan.md"}, {"type":"card","stage":"plan","name":"work-breakdown","status":"in-progress"}, {"type":"card","stage":"plan","name":"resource-plan","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"45"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: estimator. WBS decomposes 5 features into 23 work packages, each under 40 hours. Critical path identified through the API migration feature — it blocks 3 downstream packages."}, {"type":"updateCard","stage":"plan","name":"work-breakdown","status":"completed"}, {"type":"updateCard","stage":"plan","name":"resource-plan","status":"in-progress"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Resource allocation: I see 2 backend engineers available full-time, 1 frontend at 50%. Is that accurate? The critical path needs a full-time frontend."}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Pull Alex to full-time on this. I’ll backfill their other work."}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Resource plan updated. Alex full-time on frontend. Critical path has 2 buffer days at high-risk junctions. All work packages assigned to named owners with confirmed availability."}, {"type":"file","path":".haiku/intents/platform-v3-launch/knowledge/PROJECT-PLAN.md"}, {"type":"updateCard","stage":"plan","name":"resource-plan","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Plan stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Plan looks solid. Let’s execute."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to track stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"track"}, {"type":"msg","role":"agent","label":"agent","text":"Entering track stage. Hat: tracker.\nLoading project plan..."}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/track/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → plan/project-plan (knowledge/PROJECT-PLAN.md)"}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/track/units/unit-01-status-tracking.md"}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/track/units/unit-02-risk-management.md"}, {"type":"card","stage":"track","name":"status-tracking","status":"in-progress"}, {"type":"card","stage":"track","name":"risk-management","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Status update compiled:\n  On track: 18/23 work packages\n  At risk: 3 packages (API migration delayed by dependency)\n  Blocked: 2 packages (waiting on third-party API key)\n\nVariance: API migration 15% behind plan. Root cause: upstream dependency on auth service refactor."}, {"type":"updateCard","stage":"track","name":"status-tracking","status":"completed"}, {"type":"updateCard","stage":"track","name":"risk-management","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: risk-monitor. Risk register updated:\n  R1 (High): API migration delay — probability increased from 30% to 65%. Mitigation: parallel track with mock API.\n  R2 (Medium): Third-party API key — escalation sent to vendor.\n  R3 (Low): Frontend resource contention if Alex gets pulled — monitoring."}, {"type":"file","path":".haiku/intents/platform-v3-launch/knowledge/STATUS-REPORT.md"}, {"type":"updateCard","stage":"track","name":"risk-management","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Track stage complete. Review gate: auto. All work packages have current status — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"report"}, {"type":"msg","role":"agent","label":"agent","text":"Entering report stage. Hat: reporter.\nLoading tracking data..."}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/report/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → track/status-report (knowledge/STATUS-REPORT.md), plan/project-plan (knowledge/PROJECT-PLAN.md), charter/project-charter (knowledge/PROJECT-CHARTER.md)"}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/report/units/unit-01-exec-dashboard.md"}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/report/units/unit-02-stakeholder-reports.md"}, {"type":"card","stage":"report","name":"exec-dashboard","status":"in-progress"}, {"type":"card","stage":"report","name":"stakeholder-reports","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Executive dashboard complete:\n  Overall health: AMBER (API migration risk)\n  Completion: 78% of work packages delivered\n  Forecast: On track for launch if API mock parallel track succeeds\n\nRAG indicators backed by quantitative thresholds, not subjective judgment."}, {"type":"updateCard","stage":"report","name":"exec-dashboard","status":"completed"}, {"type":"updateCard","stage":"report","name":"stakeholder-reports","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: communicator. Stakeholder reports tailored:\n  CTO: 1-page summary with decision needed on API mock approach\n  VP Engineering: Work-package detail with resource reallocation options\n  VP Product: Feature completion status with launch readiness assessment\n  Head of CS: Customer impact analysis and communication timeline"}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/report/artifacts/exec-dashboard.md"}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/report/artifacts/stakeholder-reports.md"}, {"type":"updateCard","stage":"report","name":"stakeholder-reports","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Report stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Good. CTO approved the parallel mock track. Let’s close this phase."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to close stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"close"}, {"type":"msg","role":"agent","label":"agent","text":"Entering close stage. Hat: closer.\nLoading project outputs..."}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/close/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → report/project-dashboard (stages/report/artifacts/), track/status-report (knowledge/STATUS-REPORT.md), charter/project-charter (knowledge/PROJECT-CHARTER.md)"}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/close/units/unit-01-retrospective.md"}, {"type":"file","path":".haiku/intents/platform-v3-launch/stages/close/units/unit-02-handoff.md"}, {"type":"card","stage":"close","name":"retrospective","status":"in-progress"}, {"type":"card","stage":"close","name":"handoff","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Retrospective complete:\n  Top 3 wins: Early stakeholder alignment, parallel track saved the timeline, Alex’s full-time allocation was the right call\n  Top 3 improvements: Earlier dependency mapping would have caught API risk sooner, need vendor SLA for third-party keys, risk register should be reviewed weekly not bi-weekly\n\nEach backed by specific examples from the project."}, {"type":"updateCard","stage":"close","name":"retrospective","status":"completed"}, {"type":"updateCard","stage":"close","name":"handoff","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: archivist. Handoff complete:\n  • All deliverables transferred to product team\n  • Documentation archived and indexed\n  • Support contacts identified for each feature\n  • Open items transferred with owners and deadlines"}, {"type":"file","path":".haiku/intents/platform-v3-launch/knowledge/LESSONS-LEARNED.md"}, {"type":"updateCard","stage":"close","name":"handoff","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Close stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Great retrospective. Approved."}, {"type":"msg","role":"agent","label":"agent","text":"All stages complete."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for platform-v3-launch.\n\nDelivered:\n  • Project charter with quantified success criteria and governance structure\n  • WBS with 23 work packages, critical path identified, resources assigned\n  • Status tracking with risk register and variance analysis\n  • Executive dashboard with tailored stakeholder reports\n  • Retrospective with actionable lessons learned and complete handoff\n\nIntent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "project-management",
+	studio: "project-management",
+	stages: ["charter", "plan", "track", "report", "close"],
+	completionText: "All 5 stages passed. platform-v3-launch delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1200, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Manage the Platform v3 launch program",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: platform-v3-launch...",
+				},
+				{ type: "file", path: ".haiku/intents/platform-v3-launch/intent.md" },
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: project-management. 5 stages: charter → plan → track → report → close",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "charter" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering charter stage. Hat: sponsor.\nWhat’s the business driver for v3? And who are the key stakeholders?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/charter/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Customer retention is dropping — v3 addresses the top 5 feature requests. Stakeholders: VP Product, VP Engineering, Head of CS, and the CTO as executive sponsor.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: scoper. Let me define scope boundaries. What’s explicitly out of scope?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/charter/units/unit-01-charter.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/charter/units/unit-02-scope-definition.md",
+				},
+				{
+					type: "card",
+					stage: "charter",
+					name: "charter",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "charter",
+					name: "scope-definition",
+					status: "",
+				},
+			],
+		},
+		{
+			delay: 1800,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Mobile app redesign is out — that’s a separate initiative. Also no pricing changes in v3.",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Charter complete:\n  • 5 in-scope features mapped to customer retention metrics\n  • 2 explicit exclusions with rationale\n  • Success criteria: 15% reduction in churn within 90 days of launch\n  • Stakeholder map with influence/interest levels and engagement approach\n  • Governance: bi-weekly steering committee, CTO escalation path",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/knowledge/PROJECT-CHARTER.md",
+				},
+				{
+					type: "updateCard",
+					stage: "charter",
+					name: "charter",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "charter",
+					name: "scope-definition",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "updateCard",
+					stage: "charter",
+					name: "scope-definition",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Charter stage complete. Review gate: external.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Sharing charter for CTO sign-off...",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "showReview",
+					title: "Charter",
+					intent: "platform-v3-launch",
+					criteria: [
+						"Scope boundaries defined with in/out-of-scope rationale",
+						"Success criteria quantified with measurement methods",
+						"Stakeholder map identifies engagement approach",
+						"Governance structure with escalation paths",
+						"Resource commitment authorized",
+					],
+					gateType: "external",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2200, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "CTO approved charter. Resources authorized.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "plan" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering plan stage. Hat: planner.\nLoading charter...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/plan/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → charter/project-charter (knowledge/PROJECT-CHARTER.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/plan/units/unit-01-wbs.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/plan/units/unit-02-resource-plan.md",
+				},
+				{
+					type: "card",
+					stage: "plan",
+					name: "work-breakdown",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "plan", name: "resource-plan", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "45" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: estimator. WBS decomposes 5 features into 23 work packages, each under 40 hours. Critical path identified through the API migration feature — it blocks 3 downstream packages.",
+				},
+				{
+					type: "updateCard",
+					stage: "plan",
+					name: "work-breakdown",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "plan",
+					name: "resource-plan",
+					status: "in-progress",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Resource allocation: I see 2 backend engineers available full-time, 1 frontend at 50%. Is that accurate? The critical path needs a full-time frontend.",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Pull Alex to full-time on this. I’ll backfill their other work.",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Resource plan updated. Alex full-time on frontend. Critical path has 2 buffer days at high-risk junctions. All work packages assigned to named owners with confirmed availability.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/knowledge/PROJECT-PLAN.md",
+				},
+				{
+					type: "updateCard",
+					stage: "plan",
+					name: "resource-plan",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Plan stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Plan looks solid. Let’s execute.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to track stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "track" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering track stage. Hat: tracker.\nLoading project plan...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/track/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → plan/project-plan (knowledge/PROJECT-PLAN.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/track/units/unit-01-status-tracking.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/track/units/unit-02-risk-management.md",
+				},
+				{
+					type: "card",
+					stage: "track",
+					name: "status-tracking",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "track", name: "risk-management", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Status update compiled:\n  On track: 18/23 work packages\n  At risk: 3 packages (API migration delayed by dependency)\n  Blocked: 2 packages (waiting on third-party API key)\n\nVariance: API migration 15% behind plan. Root cause: upstream dependency on auth service refactor.",
+				},
+				{
+					type: "updateCard",
+					stage: "track",
+					name: "status-tracking",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "track",
+					name: "risk-management",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: risk-monitor. Risk register updated:\n  R1 (High): API migration delay — probability increased from 30% to 65%. Mitigation: parallel track with mock API.\n  R2 (Medium): Third-party API key — escalation sent to vendor.\n  R3 (Low): Frontend resource contention if Alex gets pulled — monitoring.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/knowledge/STATUS-REPORT.md",
+				},
+				{
+					type: "updateCard",
+					stage: "track",
+					name: "risk-management",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Track stage complete. Review gate: auto. All work packages have current status — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "report" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering report stage. Hat: reporter.\nLoading tracking data...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/report/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → track/status-report (knowledge/STATUS-REPORT.md), plan/project-plan (knowledge/PROJECT-PLAN.md), charter/project-charter (knowledge/PROJECT-CHARTER.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/report/units/unit-01-exec-dashboard.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/report/units/unit-02-stakeholder-reports.md",
+				},
+				{
+					type: "card",
+					stage: "report",
+					name: "exec-dashboard",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "report",
+					name: "stakeholder-reports",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Executive dashboard complete:\n  Overall health: AMBER (API migration risk)\n  Completion: 78% of work packages delivered\n  Forecast: On track for launch if API mock parallel track succeeds\n\nRAG indicators backed by quantitative thresholds, not subjective judgment.",
+				},
+				{
+					type: "updateCard",
+					stage: "report",
+					name: "exec-dashboard",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "report",
+					name: "stakeholder-reports",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: communicator. Stakeholder reports tailored:\n  CTO: 1-page summary with decision needed on API mock approach\n  VP Engineering: Work-package detail with resource reallocation options\n  VP Product: Feature completion status with launch readiness assessment\n  Head of CS: Customer impact analysis and communication timeline",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/report/artifacts/exec-dashboard.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/report/artifacts/stakeholder-reports.md",
+				},
+				{
+					type: "updateCard",
+					stage: "report",
+					name: "stakeholder-reports",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Report stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Good. CTO approved the parallel mock track. Let’s close this phase.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to close stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "close" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering close stage. Hat: closer.\nLoading project outputs...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/close/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → report/project-dashboard (stages/report/artifacts/), track/status-report (knowledge/STATUS-REPORT.md), charter/project-charter (knowledge/PROJECT-CHARTER.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/close/units/unit-01-retrospective.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/stages/close/units/unit-02-handoff.md",
+				},
+				{
+					type: "card",
+					stage: "close",
+					name: "retrospective",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "close", name: "handoff", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Retrospective complete:\n  Top 3 wins: Early stakeholder alignment, parallel track saved the timeline, Alex’s full-time allocation was the right call\n  Top 3 improvements: Earlier dependency mapping would have caught API risk sooner, need vendor SLA for third-party keys, risk register should be reviewed weekly not bi-weekly\n\nEach backed by specific examples from the project.",
+				},
+				{
+					type: "updateCard",
+					stage: "close",
+					name: "retrospective",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "close",
+					name: "handoff",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: archivist. Handoff complete:\n  • All deliverables transferred to product team\n  • Documentation archived and indexed\n  • Support contacts identified for each feature\n  • Open items transferred with owners and deadlines",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/platform-v3-launch/knowledge/LESSONS-LEARNED.md",
+				},
+				{
+					type: "updateCard",
+					stage: "close",
+					name: "handoff",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Close stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Great retrospective. Approved.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All stages complete.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for platform-v3-launch.\n\nDelivered:\n  • Project charter with quantified success criteria and governance structure\n  • WBS with 23 work packages, critical path identified, resources assigned\n  • Status tracking with risk register and variance analysis\n  • Executive dashboard with tailored stakeholder reports\n  • Retrospective with actionable lessons learned and complete handoff\n\nIntent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

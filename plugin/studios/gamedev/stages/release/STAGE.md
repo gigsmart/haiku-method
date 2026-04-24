@@ -2,6 +2,7 @@
 name: release
 description: Storefront submission, platform certification, and patch pipeline
 hats: [release-engineer, platform-cert-specialist]
+fix_hats: [release-engineer, feedback-assessor]
 review: await
 elaboration: autonomous
 inputs:
@@ -20,9 +21,3 @@ cycles, and Steam has its own submission cadence.
 The patch pipeline matters as much as the initial submission. Games ship
 with bugs; the ability to ship a hotfix within days is what separates a
 launch disaster from a launch hiccup.
-
-## Completion Signal (RFC 2119)
-
-Build **MUST** pass platform certification for every target platform.
-Storefront assets (screenshots, trailers, descriptions) **MUST** be complete.
-Patch pipeline **MUST** be operational and tested before launch day.

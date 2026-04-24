@@ -2,11 +2,11 @@
 
 import { AnimatePresence, motion } from "framer-motion"
 import { useCallback, useEffect, useState } from "react"
+import { workflowData } from "./data"
 import { HatDetailCard } from "./HatDetailCard"
 import { PlaybackControls } from "./PlaybackControls"
 import { WorkflowDiagram } from "./WorkflowDiagram"
 import { WorkflowSelector } from "./WorkflowSelector"
-import { workflowData } from "./data"
 
 const STEP_DURATION = 2000 // 2 seconds per step
 

@@ -1,0 +1,1174 @@
+{
+  "recorded_at": "2026-04-22T02:58:13.302Z",
+  "head": "adcc9a51f70049f81a17ceb281e270ea2720b47b",
+  "total_scenarios": 151,
+  "mapped": 132,
+  "unmapped": 19,
+  "ignored": 0,
+  "corpus_sizes": {
+    "backend_tests": 1020,
+    "backend_baseline": 477,
+    "backend_disk": 543,
+    "frontend_tests": 343,
+    "yaml_features": 6
+  },
+  "by_feature": {
+    "additive-elaborate.feature": {
+      "total": 15,
+      "mapped": 15,
+      "ignored": 0,
+      "unmapped": []
+    },
+    "auto-revisit.feature": {
+      "total": 19,
+      "mapped": 19,
+      "ignored": 0,
+      "unmapped": []
+    },
+    "enforce-iteration-fix.feature": {
+      "total": 15,
+      "mapped": 15,
+      "ignored": 0,
+      "unmapped": []
+    },
+    "external-review-feedback.feature": {
+      "total": 19,
+      "mapped": 16,
+      "ignored": 0,
+      "unmapped": [
+        {
+          "title": "Compound [external, ask] — user chose external, changes-requested rolls to elaborate",
+          "line": 142
+        },
+        {
+          "title": "Compound [external, ask] — ask gate opens after feedback is closed",
+          "line": 153
+        },
+        {
+          "title": "Compound [external, ask] — pending feedback blocks ask approval",
+          "line": 163
+        }
+      ]
+    },
+    "feedback-crud.feature": {
+      "total": 39,
+      "mapped": 39,
+      "ignored": 0,
+      "unmapped": []
+    },
+    "review-ui-feedback.feature": {
+      "total": 27,
+      "mapped": 11,
+      "ignored": 0,
+      "unmapped": [
+        {
+          "title": "Single inline comment becomes a feedback file on Request Changes",
+          "line": 15
+        },
+        {
+          "title": "Multiple comments become individual feedback files",
+          "line": 29
+        },
+        {
+          "title": "Pin annotation on an image becomes a feedback file",
+          "line": 37
+        },
+        {
+          "title": "Feedback files are written server-side before the decision resolves",
+          "line": 47
+        },
+        {
+          "title": "Orchestrator does not inline annotations in instruction after feedback-file integration",
+          "line": 56
+        },
+        {
+          "title": "Review UI displays existing feedback from prior visits",
+          "line": 107
+        },
+        {
+          "title": "Feedback panel shows status transitions in real time",
+          "line": 119
+        },
+        {
+          "title": "Approve with pending feedback shows confirmation dialog",
+          "line": 130
+        },
+        {
+          "title": "Approve without pending feedback proceeds directly",
+          "line": 140
+        },
+        {
+          "title": "Feedback items sorted by status then by created_at within groups",
+          "line": 167
+        },
+        {
+          "title": "Review UI submission fails mid-write (partial feedback creation)",
+          "line": 210
+        },
+        {
+          "title": "Reviewer closes browser tab before submitting — comments are lost",
+          "line": 223
+        },
+        {
+          "title": "Reviewer approves with no comments — no feedback files created",
+          "line": 232
+        },
+        {
+          "title": "Reviewer approves with existing pending feedback from prior review agents",
+          "line": 239
+        },
+        {
+          "title": "Concurrent review UI sessions writing feedback for the same stage",
+          "line": 255
+        },
+        {
+          "title": "Large feedback body with markdown formatting",
+          "line": 262
+        }
+      ]
+    },
+    "revisit-with-reasons.feature": {
+      "total": 17,
+      "mapped": 17,
+      "ignored": 0,
+      "unmapped": []
+    }
+  },
+  "unmapped_scenarios": [
+    {
+      "file": "external-review-feedback.feature",
+      "line": 142,
+      "title": "Compound [external, ask] — user chose external, changes-requested rolls to elaborate"
+    },
+    {
+      "file": "external-review-feedback.feature",
+      "line": 153,
+      "title": "Compound [external, ask] — ask gate opens after feedback is closed"
+    },
+    {
+      "file": "external-review-feedback.feature",
+      "line": 163,
+      "title": "Compound [external, ask] — pending feedback blocks ask approval"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 15,
+      "title": "Single inline comment becomes a feedback file on Request Changes"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 29,
+      "title": "Multiple comments become individual feedback files"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 37,
+      "title": "Pin annotation on an image becomes a feedback file"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 47,
+      "title": "Feedback files are written server-side before the decision resolves"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 56,
+      "title": "Orchestrator does not inline annotations in instruction after feedback-file integration"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 107,
+      "title": "Review UI displays existing feedback from prior visits"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 119,
+      "title": "Feedback panel shows status transitions in real time"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 130,
+      "title": "Approve with pending feedback shows confirmation dialog"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 140,
+      "title": "Approve without pending feedback proceeds directly"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 167,
+      "title": "Feedback items sorted by status then by created_at within groups"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 210,
+      "title": "Review UI submission fails mid-write (partial feedback creation)"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 223,
+      "title": "Reviewer closes browser tab before submitting — comments are lost"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 232,
+      "title": "Reviewer approves with no comments — no feedback files created"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 239,
+      "title": "Reviewer approves with existing pending feedback from prior review agents"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 255,
+      "title": "Concurrent review UI sessions writing feedback for the same stage"
+    },
+    {
+      "file": "review-ui-feedback.feature",
+      "line": 262,
+      "title": "Large feedback body with markdown formatting"
+    }
+  ],
+  "matches": {
+    "additive-elaborate.feature": [
+      {
+        "title": "First-time elaborate operates in standard mode",
+        "line": 14,
+        "via": "yaml-binding",
+        "matched_test": "orchestrator.test.mjs::returns elaborate when stage has no units",
+        "test_source": "backend-feature-coverage.yaml → orchestrator.test.mjs"
+      },
+      {
+        "title": "Additive elaborate includes pending feedback in instruction",
+        "line": 26,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::feedback items include summary info in pending_items",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "New unit correctly declares closes field referencing feedback IDs",
+        "line": 40,
+        "via": "yaml-binding",
+        "matched_test": "orchestrator-integration.test.mjs::closes: field in unit frontmatter is read correctly by orchestrator validation",
+        "test_source": "backend-feature-coverage.yaml → orchestrator-integration.test.mjs"
+      },
+      {
+        "title": "New unit addresses a single feedback item",
+        "line": 54,
+        "via": "yaml-binding",
+        "matched_test": "orchestrator-integration.test.mjs::closes: field on unit triggers feedback update when frontmatter is parsed",
+        "test_source": "backend-feature-coverage.yaml → orchestrator-integration.test.mjs"
+      },
+      {
+        "title": "Multiple new units each close different feedback items",
+        "line": 61,
+        "via": "yaml-binding",
+        "matched_test": "orchestrator-integration.test.mjs::closes: field in unit frontmatter is read correctly by orchestrator validation",
+        "test_source": "backend-feature-coverage.yaml → orchestrator-integration.test.mjs"
+      },
+      {
+        "title": "New unit without closes field fails validation in additive mode",
+        "line": 75,
+        "via": "yaml-binding",
+        "matched_test": "orchestrator-integration.test.mjs::closes: field in unit frontmatter is read correctly by orchestrator validation",
+        "test_source": "backend-feature-coverage.yaml → orchestrator-integration.test.mjs"
+      },
+      {
+        "title": "New unit references a non-existent feedback ID",
+        "line": 82,
+        "via": "yaml-binding",
+        "matched_test": "orchestrator-integration.test.mjs::closes: field on unit triggers feedback update when frontmatter is parsed",
+        "test_source": "backend-feature-coverage.yaml → orchestrator-integration.test.mjs"
+      },
+      {
+        "title": "Agent attempts to edit a completed unit from a prior visit",
+        "line": 89,
+        "via": "yaml-skip",
+        "matched_test": "skip: Frozen-completed-units enforcement lives in the additive-elaborate instruction b",
+        "test_source": "backend-feature-coverage.yaml (skip_reason)"
+      },
+      {
+        "title": "New unit declares closes for already-resolved feedback",
+        "line": 99,
+        "via": "yaml-binding",
+        "matched_test": "orchestrator-integration.test.mjs::closes: field on unit triggers feedback update when frontmatter is parsed",
+        "test_source": "backend-feature-coverage.yaml → orchestrator-integration.test.mjs"
+      },
+      {
+        "title": "Additive elaborate with zero pending feedback (all resolved between cycles)",
+        "line": 113,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::gate handler proceeds when all feedback is resolved",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Pending units from a prior additive cycle are still editable",
+        "line": 121,
+        "via": "yaml-skip",
+        "matched_test": "skip: Pending-unit editability is not gated by a code check — status !=completed means",
+        "test_source": "backend-feature-coverage.yaml (skip_reason)"
+      },
+      {
+        "title": "DAG validation accepts a mix of old completed and new closes units",
+        "line": 131,
+        "via": "yaml-binding",
+        "matched_test": "orchestrator.test.mjs::accepts valid DAG",
+        "test_source": "backend-feature-coverage.yaml → orchestrator.test.mjs"
+      },
+      {
+        "title": "Elaborate instruction includes feedback body text for context",
+        "line": 142,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::feedback items include summary info in pending_items",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Visits counter is very high (stress test)",
+        "line": 151,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::visits counter increments on each successive rollback",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Session restart during additive elaborate preserves state",
+        "line": 159,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::visits counter increments on each successive rollback",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      }
+    ],
+    "auto-revisit.feature": [
+      {
+        "title": "Gate handler rolls to elaborate when pending feedback exists",
+        "line": 15,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::gate handler rolls to elaborate when pending feedback exists",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Gate handler proceeds normally when no pending feedback exists",
+        "line": 28,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::gate handler proceeds normally when no pending feedback exists",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Gate handler proceeds when all feedback is resolved",
+        "line": 38,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::gate handler proceeds when all feedback is resolved",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Mixed pending and resolved feedback still triggers rollback",
+        "line": 48,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::mixed pending and resolved feedback still triggers rollback",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Visits counter increments on each successive rollback",
+        "line": 59,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::visits counter increments on each successive rollback",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Review subagent findings trigger auto-revisit on next tick",
+        "line": 70,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::gate handler rolls to elaborate when pending feedback exists",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Visits counter persists across session restarts",
+        "line": 83,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::visits counter increments on each successive rollback",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Agent cannot skip the feedback check by calling haiku_run_next repeatedly",
+        "line": 97,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::gate handler rolls to elaborate when pending feedback exists",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Feedback check is the first operation in the gate handler",
+        "line": 106,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::feedback check fires before auto gate type",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Feedback check fires before \"ask\" gate type",
+        "line": 114,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::feedback check fires before ask gate type",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Feedback check fires before \"external\" gate type",
+        "line": 122,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::feedback check fires before external gate type",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Feedback directory read failure is handled gracefully",
+        "line": 133,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::missing feedback directory treated as zero pending",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Missing feedback directory is treated as zero pending items",
+        "line": 140,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::missing feedback directory treated as zero pending",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Feedback file with missing status field defaults to pending",
+        "line": 147,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::feedback items include summary info in pending_items",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Human-authored pending feedback blocks advancement even if agent wants to proceed",
+        "line": 157,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::gate handler rolls to elaborate when pending feedback exists",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Rollback from gate preserves all existing stage state",
+        "line": 164,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::rollback preserves existing stage state",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Session restart between review-agent completion and haiku_run_next",
+        "line": 180,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::gate handler rolls to elaborate when pending feedback exists",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Context compaction removes agent memory of findings but files persist",
+        "line": 188,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::feedback items include summary info in pending_items",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Gate fires immediately after stage enters review for the first time",
+        "line": 196,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::gate handler proceeds normally when no pending feedback exists",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      }
+    ],
+    "enforce-iteration-fix.feature": [
+      {
+        "title": "Intent is NOT completed when only one stage is done",
+        "line": 18,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::REGRESSION: does NOT complete when only one stage has units",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "Intent IS completed when all declared stages are completed",
+        "line": 29,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::all stages completed -> true",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "Intent is NOT completed when one stage is still active",
+        "line": 39,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::one stage active -> false",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "Intent is NOT completed when a stage has not been started",
+        "line": 49,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::one stage missing state.json -> false",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "Bug reproduction — globbing unit files incorrectly marks intent completed",
+        "line": 64,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::REGRESSION: does NOT complete when only one stage has units",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "Bug reproduction — the cowork-mcp-apps-integration case",
+        "line": 73,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::REGRESSION: does NOT complete when only one stage has units",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "Corrupted state.json in one stage does not crash the hook",
+        "line": 86,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::stage with empty state.json -> false",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "Intent frontmatter has no stages array",
+        "line": 98,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::stages field missing from intent.md -> false (graceful fallback)",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "Declared stage has no directory on disk",
+        "line": 104,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::one stage missing state.json -> false",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "Single-stage intent completes correctly",
+        "line": 115,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::single stage completed -> true",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "Stage with visits > 0 that reaches completed status",
+        "line": 121,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::all stages completed -> true",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "Stage status \"blocked\" does not count as completed",
+        "line": 131,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::one stage active -> false",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "findUnitFiles still works for other consumers",
+        "line": 136,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::parses inline array [a, b, c]",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "readStageStatuses returns correct map for all stages",
+        "line": 142,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::all stages completed -> true",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      },
+      {
+        "title": "Empty intent with no stages at all",
+        "line": 155,
+        "via": "yaml-binding",
+        "matched_test": "enforce-iteration.test.mjs::stages field is empty array -> false",
+        "test_source": "backend-feature-coverage.yaml → enforce-iteration.test.mjs"
+      }
+    ],
+    "external-review-feedback.feature": [
+      {
+        "title": "GitHub PR changes-requested creates a summary feedback file",
+        "line": 15,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::GitHub PR CHANGES_REQUESTED returns status changes_requested",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "GitHub PR approved proceeds normally — no feedback created",
+        "line": 29,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::GitHub PR approved returns status approved",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "External feedback triggers FSM rollback to elaborate",
+        "line": 36,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::external changes_requested creates feedback and rolls back to elaborate",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "Multiple external review rounds create sequential feedback files",
+        "line": 43,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::multiple external review rounds create sequential feedback files",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "GitLab MR non-approved state creates a feedback file",
+        "line": 54,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::GitLab MR non-approved open returns status changes_requested",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "V1 creates a single summary feedback file (not per-comment)",
+        "line": 67,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::external changes_requested creates feedback and rolls back to elaborate",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "External review check command fails (gh/glab not installed)",
+        "line": 79,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::gh CLI not available returns status unknown",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "External review check returns ambiguous state (pending review, not changes-requested)",
+        "line": 87,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::GitHub PR REVIEW_REQUIRED returns status pending",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "External review check times out",
+        "line": 94,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::gh CLI returning non-zero exit returns status unknown",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "PR URL is malformed or does not match any known provider",
+        "line": 102,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::unknown URL returns status unknown",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "PR transitions from changes-requested to approved between checks",
+        "line": 113,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::external approved proceeds normally",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "PR is merged externally — branch merge detection fires",
+        "line": 122,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::GitHub PR merged returns status approved",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "External review creates feedback, then agent addresses it, then another review comes in",
+        "line": 129,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::multiple external review rounds create sequential feedback files",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "Session restart between external detection and feedback file write",
+        "line": 175,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::external changes_requested creates feedback and rolls back to elaborate",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "No external PR/MR exists for the stage",
+        "line": 183,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::no external URL falls through to gate review UI",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      },
+      {
+        "title": "External review with only \"COMMENTED\" state (not changes-requested or approved)",
+        "line": 190,
+        "via": "yaml-binding",
+        "matched_test": "external-review.test.mjs::COMMENTED state returns pending — no feedback created",
+        "test_source": "backend-feature-coverage.yaml → external-review.test.mjs"
+      }
+    ],
+    "feedback-crud.feature": [
+      {
+        "title": "Create a feedback file via haiku_feedback",
+        "line": 15,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::creates feedback file with correct frontmatter",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Sequential numbering auto-increments from highest existing prefix",
+        "line": 34,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::auto-increments sequential numbering",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Default author values when no author or origin specified",
+        "line": 43,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::defaults origin to agent and author to agent",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Create feedback with optional source_ref",
+        "line": 55,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::MCP tool accepts all valid origins",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "List all feedback for a stage",
+        "line": 70,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::lists all feedback for a specific stage",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "List feedback filtered by status",
+        "line": 80,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::lists feedback filtered by status",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "List feedback across all stages when stage is omitted",
+        "line": 90,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::lists feedback across all stages",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Update feedback status to addressed with addressed_by",
+        "line": 99,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::updates closed_by field",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Reject agent-authored feedback with a reason",
+        "line": 115,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::rejects agent-authored feedback with reason",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Delete a closed agent-authored feedback file",
+        "line": 130,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::deletes addressed agent-authored feedback",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Agent marks human-authored feedback as addressed",
+        "line": 140,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::updates status field",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "haiku_feedback tool routes to feedback-file creation not Sentry",
+        "line": 157,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::creates feedback via MCP tool",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "haiku_report tool still submits to Sentry",
+        "line": 167,
+        "via": "yaml-skip",
+        "matched_test": "skip: `haiku_report` integrates with Sentry in production; unit tests mock Sentry and ",
+        "test_source": "backend-feature-coverage.yaml (skip_reason)"
+      },
+      {
+        "title": "Create fails when required field \"title\" is missing",
+        "line": 176,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::MCP tool rejects missing title",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Create fails when required field \"intent\" is missing",
+        "line": 181,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::MCP tool rejects missing intent",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Create fails when required field \"stage\" is missing",
+        "line": 185,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::MCP tool accepts missing stage (intent-scope feedback)",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Create fails when required field \"body\" is missing",
+        "line": 189,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::MCP tool rejects missing body",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Create fails when title exceeds 120 characters",
+        "line": 194,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::MCP tool rejects title over 120 chars",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Create fails when stage directory does not exist",
+        "line": 199,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::MCP tool rejects nonexistent stage",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Create fails when origin is not a valid enum value",
+        "line": 204,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::MCP tool rejects invalid origin",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Agent cannot set status to \"closed\" on human-authored feedback",
+        "line": 212,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::agent cannot close human-authored feedback",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Update fails for non-existent feedback ID",
+        "line": 218,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::rejects nonexistent feedback id",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Update fails when setting status to an invalid value",
+        "line": 222,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::rejects invalid status enum",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Reject fails on human-authored feedback",
+        "line": 231,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::MCP reject fails on human-authored feedback",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Reject fails when feedback is already closed",
+        "line": 237,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::MCP reject fails on already rejected feedback",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Reject fails without a reason",
+        "line": 242,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::MCP reject fails without reason",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Delete fails on a pending feedback item",
+        "line": 251,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::cannot delete pending feedback",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Agent cannot delete human-authored feedback",
+        "line": 257,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::agent cannot delete human-authored feedback",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "MCP tool is agent-only — agents cannot delete human-authored feedback",
+        "line": 263,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::MCP delete rejects human-authored feedback (agent context)",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Git commit failure during feedback write does not lose the file",
+        "line": 274,
+        "via": "yaml-skip",
+        "matched_test": "skip: The `writeFeedbackFile` implementation writes the file to disk first and then in",
+        "test_source": "backend-feature-coverage.yaml (skip_reason)"
+      },
+      {
+        "title": "Feedback directory does not exist yet (first feedback for stage)",
+        "line": 285,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::auto-creates feedback directory if missing",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Concurrent numbering with gap in sequence",
+        "line": 292,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::auto-increments sequential numbering",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Slug generation from title with special characters",
+        "line": 302,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::basic slugification",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "List returns empty array when no feedback directory exists",
+        "line": 307,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::returns empty array for nonexistent directory",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "List returns empty array when feedback directory is empty",
+        "line": 313,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::returns 0 for empty stage",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Session restart does not lose feedback",
+        "line": 318,
+        "via": "yaml-skip",
+        "matched_test": "skip: Feedback persistence survives session restart trivially because the data lives o",
+        "test_source": "backend-feature-coverage.yaml (skip_reason)"
+      },
+      {
+        "title": "Malformed feedback file is skipped during list",
+        "line": 326,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::returns all parsed feedback items sorted by number",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Feedback slug collision is resolved by numeric prefix",
+        "line": 337,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::auto-increments sequential numbering",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Visit field reflects current stage visits counter",
+        "line": 342,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::creates feedback file with correct frontmatter",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      }
+    ],
+    "review-ui-feedback.feature": [
+      {
+        "title": "GET /api/feedback/{intent}/{stage} returns existing feedback items",
+        "line": 66,
+        "via": "alias-match",
+        "matched_test": "returns all feedback items for a stage",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      },
+      {
+        "title": "POST /api/feedback/{intent}/{stage} creates a feedback file",
+        "line": 75,
+        "via": "alias-match",
+        "matched_test": "creates feedback item and returns 201",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      },
+      {
+        "title": "PUT /api/feedback/{intent}/{stage}/{id} updates a feedback item",
+        "line": 88,
+        "via": "alias-match",
+        "matched_test": "updates status field",
+        "test_source": "backend-baseline:feedback.test.mjs"
+      },
+      {
+        "title": "DELETE /api/feedback/{intent}/{stage}/{id} removes a feedback file",
+        "line": 97,
+        "via": "alias-match",
+        "matched_test": "DELETE returns 200 for non-pending feedback",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      },
+      {
+        "title": "Reviewer rejects agent-authored feedback via the review UI",
+        "line": 150,
+        "via": "alias-match",
+        "matched_test": "rejects agent-authored feedback with reason",
+        "test_source": "backend-baseline:feedback.test.mjs"
+      },
+      {
+        "title": "Reviewer closes human-authored feedback via the review UI",
+        "line": 157,
+        "via": "alias-match",
+        "matched_test": "human can close human-authored feedback",
+        "test_source": "backend-baseline:feedback.test.mjs"
+      },
+      {
+        "title": "POST /api/feedback with missing title returns 400",
+        "line": 183,
+        "via": "alias-match",
+        "matched_test": "POST returns 400 for missing title",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      },
+      {
+        "title": "PUT /api/feedback for non-existent feedback ID returns 404",
+        "line": 191,
+        "via": "alias-match",
+        "matched_test": "PUT returns 404 for nonexistent feedback id",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      },
+      {
+        "title": "DELETE /api/feedback on a pending item returns 409",
+        "line": 198,
+        "via": "alias-match",
+        "matched_test": "DELETE returns 409 for pending feedback",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      },
+      {
+        "title": "PUT /api/feedback with invalid status value returns 400",
+        "line": 204,
+        "via": "alias-match",
+        "matched_test": "PUT returns 400 for no updatable fields",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      },
+      {
+        "title": "GET /api/feedback for a stage with no feedback directory returns empty array",
+        "line": 249,
+        "via": "alias-match",
+        "matched_test": "returns empty for status=closed when none exist",
+        "test_source": "ui:packages/haiku/test/http-feedback.test.mjs"
+      }
+    ],
+    "revisit-with-reasons.feature": [
+      {
+        "title": "Single reason creates one feedback file and rolls back",
+        "line": 15,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::haiku_revisit tool has reasons parameter in schema",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Multiple reasons create multiple feedback files and roll back",
+        "line": 31,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::feedback_revisit pending_items carries id, title, status, origin, author, file",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Reasons-created feedback files have sequential numbering after existing files",
+        "line": 41,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::auto-increments sequential numbering",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Revisit with reasons when stage already has visits > 0",
+        "line": 52,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::visits counter increments on each successive rollback",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Revisit with reasons targeting a specific earlier stage",
+        "line": 61,
+        "via": "yaml-skip",
+        "matched_test": "skip: Cross-stage revisit targeting is part of the haiku_revisit action payload; no de",
+        "test_source": "backend-feature-coverage.yaml (skip_reason)"
+      },
+      {
+        "title": "Revisit without reasons returns a stopgap action",
+        "line": 75,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::haiku_revisit description mentions reasons preference",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Revisit with reasons omitted (only intent and stage provided)",
+        "line": 84,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::haiku_revisit description mentions reasons preference",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Reasons-created feedback blocks gate advancement on next review cycle",
+        "line": 96,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::gate handler rolls to elaborate when pending feedback exists",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Reasons-created feedback that was addressed does not block the gate",
+        "line": 105,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::gate handler proceeds when all feedback is resolved",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Empty reasons array is rejected",
+        "line": 117,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::haiku_revisit tool has reasons parameter in schema",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Reason with empty title is rejected",
+        "line": 126,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::haiku_revisit tool has reasons parameter in schema",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Reason with missing body is rejected",
+        "line": 135,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::haiku_revisit tool has reasons parameter in schema",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Reason with missing title is rejected",
+        "line": 142,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::haiku_revisit tool has reasons parameter in schema",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      },
+      {
+        "title": "Feedback directory auto-created when first revisit-with-reasons fires",
+        "line": 153,
+        "via": "yaml-binding",
+        "matched_test": "feedback.test.mjs::auto-creates feedback directory if missing",
+        "test_source": "backend-feature-coverage.yaml → feedback.test.mjs"
+      },
+      {
+        "title": "Git commit failure does not prevent feedback file creation",
+        "line": 161,
+        "via": "yaml-skip",
+        "matched_test": "skip: Same as the feedback-crud git-lock scenario — write-then-commit ordering in stat",
+        "test_source": "backend-feature-coverage.yaml (skip_reason)"
+      },
+      {
+        "title": "Revisit with reasons on a completed stage still writes feedback",
+        "line": 171,
+        "via": "yaml-skip",
+        "matched_test": "skip: Completed-stage writability for revisit-with-reasons is part of the haiku_revisi",
+        "test_source": "backend-feature-coverage.yaml (skip_reason)"
+      },
+      {
+        "title": "haiku_revisit tool description documents the reasons preference",
+        "line": 184,
+        "via": "yaml-binding",
+        "matched_test": "gate-feedback.test.mjs::haiku_revisit description mentions reasons preference",
+        "test_source": "backend-feature-coverage.yaml → gate-feedback.test.mjs"
+      }
+    ]
+  }
+}

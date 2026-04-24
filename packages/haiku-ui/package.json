@@ -1,0 +1,49 @@
+{
+	"name": "haiku-ui",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc -b && vite build",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"audit:tokens": "node scripts/verify-tokens.mjs && node scripts/audit-contrast.mjs --mode=tokens && node scripts/audit-banned-patterns.mjs --profile=tokens",
+		"audit:stage-wide": "node scripts/verify-tokens.mjs && node scripts/audit-contrast.mjs --mode=tokens && node scripts/audit-contrast.mjs --mode=rendered && node scripts/audit-touch-targets.mjs && node scripts/audit-bundle-size.mjs && node scripts/audit-state-coverage.mjs && node scripts/audit-banned-patterns.mjs --profile=stage-wide && node scripts/audit-reduced-motion.mjs && node scripts/audit-keyboard-shortcuts.mjs && node scripts/audit-live-regions.mjs && node ../haiku/scripts/audit-scenario-coverage.mjs"
+	},
+	"dependencies": {
+		"@haiku/shared": "file:../shared",
+		"@sentry/react": "^10.47.0",
+		"@tanstack/react-router": "^1.168.23",
+		"@xyflow/react": "^12.10.2",
+		"dompurify": "^3.3.3",
+		"elkjs": "^0.11.1",
+		"haiku-api": "*",
+		"html-to-image": "^1.11.13",
+		"react": "^19.1.0",
+		"react-dom": "^19.1.0",
+		"react-markdown": "^10.1.0",
+		"react-window": "^1.8.11",
+		"remark": "^15.0.0",
+		"remark-gfm": "^4.0.1",
+		"remark-html": "^16.0.0",
+		"zod": "^3.23.0"
+	},
+	"devDependencies": {
+		"@tailwindcss/typography": "^0.5.19",
+		"@tailwindcss/vite": "^4.1.4",
+		"@tanstack/router-plugin": "^1.167.22",
+		"@testing-library/react": "^16.0.0",
+		"@testing-library/user-event": "14.5.2",
+		"@types/react": "^19.1.2",
+		"@types/react-dom": "^19.1.2",
+		"@types/react-window": "^1.8.8",
+		"@vitejs/plugin-react": "^4.4.1",
+		"axe-core": "^4.11.3",
+		"jsdom": "^25.0.0",
+		"tailwindcss": "^4.1.4",
+		"typescript": "^5.7.0",
+		"vite": "^6.3.2",
+		"vitest": "^2.0.0"
+	}
+}

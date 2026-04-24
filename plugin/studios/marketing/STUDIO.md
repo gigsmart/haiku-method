@@ -3,6 +3,7 @@ name: marketing
 description: Marketing campaign lifecycle from audience research through launch and measurement
 stages: [research, strategy, content, launch, measure]
 category: go-to-market
+default_model: sonnet
 ---
 
 # Marketing Studio

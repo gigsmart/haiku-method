@@ -1,0 +1,100 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FeedbackStatusBadge — state matrix > renders every (status × {default, error-card}) cell (snapshot) 1`] = `
+<div
+  data-token-hash="fa9f004f38d5ccf1"
+>
+  <div
+    data-cell="default-pending"
+  >
+    <span
+      aria-label="Status: pending"
+      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+      role="img"
+    >
+      pending
+    </span>
+  </div>
+  <div
+    data-cell="default-addressed"
+  >
+    <span
+      aria-label="Status: addressed"
+      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+      role="img"
+    >
+      addressed
+    </span>
+  </div>
+  <div
+    data-cell="default-closed"
+  >
+    <span
+      aria-label="Status: closed"
+      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+      role="img"
+    >
+      closed
+    </span>
+  </div>
+  <div
+    data-cell="default-rejected"
+  >
+    <span
+      aria-label="Status: rejected"
+      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
+      role="img"
+    >
+      rejected
+    </span>
+  </div>
+  <div
+    class="state-error bg-red-50 dark:bg-red-950/20 p-1"
+    data-cell="error-pending"
+  >
+    <span
+      aria-label="Status: pending"
+      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+      role="img"
+    >
+      pending
+    </span>
+  </div>
+  <div
+    class="state-error bg-red-50 dark:bg-red-950/20 p-1"
+    data-cell="error-addressed"
+  >
+    <span
+      aria-label="Status: addressed"
+      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+      role="img"
+    >
+      addressed
+    </span>
+  </div>
+  <div
+    class="state-error bg-red-50 dark:bg-red-950/20 p-1"
+    data-cell="error-closed"
+  >
+    <span
+      aria-label="Status: closed"
+      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+      role="img"
+    >
+      closed
+    </span>
+  </div>
+  <div
+    class="state-error bg-red-50 dark:bg-red-950/20 p-1"
+    data-cell="error-rejected"
+  >
+    <span
+      aria-label="Status: rejected"
+      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
+      role="img"
+    >
+      rejected
+    </span>
+  </div>
+</div>
+`;

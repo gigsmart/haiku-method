@@ -1,6 +1,6 @@
 "use client"
 
-import { type DiagramNode, categoryColors } from "./types"
+import { categoryColors, type DiagramNode } from "./types"
 
 interface DiagramTooltipProps {
 	node: DiagramNode | null

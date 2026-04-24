@@ -15,7 +15,3 @@
 - Check that edge cases and error scenarios are explicitly covered
 - Confirm behavioral specs align with design artifacts where they exist
 - Ensure acceptance criteria are testable and unambiguous
-
-## Completion Signal
-
-The product stage is complete when behavioral specifications are detailed enough for dev implementation. Every acceptance criterion must be specific and verifiable.

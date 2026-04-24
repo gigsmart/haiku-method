@@ -19,6 +19,9 @@ When modifying any component, check if other components need corresponding updat
 | New stage | Document in relevant profile | Primary | Update docs |
 | New hat (in stage) | Document in relevant profile | Add `hats/{hat}.md` file in stage directory | Update docs if user-facing |
 | New review agent (in stage) | Document in Quality Enforcement | Add `review-agents/{agent}.md` file in stage directory | Update docs if user-facing |
+| New fix hat (in stage) | Mention in Fix Loop section | Add `hats/{hat}.md` file in stage directory + reference in `fix_hats:` on STAGE.md | Update docs if user-facing |
+| New studio-level review agent | Mention in Intent-Completion Review section | Add `review-agents/{agent}.md` file in studio directory (NOT per-stage) | Update docs if user-facing |
+| New studio-level fix hat | Mention in Intent-Completion Review section | Add `fix-hats/{hat}.md` file in studio directory (NOT per-stage) | Update docs if user-facing |
 | New phase override (in stage) | Mention in Stages section if needed | Add `phases/{PHASE}.md` file in stage directory | Update docs if user-facing |
 | New operation template | Document in Operation phase | Add `operations/{op}.md` file in studio directory | Update docs if user-facing |
 | New reflection dimension | Document in Reflection phase | Add `reflections/{dim}.md` file in studio directory | Update docs if user-facing |
@@ -27,6 +30,7 @@ When modifying any component, check if other components need corresponding updat
 | New principle | Document in Principles section | Implement if applicable | Update if referenced |
 | Concept refinement | Update definition | Update implementation | Update docs |
 | Persistence change | N/A (environment-detected) | Update state-tools.ts isGitRepo | Update docs if user-facing |
+| New harness support | N/A | Add entry to HARNESS_REGISTRY in `harness.ts`, update rewriting rules in `harness-instructions.ts` | Update docs if user-facing |
 
 ## Key File Locations
 
@@ -40,11 +44,14 @@ When modifying any component, check if other components need corresponding updat
 - Plugin phase overrides: `plugin/studios/*/stages/*/phases/*.md`
 - Plugin operations: `plugin/studios/*/operations/*.md`
 - Plugin reflections: `plugin/studios/*/reflections/*.md`
+- Plugin studio-level review agents (intent-completion review): `plugin/studios/*/review-agents/*.md`
+- Plugin studio-level fix hats (intent-completion fix loop): `plugin/studios/*/fix-hats/*.md`
 - Plugin intent templates: `plugin/studios/*/templates/*.md`
 - Plugin hooks: `plugin/hooks/*.sh` + `plugin/.claude-plugin/hooks.json`
 - Plugin libraries: `plugin/lib/*.sh`
 - Plugin orchestration: `plugin/lib/orchestrator.sh`, `plugin/lib/stage.sh`, `plugin/lib/studio.sh`
 - Plugin environment detection: `packages/haiku/src/state-tools.ts` (isGitRepo)
+- Plugin harness support: `packages/haiku/src/harness.ts` (capability registry), `packages/haiku/src/harness-instructions.ts` (instruction adaptation)
 - Plugin providers: `plugin/providers/*.md` (bidirectional translation instructions) + `plugin/schemas/providers/*.json`
 - Website docs: `website/content/docs/`
 - Infrastructure: `deploy/terraform/`
@@ -61,6 +68,11 @@ When modifying any component, check if other components need corresponding updat
 | Stage | Profiles section | `plugin/studios/{name}/stages/{stage}/STAGE.md` | stage.sh, orchestrator.ts |
 | Hat | Profiles section | `plugin/studios/{name}/stages/{stage}/hats/{hat}.md` | prompts/core.ts |
 | Review Agent | Quality Enforcement | `plugin/studios/{name}/stages/{stage}/review-agents/{agent}.md` | orchestrator.ts, prompts/core.ts |
+| Fix Hats | Fix Loop | `fix_hats:` frontmatter on STAGE.md (ordered hat list dispatched against open feedback — typically ends with `feedback-assessor`) | orchestrator.ts (`resolveStageFixHats`, `review_fix` action) |
+| Feedback Assessor | Fix Loop | Terminal hat in `fix_hats` that independently decides closure — `plugin/studios/{name}/stages/{stage}/hats/feedback-assessor.md` | orchestrator.ts |
+| Studio Review Agent | Intent-Completion Review | `plugin/studios/{name}/review-agents/{agent}.md` (NOT per-stage) — runs by default after final stage gate; opt out with `intent_completion_review: false` on intent frontmatter | orchestrator.ts (`runIntentCompletionReview`, `readStudioReviewAgentPaths`) |
+| Studio Fix Hat | Intent-Completion Review | `plugin/studios/{name}/fix-hats/{hat}.md` (NOT per-stage) — dispatched against intent-scope feedback | orchestrator.ts (`intent_completion_fix` action, `readStudioFixHatPaths`) |
+| Upstream Finding | Quality Enforcement | `upstream_stage:` on feedback frontmatter — signals root-cause stage is different from review stage; FSM surfaces via `upstream_finding_surfaced` rather than fixing | state-tools.ts, orchestrator.ts |
 | Phase Override | Stages section | `plugin/studios/{name}/stages/{stage}/phases/{PHASE}.md` | orchestrator.ts |
 | Review Gate | Quality Enforcement | `review:` field in STAGE.md — `auto` (harness advances), `ask` (local human approval), `external` (blocks for external review system), `await` (blocks for external event), or compound list like `[external, ask]` (user chooses path) | orchestrator.ts |
 | Operation Template | Operation phase | `plugin/studios/{name}/operations/{op}.md` | prompts/complex.ts |
@@ -71,6 +83,7 @@ When modifying any component, check if other components need corresponding updat
 | Hard Gates | Execution phase | exit code enforcement in quality-gate.sh | orchestrator.ts |
 | Persistence | Context Preservation | Environment-detected via `isGitRepo()` (git or filesystem) | state-tools.ts, git-worktree.ts |
 | Providers | Memory Providers section | `plugin/schemas/providers/*.json`, `plugin/providers/*.md` | config.sh |
+| Harness | N/A (implementation detail) | `--harness <name>` MCP arg or `HAIKU_HARNESS` env var; capability registry in `harness.ts`, instruction adaptation in `harness-instructions.ts` | harness.ts, harness-instructions.ts, orchestrator.ts, server.ts |
 | Operations | Operation phase | /haiku:operate prompt | prompts/complex.ts |
 
 ## H·AI·K·U Terminology (CRITICAL)

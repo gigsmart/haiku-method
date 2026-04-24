@@ -6,6 +6,7 @@
 
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import { resolvePluginRoot } from "./config.js"
 
 /** MCP binary version — baked in at build time. "dev" in unbundled dev runs. */
 export const MCP_VERSION: string =
@@ -17,7 +18,7 @@ export const MCP_VERSION: string =
 /** Read the plugin version from plugin.json at runtime. */
 export function getPluginVersion(): string {
 	try {
-		const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || ""
+		const pluginRoot = resolvePluginRoot()
 		if (pluginRoot) {
 			const pkg = JSON.parse(
 				readFileSync(join(pluginRoot, ".claude-plugin", "plugin.json"), "utf8"),

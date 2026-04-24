@@ -1,8 +1,8 @@
 import {
 	FEED_HEADERS_XML,
-	SITE_URL,
 	generateRss,
 	getCombinedFeedItems,
+	SITE_URL,
 } from "@/lib/feed"
 
 export const dynamic = "force-static"

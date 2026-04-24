@@ -178,7 +178,12 @@ function HatBox({
 	icon,
 	label,
 	sub,
-}: { color: string; icon: string; label: string; sub: string }) {
+}: {
+	color: string
+	icon: string
+	label: string
+	sub: string
+}) {
 	const colorMap: Record<string, string> = {
 		blue: "border-blue-400/30 bg-blue-500/5 text-blue-400 dark:bg-blue-500/10",
 		amber:

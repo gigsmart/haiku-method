@@ -7,7 +7,6 @@ import type {
 } from "../types.js"
 import { renderAnnotationCanvas } from "./annotation-canvas.js"
 import {
-	type TabDef,
 	card,
 	renderBadge,
 	renderCriteriaChecklist,
@@ -17,6 +16,7 @@ import {
 	renderReviewSidebarScript,
 	renderTabs,
 	sectionHeading,
+	type TabDef,
 } from "./components.js"
 import { renderInlineComments } from "./inline-comments.js"
 import { escapeAttr, escapeHtml } from "./layout.js"

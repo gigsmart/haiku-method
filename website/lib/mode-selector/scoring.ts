@@ -82,7 +82,7 @@ export function encodeAnswers(answers: number[]): string {
 export function decodeAnswers(encoded: string): number[] {
 	return encoded.split("").map((c) => {
 		const num = Number.parseInt(c, 10)
-		return isNaN(num) ? 0 : num
+		return Number.isNaN(num) ? 0 : num
 	})
 }
 

@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
-import type { Metadata } from "next"
 import matter from "gray-matter"
+import type { Metadata } from "next"
 import ReactMarkdown from "react-markdown"
 import rehypeSlug from "rehype-slug"
 import remarkGfm from "remark-gfm"

@@ -1,1 +1,9 @@
-{"stage":"product","status":"completed","phase":"gate","started_at":"2026-03-30T07:06:24Z","completed_at":"2026-03-30T23:05:08Z","gate_entered_at":null,"gate_outcome":"advanced"}
+{
+	"stage": "product",
+	"status": "completed",
+	"phase": "gate",
+	"started_at": "2026-03-30T07:06:24Z",
+	"completed_at": "2026-03-30T23:05:08Z",
+	"gate_entered_at": null,
+	"gate_outcome": "advanced"
+}

@@ -2,6 +2,7 @@ import { getAllBlogPosts } from "@/lib/blog"
 import { getChangelog } from "@/lib/changelog"
 
 import { SITE_URL } from "@/lib/constants"
+
 export { SITE_URL }
 
 export const SITE_TITLE = "H·AI·K·U"
@@ -66,10 +67,7 @@ export function getBlogFeedItems(): FeedItem[] {
 export function getChangelogFeedItems(): FeedItem[] {
 	return getChangelog().map((entry) => {
 		const description = entry.sections
-			.map(
-				(s) =>
-					`${s.type}: ${s.items.join("; ")}`,
-			)
+			.map((s) => `${s.type}: ${s.items.join("; ")}`)
 			.join(". ")
 
 		return {
@@ -148,7 +146,10 @@ export function generateAtom(
 	const latestDate =
 		items.length > 0
 			? formatISO8601(
-					items.reduce((max, item) => (item.date > max ? item.date : max), items[0].date),
+					items.reduce(
+						(max, item) => (item.date > max ? item.date : max),
+						items[0].date,
+					),
 				)
 			: formatISO8601(new Date().toISOString())
 

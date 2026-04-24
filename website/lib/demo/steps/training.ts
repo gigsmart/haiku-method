@@ -1,64 +1,720 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "training",
-  studio: "training",
-  stages: ["needs-analysis", "design", "develop", "deliver", "evaluate"],
-  completionText: "All 5 stages passed. security-awareness-training delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1200, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Build a company-wide security awareness training program"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: security-awareness-training..."}, {"type":"file","path":".haiku/intents/security-awareness-training/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: training. 5 stages: needs-analysis → design → develop → deliver → evaluate"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"needs-analysis"}, {"type":"msg","role":"agent","label":"agent","text":"Entering needs-analysis stage. Hat: analyst.\nWhat triggered this training initiative? And what’s the target audience?"}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/needs-analysis/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"We had 3 phishing incidents last quarter. All employees need it — 450 people across engineering, sales, and operations. Engineering has decent awareness, sales and ops are the weak spots."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Got it. Incident-driven with known risk segments. I’ll profile each audience separately."}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/needs-analysis/units/unit-01-gap-analysis.md"}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/needs-analysis/units/unit-02-objectives.md"}, {"type":"card","stage":"needs-analysis","name":"gap-analysis","status":"in-progress"}, {"type":"card","stage":"needs-analysis","name":"objectives","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: consultant. Skills gap analysis complete:\n  Engineering: 72% baseline awareness (good on code security, weak on social engineering)\n  Sales: 38% baseline (high phishing susceptibility, poor password hygiene)\n  Operations: 45% baseline (moderate awareness, weak on data handling)\n\nLearning objectives follow Bloom’s taxonomy with observable, measurable outcomes."}, {"type":"file","path":".haiku/intents/security-awareness-training/knowledge/NEEDS-ASSESSMENT.md"}, {"type":"updateCard","stage":"needs-analysis","name":"gap-analysis","status":"completed"}, {"type":"updateCard","stage":"needs-analysis","name":"objectives","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"6 learning objectives defined, mapped to specific gap areas. Stakeholder input incorporated from CISO, department heads, and sample employees."}, {"type":"updateCard","stage":"needs-analysis","name":"objectives","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Needs-analysis complete. Review gate: auto. Multiple data sources validated — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"design"}, {"type":"msg","role":"agent","label":"agent","text":"Entering design stage. Hat: designer.\nLoading needs assessment..."}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/design/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → needs-analysis/needs-assessment (knowledge/NEEDS-ASSESSMENT.md)"}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/design/units/unit-01-curriculum.md"}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/design/units/unit-02-learning-path.md"}, {"type":"card","stage":"design","name":"curriculum","status":"in-progress"}, {"type":"card","stage":"design","name":"learning-path","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Curriculum structured as 4 modules:\n  M1: Phishing recognition and response (all audiences)\n  M2: Password and authentication best practices (sales/ops focus)\n  M3: Data handling and classification (ops focus)\n  M4: Secure development practices (engineering focus)\n\nModules sequenced by prerequisite knowledge. Each maps to specific needs assessment gaps. Want to adjust the structure?"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"Add a module on social engineering beyond just phishing — pretexting, tailgating, vishing. Sales gets targeted a lot on those."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Added M5: Social engineering defense (mandatory for sales, optional for others). Curriculum now 5 modules with role-based learning paths."}, {"type":"updateCard","stage":"design","name":"curriculum","status":"completed"}, {"type":"updateCard","stage":"design","name":"learning-path","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: subject-expert. Assessment strategy defined:\n  Formative: In-module quizzes after each section\n  Summative: Simulated phishing test + knowledge assessment\n  Rubrics defined for each assessment type. Content accuracy validated."}, {"type":"file","path":".haiku/intents/security-awareness-training/knowledge/CURRICULUM-PLAN.md"}, {"type":"updateCard","stage":"design","name":"learning-path","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Design stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Approved. Love the simulated phishing test idea."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to develop stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"develop"}, {"type":"msg","role":"agent","label":"agent","text":"Entering develop stage. Hat: developer.\nLoading curriculum plan..."}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/develop/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → design/curriculum-plan (knowledge/CURRICULUM-PLAN.md), needs-analysis/needs-assessment (knowledge/NEEDS-ASSESSMENT.md)"}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/develop/units/unit-01-module-content.md"}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/develop/units/unit-02-assessments.md"}, {"type":"card","stage":"develop","name":"module-content","status":"in-progress"}, {"type":"card","stage":"develop","name":"assessments","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"60"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"5 modules developed with facilitator guides, participant materials, and exercises. Each module includes:\n  • Interactive scenarios based on real company incidents\n  • Role-specific examples (sales demos, engineering code snippets, ops procedures)\n  • Quick-reference cards for daily use\n\nWant to review any specific module?"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Let me see the phishing module exercises. I want to make sure they’re realistic enough."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Phishing exercises use 8 simulated emails modeled after actual attack patterns:\n  • CEO impersonation (business email compromise)\n  • IT password reset (credential harvesting)\n  • Invoice attachment (malware delivery)\n  • LinkedIn connection (social engineering)\nEach with progressive difficulty. Participants must identify the red flags."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Perfect. Add a time-pressure variant — some of these should show up as urgent to simulate real-world pressure."}, {"type":"msg","role":"agent","label":"agent","text":"Added urgency variants to 3 exercises. Great call — time pressure is the #1 factor in phishing success."}, {"type":"updateCard","stage":"develop","name":"module-content","status":"completed"}, {"type":"updateCard","stage":"develop","name":"assessments","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: editor. All materials accessible — screen reader compatible, captioned videos, sufficient color contrast. Assessments validated by subject expert. Simulated phishing test configured with 3 difficulty tiers."}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/develop/artifacts/training-materials-v1.md"}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/develop/artifacts/assessment-instruments.md"}, {"type":"updateCard","stage":"develop","name":"assessments","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Develop stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Content looks great. Ship it."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to deliver stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"deliver"}, {"type":"msg","role":"agent","label":"agent","text":"Entering deliver stage. Hat: facilitator.\nLoading training materials..."}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/deliver/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → develop/training-materials (stages/develop/artifacts/), design/curriculum-plan (knowledge/CURRICULUM-PLAN.md)"}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/deliver/units/unit-01-session-delivery.md"}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/deliver/units/unit-02-logistics.md"}, {"type":"card","stage":"deliver","name":"session-delivery","status":"in-progress"}, {"type":"card","stage":"deliver","name":"logistics","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"45"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: coordinator. Delivery log compiled:\n  Sessions delivered: 12 (4 per department)\n  Attendance: 423/450 (94%)\n  Completion rate: 98% of attendees\n  Learner satisfaction: 4.3/5.0\n\nFacilitator notes: Module 1 (phishing) had highest engagement. Module 3 (data handling) needs more interactive elements — some participants disengaged during the classification exercise."}, {"type":"file","path":".haiku/intents/security-awareness-training/knowledge/DELIVERY-LOG.md"}, {"type":"updateCard","stage":"deliver","name":"session-delivery","status":"completed"}, {"type":"updateCard","stage":"deliver","name":"logistics","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Deliver stage complete. Review gate: auto. All sessions delivered as planned — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"evaluate"}, {"type":"msg","role":"agent","label":"agent","text":"Entering evaluate stage. Hat: evaluator.\nLoading delivery data and baseline..."}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/evaluate/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → deliver/delivery-log (knowledge/DELIVERY-LOG.md), needs-analysis/needs-assessment (knowledge/NEEDS-ASSESSMENT.md), design/curriculum-plan (knowledge/CURRICULUM-PLAN.md)"}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/evaluate/units/unit-01-effectiveness.md"}, {"type":"file","path":".haiku/intents/security-awareness-training/stages/evaluate/units/unit-02-improvement-recs.md"}, {"type":"card","stage":"evaluate","name":"effectiveness","status":"in-progress"}, {"type":"card","stage":"evaluate","name":"improvement-recs","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Kirkpatrick 4-level evaluation:\n  L1 Reaction: 4.3/5 satisfaction, 89% would recommend\n  L2 Learning: Pre/post knowledge gain +34% average (statistically significant p<0.01)\n  L3 Behavior: Simulated phishing click rate dropped from 31% to 8%\n  L4 Results: Phishing incident reports up 200% (employees reporting suspicious emails — a positive signal)"}, {"type":"updateCard","stage":"evaluate","name":"effectiveness","status":"completed"}, {"type":"updateCard","stage":"evaluate","name":"improvement-recs","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: analyst. Improvement recommendations prioritized:\n  1. High impact: Revise data handling module with more interactive scenarios\n  2. Medium impact: Add quarterly phishing simulations for reinforcement\n  3. Medium impact: Create manager toolkit for team-level security discussions\n\nOriginal gap analysis compared to outcomes: all 6 learning objectives met or exceeded targets."}, {"type":"file","path":".haiku/intents/security-awareness-training/knowledge/EFFECTIVENESS-REPORT.md"}, {"type":"updateCard","stage":"evaluate","name":"improvement-recs","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Evaluate stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"31% to 8% click rate is outstanding. Approved."}, {"type":"msg","role":"agent","label":"agent","text":"All stages complete."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for security-awareness-training.\n\nDelivered:\n  • Skills gap analysis across 3 departments with role-specific profiles\n  • 5-module curriculum with role-based learning paths and assessment strategy\n  • Training materials with simulated phishing exercises and urgency variants\n  • 12 sessions delivered to 423 employees (94% attendance)\n  • Effectiveness report: phishing click rate 31% → 8%, knowledge gain +34%\n\nIntent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "training",
+	studio: "training",
+	stages: ["needs-analysis", "design", "develop", "deliver", "evaluate"],
+	completionText: "All 5 stages passed. security-awareness-training delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1200, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Build a company-wide security awareness training program",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: security-awareness-training...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: training. 5 stages: needs-analysis → design → develop → deliver → evaluate",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "needs-analysis" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering needs-analysis stage. Hat: analyst.\nWhat triggered this training initiative? And what’s the target audience?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/needs-analysis/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "We had 3 phishing incidents last quarter. All employees need it — 450 people across engineering, sales, and operations. Engineering has decent awareness, sales and ops are the weak spots.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Got it. Incident-driven with known risk segments. I’ll profile each audience separately.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/needs-analysis/units/unit-01-gap-analysis.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/needs-analysis/units/unit-02-objectives.md",
+				},
+				{
+					type: "card",
+					stage: "needs-analysis",
+					name: "gap-analysis",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "needs-analysis",
+					name: "objectives",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: consultant. Skills gap analysis complete:\n  Engineering: 72% baseline awareness (good on code security, weak on social engineering)\n  Sales: 38% baseline (high phishing susceptibility, poor password hygiene)\n  Operations: 45% baseline (moderate awareness, weak on data handling)\n\nLearning objectives follow Bloom’s taxonomy with observable, measurable outcomes.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/knowledge/NEEDS-ASSESSMENT.md",
+				},
+				{
+					type: "updateCard",
+					stage: "needs-analysis",
+					name: "gap-analysis",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "needs-analysis",
+					name: "objectives",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "6 learning objectives defined, mapped to specific gap areas. Stakeholder input incorporated from CISO, department heads, and sample employees.",
+				},
+				{
+					type: "updateCard",
+					stage: "needs-analysis",
+					name: "objectives",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Needs-analysis complete. Review gate: auto. Multiple data sources validated — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "design" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering design stage. Hat: designer.\nLoading needs assessment...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/design/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → needs-analysis/needs-assessment (knowledge/NEEDS-ASSESSMENT.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/design/units/unit-01-curriculum.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/design/units/unit-02-learning-path.md",
+				},
+				{
+					type: "card",
+					stage: "design",
+					name: "curriculum",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "design", name: "learning-path", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Curriculum structured as 4 modules:\n  M1: Phishing recognition and response (all audiences)\n  M2: Password and authentication best practices (sales/ops focus)\n  M3: Data handling and classification (ops focus)\n  M4: Secure development practices (engineering focus)\n\nModules sequenced by prerequisite knowledge. Each maps to specific needs assessment gaps. Want to adjust the structure?",
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Add a module on social engineering beyond just phishing — pretexting, tailgating, vishing. Sales gets targeted a lot on those.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Added M5: Social engineering defense (mandatory for sales, optional for others). Curriculum now 5 modules with role-based learning paths.",
+				},
+				{
+					type: "updateCard",
+					stage: "design",
+					name: "curriculum",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "design",
+					name: "learning-path",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: subject-expert. Assessment strategy defined:\n  Formative: In-module quizzes after each section\n  Summative: Simulated phishing test + knowledge assessment\n  Rubrics defined for each assessment type. Content accuracy validated.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/knowledge/CURRICULUM-PLAN.md",
+				},
+				{
+					type: "updateCard",
+					stage: "design",
+					name: "learning-path",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Design stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. Love the simulated phishing test idea.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to develop stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "develop" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering develop stage. Hat: developer.\nLoading curriculum plan...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/develop/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → design/curriculum-plan (knowledge/CURRICULUM-PLAN.md), needs-analysis/needs-assessment (knowledge/NEEDS-ASSESSMENT.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/develop/units/unit-01-module-content.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/develop/units/unit-02-assessments.md",
+				},
+				{
+					type: "card",
+					stage: "develop",
+					name: "module-content",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "develop", name: "assessments", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "60" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "5 modules developed with facilitator guides, participant materials, and exercises. Each module includes:\n  • Interactive scenarios based on real company incidents\n  • Role-specific examples (sales demos, engineering code snippets, ops procedures)\n  • Quick-reference cards for daily use\n\nWant to review any specific module?",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Let me see the phishing module exercises. I want to make sure they’re realistic enough.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Phishing exercises use 8 simulated emails modeled after actual attack patterns:\n  • CEO impersonation (business email compromise)\n  • IT password reset (credential harvesting)\n  • Invoice attachment (malware delivery)\n  • LinkedIn connection (social engineering)\nEach with progressive difficulty. Participants must identify the red flags.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Perfect. Add a time-pressure variant — some of these should show up as urgent to simulate real-world pressure.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Added urgency variants to 3 exercises. Great call — time pressure is the #1 factor in phishing success.",
+				},
+				{
+					type: "updateCard",
+					stage: "develop",
+					name: "module-content",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "develop",
+					name: "assessments",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: editor. All materials accessible — screen reader compatible, captioned videos, sufficient color contrast. Assessments validated by subject expert. Simulated phishing test configured with 3 difficulty tiers.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/develop/artifacts/training-materials-v1.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/develop/artifacts/assessment-instruments.md",
+				},
+				{
+					type: "updateCard",
+					stage: "develop",
+					name: "assessments",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Develop stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Content looks great. Ship it.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to deliver stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "deliver" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering deliver stage. Hat: facilitator.\nLoading training materials...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/deliver/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → develop/training-materials (stages/develop/artifacts/), design/curriculum-plan (knowledge/CURRICULUM-PLAN.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/deliver/units/unit-01-session-delivery.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/deliver/units/unit-02-logistics.md",
+				},
+				{
+					type: "card",
+					stage: "deliver",
+					name: "session-delivery",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "deliver", name: "logistics", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "45" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: coordinator. Delivery log compiled:\n  Sessions delivered: 12 (4 per department)\n  Attendance: 423/450 (94%)\n  Completion rate: 98% of attendees\n  Learner satisfaction: 4.3/5.0\n\nFacilitator notes: Module 1 (phishing) had highest engagement. Module 3 (data handling) needs more interactive elements — some participants disengaged during the classification exercise.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/knowledge/DELIVERY-LOG.md",
+				},
+				{
+					type: "updateCard",
+					stage: "deliver",
+					name: "session-delivery",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "deliver",
+					name: "logistics",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Deliver stage complete. Review gate: auto. All sessions delivered as planned — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "evaluate" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering evaluate stage. Hat: evaluator.\nLoading delivery data and baseline...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/evaluate/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → deliver/delivery-log (knowledge/DELIVERY-LOG.md), needs-analysis/needs-assessment (knowledge/NEEDS-ASSESSMENT.md), design/curriculum-plan (knowledge/CURRICULUM-PLAN.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/evaluate/units/unit-01-effectiveness.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/stages/evaluate/units/unit-02-improvement-recs.md",
+				},
+				{
+					type: "card",
+					stage: "evaluate",
+					name: "effectiveness",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "evaluate",
+					name: "improvement-recs",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Kirkpatrick 4-level evaluation:\n  L1 Reaction: 4.3/5 satisfaction, 89% would recommend\n  L2 Learning: Pre/post knowledge gain +34% average (statistically significant p<0.01)\n  L3 Behavior: Simulated phishing click rate dropped from 31% to 8%\n  L4 Results: Phishing incident reports up 200% (employees reporting suspicious emails — a positive signal)",
+				},
+				{
+					type: "updateCard",
+					stage: "evaluate",
+					name: "effectiveness",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "evaluate",
+					name: "improvement-recs",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: analyst. Improvement recommendations prioritized:\n  1. High impact: Revise data handling module with more interactive scenarios\n  2. Medium impact: Add quarterly phishing simulations for reinforcement\n  3. Medium impact: Create manager toolkit for team-level security discussions\n\nOriginal gap analysis compared to outcomes: all 6 learning objectives met or exceeded targets.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/security-awareness-training/knowledge/EFFECTIVENESS-REPORT.md",
+				},
+				{
+					type: "updateCard",
+					stage: "evaluate",
+					name: "improvement-recs",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Evaluate stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "31% to 8% click rate is outstanding. Approved.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All stages complete.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for security-awareness-training.\n\nDelivered:\n  • Skills gap analysis across 3 departments with role-specific profiles\n  • 5-module curriculum with role-based learning paths and assessment strategy\n  • Training materials with simulated phishing exercises and urgency variants\n  • 12 sessions delivered to 423 employees (94% attendance)\n  • Effectiveness report: phishing click rate 31% → 8%, knowledge gain +34%\n\nIntent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

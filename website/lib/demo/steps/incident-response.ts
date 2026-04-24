@@ -1,77 +1,853 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "incident-response",
-  studio: "incident-response",
-  stages: ["triage", "investigate", "mitigate", "resolve", "postmortem"],
-  completionText: "All 5 stages passed. api-latency-spike-p1 resolved.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1000, actions: [{"type":"typing"}] },
-    { delay: 800, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"user","label":"you","text":"API latency spike — P1 incident. /orders endpoint p99 jumped from 200ms to 12s five minutes ago."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: api-latency-spike-p1..."}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: incident-response. 5 stages: triage → investigate → mitigate → resolve → postmortem"}] },
-    { delay: 800, actions: [{"type":"activateStage","stage":"triage"}, {"type":"msg","role":"agent","label":"agent","text":"Entering triage stage. Hat: incident-commander.\nAssessing severity and blast radius..."}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/triage/state.json"}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/triage/units/unit-01-severity-assessment.md"}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/triage/units/unit-02-blast-radius.md"}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/triage/units/unit-03-comms.md"}, {"type":"card","stage":"triage","name":"severity-assessment","status":"in-progress"}, {"type":"card","stage":"triage","name":"blast-radius","status":""}, {"type":"card","stage":"triage","name":"comms","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"15"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: first-responder. Severity confirmed: SEV-1.\n  • /orders p99: 12.3s (baseline 200ms)\n  • Affected: all order creation, 100% of checkout flow\n  • Error rate: 34% of requests timing out at 30s\n  • Customer impact: ~2,400 failed checkouts in last 5 minutes"}, {"type":"updateCard","stage":"triage","name":"severity-assessment","status":"completed"}, {"type":"updateCard","stage":"triage","name":"blast-radius","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"10"}] },
-    { delay: 1000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Blast radius:\n  • Direct: /orders, /checkout, /payments\n  • Indirect: inventory reservation service (queue backing up)\n  • Unaffected: /catalog, /auth, /search\n  • Regions: all (us-east-1, eu-west-1, ap-southeast-1)"}, {"type":"updateCard","stage":"triage","name":"blast-radius","status":"completed"}, {"type":"updateCard","stage":"triage","name":"comms","status":"in-progress"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Who should I notify? I see your on-call rotation has @backend-team and @platform-team."}] },
-    { delay: 1800, actions: [{"type":"msg","role":"user","label":"you","text":"Notify both teams plus @vp-engineering. This is customer-facing revenue impact."}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Notifications sent. Incident channel #inc-2024-0847 created."}, {"type":"updateCard","stage":"triage","name":"comms","status":"completed"}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/knowledge/INCIDENT-BRIEF.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Triage complete. Review gate: auto. All criteria met — advancing."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to investigate stage."}] },
-    { delay: 800, actions: [{"type":"activateStage","stage":"investigate"}, {"type":"msg","role":"agent","label":"agent","text":"Entering investigate stage. Hat: investigator.\nLoading incident brief..."}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/investigate/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → triage/incident-brief (knowledge/INCIDENT-BRIEF.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Starting timeline reconstruction and log analysis..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/investigate/units/unit-01-timeline.md"}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/investigate/units/unit-02-root-cause.md"}, {"type":"card","stage":"investigate","name":"timeline","status":"in-progress"}, {"type":"card","stage":"investigate","name":"root-cause","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"45"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: log-analyst. Timeline reconstructed:\n  14:32:15 — Deploy v2.41.3 rolled out (orders-service)\n  14:32:18 — Connection pool exhaustion starts\n  14:33:01 — p99 crosses 5s threshold\n  14:34:22 — PagerDuty fires SEV-1 alert\n  14:35:00 — You reported the incident"}, {"type":"updateCard","stage":"investigate","name":"timeline","status":"completed"}, {"type":"updateCard","stage":"investigate","name":"root-cause","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Root cause hypothesis: v2.41.3 introduced an N+1 query in the order line-items resolver. Each order now fires a separate DB query per line item instead of a batch fetch. Under load, this exhausts the connection pool (max 50 connections, now seeing 300+ pending).\n\nRuled out:\n  • Database overload — DB CPU is only at 15%\n  • Network issue — latency between app and DB is normal (0.5ms)\n  • Traffic spike — request volume is within normal range"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"user","label":"you","text":"That matches — v2.41.3 refactored the order resolver. The N+1 makes sense."}] },
-    { delay: 800, actions: [{"type":"updateCard","stage":"investigate","name":"root-cause","status":"completed"}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/knowledge/ROOT-CAUSE.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Investigate complete. Review gate: auto. All criteria met — advancing."}, {"type":"msg","role":"agent","label":"agent","text":"Root cause confirmed. Advancing to mitigate stage."}] },
-    { delay: 800, actions: [{"type":"activateStage","stage":"mitigate"}, {"type":"msg","role":"agent","label":"agent","text":"Entering mitigate stage. Hat: mitigator.\nLoading root cause analysis..."}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/mitigate/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → investigate/root-cause (knowledge/ROOT-CAUSE.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Root cause is an N+1 in v2.41.3. Fastest mitigation: rollback to v2.41.2. Alternatively, we could increase the connection pool, but that’s a band-aid.\n\nRecommendation: rollback. Want me to proceed?"}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/mitigate/units/unit-01-rollback.md"}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/mitigate/units/unit-02-verification.md"}, {"type":"card","stage":"mitigate","name":"rollback","status":"in-progress"}, {"type":"card","stage":"mitigate","name":"verification","status":""}] },
-    { delay: 1800, actions: [{"type":"msg","role":"user","label":"you","text":"Yes, rollback to v2.41.2. Don’t touch the connection pool — that masks the real problem."}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Initiating rollback to v2.41.2..."}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Rollback complete. v2.41.2 deployed across all regions.\n  14:42:31 — Rollback initiated\n  14:43:15 — v2.41.2 healthy in us-east-1\n  14:43:28 — v2.41.2 healthy in eu-west-1\n  14:43:41 — v2.41.2 healthy in ap-southeast-1"}, {"type":"updateCard","stage":"mitigate","name":"rollback","status":"completed"}, {"type":"updateCard","stage":"mitigate","name":"verification","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"15"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: verifier. Verification:\n  • /orders p99: 180ms (recovered)\n  • Error rate: 0%\n  • Connection pool: 12/50 active (healthy)\n  • Inventory queue: draining, backlog clearing\n\nUser-facing impact has stopped."}, {"type":"updateCard","stage":"mitigate","name":"verification","status":"completed"}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/knowledge/MITIGATION-LOG.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Mitigate stage complete. Review gate: ask + await."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Mitigate","intent":"","criteria":["Rollback to v2.41.2 executed with timestamps","p99 recovered to 180ms (baseline 200ms)","Error rate at 0%","Connection pool healthy at 12/50","Rollback plan for mitigation documented"],"gateType":"ask gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2200, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Confirmed — metrics look clean. Proceed to permanent fix."}] },
-    { delay: 800, actions: [{"type":"activateStage","stage":"resolve"}, {"type":"msg","role":"agent","label":"agent","text":"Entering resolve stage. Hat: engineer.\nLoading mitigation log..."}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/resolve/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → mitigate/mitigation-log (knowledge/MITIGATION-LOG.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Mitigation was a rollback. Now implementing the permanent fix: batch the line-item queries in the order resolver."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/resolve/units/unit-01-batch-fix.md"}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/resolve/units/unit-02-regression-test.md"}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/resolve/units/unit-03-canary-deploy.md"}, {"type":"card","stage":"resolve","name":"batch-fix","status":"in-progress"}, {"type":"card","stage":"resolve","name":"regression-test","status":""}, {"type":"card","stage":"resolve","name":"canary-deploy","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"45"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Batch fix implemented. Changed line-item resolver from N+1 individual queries to a single batched IN clause. Also added a query count assertion to prevent N+1 regressions."}, {"type":"updateCard","stage":"resolve","name":"batch-fix","status":"completed"}, {"type":"updateCard","stage":"resolve","name":"regression-test","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: reviewer. Regression test added — creates an order with 20 line items and asserts total DB queries <= 3. This would have caught the v2.41.3 bug before deploy."}, {"type":"updateCard","stage":"resolve","name":"regression-test","status":"completed"}, {"type":"updateCard","stage":"resolve","name":"canary-deploy","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Canary deploy to us-east-1 (10% traffic): p99 at 190ms, 0 errors. Looks clean."}, {"type":"updateCard","stage":"resolve","name":"canary-deploy","status":"completed"}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/knowledge/RESOLUTION-SUMMARY.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolve stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Looks good. Roll it out fully and move to postmortem."}, {"type":"msg","role":"agent","label":"agent","text":"Full rollout initiated. Advancing to postmortem stage."}] },
-    { delay: 800, actions: [{"type":"activateStage","stage":"postmortem"}, {"type":"msg","role":"agent","label":"agent","text":"Entering postmortem stage. Hat: postmortem-author.\nLoading resolution summary..."}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/postmortem/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → resolve/resolution-summary (knowledge/RESOLUTION-SUMMARY.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Building blameless postmortem with timeline, root cause, and action items..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/postmortem/units/unit-01-postmortem-doc.md"}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/stages/postmortem/units/unit-02-action-items.md"}, {"type":"card","stage":"postmortem","name":"postmortem-doc","status":"in-progress"}, {"type":"card","stage":"postmortem","name":"action-items","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Postmortem draft:\n  Impact: 11 minutes of degraded checkout, ~2,400 failed orders\n  Root cause: N+1 query introduced in v2.41.3 order resolver refactor\n  Detection: PagerDuty alert at 14:34, 2 min after deploy\n  Mitigation: Rollback to v2.41.2 at 14:42\n  Resolution: Batched query fix with regression test\n\nAnything you want to add or change?"}, {"type":"updateCard","stage":"postmortem","name":"postmortem-doc","status":"completed"}, {"type":"updateCard","stage":"postmortem","name":"action-items","status":"in-progress"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"Add that our deploy pipeline didn’t run the load test suite. That’s how this slipped through."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: action-item-tracker. Added. Here are the action items:\n  1. [P0] Add query-count regression test to CI (owner: backend-team)\n  2. [P1] Re-enable load test suite in deploy pipeline (owner: platform-team)\n  3. [P2] Add connection pool exhaustion alert at 80% threshold (owner: platform-team)\n  4. [P2] Document N+1 detection patterns in code review checklist (owner: backend-team)\n\nAll items assigned and prioritized."}, {"type":"updateCard","stage":"postmortem","name":"action-items","status":"completed"}, {"type":"file","path":".haiku/intents/api-latency-spike-p1/knowledge/POSTMORTEM.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Postmortem stage complete. Review gate: external."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Postmortem","intent":"","criteria":["Blameless narrative with complete timeline","Root cause: N+1 query in v2.41.3","4 action items assigned with owners and priority","Prevention: load test suite re-enabled in pipeline","Connection pool monitoring gap addressed"],"gateType":"external gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2400, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"External review approved. Postmortem distributed to engineering org."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for api-latency-spike-p1.\n\nDelivered:\n  • Triage: SEV-1 confirmed, blast radius mapped, stakeholders notified\n  • Investigation: N+1 query root cause with timeline from deploy to detection\n  • Mitigation: Rollback to v2.41.2, p99 recovered in 11 minutes\n  • Resolution: Batched query fix with regression test, canary-verified\n  • Postmortem: 4 action items assigned, load test gap addressed\n\nIncident duration: 11 minutes. Intent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "incident-response",
+	studio: "incident-response",
+	stages: ["triage", "investigate", "mitigate", "resolve", "postmortem"],
+	completionText: "All 5 stages passed. api-latency-spike-p1 resolved.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1000, actions: [{ type: "typing" }] },
+		{
+			delay: 800,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "API latency spike — P1 incident. /orders endpoint p99 jumped from 200ms to 12s five minutes ago.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: api-latency-spike-p1...",
+				},
+				{ type: "file", path: ".haiku/intents/api-latency-spike-p1/intent.md" },
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: incident-response. 5 stages: triage → investigate → mitigate → resolve → postmortem",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{ type: "activateStage", stage: "triage" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering triage stage. Hat: incident-commander.\nAssessing severity and blast radius...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/triage/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/triage/units/unit-01-severity-assessment.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/triage/units/unit-02-blast-radius.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/triage/units/unit-03-comms.md",
+				},
+				{
+					type: "card",
+					stage: "triage",
+					name: "severity-assessment",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "triage", name: "blast-radius", status: "" },
+				{ type: "card", stage: "triage", name: "comms", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "15" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: first-responder. Severity confirmed: SEV-1.\n  • /orders p99: 12.3s (baseline 200ms)\n  • Affected: all order creation, 100% of checkout flow\n  • Error rate: 34% of requests timing out at 30s\n  • Customer impact: ~2,400 failed checkouts in last 5 minutes",
+				},
+				{
+					type: "updateCard",
+					stage: "triage",
+					name: "severity-assessment",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "triage",
+					name: "blast-radius",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "10" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Blast radius:\n  • Direct: /orders, /checkout, /payments\n  • Indirect: inventory reservation service (queue backing up)\n  • Unaffected: /catalog, /auth, /search\n  • Regions: all (us-east-1, eu-west-1, ap-southeast-1)",
+				},
+				{
+					type: "updateCard",
+					stage: "triage",
+					name: "blast-radius",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "triage",
+					name: "comms",
+					status: "in-progress",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Who should I notify? I see your on-call rotation has @backend-team and @platform-team.",
+				},
+			],
+		},
+		{
+			delay: 1800,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Notify both teams plus @vp-engineering. This is customer-facing revenue impact.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Notifications sent. Incident channel #inc-2024-0847 created.",
+				},
+				{
+					type: "updateCard",
+					stage: "triage",
+					name: "comms",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/knowledge/INCIDENT-BRIEF.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Triage complete. Review gate: auto. All criteria met — advancing.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to investigate stage.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{ type: "activateStage", stage: "investigate" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering investigate stage. Hat: investigator.\nLoading incident brief...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/investigate/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → triage/incident-brief (knowledge/INCIDENT-BRIEF.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Starting timeline reconstruction and log analysis...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/investigate/units/unit-01-timeline.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/investigate/units/unit-02-root-cause.md",
+				},
+				{
+					type: "card",
+					stage: "investigate",
+					name: "timeline",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "investigate", name: "root-cause", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "45" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: log-analyst. Timeline reconstructed:\n  14:32:15 — Deploy v2.41.3 rolled out (orders-service)\n  14:32:18 — Connection pool exhaustion starts\n  14:33:01 — p99 crosses 5s threshold\n  14:34:22 — PagerDuty fires SEV-1 alert\n  14:35:00 — You reported the incident",
+				},
+				{
+					type: "updateCard",
+					stage: "investigate",
+					name: "timeline",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "investigate",
+					name: "root-cause",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Root cause hypothesis: v2.41.3 introduced an N+1 query in the order line-items resolver. Each order now fires a separate DB query per line item instead of a batch fetch. Under load, this exhausts the connection pool (max 50 connections, now seeing 300+ pending).\n\nRuled out:\n  • Database overload — DB CPU is only at 15%\n  • Network issue — latency between app and DB is normal (0.5ms)\n  • Traffic spike — request volume is within normal range",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "That matches — v2.41.3 refactored the order resolver. The N+1 makes sense.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "updateCard",
+					stage: "investigate",
+					name: "root-cause",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/knowledge/ROOT-CAUSE.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Investigate complete. Review gate: auto. All criteria met — advancing.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Root cause confirmed. Advancing to mitigate stage.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{ type: "activateStage", stage: "mitigate" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering mitigate stage. Hat: mitigator.\nLoading root cause analysis...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/mitigate/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → investigate/root-cause (knowledge/ROOT-CAUSE.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Root cause is an N+1 in v2.41.3. Fastest mitigation: rollback to v2.41.2. Alternatively, we could increase the connection pool, but that’s a band-aid.\n\nRecommendation: rollback. Want me to proceed?",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/mitigate/units/unit-01-rollback.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/mitigate/units/unit-02-verification.md",
+				},
+				{
+					type: "card",
+					stage: "mitigate",
+					name: "rollback",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "mitigate", name: "verification", status: "" },
+			],
+		},
+		{
+			delay: 1800,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Yes, rollback to v2.41.2. Don’t touch the connection pool — that masks the real problem.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Initiating rollback to v2.41.2...",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Rollback complete. v2.41.2 deployed across all regions.\n  14:42:31 — Rollback initiated\n  14:43:15 — v2.41.2 healthy in us-east-1\n  14:43:28 — v2.41.2 healthy in eu-west-1\n  14:43:41 — v2.41.2 healthy in ap-southeast-1",
+				},
+				{
+					type: "updateCard",
+					stage: "mitigate",
+					name: "rollback",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "mitigate",
+					name: "verification",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "15" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: verifier. Verification:\n  • /orders p99: 180ms (recovered)\n  • Error rate: 0%\n  • Connection pool: 12/50 active (healthy)\n  • Inventory queue: draining, backlog clearing\n\nUser-facing impact has stopped.",
+				},
+				{
+					type: "updateCard",
+					stage: "mitigate",
+					name: "verification",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/knowledge/MITIGATION-LOG.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Mitigate stage complete. Review gate: ask + await.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Mitigate",
+					intent: "",
+					criteria: [
+						"Rollback to v2.41.2 executed with timestamps",
+						"p99 recovered to 180ms (baseline 200ms)",
+						"Error rate at 0%",
+						"Connection pool healthy at 12/50",
+						"Rollback plan for mitigation documented",
+					],
+					gateType: "ask gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2200, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Confirmed — metrics look clean. Proceed to permanent fix.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{ type: "activateStage", stage: "resolve" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering resolve stage. Hat: engineer.\nLoading mitigation log...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/resolve/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → mitigate/mitigation-log (knowledge/MITIGATION-LOG.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Mitigation was a rollback. Now implementing the permanent fix: batch the line-item queries in the order resolver.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/resolve/units/unit-01-batch-fix.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/resolve/units/unit-02-regression-test.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/resolve/units/unit-03-canary-deploy.md",
+				},
+				{
+					type: "card",
+					stage: "resolve",
+					name: "batch-fix",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "resolve", name: "regression-test", status: "" },
+				{ type: "card", stage: "resolve", name: "canary-deploy", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "45" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Batch fix implemented. Changed line-item resolver from N+1 individual queries to a single batched IN clause. Also added a query count assertion to prevent N+1 regressions.",
+				},
+				{
+					type: "updateCard",
+					stage: "resolve",
+					name: "batch-fix",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "resolve",
+					name: "regression-test",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: reviewer. Regression test added — creates an order with 20 line items and asserts total DB queries <= 3. This would have caught the v2.41.3 bug before deploy.",
+				},
+				{
+					type: "updateCard",
+					stage: "resolve",
+					name: "regression-test",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "resolve",
+					name: "canary-deploy",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Canary deploy to us-east-1 (10% traffic): p99 at 190ms, 0 errors. Looks clean.",
+				},
+				{
+					type: "updateCard",
+					stage: "resolve",
+					name: "canary-deploy",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/knowledge/RESOLUTION-SUMMARY.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolve stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Looks good. Roll it out fully and move to postmortem.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Full rollout initiated. Advancing to postmortem stage.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{ type: "activateStage", stage: "postmortem" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering postmortem stage. Hat: postmortem-author.\nLoading resolution summary...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/postmortem/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → resolve/resolution-summary (knowledge/RESOLUTION-SUMMARY.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Building blameless postmortem with timeline, root cause, and action items...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/postmortem/units/unit-01-postmortem-doc.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/stages/postmortem/units/unit-02-action-items.md",
+				},
+				{
+					type: "card",
+					stage: "postmortem",
+					name: "postmortem-doc",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "postmortem", name: "action-items", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Postmortem draft:\n  Impact: 11 minutes of degraded checkout, ~2,400 failed orders\n  Root cause: N+1 query introduced in v2.41.3 order resolver refactor\n  Detection: PagerDuty alert at 14:34, 2 min after deploy\n  Mitigation: Rollback to v2.41.2 at 14:42\n  Resolution: Batched query fix with regression test\n\nAnything you want to add or change?",
+				},
+				{
+					type: "updateCard",
+					stage: "postmortem",
+					name: "postmortem-doc",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "postmortem",
+					name: "action-items",
+					status: "in-progress",
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Add that our deploy pipeline didn’t run the load test suite. That’s how this slipped through.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: action-item-tracker. Added. Here are the action items:\n  1. [P0] Add query-count regression test to CI (owner: backend-team)\n  2. [P1] Re-enable load test suite in deploy pipeline (owner: platform-team)\n  3. [P2] Add connection pool exhaustion alert at 80% threshold (owner: platform-team)\n  4. [P2] Document N+1 detection patterns in code review checklist (owner: backend-team)\n\nAll items assigned and prioritized.",
+				},
+				{
+					type: "updateCard",
+					stage: "postmortem",
+					name: "action-items",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/api-latency-spike-p1/knowledge/POSTMORTEM.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Postmortem stage complete. Review gate: external.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Postmortem",
+					intent: "",
+					criteria: [
+						"Blameless narrative with complete timeline",
+						"Root cause: N+1 query in v2.41.3",
+						"4 action items assigned with owners and priority",
+						"Prevention: load test suite re-enabled in pipeline",
+						"Connection pool monitoring gap addressed",
+					],
+					gateType: "external gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2400, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "External review approved. Postmortem distributed to engineering org.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for api-latency-spike-p1.\n\nDelivered:\n  • Triage: SEV-1 confirmed, blast radius mapped, stakeholders notified\n  • Investigation: N+1 query root cause with timeline from deploy to detection\n  • Mitigation: Rollback to v2.41.2, p99 recovered in 11 minutes\n  • Resolution: Batched query fix with regression test, canary-verified\n  • Postmortem: 4 action items assigned, load test gap addressed\n\nIncident duration: 11 minutes. Intent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

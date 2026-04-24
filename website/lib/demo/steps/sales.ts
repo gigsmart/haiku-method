@@ -1,92 +1,1001 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "sales",
-  studio: "sales",
-  stages: ["research", "qualification", "proposal", "negotiation", "close"],
-  completionText: "All 5 stages passed. close-acme-enterprise-deal delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1200, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Close the enterprise deal with Acme Corp"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: close-acme-enterprise-deal..."}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: sales. 5 stages: research → qualification → proposal → negotiation → close"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"research"}, {"type":"msg","role":"agent","label":"agent","text":"Entering research stage. Hat: prospect-researcher.\nWhat do you know about Acme Corp so far?"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/research/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"They're a 2000-person manufacturing company. VP of Engineering reached out after seeing our booth at SaaStr. They're replacing a legacy ERP system."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Great starting point. I’ll build the full prospect brief. Decomposing research work..."}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"3 units: company-profile, stakeholder-map, competitive-landscape"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/research/units/unit-01-company-profile.md"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/research/units/unit-02-stakeholder-map.md"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/research/units/unit-03-competitive-landscape.md"}, {"type":"card","stage":"research","name":"company-profile","status":"in-progress"}, {"type":"card","stage":"research","name":"stakeholder-map","status":""}, {"type":"card","stage":"research","name":"competitive-landscape","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Company profile complete. Acme Corp: $450M revenue, 2000 employees, 12 manufacturing plants. Their legacy ERP is SAP R/3 — end of mainstream support. Key pain: manual inventory reconciliation costing them 40 hours/week per plant."}, {"type":"updateCard","stage":"research","name":"company-profile","status":"completed"}, {"type":"updateCard","stage":"research","name":"stakeholder-map","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: industry-analyst. Stakeholder map: VP Engineering (champion), CFO (economic buyer), IT Director (technical evaluator), Plant Managers (end users). CFO is the final sign-off."}, {"type":"updateCard","stage":"research","name":"stakeholder-map","status":"completed"}, {"type":"updateCard","stage":"research","name":"competitive-landscape","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Competitive landscape mapped. Acme evaluated Oracle Cloud ERP and Infor CloudSuite. Oracle was too expensive, Infor lacked manufacturing-specific workflows. We have a clear gap to fill on shop-floor integration."}, {"type":"updateCard","stage":"research","name":"competitive-landscape","status":"completed"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/knowledge/PROSPECT-BRIEF.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Research complete. Review gate: auto. All criteria met — advancing."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to qualification stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"qualification"}, {"type":"msg","role":"agent","label":"agent","text":"Entering qualification stage. Hat: qualifier.\nLoading research outputs..."}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/qualification/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → research/prospect-brief (knowledge/PROSPECT-BRIEF.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Prospect brief shows a strong fit. Let me run the BANT qualification..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/qualification/units/unit-01-bant-scoring.md"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/qualification/units/unit-02-icp-fit.md"}, {"type":"card","stage":"qualification","name":"bant-scoring","status":"in-progress"}, {"type":"card","stage":"qualification","name":"icp-fit","status":""}, {"type":"msg","role":"agent","label":"agent","text":"2 units: bant-scoring and icp-fit."}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"BANT scoring:\n  Budget: $2M allocated for ERP replacement (confirmed)\n  Authority: CFO final sign-off, VP Engineering is champion\n  Need: Legacy SAP R/3 end-of-life, 40hrs/week manual reconciliation\n  Timeline: Want to go live before Q4 plant shutdowns"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"One concern — the IT Director may push for Oracle since they have existing Oracle DB licenses. How do you want to handle that?"}, {"type":"updateCard","stage":"qualification","name":"bant-scoring","status":"completed"}, {"type":"updateCard","stage":"qualification","name":"icp-fit","status":"in-progress"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"Get ahead of it. Build a TCO comparison showing our integration costs are 60% lower than Oracle’s. The IT Director cares about total cost, not just license fees."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Smart. Hat: deal-strategist. I’ll include the TCO comparison in the deal brief. ICP fit score: 87/100 — strong match on manufacturing vertical, company size, and tech stack."}, {"type":"updateCard","stage":"qualification","name":"icp-fit","status":"completed"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/knowledge/DEAL-BRIEF.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Qualification complete. Review gate: ask."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Qualification","intent":"","criteria":["BANT criteria scored with evidence","ICP fit: 87/100 with justification","Buying committee mapped with roles","Win plan: champion VP Eng, blocker IT Dir addressed","TCO comparison prepared for Oracle objection"],"gateType":"ask gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2200, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. Move to proposal."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to proposal stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"proposal"}, {"type":"msg","role":"agent","label":"agent","text":"Entering proposal stage. Hat: proposal-writer.\nLoading deal brief..."}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/proposal/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → qualification/deal-brief (knowledge/DEAL-BRIEF.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Deal brief loaded. Building proposal tailored to Acme’s pain points..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/proposal/units/unit-01-solution-proposal.md"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/proposal/units/unit-02-business-case.md"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/proposal/units/unit-03-demo-script.md"}, {"type":"card","stage":"proposal","name":"solution-proposal","status":"in-progress"}, {"type":"card","stage":"proposal","name":"business-case","status":""}, {"type":"card","stage":"proposal","name":"demo-script","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Solution proposal draft ready. Maps each Acme pain point to our capabilities:\n  • Manual reconciliation → automated inventory sync\n  • SAP end-of-life → modern cloud-native platform\n  • Multi-plant visibility → real-time dashboard\n\nWhat pricing tier should I use?"}, {"type":"updateCard","stage":"proposal","name":"solution-proposal","status":"completed"}, {"type":"updateCard","stage":"proposal","name":"business-case","status":"in-progress"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"Enterprise tier. But offer a 15% multi-year discount if they commit to 3 years. The CFO loves long-term savings."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: solution-architect. Business case built with 3-year TCO showing 62% cost reduction vs Oracle, 280% ROI over contract term. The multi-year discount is positioned as “partnership pricing.”"}, {"type":"updateCard","stage":"proposal","name":"business-case","status":"completed"}, {"type":"updateCard","stage":"proposal","name":"demo-script","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Demo script targets the VP Engineering and Plant Managers. Focuses on shop-floor integration and real-time inventory — the exact workflows their legacy system can’t handle."}, {"type":"updateCard","stage":"proposal","name":"demo-script","status":"completed"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/knowledge/PROPOSAL-DOC.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Proposal stage complete. Review gate: ask + await."}, {"type":"msg","role":"agent","label":"agent","text":"Proposal ready for your review, then we’ll send to Acme."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Proposal","intent":"","criteria":["Pain points mapped to solution capabilities","Business case with 280% ROI and TCO comparison","Demo script tailored to VP Eng and Plant Managers","Multi-year discount positioned as partnership pricing"],"gateType":"ask gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2000, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. Send it."}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Await gate: waiting for Acme Corp response on proposal..."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"Await resolved — Acme Corp responded. VP Engineering wants to proceed. CFO has questions on implementation timeline."}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Great signal. Advancing to negotiation stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"negotiation"}, {"type":"msg","role":"agent","label":"agent","text":"Entering negotiation stage. Hat: negotiator.\nLoading proposal details..."}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/negotiation/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → proposal/proposal-doc (knowledge/PROPOSAL-DOC.md)"}, {"type":"msg","role":"agent","label":"agent","text":"CFO’s implementation timeline concern is common. Preparing objection handling..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/negotiation/units/unit-01-objection-handling.md"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/negotiation/units/unit-02-contract-terms.md"}, {"type":"card","stage":"negotiation","name":"objection-handling","status":"in-progress"}, {"type":"card","stage":"negotiation","name":"contract-terms","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Objection brief ready:\n  • Implementation timeline → phased rollout: 2 pilot plants first, then remaining 10\n  • Data migration risk → parallel-run period with SAP for 30 days\n  • Training burden → on-site enablement team included in enterprise tier"}, {"type":"updateCard","stage":"negotiation","name":"objection-handling","status":"completed"}, {"type":"updateCard","stage":"negotiation","name":"contract-terms","status":"in-progress"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Hat: legal-reviewer. The Acme legal team sent back contract redlines. They want to cap liability at 1x annual contract value and add a 90-day termination clause. How do you want to handle these?"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"Liability cap is fine — that’s standard. Push back on the 90-day termination. Offer 180 days with a mutual clause instead."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Counter-proposal sent. Liability cap accepted. Termination changed to 180-day mutual."}, {"type":"updateCard","stage":"negotiation","name":"contract-terms","status":"completed"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/knowledge/TERMS.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Negotiation stage complete. Review gate: ask + await."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Negotiation","intent":"","criteria":["All objections addressed with evidence","Contract redlines categorized by risk","Liability cap: 1x ACV (accepted)","Termination: 180-day mutual (countered)","Stakeholder alignment confirmed"],"gateType":"ask gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2000, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved."}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Await gate: waiting for Acme Corp legal response on counter-terms..."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"Await resolved — Acme legal accepted 180-day mutual termination. Deal terms finalized."}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"All terms agreed. Advancing to close stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"close"}, {"type":"msg","role":"agent","label":"agent","text":"Entering close stage. Hat: closer.\nLoading negotiation terms..."}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/close/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → negotiation/terms (knowledge/TERMS.md)"}, {"type":"msg","role":"agent","label":"agent","text":"All terms are locked. Preparing close checklist and handoff package..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/close/units/unit-01-close-checklist.md"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/stages/close/units/unit-02-handoff-package.md"}, {"type":"card","stage":"close","name":"close-checklist","status":"in-progress"}, {"type":"card","stage":"close","name":"handoff-package","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Close checklist:\n  ✓ Contract signed by CFO\n  ✓ PO issued: PO-2024-8847\n  ✓ Payment terms: Net 30\n  ✓ 3-year enterprise tier confirmed\n  ✓ 15% partnership discount applied"}, {"type":"updateCard","stage":"close","name":"close-checklist","status":"completed"}, {"type":"updateCard","stage":"close","name":"handoff-package","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: handoff-coordinator. Handoff package built for Customer Success:\n  • Full prospect history and relationship context\n  • Key contacts: VP Eng (champion), CFO (sponsor), IT Dir (technical)\n  • Agreed deliverables: phased rollout, pilot in 2 plants\n  • Implementation expectations and timeline commitments\n  • Win/loss analysis: won on TCO advantage and shop-floor integration"}, {"type":"updateCard","stage":"close","name":"handoff-package","status":"completed"}, {"type":"file","path":".haiku/intents/close-acme-enterprise-deal/knowledge/HANDOFF-PACKAGE.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Close stage complete. Review gate: external + await."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Close","intent":"","criteria":["Contract signed with document references","PO and payment terms captured","Handoff package includes full prospect context","Win/loss analysis with 3 critical success factors","Customer Success team briefed"],"gateType":"external gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2400, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"External review approved. Deal closed."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for close-acme-enterprise-deal.\n\nDelivered:\n  • Prospect brief with company profile, stakeholder map, and competitive landscape\n  • BANT qualification (87/100 ICP fit) with TCO comparison vs Oracle\n  • Enterprise proposal with 280% ROI business case and tailored demo\n  • Negotiation resolved: 1x ACV liability cap, 180-day mutual termination\n  • Handoff package ready for Customer Success team\n\nDeal value: $2M / 3 years. Intent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "sales",
+	studio: "sales",
+	stages: ["research", "qualification", "proposal", "negotiation", "close"],
+	completionText: "All 5 stages passed. close-acme-enterprise-deal delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1200, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Close the enterprise deal with Acme Corp",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: close-acme-enterprise-deal...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: sales. 5 stages: research → qualification → proposal → negotiation → close",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "research" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering research stage. Hat: prospect-researcher.\nWhat do you know about Acme Corp so far?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/research/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "They're a 2000-person manufacturing company. VP of Engineering reached out after seeing our booth at SaaStr. They're replacing a legacy ERP system.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Great starting point. I’ll build the full prospect brief. Decomposing research work...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "3 units: company-profile, stakeholder-map, competitive-landscape",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/research/units/unit-01-company-profile.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/research/units/unit-02-stakeholder-map.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/research/units/unit-03-competitive-landscape.md",
+				},
+				{
+					type: "card",
+					stage: "research",
+					name: "company-profile",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "research",
+					name: "stakeholder-map",
+					status: "",
+				},
+				{
+					type: "card",
+					stage: "research",
+					name: "competitive-landscape",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Company profile complete. Acme Corp: $450M revenue, 2000 employees, 12 manufacturing plants. Their legacy ERP is SAP R/3 — end of mainstream support. Key pain: manual inventory reconciliation costing them 40 hours/week per plant.",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "company-profile",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "stakeholder-map",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: industry-analyst. Stakeholder map: VP Engineering (champion), CFO (economic buyer), IT Director (technical evaluator), Plant Managers (end users). CFO is the final sign-off.",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "stakeholder-map",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "competitive-landscape",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Competitive landscape mapped. Acme evaluated Oracle Cloud ERP and Infor CloudSuite. Oracle was too expensive, Infor lacked manufacturing-specific workflows. We have a clear gap to fill on shop-floor integration.",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "competitive-landscape",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/knowledge/PROSPECT-BRIEF.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Research complete. Review gate: auto. All criteria met — advancing.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to qualification stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "qualification" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering qualification stage. Hat: qualifier.\nLoading research outputs...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/qualification/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → research/prospect-brief (knowledge/PROSPECT-BRIEF.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Prospect brief shows a strong fit. Let me run the BANT qualification...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/qualification/units/unit-01-bant-scoring.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/qualification/units/unit-02-icp-fit.md",
+				},
+				{
+					type: "card",
+					stage: "qualification",
+					name: "bant-scoring",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "qualification", name: "icp-fit", status: "" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "2 units: bant-scoring and icp-fit.",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "BANT scoring:\n  Budget: $2M allocated for ERP replacement (confirmed)\n  Authority: CFO final sign-off, VP Engineering is champion\n  Need: Legacy SAP R/3 end-of-life, 40hrs/week manual reconciliation\n  Timeline: Want to go live before Q4 plant shutdowns",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "One concern — the IT Director may push for Oracle since they have existing Oracle DB licenses. How do you want to handle that?",
+				},
+				{
+					type: "updateCard",
+					stage: "qualification",
+					name: "bant-scoring",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "qualification",
+					name: "icp-fit",
+					status: "in-progress",
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Get ahead of it. Build a TCO comparison showing our integration costs are 60% lower than Oracle’s. The IT Director cares about total cost, not just license fees.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Smart. Hat: deal-strategist. I’ll include the TCO comparison in the deal brief. ICP fit score: 87/100 — strong match on manufacturing vertical, company size, and tech stack.",
+				},
+				{
+					type: "updateCard",
+					stage: "qualification",
+					name: "icp-fit",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/knowledge/DEAL-BRIEF.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Qualification complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Qualification",
+					intent: "",
+					criteria: [
+						"BANT criteria scored with evidence",
+						"ICP fit: 87/100 with justification",
+						"Buying committee mapped with roles",
+						"Win plan: champion VP Eng, blocker IT Dir addressed",
+						"TCO comparison prepared for Oracle objection",
+					],
+					gateType: "ask gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2200, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. Move to proposal.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to proposal stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "proposal" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering proposal stage. Hat: proposal-writer.\nLoading deal brief...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/proposal/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → qualification/deal-brief (knowledge/DEAL-BRIEF.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Deal brief loaded. Building proposal tailored to Acme’s pain points...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/proposal/units/unit-01-solution-proposal.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/proposal/units/unit-02-business-case.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/proposal/units/unit-03-demo-script.md",
+				},
+				{
+					type: "card",
+					stage: "proposal",
+					name: "solution-proposal",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "proposal", name: "business-case", status: "" },
+				{ type: "card", stage: "proposal", name: "demo-script", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Solution proposal draft ready. Maps each Acme pain point to our capabilities:\n  • Manual reconciliation → automated inventory sync\n  • SAP end-of-life → modern cloud-native platform\n  • Multi-plant visibility → real-time dashboard\n\nWhat pricing tier should I use?",
+				},
+				{
+					type: "updateCard",
+					stage: "proposal",
+					name: "solution-proposal",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "proposal",
+					name: "business-case",
+					status: "in-progress",
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Enterprise tier. But offer a 15% multi-year discount if they commit to 3 years. The CFO loves long-term savings.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: solution-architect. Business case built with 3-year TCO showing 62% cost reduction vs Oracle, 280% ROI over contract term. The multi-year discount is positioned as “partnership pricing.”",
+				},
+				{
+					type: "updateCard",
+					stage: "proposal",
+					name: "business-case",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "proposal",
+					name: "demo-script",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Demo script targets the VP Engineering and Plant Managers. Focuses on shop-floor integration and real-time inventory — the exact workflows their legacy system can’t handle.",
+				},
+				{
+					type: "updateCard",
+					stage: "proposal",
+					name: "demo-script",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/knowledge/PROPOSAL-DOC.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Proposal stage complete. Review gate: ask + await.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Proposal ready for your review, then we’ll send to Acme.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Proposal",
+					intent: "",
+					criteria: [
+						"Pain points mapped to solution capabilities",
+						"Business case with 280% ROI and TCO comparison",
+						"Demo script tailored to VP Eng and Plant Managers",
+						"Multi-year discount positioned as partnership pricing",
+					],
+					gateType: "ask gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2000, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{ type: "msg", role: "user", label: "you", text: "Approved. Send it." },
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Await gate: waiting for Acme Corp response on proposal...",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Await resolved — Acme Corp responded. VP Engineering wants to proceed. CFO has questions on implementation timeline.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Great signal. Advancing to negotiation stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "negotiation" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering negotiation stage. Hat: negotiator.\nLoading proposal details...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/negotiation/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → proposal/proposal-doc (knowledge/PROPOSAL-DOC.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "CFO’s implementation timeline concern is common. Preparing objection handling...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/negotiation/units/unit-01-objection-handling.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/negotiation/units/unit-02-contract-terms.md",
+				},
+				{
+					type: "card",
+					stage: "negotiation",
+					name: "objection-handling",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "negotiation",
+					name: "contract-terms",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Objection brief ready:\n  • Implementation timeline → phased rollout: 2 pilot plants first, then remaining 10\n  • Data migration risk → parallel-run period with SAP for 30 days\n  • Training burden → on-site enablement team included in enterprise tier",
+				},
+				{
+					type: "updateCard",
+					stage: "negotiation",
+					name: "objection-handling",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "negotiation",
+					name: "contract-terms",
+					status: "in-progress",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: legal-reviewer. The Acme legal team sent back contract redlines. They want to cap liability at 1x annual contract value and add a 90-day termination clause. How do you want to handle these?",
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Liability cap is fine — that’s standard. Push back on the 90-day termination. Offer 180 days with a mutual clause instead.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Counter-proposal sent. Liability cap accepted. Termination changed to 180-day mutual.",
+				},
+				{
+					type: "updateCard",
+					stage: "negotiation",
+					name: "contract-terms",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/knowledge/TERMS.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Negotiation stage complete. Review gate: ask + await.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Negotiation",
+					intent: "",
+					criteria: [
+						"All objections addressed with evidence",
+						"Contract redlines categorized by risk",
+						"Liability cap: 1x ACV (accepted)",
+						"Termination: 180-day mutual (countered)",
+						"Stakeholder alignment confirmed",
+					],
+					gateType: "ask gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2000, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{ type: "msg", role: "user", label: "you", text: "Approved." },
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Await gate: waiting for Acme Corp legal response on counter-terms...",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Await resolved — Acme legal accepted 180-day mutual termination. Deal terms finalized.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All terms agreed. Advancing to close stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "close" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering close stage. Hat: closer.\nLoading negotiation terms...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/close/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → negotiation/terms (knowledge/TERMS.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All terms are locked. Preparing close checklist and handoff package...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/close/units/unit-01-close-checklist.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/stages/close/units/unit-02-handoff-package.md",
+				},
+				{
+					type: "card",
+					stage: "close",
+					name: "close-checklist",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "close", name: "handoff-package", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Close checklist:\n  ✓ Contract signed by CFO\n  ✓ PO issued: PO-2024-8847\n  ✓ Payment terms: Net 30\n  ✓ 3-year enterprise tier confirmed\n  ✓ 15% partnership discount applied",
+				},
+				{
+					type: "updateCard",
+					stage: "close",
+					name: "close-checklist",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "close",
+					name: "handoff-package",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: handoff-coordinator. Handoff package built for Customer Success:\n  • Full prospect history and relationship context\n  • Key contacts: VP Eng (champion), CFO (sponsor), IT Dir (technical)\n  • Agreed deliverables: phased rollout, pilot in 2 plants\n  • Implementation expectations and timeline commitments\n  • Win/loss analysis: won on TCO advantage and shop-floor integration",
+				},
+				{
+					type: "updateCard",
+					stage: "close",
+					name: "handoff-package",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/close-acme-enterprise-deal/knowledge/HANDOFF-PACKAGE.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Close stage complete. Review gate: external + await.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Close",
+					intent: "",
+					criteria: [
+						"Contract signed with document references",
+						"PO and payment terms captured",
+						"Handoff package includes full prospect context",
+						"Win/loss analysis with 3 critical success factors",
+						"Customer Success team briefed",
+					],
+					gateType: "external gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2400, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "External review approved. Deal closed.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for close-acme-enterprise-deal.\n\nDelivered:\n  • Prospect brief with company profile, stakeholder map, and competitive landscape\n  • BANT qualification (87/100 ICP fit) with TCO comparison vs Oracle\n  • Enterprise proposal with 280% ROI business case and tailored demo\n  • Negotiation resolved: 1x ACV liability cap, 180-day mutual termination\n  • Handoff package ready for Customer Success team\n\nDeal value: $2M / 3 years. Intent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

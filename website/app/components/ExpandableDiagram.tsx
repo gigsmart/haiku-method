@@ -91,6 +91,9 @@ function FlowExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 					onClick={(e) => {
 						if (e.target === e.currentTarget) close()
 					}}
+					onKeyDown={(e) => {
+						if (e.key === "Escape") close()
+					}}
 					role="dialog"
 					aria-modal="true"
 					aria-label={caption ?? "Expanded diagram"}
@@ -104,6 +107,8 @@ function FlowExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 					>
 						✕ Close
 					</button>
+					{/* biome-ignore lint/a11y/noStaticElementInteractions: inner container suppresses backdrop close-on-click when interacting with diagram */}
+					{/* biome-ignore lint/a11y/useKeyWithClickEvents: stopPropagation is click-capture suppression */}
 					<div
 						onClick={(e) => e.stopPropagation()}
 						className="relative h-[min(90vh,900px)] w-[min(95vw,1400px)] overflow-auto rounded-xl border border-stone-700 bg-stone-50 shadow-2xl dark:bg-stone-900"
@@ -207,6 +212,9 @@ function LegacyExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 					onClick={(e) => {
 						if (e.target === e.currentTarget) close()
 					}}
+					onKeyDown={(e) => {
+						if (e.key === "Escape") close()
+					}}
 					role="dialog"
 					aria-modal="true"
 					aria-label={caption ?? "Expanded diagram"}
@@ -220,6 +228,8 @@ function LegacyExpandableDiagram({ chart, caption }: ExpandableDiagramProps) {
 					>
 						✕ Close
 					</button>
+					{/* biome-ignore lint/a11y/noStaticElementInteractions: inner container suppresses backdrop close on interior clicks */}
+					{/* biome-ignore lint/a11y/useKeyWithClickEvents: stopPropagation only */}
 					<div
 						onClick={(e) => e.stopPropagation()}
 						className="relative flex h-[min(90vh,900px)] w-[min(95vw,1400px)] items-center justify-center overflow-auto rounded-xl border border-stone-700 bg-stone-50 p-8 shadow-2xl dark:bg-stone-900"

@@ -1,61 +1,687 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "security-assessment",
-  studio: "security-assessment",
-  stages: ["reconnaissance", "enumeration", "exploitation", "post-exploitation", "reporting"],
-  completionText: "All 5 stages passed. annual-pentest-web-app delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Annual penetration test for our web application"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Creating intent: annual-pentest-web-app..."}, {"type":"file","path":".haiku/intents/annual-pentest-web-app/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: security-assessment. 5 stages: reconnaissance → enumeration → exploitation → post-exploitation → reporting"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"reconnaissance"}, {"type":"msg","role":"agent","label":"agent","text":"Entering reconnaissance stage. Hat: osint-analyst.\nWhat’s the target scope? Domains, IP ranges, out-of-scope systems?"}, {"type":"file","path":".haiku/intents/annual-pentest-web-app/stages/reconnaissance/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Target: app.example.com and api.example.com. Out of scope: staging.example.com and third-party services."}] },
-    { delay: 1000, actions: [{"type":"msg","role":"agent","label":"agent","text":"Confirmed. Starting passive and active recon."}, {"type":"card","stage":"reconnaissance","name":"passive-recon","status":"in-progress"}, {"type":"card","stage":"reconnaissance","name":"active-recon","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"45"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: network-mapper. Recon complete:\n  • 6 subdomains (2 in scope), tech: React + Node.js + PostgreSQL + Redis\n  • Cloudflare WAF, TLS 1.2+, only 80/443 exposed\n  • 47 API endpoints from OpenAPI spec at /docs\n  • /admin endpoint returns 403 — admin panel exists"}, {"type":"updateCard","stage":"reconnaissance","name":"passive-recon","status":"completed"}, {"type":"updateCard","stage":"reconnaissance","name":"active-recon","status":"completed"}, {"type":"file","path":".haiku/intents/annual-pentest-web-app/knowledge/TARGET-PROFILE.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Reconnaissance complete. Review gate: auto. All criteria met — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"enumeration"}, {"type":"msg","role":"agent","label":"agent","text":"Entering enumeration stage. Hat: enumerator."}, {"type":"file","path":".haiku/intents/annual-pentest-web-app/stages/enumeration/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → reconnaissance/target-profile (knowledge/TARGET-PROFILE.md)"}, {"type":"card","stage":"enumeration","name":"service-enum","status":"in-progress"}, {"type":"card","stage":"enumeration","name":"vuln-scan","status":""}, {"type":"card","stage":"enumeration","name":"attack-surface","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"50"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: vulnerability-scanner. Services: Node.js 18.x, Express 4.18, React 18.2 (94% version coverage).\n\nVulnerabilities:\n  • HIGH: Reflected XSS in search parameter\n  • HIGH: JWT tokens have no exp claim\n  • MEDIUM: No rate limiting on /api/auth/login\n  • MEDIUM: CORS wildcard on one endpoint\n  • LOW: Server version header disclosed\n\nPriority targets: XSS, JWT, /admin behind 403."}, {"type":"updateCard","stage":"enumeration","name":"service-enum","status":"completed"}, {"type":"updateCard","stage":"enumeration","name":"vuln-scan","status":"completed"}, {"type":"updateCard","stage":"enumeration","name":"attack-surface","status":"completed"}, {"type":"file","path":".haiku/intents/annual-pentest-web-app/knowledge/VULNERABILITY-CATALOG.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Enumeration complete. Review gate: ask."}, {"type":"showReview","title":"Enumeration","intent":"annual-pentest-web-app","criteria":["Vulnerability catalog with CVE references and CVSS scores","Service versions identified for 90%+ of services","Attack surface categorized by risk level"]}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 1800, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. The JWT issue is concerning — proceed."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"exploitation"}, {"type":"msg","role":"agent","label":"agent","text":"Entering exploitation stage. Hat: exploit-developer.\nAll exploitation follows responsible disclosure — no data destruction, no service disruption."}, {"type":"file","path":".haiku/intents/annual-pentest-web-app/stages/exploitation/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → enumeration/vulnerability-catalog (knowledge/VULNERABILITY-CATALOG.md)"}, {"type":"card","stage":"exploitation","name":"xss-exploit","status":"in-progress"}, {"type":"card","stage":"exploitation","name":"jwt-exploit","status":""}, {"type":"card","stage":"exploitation","name":"auth-bypass","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: attack-operator. XSS confirmed — double-encoding bypasses Cloudflare WAF. PoC: session cookie theft via crafted link."}, {"type":"updateCard","stage":"exploitation","name":"xss-exploit","status":"completed"}, {"type":"updateCard","stage":"exploitation","name":"jwt-exploit","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"JWT exploit confirmed. No exp claim, weak HMAC secret (\"secret123\") brute-forced. Can forge admin JWT.\n\nWith forged JWT, /admin returns 200. Should I document accessible capabilities? Read-only."}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Yes, document what’s accessible but do NOT modify any data."}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Admin panel: user management, billing config, feature flags, database export. All documented, nothing modified."}, {"type":"updateCard","stage":"exploitation","name":"jwt-exploit","status":"completed"}, {"type":"updateCard","stage":"exploitation","name":"auth-bypass","status":"completed"}, {"type":"file","path":".haiku/intents/annual-pentest-web-app/knowledge/ACCESS-LOG.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Exploitation complete. Review gate: ask."}, {"type":"showReview","title":"Exploitation","intent":"annual-pentest-web-app","criteria":["Each exploit logged with timestamp, technique, outcome","PoC demonstrates impact without harm","Access chains documented with reproduction steps","All activity within authorized scope"]}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 1800, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. The JWT finding is critical."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"post-exploitation"}, {"type":"msg","role":"agent","label":"agent","text":"Entering post-exploitation stage. Hat: post-exploit-analyst."}, {"type":"file","path":".haiku/intents/annual-pentest-web-app/stages/post-exploitation/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → exploitation/access-log (knowledge/ACCESS-LOG.md)"}, {"type":"card","stage":"post-exploitation","name":"impact-assessment","status":"in-progress"}, {"type":"card","stage":"post-exploitation","name":"lateral-movement","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: impact-assessor.\n  • Blast radius: 12,000 user accounts, PII + billing + feature flags\n  • Lateral movement: admin panel’s DB export could dump full PostgreSQL, Redis has all session tokens\n  • No network segmentation between app and data tiers\n\nAll analysis theoretical — no exfiltration performed."}, {"type":"updateCard","stage":"post-exploitation","name":"impact-assessment","status":"completed"}, {"type":"updateCard","stage":"post-exploitation","name":"lateral-movement","status":"completed"}, {"type":"file","path":".haiku/intents/annual-pentest-web-app/knowledge/IMPACT-ASSESSMENT.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Post-exploitation complete. Review gate: ask."}, {"type":"showReview","title":"Post-Exploitation","intent":"annual-pentest-web-app","criteria":["Max access level and blast radius documented","Lateral movement paths mapped","Data exposure categorized by sensitivity","No actual exfiltration"]}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 1800, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. Let’s get the report."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"reporting"}, {"type":"msg","role":"agent","label":"agent","text":"Entering reporting stage. Hat: report-writer."}, {"type":"file","path":".haiku/intents/annual-pentest-web-app/stages/reporting/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → post-exploitation/impact-assessment (knowledge/IMPACT-ASSESSMENT.md)"}, {"type":"card","stage":"reporting","name":"executive-summary","status":"in-progress"}, {"type":"card","stage":"reporting","name":"technical-findings","status":""}, {"type":"card","stage":"reporting","name":"remediation-plan","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"60"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: remediation-advisor. Report complete.\n  • Executive summary: risk posture HIGH (2 critical, 2 medium, 1 low)\n  • Technical findings with CVSS scores and reproduction steps\n  • Remediation priorities:\n    1. Immediate: Rotate JWT key, add expiration\n    2. Immediate: Fix XSS with output encoding\n    3. Short-term: Rate limiting, CORS fix, network segmentation"}, {"type":"updateCard","stage":"reporting","name":"executive-summary","status":"completed"}, {"type":"updateCard","stage":"reporting","name":"technical-findings","status":"completed"}, {"type":"updateCard","stage":"reporting","name":"remediation-plan","status":"completed"}, {"type":"file","path":".haiku/intents/annual-pentest-web-app/knowledge/PENTEST-REPORT.md"}, {"type":"file","path":".haiku/intents/annual-pentest-web-app/knowledge/REMEDIATION-PLAN.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Reporting complete. Review gate: external."}, {"type":"msg","role":"agent","label":"agent","text":"Sharing browse URL for external stakeholder review..."}] },
-    { delay: 1000, actions: [{"type":"showReview","title":"Reporting","intent":"annual-pentest-web-app","criteria":["Findings have CVSS scores and reproduction steps","Executive summary in business terms","Remediation prioritized by risk-reduction impact"],"gateType":"external gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2000, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"External stakeholder review approved via browse page."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for annual-pentest-web-app.\n\nDelivered:\n  • Target profile with 6 subdomains and full tech stack\n  • Vulnerability catalog: 2 high, 2 medium, 1 low, 1 info\n  • 3 exploit chains with PoC artifacts\n  • Impact assessment: 12K users, PII + financial at risk\n  • Remediation plan with immediate and short-term priorities\n  • Executive summary and full technical report\n\nIntent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "security-assessment",
+	studio: "security-assessment",
+	stages: [
+		"reconnaissance",
+		"enumeration",
+		"exploitation",
+		"post-exploitation",
+		"reporting",
+	],
+	completionText: "All 5 stages passed. annual-pentest-web-app delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Annual penetration test for our web application",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: annual-pentest-web-app...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/annual-pentest-web-app/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: security-assessment. 5 stages: reconnaissance → enumeration → exploitation → post-exploitation → reporting",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "reconnaissance" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering reconnaissance stage. Hat: osint-analyst.\nWhat’s the target scope? Domains, IP ranges, out-of-scope systems?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/annual-pentest-web-app/stages/reconnaissance/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Target: app.example.com and api.example.com. Out of scope: staging.example.com and third-party services.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Confirmed. Starting passive and active recon.",
+				},
+				{
+					type: "card",
+					stage: "reconnaissance",
+					name: "passive-recon",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "reconnaissance",
+					name: "active-recon",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "45" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: network-mapper. Recon complete:\n  • 6 subdomains (2 in scope), tech: React + Node.js + PostgreSQL + Redis\n  • Cloudflare WAF, TLS 1.2+, only 80/443 exposed\n  • 47 API endpoints from OpenAPI spec at /docs\n  • /admin endpoint returns 403 — admin panel exists",
+				},
+				{
+					type: "updateCard",
+					stage: "reconnaissance",
+					name: "passive-recon",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "reconnaissance",
+					name: "active-recon",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/annual-pentest-web-app/knowledge/TARGET-PROFILE.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Reconnaissance complete. Review gate: auto. All criteria met — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "enumeration" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering enumeration stage. Hat: enumerator.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/annual-pentest-web-app/stages/enumeration/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → reconnaissance/target-profile (knowledge/TARGET-PROFILE.md)",
+				},
+				{
+					type: "card",
+					stage: "enumeration",
+					name: "service-enum",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "enumeration", name: "vuln-scan", status: "" },
+				{
+					type: "card",
+					stage: "enumeration",
+					name: "attack-surface",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "50" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: vulnerability-scanner. Services: Node.js 18.x, Express 4.18, React 18.2 (94% version coverage).\n\nVulnerabilities:\n  • HIGH: Reflected XSS in search parameter\n  • HIGH: JWT tokens have no exp claim\n  • MEDIUM: No rate limiting on /api/auth/login\n  • MEDIUM: CORS wildcard on one endpoint\n  • LOW: Server version header disclosed\n\nPriority targets: XSS, JWT, /admin behind 403.",
+				},
+				{
+					type: "updateCard",
+					stage: "enumeration",
+					name: "service-enum",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "enumeration",
+					name: "vuln-scan",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "enumeration",
+					name: "attack-surface",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/annual-pentest-web-app/knowledge/VULNERABILITY-CATALOG.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Enumeration complete. Review gate: ask.",
+				},
+				{
+					type: "showReview",
+					title: "Enumeration",
+					intent: "annual-pentest-web-app",
+					criteria: [
+						"Vulnerability catalog with CVE references and CVSS scores",
+						"Service versions identified for 90%+ of services",
+						"Attack surface categorized by risk level",
+					],
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 1800, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. The JWT issue is concerning — proceed.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "exploitation" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering exploitation stage. Hat: exploit-developer.\nAll exploitation follows responsible disclosure — no data destruction, no service disruption.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/annual-pentest-web-app/stages/exploitation/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → enumeration/vulnerability-catalog (knowledge/VULNERABILITY-CATALOG.md)",
+				},
+				{
+					type: "card",
+					stage: "exploitation",
+					name: "xss-exploit",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "exploitation",
+					name: "jwt-exploit",
+					status: "",
+				},
+				{
+					type: "card",
+					stage: "exploitation",
+					name: "auth-bypass",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: attack-operator. XSS confirmed — double-encoding bypasses Cloudflare WAF. PoC: session cookie theft via crafted link.",
+				},
+				{
+					type: "updateCard",
+					stage: "exploitation",
+					name: "xss-exploit",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "exploitation",
+					name: "jwt-exploit",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: 'JWT exploit confirmed. No exp claim, weak HMAC secret ("secret123") brute-forced. Can forge admin JWT.\n\nWith forged JWT, /admin returns 200. Should I document accessible capabilities? Read-only.',
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Yes, document what’s accessible but do NOT modify any data.",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Admin panel: user management, billing config, feature flags, database export. All documented, nothing modified.",
+				},
+				{
+					type: "updateCard",
+					stage: "exploitation",
+					name: "jwt-exploit",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "exploitation",
+					name: "auth-bypass",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/annual-pentest-web-app/knowledge/ACCESS-LOG.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Exploitation complete. Review gate: ask.",
+				},
+				{
+					type: "showReview",
+					title: "Exploitation",
+					intent: "annual-pentest-web-app",
+					criteria: [
+						"Each exploit logged with timestamp, technique, outcome",
+						"PoC demonstrates impact without harm",
+						"Access chains documented with reproduction steps",
+						"All activity within authorized scope",
+					],
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 1800, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. The JWT finding is critical.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "post-exploitation" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering post-exploitation stage. Hat: post-exploit-analyst.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/annual-pentest-web-app/stages/post-exploitation/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → exploitation/access-log (knowledge/ACCESS-LOG.md)",
+				},
+				{
+					type: "card",
+					stage: "post-exploitation",
+					name: "impact-assessment",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "post-exploitation",
+					name: "lateral-movement",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: impact-assessor.\n  • Blast radius: 12,000 user accounts, PII + billing + feature flags\n  • Lateral movement: admin panel’s DB export could dump full PostgreSQL, Redis has all session tokens\n  • No network segmentation between app and data tiers\n\nAll analysis theoretical — no exfiltration performed.",
+				},
+				{
+					type: "updateCard",
+					stage: "post-exploitation",
+					name: "impact-assessment",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "post-exploitation",
+					name: "lateral-movement",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/annual-pentest-web-app/knowledge/IMPACT-ASSESSMENT.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Post-exploitation complete. Review gate: ask.",
+				},
+				{
+					type: "showReview",
+					title: "Post-Exploitation",
+					intent: "annual-pentest-web-app",
+					criteria: [
+						"Max access level and blast radius documented",
+						"Lateral movement paths mapped",
+						"Data exposure categorized by sensitivity",
+						"No actual exfiltration",
+					],
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 1800, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. Let’s get the report.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "reporting" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering reporting stage. Hat: report-writer.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/annual-pentest-web-app/stages/reporting/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → post-exploitation/impact-assessment (knowledge/IMPACT-ASSESSMENT.md)",
+				},
+				{
+					type: "card",
+					stage: "reporting",
+					name: "executive-summary",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "reporting",
+					name: "technical-findings",
+					status: "",
+				},
+				{
+					type: "card",
+					stage: "reporting",
+					name: "remediation-plan",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "60" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: remediation-advisor. Report complete.\n  • Executive summary: risk posture HIGH (2 critical, 2 medium, 1 low)\n  • Technical findings with CVSS scores and reproduction steps\n  • Remediation priorities:\n    1. Immediate: Rotate JWT key, add expiration\n    2. Immediate: Fix XSS with output encoding\n    3. Short-term: Rate limiting, CORS fix, network segmentation",
+				},
+				{
+					type: "updateCard",
+					stage: "reporting",
+					name: "executive-summary",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "reporting",
+					name: "technical-findings",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "reporting",
+					name: "remediation-plan",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/annual-pentest-web-app/knowledge/PENTEST-REPORT.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/annual-pentest-web-app/knowledge/REMEDIATION-PLAN.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Reporting complete. Review gate: external.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Sharing browse URL for external stakeholder review...",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "showReview",
+					title: "Reporting",
+					intent: "annual-pentest-web-app",
+					criteria: [
+						"Findings have CVSS scores and reproduction steps",
+						"Executive summary in business terms",
+						"Remediation prioritized by risk-reduction impact",
+					],
+					gateType: "external gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2000, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "External stakeholder review approved via browse page.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for annual-pentest-web-app.\n\nDelivered:\n  • Target profile with 6 subdomains and full tech stack\n  • Vulnerability catalog: 2 high, 2 medium, 1 low, 1 info\n  • 3 exploit chains with PoC artifacts\n  • Impact assessment: 12K users, PII + financial at risk\n  • Remediation plan with immediate and short-term priorities\n  • Executive summary and full technical report\n\nIntent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

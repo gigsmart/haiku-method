@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.105.6] - 2026-04-23
+
+### Fixed
+- Enhanced error observability throughout the orchestrator for improved debugging and diagnostics.
+- Hardened intent and unit metadata parsing to prevent edge-case processing failures.
+
+## [1.105.5] - 2026-04-22
+
+### Added
+- OpenTelemetry integration for comprehensive workflow observability
+- Authentication helpers for credential management
+
+### Fixed
+- Browse operations now recover gracefully from transient network failures
+
+## [1.105.4] - 2026-04-16
+
+### Fixed
+- Discrete mode no longer creates a merge request for each unit.
+
+## [1.105.3] - 2026-04-16
+
+### Added
+- Support for running H·AI·K·U in Cursor, Gemini CLI, Kiro, OpenCode, and Windsurf.
+
+## [1.105.2] - 2026-04-15
+
+### Added
+- Review sessions preserve draft responses so you can continue editing incomplete reviews later.
+- Review re-entry shows what changed since your last review to accelerate feedback iteration.
+
+### Fixed
+- Eliminated duplicate confirmation popups during review updates.
+
+## [1.105.1] - 2026-04-15
+
+### Fixed
+- Execution phase no longer over-prompts during unit iteration, letting you progress through work without unnecessary interruptions.
+
 ## [1.103.2] - 2026-04-15
 
 ### Fixed

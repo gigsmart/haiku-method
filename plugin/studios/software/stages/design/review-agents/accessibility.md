@@ -2,7 +2,23 @@
 name: accessibility
 stage: design
 studio: software
+applies_to:
+  - "*.html"
+  - "*.htm"
+  - "*.tsx"
+  - "*.jsx"
+  - "*.vue"
+  - "*.svelte"
 ---
+
+<!--
+  `applies_to:` gates this review agent by output kind. The web a11y checks
+  below (contrast, touch targets, focus indicators, SR flow) presume DOM /
+  HTML artifacts. On a stage whose artifacts are all backend specs, CLI
+  docs, or non-UI markdown, this agent skips itself rather than raising
+  not-applicable findings. Absence of `applies_to:` means "always runs"
+  (backward-compatible default).
+-->
 
 **Mandate:** The agent **MUST** verify the design meets accessibility requirements and does not exclude users.
 

@@ -1,68 +1,739 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "hr",
-  studio: "hr",
-  stages: ["requisition", "sourcing", "screening", "interview", "offer"],
-  completionText: "All 5 stages passed. hire-senior-backend-engineer delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1200, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Hire a senior backend engineer for the platform team"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: hire-senior-backend-engineer..."}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: hr. 5 stages: requisition → sourcing → screening → interview → offer"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"requisition"}, {"type":"msg","role":"agent","label":"agent","text":"Entering requisition stage. Hat: hiring-manager.\nLet’s define the role. What’s the primary tech stack?"}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/requisition/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Go, PostgreSQL, gRPC. Must have distributed systems experience. Nice-to-have: Kubernetes, event-driven architecture."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Got it. What level are we targeting? And is this backfill or growth?"}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/requisition/units/unit-01-role-definition.md"}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/requisition/units/unit-02-job-description.md"}, {"type":"card","stage":"requisition","name":"role-definition","status":"in-progress"}, {"type":"card","stage":"requisition","name":"job-description","status":""}] },
-    { delay: 1800, actions: [{"type":"msg","role":"user","label":"you","text":"Growth. L5/L6 equivalent. 5+ years experience. Remote OK but US time zones only."}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: recruiter. Role definition complete. Compensation benchmarked against 3 sources:\n  Levels.fyi: $185-225K base\n  Glassdoor: $175-215K base\n  Internal band: $180-220K base\nRecommended range: $185-220K + equity. Job spec separates must-have from nice-to-have qualifications."}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/knowledge/JOB-SPEC.md"}, {"type":"updateCard","stage":"requisition","name":"role-definition","status":"completed"}, {"type":"updateCard","stage":"requisition","name":"job-description","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Job description written. Emphasizes impact over requirements list. Inclusive language verified."}, {"type":"updateCard","stage":"requisition","name":"job-description","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Requisition complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Approved. Post it."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to sourcing stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"sourcing"}, {"type":"msg","role":"agent","label":"agent","text":"Entering sourcing stage. Hat: sourcer.\nLoading requisition outputs..."}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/sourcing/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → requisition/job-spec (knowledge/JOB-SPEC.md)"}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/sourcing/units/unit-01-channel-sourcing.md"}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/sourcing/units/unit-02-outreach.md"}, {"type":"card","stage":"sourcing","name":"channel-sourcing","status":"in-progress"}, {"type":"card","stage":"sourcing","name":"outreach","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: recruiter. Pipeline built from 4 channels:\n  LinkedIn: 12 prospects\n  GitHub (Go contributors): 5 prospects\n  Referrals: 4 prospects\n  Job boards: 6 prospects\n27 total qualified candidates with initial fit assessments."}, {"type":"updateCard","stage":"sourcing","name":"channel-sourcing","status":"completed"}, {"type":"updateCard","stage":"sourcing","name":"outreach","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Personalized outreach sent. Each message references the candidate’s specific background and our platform challenges. Response rate tracking initiated."}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/knowledge/CANDIDATE-PIPELINE.md"}, {"type":"updateCard","stage":"sourcing","name":"outreach","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Sourcing complete. Review gate: auto. Pipeline volume sufficient — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"screening"}, {"type":"msg","role":"agent","label":"agent","text":"Entering screening stage. Hat: screener.\nLoading upstream outputs..."}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/screening/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → sourcing/candidate-pipeline (knowledge/CANDIDATE-PIPELINE.md), requisition/job-spec (knowledge/JOB-SPEC.md)"}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/screening/units/unit-01-resume-screening.md"}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/screening/units/unit-02-scoring.md"}, {"type":"card","stage":"screening","name":"resume-screening","status":"in-progress"}, {"type":"card","stage":"screening","name":"scoring","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"45"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: assessor. 27 candidates scored against must-have criteria:\n  Pass: 14 candidates\n  Fail: 13 candidates (8 insufficient Go experience, 3 no distributed systems, 2 timezone mismatch)\nDisqualification reasons traced to specific job spec requirements."}, {"type":"updateCard","stage":"screening","name":"resume-screening","status":"completed"}, {"type":"updateCard","stage":"screening","name":"scoring","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Top 8 ranked by composite fit score. Scoring methodology consistent across all candidates. Top 3:\n  1. Sarah Chen — 92/100 (Go at scale, Kubernetes, 7yr)\n  2. Marcus Rivera — 88/100 (distributed systems lead, 6yr)\n  3. Priya Patel — 85/100 (gRPC expert, event-driven, 5yr)"}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/knowledge/SCREENING-REPORT.md"}, {"type":"updateCard","stage":"screening","name":"scoring","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Screening complete. Review gate: auto. All candidates scored consistently — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"interview"}, {"type":"msg","role":"agent","label":"agent","text":"Entering interview stage. Hat: interviewer.\nLoading screening results..."}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/interview/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → screening/screening-report (knowledge/SCREENING-REPORT.md), requisition/job-spec (knowledge/JOB-SPEC.md)"}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/interview/units/unit-01-structured-interviews.md"}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/interview/units/unit-02-evaluation.md"}, {"type":"card","stage":"interview","name":"structured-interviews","status":"in-progress"}, {"type":"card","stage":"interview","name":"evaluation","status":""}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"I’ve prepared structured interview rubrics across 4 competency dimensions:\n  1. Technical depth (system design, Go proficiency)\n  2. Collaboration (cross-team work, code review approach)\n  3. Problem solving (ambiguity handling, debugging)\n  4. Domain fit (distributed systems, scalability thinking)\n\nWant to adjust the dimensions or weights?"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"Add a 5th dimension: ownership mentality. We need someone who drives initiatives, not just executes tickets."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Added ownership mentality as dimension 5 with behavioral anchors. Interview guides updated for all 8 candidates."}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"50"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: evaluator. Interview scorecards complete for top 8. Synthesized debrief:\n  Strong hire: Sarah Chen (95 avg — exceptional system design, strong ownership examples)\n  Hire: Marcus Rivera (87 avg — solid technical, weaker on ownership dimension)\n  Hire: Priya Patel (84 avg — deep gRPC expertise, growing into leadership)\n  No hire: 5 candidates below threshold"}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/knowledge/INTERVIEW-SCORECARD.md"}, {"type":"updateCard","stage":"interview","name":"structured-interviews","status":"completed"}, {"type":"updateCard","stage":"interview","name":"evaluation","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"15"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Each recommendation backed by specific behavioral evidence from interviews. Comparative ranking documented."}, {"type":"updateCard","stage":"interview","name":"evaluation","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Interview stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Agreed on Sarah as #1. Let’s move to offer."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to offer stage with Sarah Chen as primary candidate."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"offer"}, {"type":"msg","role":"agent","label":"agent","text":"Entering offer stage. Hat: compensator.\nLoading interview results..."}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/offer/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → interview/interview-scorecard (knowledge/INTERVIEW-SCORECARD.md), requisition/job-spec (knowledge/JOB-SPEC.md)"}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/offer/units/unit-01-compensation-analysis.md"}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/offer/units/unit-02-offer-package.md"}, {"type":"card","stage":"offer","name":"comp-analysis","status":"in-progress"}, {"type":"card","stage":"offer","name":"offer-package","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Compensation analysis for Sarah Chen:\n  Current comp (estimated): $195K base + RSUs\n  Market benchmark: $205K median for L5 in her metro\n  Internal equity: aligns with existing L5 band\n  Recommendation: $210K base + 0.05% equity + $15K signing\n\nPositioned at 75th percentile to reflect strong hire signal. Want to adjust?"}, {"type":"updateCard","stage":"offer","name":"comp-analysis","status":"completed"}, {"type":"updateCard","stage":"offer","name":"offer-package","status":"in-progress"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Bump equity to 0.08%. She’s a strong hire and equity is our differentiator."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: closer. Updated to 0.08% equity. Offer letter drafted with all material terms. Fallback plan: Marcus Rivera as backup with adjusted comp at $195K base."}, {"type":"file","path":".haiku/intents/hire-senior-backend-engineer/stages/offer/artifacts/offer-letter-sarah-chen.md"}, {"type":"updateCard","stage":"offer","name":"offer-package","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Offer stage complete. Review gate: external."}, {"type":"msg","role":"agent","label":"agent","text":"Sharing offer package for VP Engineering approval..."}] },
-    { delay: 1000, actions: [{"type":"showReview","title":"Offer","intent":"hire-senior-backend-engineer","criteria":["Compensation benchmarked against market and internal equity","Offer letter includes all material terms","Equity positioning reflects strong-hire signal","Fallback candidate identified with adjusted package","All approval workflows complete"],"gateType":"external"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2400, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"External approval received. Offer ready to extend."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for hire-senior-backend-engineer.\n\nDelivered:\n  • Job spec with must-have/nice-to-have qualifications and comp benchmarks\n  • 27-candidate pipeline from 4 sourcing channels with personalized outreach\n  • Structured screening with composite scoring — 14 candidates passed\n  • 5-dimension interview rubric with behavioral evidence for all 8 finalists\n  • Offer package for Sarah Chen: $210K + 0.08% equity + $15K signing\n\nIntent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "hr",
+	studio: "hr",
+	stages: ["requisition", "sourcing", "screening", "interview", "offer"],
+	completionText:
+		"All 5 stages passed. hire-senior-backend-engineer delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1200, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Hire a senior backend engineer for the platform team",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: hire-senior-backend-engineer...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: hr. 5 stages: requisition → sourcing → screening → interview → offer",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "requisition" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering requisition stage. Hat: hiring-manager.\nLet’s define the role. What’s the primary tech stack?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/requisition/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Go, PostgreSQL, gRPC. Must have distributed systems experience. Nice-to-have: Kubernetes, event-driven architecture.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Got it. What level are we targeting? And is this backfill or growth?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/requisition/units/unit-01-role-definition.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/requisition/units/unit-02-job-description.md",
+				},
+				{
+					type: "card",
+					stage: "requisition",
+					name: "role-definition",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "requisition",
+					name: "job-description",
+					status: "",
+				},
+			],
+		},
+		{
+			delay: 1800,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Growth. L5/L6 equivalent. 5+ years experience. Remote OK but US time zones only.",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: recruiter. Role definition complete. Compensation benchmarked against 3 sources:\n  Levels.fyi: $185-225K base\n  Glassdoor: $175-215K base\n  Internal band: $180-220K base\nRecommended range: $185-220K + equity. Job spec separates must-have from nice-to-have qualifications.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/knowledge/JOB-SPEC.md",
+				},
+				{
+					type: "updateCard",
+					stage: "requisition",
+					name: "role-definition",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "requisition",
+					name: "job-description",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Job description written. Emphasizes impact over requirements list. Inclusive language verified.",
+				},
+				{
+					type: "updateCard",
+					stage: "requisition",
+					name: "job-description",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Requisition complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "Approved. Post it." },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to sourcing stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "sourcing" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering sourcing stage. Hat: sourcer.\nLoading requisition outputs...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/sourcing/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → requisition/job-spec (knowledge/JOB-SPEC.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/sourcing/units/unit-01-channel-sourcing.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/sourcing/units/unit-02-outreach.md",
+				},
+				{
+					type: "card",
+					stage: "sourcing",
+					name: "channel-sourcing",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "sourcing", name: "outreach", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: recruiter. Pipeline built from 4 channels:\n  LinkedIn: 12 prospects\n  GitHub (Go contributors): 5 prospects\n  Referrals: 4 prospects\n  Job boards: 6 prospects\n27 total qualified candidates with initial fit assessments.",
+				},
+				{
+					type: "updateCard",
+					stage: "sourcing",
+					name: "channel-sourcing",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "sourcing",
+					name: "outreach",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Personalized outreach sent. Each message references the candidate’s specific background and our platform challenges. Response rate tracking initiated.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/knowledge/CANDIDATE-PIPELINE.md",
+				},
+				{
+					type: "updateCard",
+					stage: "sourcing",
+					name: "outreach",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Sourcing complete. Review gate: auto. Pipeline volume sufficient — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "screening" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering screening stage. Hat: screener.\nLoading upstream outputs...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/screening/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → sourcing/candidate-pipeline (knowledge/CANDIDATE-PIPELINE.md), requisition/job-spec (knowledge/JOB-SPEC.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/screening/units/unit-01-resume-screening.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/screening/units/unit-02-scoring.md",
+				},
+				{
+					type: "card",
+					stage: "screening",
+					name: "resume-screening",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "screening", name: "scoring", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "45" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: assessor. 27 candidates scored against must-have criteria:\n  Pass: 14 candidates\n  Fail: 13 candidates (8 insufficient Go experience, 3 no distributed systems, 2 timezone mismatch)\nDisqualification reasons traced to specific job spec requirements.",
+				},
+				{
+					type: "updateCard",
+					stage: "screening",
+					name: "resume-screening",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "screening",
+					name: "scoring",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Top 8 ranked by composite fit score. Scoring methodology consistent across all candidates. Top 3:\n  1. Sarah Chen — 92/100 (Go at scale, Kubernetes, 7yr)\n  2. Marcus Rivera — 88/100 (distributed systems lead, 6yr)\n  3. Priya Patel — 85/100 (gRPC expert, event-driven, 5yr)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/knowledge/SCREENING-REPORT.md",
+				},
+				{
+					type: "updateCard",
+					stage: "screening",
+					name: "scoring",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Screening complete. Review gate: auto. All candidates scored consistently — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "interview" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering interview stage. Hat: interviewer.\nLoading screening results...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/interview/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → screening/screening-report (knowledge/SCREENING-REPORT.md), requisition/job-spec (knowledge/JOB-SPEC.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/interview/units/unit-01-structured-interviews.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/interview/units/unit-02-evaluation.md",
+				},
+				{
+					type: "card",
+					stage: "interview",
+					name: "structured-interviews",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "interview", name: "evaluation", status: "" },
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "I’ve prepared structured interview rubrics across 4 competency dimensions:\n  1. Technical depth (system design, Go proficiency)\n  2. Collaboration (cross-team work, code review approach)\n  3. Problem solving (ambiguity handling, debugging)\n  4. Domain fit (distributed systems, scalability thinking)\n\nWant to adjust the dimensions or weights?",
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Add a 5th dimension: ownership mentality. We need someone who drives initiatives, not just executes tickets.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Added ownership mentality as dimension 5 with behavioral anchors. Interview guides updated for all 8 candidates.",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "50" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: evaluator. Interview scorecards complete for top 8. Synthesized debrief:\n  Strong hire: Sarah Chen (95 avg — exceptional system design, strong ownership examples)\n  Hire: Marcus Rivera (87 avg — solid technical, weaker on ownership dimension)\n  Hire: Priya Patel (84 avg — deep gRPC expertise, growing into leadership)\n  No hire: 5 candidates below threshold",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/knowledge/INTERVIEW-SCORECARD.md",
+				},
+				{
+					type: "updateCard",
+					stage: "interview",
+					name: "structured-interviews",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "interview",
+					name: "evaluation",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "15" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Each recommendation backed by specific behavioral evidence from interviews. Comparative ranking documented.",
+				},
+				{
+					type: "updateCard",
+					stage: "interview",
+					name: "evaluation",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Interview stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Agreed on Sarah as #1. Let’s move to offer.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to offer stage with Sarah Chen as primary candidate.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "offer" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering offer stage. Hat: compensator.\nLoading interview results...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/offer/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → interview/interview-scorecard (knowledge/INTERVIEW-SCORECARD.md), requisition/job-spec (knowledge/JOB-SPEC.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/offer/units/unit-01-compensation-analysis.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/offer/units/unit-02-offer-package.md",
+				},
+				{
+					type: "card",
+					stage: "offer",
+					name: "comp-analysis",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "offer", name: "offer-package", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Compensation analysis for Sarah Chen:\n  Current comp (estimated): $195K base + RSUs\n  Market benchmark: $205K median for L5 in her metro\n  Internal equity: aligns with existing L5 band\n  Recommendation: $210K base + 0.05% equity + $15K signing\n\nPositioned at 75th percentile to reflect strong hire signal. Want to adjust?",
+				},
+				{
+					type: "updateCard",
+					stage: "offer",
+					name: "comp-analysis",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "offer",
+					name: "offer-package",
+					status: "in-progress",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Bump equity to 0.08%. She’s a strong hire and equity is our differentiator.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: closer. Updated to 0.08% equity. Offer letter drafted with all material terms. Fallback plan: Marcus Rivera as backup with adjusted comp at $195K base.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/hire-senior-backend-engineer/stages/offer/artifacts/offer-letter-sarah-chen.md",
+				},
+				{
+					type: "updateCard",
+					stage: "offer",
+					name: "offer-package",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Offer stage complete. Review gate: external.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Sharing offer package for VP Engineering approval...",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "showReview",
+					title: "Offer",
+					intent: "hire-senior-backend-engineer",
+					criteria: [
+						"Compensation benchmarked against market and internal equity",
+						"Offer letter includes all material terms",
+						"Equity positioning reflects strong-hire signal",
+						"Fallback candidate identified with adjusted package",
+						"All approval workflows complete",
+					],
+					gateType: "external",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2400, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "External approval received. Offer ready to extend.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for hire-senior-backend-engineer.\n\nDelivered:\n  • Job spec with must-have/nice-to-have qualifications and comp benchmarks\n  • 27-candidate pipeline from 4 sourcing channels with personalized outreach\n  • Structured screening with composite scoring — 14 candidates passed\n  • 5-dimension interview rubric with behavioral evidence for all 8 finalists\n  • Offer package for Sarah Chen: $210K + 0.08% equity + $15K signing\n\nIntent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

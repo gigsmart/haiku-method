@@ -39,7 +39,7 @@ export function extractSnippet(
 	query: string,
 	maxLen = 120,
 ): string {
-	if (!text || !query) return text.slice(0, maxLen)
+	if (!(text && query)) return text.slice(0, maxLen)
 	const lower = text.toLowerCase()
 	const terms = query.toLowerCase().split(/\s+/).filter(Boolean)
 	let bestIdx = -1

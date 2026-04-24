@@ -1,0 +1,243 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FeedbackSheet — state matrix > renders every documented state cell (snapshot) 1`] = `
+<div>
+  <div
+    data-cell="closed"
+  >
+    <dialog
+      aria-labelledby="feedback-sheet-title"
+      aria-modal="true"
+      class="feedback-sheet fixed inset-0 z-50 flex flex-col text-stone-900 dark:text-stone-100"
+      data-testid="feedback-sheet"
+      id="feedback-sheet"
+      role="dialog"
+    >
+      <header
+        class="feedback-sheet__header shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between"
+      >
+        <h2
+          class="text-sm font-semibold text-stone-700 dark:text-stone-300"
+          id="feedback-sheet-title"
+        >
+          Feedback
+        </h2>
+        <button
+          aria-label="Close feedback panel"
+          class="feedback-sheet__close text-stone-600 dark:text-stone-300 hover:text-stone-800 dark:hover:text-stone-100 inline-flex items-center justify-center text-lg touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+          data-testid="feedback-sheet-close"
+          type="button"
+        >
+          <span
+            aria-hidden="true"
+          >
+            ×
+          </span>
+        </button>
+      </header>
+      <div
+        class="feedback-sheet__body flex-1 overflow-y-auto"
+      />
+    </dialog>
+  </div>
+  <div
+    data-cell="open-empty"
+  >
+    <dialog
+      aria-labelledby="feedback-sheet-title"
+      aria-modal="true"
+      class="feedback-sheet fixed inset-0 z-50 flex flex-col text-stone-900 dark:text-stone-100 sheet-enter"
+      data-testid="feedback-sheet"
+      id="feedback-sheet"
+      open=""
+      role="dialog"
+    >
+      <header
+        class="feedback-sheet__header shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between"
+      >
+        <h2
+          class="text-sm font-semibold text-stone-700 dark:text-stone-300"
+          id="feedback-sheet-title"
+        >
+          Feedback
+        </h2>
+        <button
+          aria-label="Close feedback panel"
+          class="feedback-sheet__close text-stone-600 dark:text-stone-300 hover:text-stone-800 dark:hover:text-stone-100 inline-flex items-center justify-center text-lg touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+          data-testid="feedback-sheet-close"
+          type="button"
+        >
+          <span
+            aria-hidden="true"
+          >
+            ×
+          </span>
+        </button>
+      </header>
+      <div
+        class="feedback-sheet__body flex-1 overflow-y-auto"
+      />
+    </dialog>
+  </div>
+  <div
+    data-cell="open-with-body"
+  >
+    <dialog
+      aria-labelledby="feedback-sheet-title"
+      aria-modal="true"
+      class="feedback-sheet fixed inset-0 z-50 flex flex-col text-stone-900 dark:text-stone-100 sheet-enter"
+      data-testid="feedback-sheet"
+      id="feedback-sheet"
+      open=""
+      role="dialog"
+    >
+      <header
+        class="feedback-sheet__header shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between"
+      >
+        <h2
+          class="text-sm font-semibold text-stone-700 dark:text-stone-300"
+          id="feedback-sheet-title"
+        >
+          Feedback
+        </h2>
+        <button
+          aria-label="Close feedback panel"
+          class="feedback-sheet__close text-stone-600 dark:text-stone-300 hover:text-stone-800 dark:hover:text-stone-100 inline-flex items-center justify-center text-lg touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+          data-testid="feedback-sheet-close"
+          type="button"
+        >
+          <span
+            aria-hidden="true"
+          >
+            ×
+          </span>
+        </button>
+      </header>
+      <div
+        class="feedback-sheet__body flex-1 overflow-y-auto"
+      >
+        <p>
+          Body content
+        </p>
+      </div>
+    </dialog>
+  </div>
+  <div
+    data-cell="open-custom-title"
+  >
+    <dialog
+      aria-labelledby="feedback-sheet-title"
+      aria-modal="true"
+      class="feedback-sheet fixed inset-0 z-50 flex flex-col text-stone-900 dark:text-stone-100 sheet-enter"
+      data-testid="feedback-sheet"
+      id="feedback-sheet"
+      open=""
+      role="dialog"
+    >
+      <header
+        class="feedback-sheet__header shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between"
+      >
+        <h2
+          class="text-sm font-semibold text-stone-700 dark:text-stone-300"
+          id="feedback-sheet-title"
+        >
+          Review notes
+        </h2>
+        <button
+          aria-label="Close feedback panel"
+          class="feedback-sheet__close text-stone-600 dark:text-stone-300 hover:text-stone-800 dark:hover:text-stone-100 inline-flex items-center justify-center text-lg touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+          data-testid="feedback-sheet-close"
+          type="button"
+        >
+          <span
+            aria-hidden="true"
+          >
+            ×
+          </span>
+        </button>
+      </header>
+      <div
+        class="feedback-sheet__body flex-1 overflow-y-auto"
+      />
+    </dialog>
+  </div>
+  <div
+    data-cell="open-custom-id"
+  >
+    <dialog
+      aria-labelledby="feedback-sheet-title"
+      aria-modal="true"
+      class="feedback-sheet fixed inset-0 z-50 flex flex-col text-stone-900 dark:text-stone-100 sheet-enter"
+      data-testid="feedback-sheet"
+      id="feedback-sheet-alt"
+      open=""
+      role="dialog"
+    >
+      <header
+        class="feedback-sheet__header shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between"
+      >
+        <h2
+          class="text-sm font-semibold text-stone-700 dark:text-stone-300"
+          id="feedback-sheet-title"
+        >
+          Feedback
+        </h2>
+        <button
+          aria-label="Close feedback panel"
+          class="feedback-sheet__close text-stone-600 dark:text-stone-300 hover:text-stone-800 dark:hover:text-stone-100 inline-flex items-center justify-center text-lg touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+          data-testid="feedback-sheet-close"
+          type="button"
+        >
+          <span
+            aria-hidden="true"
+          >
+            ×
+          </span>
+        </button>
+      </header>
+      <div
+        class="feedback-sheet__body flex-1 overflow-y-auto"
+      />
+    </dialog>
+  </div>
+  <div
+    data-cell="open-aria-labelled"
+  >
+    <dialog
+      aria-labelledby="feedback-sheet-title-alt"
+      aria-modal="true"
+      class="feedback-sheet fixed inset-0 z-50 flex flex-col text-stone-900 dark:text-stone-100 sheet-enter"
+      data-testid="feedback-sheet"
+      id="feedback-sheet"
+      open=""
+      role="dialog"
+    >
+      <header
+        class="feedback-sheet__header shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between"
+      >
+        <h2
+          class="text-sm font-semibold text-stone-700 dark:text-stone-300"
+          id="feedback-sheet-title-alt"
+        >
+          Feedback
+        </h2>
+        <button
+          aria-label="Close feedback panel"
+          class="feedback-sheet__close text-stone-600 dark:text-stone-300 hover:text-stone-800 dark:hover:text-stone-100 inline-flex items-center justify-center text-lg touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+          data-testid="feedback-sheet-close"
+          type="button"
+        >
+          <span
+            aria-hidden="true"
+          >
+            ×
+          </span>
+        </button>
+      </header>
+      <div
+        class="feedback-sheet__body flex-1 overflow-y-auto"
+      />
+    </dialog>
+  </div>
+</div>
+`;

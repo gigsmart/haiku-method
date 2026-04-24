@@ -1,6 +1,6 @@
-import { getMainPaper, getPaperTOC } from "@/lib/papers"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { getMainPaper, getPaperTOC } from "@/lib/papers"
 import { PaperChangesProvider } from "../components/PaperChangesContext"
 import { PaperContent } from "./PaperContent"
 import PaperRevisionHistory from "./PaperRevisionHistory"

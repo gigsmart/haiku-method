@@ -1,102 +1,102 @@
 // Shared H·AI·K·U types used by both the website and review-app
 
 export interface HaikuIntent {
-  slug: string;
-  title: string;
-  studio: string;
-  studioStages: string[];
-  activeStage: string;
-  mode: string;
-  stagesComplete: number;
-  stagesTotal: number;
-  status: string;
-  /** Whether the intent has been archived (hidden from default listings) */
-  archived?: boolean;
-  createdAt: string | null;
-  startedAt: string | null;
-  completedAt: string | null;
-  composite: Array<{ studio: string; stages: string[] }> | null;
-  follows: string | null;
-  content?: string;
-  raw: Record<string, unknown>;
-  /** The git branch this intent lives on (populated when scanning haiku/* branches) */
-  branch?: string;
-  /** PR/MR URL if one exists for this intent's branch */
-  prUrl?: string | null;
-  /** PR/MR state: "open", "merged", "closed" */
-  prStatus?: string | null;
-  /** PR/MR number */
-  prNumber?: number | null;
+	slug: string
+	title: string
+	studio: string
+	studioStages: string[]
+	activeStage: string
+	mode: string
+	stagesComplete: number
+	stagesTotal: number
+	status: string
+	/** Whether the intent has been archived (hidden from default listings) */
+	archived?: boolean
+	createdAt: string | null
+	startedAt: string | null
+	completedAt: string | null
+	composite: Array<{ studio: string; stages: string[] }> | null
+	follows: string | null
+	content?: string
+	raw: Record<string, unknown>
+	/** The git branch this intent lives on (populated when scanning haiku/* branches) */
+	branch?: string
+	/** PR/MR URL if one exists for this intent's branch */
+	prUrl?: string | null
+	/** PR/MR state: "open", "merged", "closed" */
+	prStatus?: string | null
+	/** PR/MR number */
+	prNumber?: number | null
 }
 
 export interface HaikuUnit {
-  name: string;
-  stage: string;
-  status: string;
-  dependsOn: string[];
-  bolt: number;
-  hat: string;
-  startedAt: string | null;
-  completedAt: string | null;
-  refs: string[];
-  outputs: string[];
-  criteria: Array<{ text: string; checked: boolean }>;
-  content: string;
-  raw: Record<string, unknown>;
+	name: string
+	stage: string
+	status: string
+	dependsOn: string[]
+	bolt: number
+	hat: string
+	startedAt: string | null
+	completedAt: string | null
+	refs: string[]
+	outputs: string[]
+	criteria: Array<{ text: string; checked: boolean }>
+	content: string
+	raw: Record<string, unknown>
 }
 
 export interface HaikuArtifact {
-  name: string;
-  content?: string;
-  rawUrl?: string;
-  type: "markdown" | "html" | "image" | "other";
+	name: string
+	content?: string
+	rawUrl?: string
+	type: "markdown" | "html" | "image" | "other"
 }
 
 export interface HaikuKnowledgeFile {
-  name: string;
-  content: string;
+	name: string
+	content: string
 }
 
 export interface HaikuStageState {
-  name: string;
-  status: "pending" | "active" | "complete";
-  phase: string;
-  startedAt: string | null;
-  completedAt: string | null;
-  gateOutcome: string | null;
-  units: HaikuUnit[];
-  artifacts?: HaikuArtifact[];
-  /** The git branch for this stage (e.g. haiku/{slug}/{stage}) */
-  branch?: string;
-  /** PR/MR URL if one exists for this stage's branch */
-  prUrl?: string | null;
-  /** PR/MR state: "open", "merged", "closed" */
-  prStatus?: string | null;
-  /** PR/MR number */
-  prNumber?: number | null;
+	name: string
+	status: "pending" | "active" | "complete"
+	phase: string
+	startedAt: string | null
+	completedAt: string | null
+	gateOutcome: string | null
+	units: HaikuUnit[]
+	artifacts?: HaikuArtifact[]
+	/** The git branch for this stage (e.g. haiku/{slug}/{stage}) */
+	branch?: string
+	/** PR/MR URL if one exists for this stage's branch */
+	prUrl?: string | null
+	/** PR/MR state: "open", "merged", "closed" */
+	prStatus?: string | null
+	/** PR/MR number */
+	prNumber?: number | null
 }
 
 export interface HaikuAsset {
-  path: string;
-  name: string;
-  rawUrl: string;
+	path: string
+	name: string
+	rawUrl: string
 }
 
 export interface HaikuIntentDetail extends HaikuIntent {
-  stages: HaikuStageState[];
-  knowledge: HaikuKnowledgeFile[];
-  operations: HaikuKnowledgeFile[];
-  reflection: string | null;
-  content: string;
-  assets: HaikuAsset[];
+	stages: HaikuStageState[]
+	knowledge: HaikuKnowledgeFile[]
+	operations: HaikuKnowledgeFile[]
+	reflection: string | null
+	content: string
+	assets: HaikuAsset[]
 }
 
 export interface CriterionItem {
-  text: string;
-  checked: boolean;
+	text: string
+	checked: boolean
 }
 
 export interface MockupInfo {
-  label: string;
-  url: string;
+	label: string
+	url: string
 }

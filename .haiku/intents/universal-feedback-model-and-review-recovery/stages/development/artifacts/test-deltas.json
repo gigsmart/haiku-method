@@ -1,0 +1,300 @@
+{
+  "compared_at": "2026-04-21T04:55:02.608Z",
+  "baseline_head": "bbf55667e939f988445b00c076be3053d6f50229",
+  "current_head": "670d70a3db787861f12fcf0f252bed8b64adc448",
+  "summary": {
+    "added": 55,
+    "removed": 2,
+    "regressed": 0
+  },
+  "added": [
+    {
+      "file": "external-review.test.mjs",
+      "name": "WS frame > 64 KiB closes with 1009",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "WS > 20 msg/sec closes with 1008",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "returns all feedback items for a stage",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "filters by status=pending",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "returns empty for status=closed when none exist",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "returns 404 for nonexistent intent",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "returns 404 for nonexistent stage",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "creates feedback item and returns 201",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "POST returns 400 for missing title",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "POST returns 400 for empty body",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "POST returns 404 for nonexistent intent",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "POST defaults origin to user-visual",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "updates status field and returns 200",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "updates closed_by field",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "human can close human-authored feedback via PUT",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "PUT returns 400 for no updatable fields",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "PUT returns 404 for nonexistent feedback id",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "DELETE returns 409 for pending feedback",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "DELETE returns 200 for non-pending feedback",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "DELETE returns 404 for nonexistent feedback id",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "human can delete closed human-authored feedback",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "returns current active intent state",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "review current includes unit info",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "GET /api/feedback with ..%2Fetc as intent returns 400",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "POST /api/feedback with dot-dot traversal intent returns 400",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "PUT /api/feedback with traversal in stage returns 400",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "DELETE /api/feedback with traversal in id returns 400",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "GET /api/feedback with backslash in intent returns 400",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "POST malformed JSON body returns 400 with invalid_json issue",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "PUT with empty body returns 400 with validation_failed",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "POST body > 128 KiB returns 413",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "POST body at the cap still accepted (happy path)",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "PUT with mismatched X-Haiku-Session-Id returns 403",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "DELETE with unknown session header returns 403",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "PUT with matching session header proceeds",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "POST /api/revisit/:id rejects malformed JSON",
+      "passed": true
+    },
+    {
+      "file": "http-feedback.test.mjs",
+      "name": "POST /api/revisit/:id returns 404 for missing session",
+      "passed": true
+    },
+    {
+      "file": "http-streams.test.mjs",
+      "name": "GET /files traversal returns 403 with typed error",
+      "passed": true
+    },
+    {
+      "file": "http-streams.test.mjs",
+      "name": "GET /files on a legitimate file inside intent_dir returns 200",
+      "passed": true
+    },
+    {
+      "file": "http-streams.test.mjs",
+      "name": "GET /mockups traversal returns 403 with typed error",
+      "passed": true
+    },
+    {
+      "file": "http-streams.test.mjs",
+      "name": "GET /mockups on a legitimate mockup file returns 200",
+      "passed": true
+    },
+    {
+      "file": "http-streams.test.mjs",
+      "name": "GET /wireframe traversal returns 403 with typed error",
+      "passed": true
+    },
+    {
+      "file": "http-streams.test.mjs",
+      "name": "GET /stage-artifacts traversal returns 403 with typed error",
+      "passed": true
+    },
+    {
+      "file": "http-streams.test.mjs",
+      "name": "GET /mockups with absolute path fixture returns 403",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "every route declares transport='loopback'",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "every route has a unique operationId",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "feedback POST/PUT routes have 128 KiB cap",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "review decide route uses default 1 MiB cap",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "revisit endpoint is in the route table",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "transport invariant: process exits non-zero on non-loopback bind",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "server body > 1 MiB returns 413 at bridge level",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "external-review.test.mjs            24 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "http-feedback.test.mjs              35 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "http-streams.test.mjs               7 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "server-tools.test.mjs               66 passed, 0 failed",
+      "passed": true
+    }
+  ],
+  "removed": [
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "external-review.test.mjs            22 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "server-tools.test.mjs               59 passed, 0 failed",
+      "passed": true
+    }
+  ],
+  "regressed": []
+}

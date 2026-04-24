@@ -1,65 +1,700 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "vendor-management",
-  studio: "vendor-management",
-  stages: ["requirements", "evaluate", "negotiate", "onboard", "monitor"],
-  completionText: "All 5 stages passed. select-cloud-infrastructure-vendor delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1200, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Select a new cloud infrastructure vendor for our platform"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: select-cloud-infrastructure-vendor..."}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: vendor-management. 5 stages: requirements → evaluate → negotiate → onboard → monitor"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"requirements"}, {"type":"msg","role":"agent","label":"agent","text":"Entering requirements stage. Hat: analyst.\nWhat’s driving the vendor change? And what are your non-negotiable requirements?"}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/requirements/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Current vendor’s egress costs are killing us — $40K/month. Need Kubernetes support, multi-region, SOC 2, and data residency in US/EU. Budget: $25K/month max."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Clear cost driver. Let me structure the RFP."}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/requirements/units/unit-01-requirements.md"}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/requirements/units/unit-02-rfp.md"}, {"type":"card","stage":"requirements","name":"requirements-doc","status":"in-progress"}, {"type":"card","stage":"requirements","name":"rfp","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: specifier. RFP structured with weighted evaluation criteria:\n  Mandatory: Kubernetes (managed), multi-region, SOC 2, US/EU data residency\n  Preferred: Terraform provider, >99.95% SLA, DDoS protection included\n  Nice-to-have: Carbon-neutral datacenters, spot instance support\n\nScoring methodology defined before vendor contact. Egress cost given 25% weight."}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/knowledge/RFP-DOCUMENT.md"}, {"type":"updateCard","stage":"requirements","name":"requirements-doc","status":"completed"}, {"type":"updateCard","stage":"requirements","name":"rfp","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"updateCard","stage":"requirements","name":"rfp","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Requirements stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Good RFP. Send it to the shortlist."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to evaluate stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"evaluate"}, {"type":"msg","role":"agent","label":"agent","text":"Entering evaluate stage. Hat: evaluator.\nLoading RFP..."}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/evaluate/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → requirements/rfp-document (knowledge/RFP-DOCUMENT.md)"}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/evaluate/units/unit-01-vendor-assessment.md"}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/evaluate/units/unit-02-poc-testing.md"}, {"type":"card","stage":"evaluate","name":"vendor-assessment","status":"in-progress"}, {"type":"card","stage":"evaluate","name":"poc-testing","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"50"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"4 vendors evaluated against RFP criteria:\n  Vendor A (CloudScale): 87/100 — best egress pricing ($8K/mo est.), strong K8s\n  Vendor B (InfraCore): 82/100 — best SLA (99.99%), higher egress ($15K/mo)\n  Vendor C (NexCloud): 76/100 — cheapest overall but weaker multi-region\n  Vendor D (AzureStack): 71/100 — enterprise features but vendor lock-in risk"}, {"type":"updateCard","stage":"evaluate","name":"vendor-assessment","status":"completed"}, {"type":"updateCard","stage":"evaluate","name":"poc-testing","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: technical-reviewer. POC results for top 2:\n  CloudScale: Migration test passed, Terraform provider mature, latency p99 = 12ms\n  InfraCore: Migration test passed, Terraform provider beta, latency p99 = 8ms\n\nTCO analysis over 24 months:\n  CloudScale: $468K (saves $492K vs current)\n  InfraCore: $636K (saves $324K vs current)"}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/knowledge/VENDOR-SCORECARD.md"}, {"type":"updateCard","stage":"evaluate","name":"poc-testing","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Evaluate stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"CloudScale wins on cost. Their Terraform provider being mature is a big plus. Let’s negotiate."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to negotiate stage with CloudScale."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"negotiate"}, {"type":"msg","role":"agent","label":"agent","text":"Entering negotiate stage. Hat: negotiator.\nLoading scorecard and RFP..."}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/negotiate/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → evaluate/vendor-scorecard (knowledge/VENDOR-SCORECARD.md), requirements/rfp-document (knowledge/RFP-DOCUMENT.md)"}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/negotiate/units/unit-01-terms.md"}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/negotiate/units/unit-02-sla-review.md"}, {"type":"card","stage":"negotiate","name":"terms","status":"in-progress"}, {"type":"card","stage":"negotiate","name":"sla-review","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Initial terms from CloudScale:\n  Monthly commitment: $19.5K (below $25K budget)\n  Egress: $0.04/GB (vs current $0.09/GB)\n  SLA: 99.95% with 10% service credits\n\nI recommend pushing for:\n  1. Egress at $0.03/GB (leverage 24-month commitment)\n  2. SLA credits at 25% (industry standard for enterprise)\n  3. Free migration support (they offered paid)"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"Push on all three. We’re committing to 24 months — they should give us migration support at minimum."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Negotiated terms:\n  Egress: $0.035/GB (compromise from $0.04)\n  SLA credits: 20% (up from 10%)\n  Migration: Included at no cost with dedicated engineer\n\nTotal savings vs current: $516K over 24 months."}, {"type":"updateCard","stage":"negotiate","name":"terms","status":"completed"}, {"type":"updateCard","stage":"negotiate","name":"sla-review","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: legal-reviewer. Contract reviewed. All risk clauses addressed:\n  • Data processing addendum aligned with GDPR\n  • Termination for convenience with 90-day notice\n  • IP ownership clauses acceptable\n  • Liability cap at 12 months of fees"}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/knowledge/NEGOTIATION-TERMS.md"}, {"type":"updateCard","stage":"negotiate","name":"sla-review","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Negotiate stage complete. Review gate: external."}, {"type":"msg","role":"agent","label":"agent","text":"Sharing terms for CFO and Legal approval..."}] },
-    { delay: 1000, actions: [{"type":"showReview","title":"Negotiate","intent":"select-cloud-infrastructure-vendor","criteria":["Pricing within budget with market benchmarks","SLA terms measurable with defined remedies","Contract risks reviewed and addressed","Migration support included in terms","Data processing compliance verified"],"gateType":"external"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2400, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"CFO and Legal approved. Contract signed."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"onboard"}, {"type":"msg","role":"agent","label":"agent","text":"Entering onboard stage. Hat: integrator.\nLoading negotiation terms..."}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/onboard/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → negotiate/negotiation-terms (knowledge/NEGOTIATION-TERMS.md)"}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/onboard/units/unit-01-migration.md"}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/onboard/units/unit-02-validation.md"}, {"type":"card","stage":"onboard","name":"migration","status":"in-progress"}, {"type":"card","stage":"onboard","name":"validation","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"50"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: coordinator. Onboarding checklist progress:\n  ✓ Account setup and IAM configuration\n  ✓ Terraform state migration\n  ✓ Kubernetes cluster provisioned in US-East and EU-West\n  ✓ DNS and CDN cutover plan ready\n  • Data migration: 80% complete (large dataset transfer in progress)"}, {"type":"updateCard","stage":"onboard","name":"migration","status":"completed"}, {"type":"updateCard","stage":"onboard","name":"validation","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Integration validated end-to-end:\n  • API latency: p99 = 11ms (within threshold)\n  • Data flow: verified across all services\n  • Error handling: failover tested, <30s recovery\n  • Escalation paths documented with named CloudScale contacts\n  • All stakeholders provisioned with access and trained on the console"}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/knowledge/ONBOARDING-CHECKLIST.md"}, {"type":"updateCard","stage":"onboard","name":"validation","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Onboard stage complete. Review gate: auto. Integration validated — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"monitor"}, {"type":"msg","role":"agent","label":"agent","text":"Entering monitor stage. Hat: monitor.\nLoading onboarding data and contract terms..."}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/monitor/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → onboard/onboarding-checklist (knowledge/ONBOARDING-CHECKLIST.md), negotiate/negotiation-terms (knowledge/NEGOTIATION-TERMS.md)"}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/monitor/units/unit-01-performance.md"}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/stages/monitor/units/unit-02-relationship.md"}, {"type":"card","stage":"monitor","name":"performance","status":"in-progress"}, {"type":"card","stage":"monitor","name":"relationship","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"First month performance report:\n  Uptime: 99.97% (above 99.95% SLA)\n  Egress cost: $7,200 (under $8K estimate)\n  Latency: p99 = 10ms (improved from POC)\n  Support tickets: 3 filed, all resolved within SLA\n\nTrend: positive across all metrics."}, {"type":"updateCard","stage":"monitor","name":"performance","status":"completed"}, {"type":"updateCard","stage":"monitor","name":"relationship","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: relationship-manager. Vendor health assessment:\n  Communication: Responsive, proactive on maintenance windows\n  Issue resolution: Average 4hr turnaround (SLA is 8hr)\n  Strategic alignment: Roadmap includes features we need in Q2\n\nRecommendation: Schedule quarterly business review to maintain relationship quality."}, {"type":"file","path":".haiku/intents/select-cloud-infrastructure-vendor/knowledge/PERFORMANCE-REPORT.md"}, {"type":"updateCard","stage":"monitor","name":"relationship","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Monitor stage complete. Review gate: auto. All SLA metrics met — advancing."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for select-cloud-infrastructure-vendor.\n\nDelivered:\n  • RFP with weighted criteria and egress cost at 25% weight\n  • 4-vendor evaluation with POC testing and 24-month TCO analysis\n  • CloudScale selected: $516K savings over 24 months\n  • Negotiated terms: $0.035/GB egress, 99.95% SLA, free migration\n  • Full onboarding with end-to-end validation across US and EU regions\n  • Month-1 performance: 99.97% uptime, $7.2K egress (under estimate)\n\nIntent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "vendor-management",
+	studio: "vendor-management",
+	stages: ["requirements", "evaluate", "negotiate", "onboard", "monitor"],
+	completionText:
+		"All 5 stages passed. select-cloud-infrastructure-vendor delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1200, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Select a new cloud infrastructure vendor for our platform",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: select-cloud-infrastructure-vendor...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: vendor-management. 5 stages: requirements → evaluate → negotiate → onboard → monitor",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "requirements" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering requirements stage. Hat: analyst.\nWhat’s driving the vendor change? And what are your non-negotiable requirements?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/requirements/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Current vendor’s egress costs are killing us — $40K/month. Need Kubernetes support, multi-region, SOC 2, and data residency in US/EU. Budget: $25K/month max.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Clear cost driver. Let me structure the RFP.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/requirements/units/unit-01-requirements.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/requirements/units/unit-02-rfp.md",
+				},
+				{
+					type: "card",
+					stage: "requirements",
+					name: "requirements-doc",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "requirements", name: "rfp", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: specifier. RFP structured with weighted evaluation criteria:\n  Mandatory: Kubernetes (managed), multi-region, SOC 2, US/EU data residency\n  Preferred: Terraform provider, >99.95% SLA, DDoS protection included\n  Nice-to-have: Carbon-neutral datacenters, spot instance support\n\nScoring methodology defined before vendor contact. Egress cost given 25% weight.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/knowledge/RFP-DOCUMENT.md",
+				},
+				{
+					type: "updateCard",
+					stage: "requirements",
+					name: "requirements-doc",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "requirements",
+					name: "rfp",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "updateCard",
+					stage: "requirements",
+					name: "rfp",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Requirements stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Good RFP. Send it to the shortlist.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to evaluate stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "evaluate" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering evaluate stage. Hat: evaluator.\nLoading RFP...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/evaluate/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → requirements/rfp-document (knowledge/RFP-DOCUMENT.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/evaluate/units/unit-01-vendor-assessment.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/evaluate/units/unit-02-poc-testing.md",
+				},
+				{
+					type: "card",
+					stage: "evaluate",
+					name: "vendor-assessment",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "evaluate", name: "poc-testing", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "50" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "4 vendors evaluated against RFP criteria:\n  Vendor A (CloudScale): 87/100 — best egress pricing ($8K/mo est.), strong K8s\n  Vendor B (InfraCore): 82/100 — best SLA (99.99%), higher egress ($15K/mo)\n  Vendor C (NexCloud): 76/100 — cheapest overall but weaker multi-region\n  Vendor D (AzureStack): 71/100 — enterprise features but vendor lock-in risk",
+				},
+				{
+					type: "updateCard",
+					stage: "evaluate",
+					name: "vendor-assessment",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "evaluate",
+					name: "poc-testing",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: technical-reviewer. POC results for top 2:\n  CloudScale: Migration test passed, Terraform provider mature, latency p99 = 12ms\n  InfraCore: Migration test passed, Terraform provider beta, latency p99 = 8ms\n\nTCO analysis over 24 months:\n  CloudScale: $468K (saves $492K vs current)\n  InfraCore: $636K (saves $324K vs current)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/knowledge/VENDOR-SCORECARD.md",
+				},
+				{
+					type: "updateCard",
+					stage: "evaluate",
+					name: "poc-testing",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Evaluate stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "CloudScale wins on cost. Their Terraform provider being mature is a big plus. Let’s negotiate.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to negotiate stage with CloudScale.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "negotiate" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering negotiate stage. Hat: negotiator.\nLoading scorecard and RFP...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/negotiate/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → evaluate/vendor-scorecard (knowledge/VENDOR-SCORECARD.md), requirements/rfp-document (knowledge/RFP-DOCUMENT.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/negotiate/units/unit-01-terms.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/negotiate/units/unit-02-sla-review.md",
+				},
+				{
+					type: "card",
+					stage: "negotiate",
+					name: "terms",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "negotiate", name: "sla-review", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Initial terms from CloudScale:\n  Monthly commitment: $19.5K (below $25K budget)\n  Egress: $0.04/GB (vs current $0.09/GB)\n  SLA: 99.95% with 10% service credits\n\nI recommend pushing for:\n  1. Egress at $0.03/GB (leverage 24-month commitment)\n  2. SLA credits at 25% (industry standard for enterprise)\n  3. Free migration support (they offered paid)",
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Push on all three. We’re committing to 24 months — they should give us migration support at minimum.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Negotiated terms:\n  Egress: $0.035/GB (compromise from $0.04)\n  SLA credits: 20% (up from 10%)\n  Migration: Included at no cost with dedicated engineer\n\nTotal savings vs current: $516K over 24 months.",
+				},
+				{
+					type: "updateCard",
+					stage: "negotiate",
+					name: "terms",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "negotiate",
+					name: "sla-review",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: legal-reviewer. Contract reviewed. All risk clauses addressed:\n  • Data processing addendum aligned with GDPR\n  • Termination for convenience with 90-day notice\n  • IP ownership clauses acceptable\n  • Liability cap at 12 months of fees",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/knowledge/NEGOTIATION-TERMS.md",
+				},
+				{
+					type: "updateCard",
+					stage: "negotiate",
+					name: "sla-review",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Negotiate stage complete. Review gate: external.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Sharing terms for CFO and Legal approval...",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "showReview",
+					title: "Negotiate",
+					intent: "select-cloud-infrastructure-vendor",
+					criteria: [
+						"Pricing within budget with market benchmarks",
+						"SLA terms measurable with defined remedies",
+						"Contract risks reviewed and addressed",
+						"Migration support included in terms",
+						"Data processing compliance verified",
+					],
+					gateType: "external",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2400, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "CFO and Legal approved. Contract signed.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "onboard" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering onboard stage. Hat: integrator.\nLoading negotiation terms...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/onboard/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → negotiate/negotiation-terms (knowledge/NEGOTIATION-TERMS.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/onboard/units/unit-01-migration.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/onboard/units/unit-02-validation.md",
+				},
+				{
+					type: "card",
+					stage: "onboard",
+					name: "migration",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "onboard", name: "validation", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "50" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: coordinator. Onboarding checklist progress:\n  ✓ Account setup and IAM configuration\n  ✓ Terraform state migration\n  ✓ Kubernetes cluster provisioned in US-East and EU-West\n  ✓ DNS and CDN cutover plan ready\n  • Data migration: 80% complete (large dataset transfer in progress)",
+				},
+				{
+					type: "updateCard",
+					stage: "onboard",
+					name: "migration",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "onboard",
+					name: "validation",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Integration validated end-to-end:\n  • API latency: p99 = 11ms (within threshold)\n  • Data flow: verified across all services\n  • Error handling: failover tested, <30s recovery\n  • Escalation paths documented with named CloudScale contacts\n  • All stakeholders provisioned with access and trained on the console",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/knowledge/ONBOARDING-CHECKLIST.md",
+				},
+				{
+					type: "updateCard",
+					stage: "onboard",
+					name: "validation",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Onboard stage complete. Review gate: auto. Integration validated — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "monitor" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering monitor stage. Hat: monitor.\nLoading onboarding data and contract terms...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/monitor/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → onboard/onboarding-checklist (knowledge/ONBOARDING-CHECKLIST.md), negotiate/negotiation-terms (knowledge/NEGOTIATION-TERMS.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/monitor/units/unit-01-performance.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/stages/monitor/units/unit-02-relationship.md",
+				},
+				{
+					type: "card",
+					stage: "monitor",
+					name: "performance",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "monitor", name: "relationship", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "First month performance report:\n  Uptime: 99.97% (above 99.95% SLA)\n  Egress cost: $7,200 (under $8K estimate)\n  Latency: p99 = 10ms (improved from POC)\n  Support tickets: 3 filed, all resolved within SLA\n\nTrend: positive across all metrics.",
+				},
+				{
+					type: "updateCard",
+					stage: "monitor",
+					name: "performance",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "monitor",
+					name: "relationship",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: relationship-manager. Vendor health assessment:\n  Communication: Responsive, proactive on maintenance windows\n  Issue resolution: Average 4hr turnaround (SLA is 8hr)\n  Strategic alignment: Roadmap includes features we need in Q2\n\nRecommendation: Schedule quarterly business review to maintain relationship quality.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/select-cloud-infrastructure-vendor/knowledge/PERFORMANCE-REPORT.md",
+				},
+				{
+					type: "updateCard",
+					stage: "monitor",
+					name: "relationship",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Monitor stage complete. Review gate: auto. All SLA metrics met — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for select-cloud-infrastructure-vendor.\n\nDelivered:\n  • RFP with weighted criteria and egress cost at 25% weight\n  • 4-vendor evaluation with POC testing and 24-month TCO analysis\n  • CloudScale selected: $516K savings over 24 months\n  • Negotiated terms: $0.035/GB egress, 99.95% SLA, free migration\n  • Full onboarding with end-to-end validation across US and EU regions\n  • Month-1 performance: 99.97% uptime, $7.2K egress (under estimate)\n\nIntent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

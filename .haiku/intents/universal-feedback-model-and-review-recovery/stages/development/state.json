@@ -1,0 +1,24 @@
+{
+  "stage": "development",
+  "status": "completed",
+  "phase": "gate",
+  "started_at": null,
+  "completed_at": "2026-04-24T00:06:49Z",
+  "gate_entered_at": "2026-04-24T00:06:38Z",
+  "gate_outcome": "advanced",
+  "visits": 1,
+  "elaboration_turns": 2,
+  "pre_review_dispatched": true,
+  "pre_review_dispatched_at": "2026-04-21T03:07:22Z",
+  "pre_review_reviewers_acknowledged": true,
+  "pre_review_reviewers_acknowledged_at": "2026-04-21T03:24:11Z",
+  "iterations": [
+    {
+      "index": 1,
+      "started_at": "2026-04-24T00:06:49Z",
+      "completed_at": "2026-04-24T00:06:49Z",
+      "trigger": "initial",
+      "result": "advanced"
+    }
+  ]
+}

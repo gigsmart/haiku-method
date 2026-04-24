@@ -1,0 +1,1715 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FeedbackItem — state matrix > renders every (status × interaction) cell (snapshot with token-hash header) 1`] = `
+<div
+  data-token-hash="fa9f004f38d5ccf1"
+>
+  <div
+    data-status-row="pending"
+  >
+    <div
+      class="state-default"
+      data-cell-state="default"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-01"
+        data-status="pending"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              🔍
+            </span>
+            <span>
+              Review Agent
+            </span>
+          </span>
+          <span
+            aria-label="Status: pending"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+            role="img"
+          >
+            pending
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          Stream handler throws on path-traversal 403 without test coverage
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-01
+           · Visit 
+          1
+           · 
+          Review Agent
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-hover"
+      data-cell-state="hover"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-01"
+        data-status="pending"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              🔍
+            </span>
+            <span>
+              Review Agent
+            </span>
+          </span>
+          <span
+            aria-label="Status: pending"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+            role="img"
+          >
+            pending
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          Stream handler throws on path-traversal 403 without test coverage
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-01
+           · Visit 
+          1
+           · 
+          Review Agent
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-focus"
+      data-cell-state="focus"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-01"
+        data-status="pending"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              🔍
+            </span>
+            <span>
+              Review Agent
+            </span>
+          </span>
+          <span
+            aria-label="Status: pending"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+            role="img"
+          >
+            pending
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          Stream handler throws on path-traversal 403 without test coverage
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-01
+           · Visit 
+          1
+           · 
+          Review Agent
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-active"
+      data-cell-state="active"
+    >
+      <div
+        aria-expanded="true"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-01"
+        data-status="pending"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              🔍
+            </span>
+            <span>
+              Review Agent
+            </span>
+          </span>
+          <span
+            aria-label="Status: pending"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+            role="img"
+          >
+            pending
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          Stream handler throws on path-traversal 403 without test coverage
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-01
+           · Visit 
+          1
+           · 
+          Review Agent
+        </p>
+        <div
+          class="mt-2"
+        >
+          <div
+            class="text-xs text-stone-700 dark:text-stone-300 feedback-markdown prose prose-stone prose-sm dark:prose-invert max-w-none"
+          >
+            <div
+              class="prose prose-sm prose-stone dark:prose-invert max-w-none min-w-0 [overflow-wrap:anywhere]
+        prose-code:bg-stone-100 prose-code:dark:bg-stone-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:[overflow-wrap:anywhere]
+        prose-pre:bg-stone-100 prose-pre:dark:bg-stone-800 prose-pre:rounded-lg prose-pre:overflow-x-auto prose-pre:max-w-full prose-pre:whitespace-pre-wrap
+        prose-table:border-collapse prose-th:border prose-th:border-stone-300 prose-th:dark:border-stone-600 prose-th:px-3 prose-th:py-1.5
+        prose-td:border prose-td:border-stone-300 prose-td:dark:border-stone-600 prose-td:px-3 prose-td:py-1.5 "
+              id="feedback-body"
+            >
+              <p>
+                The handler at 
+                <code>
+                  packages/haiku/src/http.ts:974
+                </code>
+                 silently rethrows when the client supplies 
+                <code>
+                  ..
+                </code>
+                 in 
+                <code>
+                  path
+                </code>
+                .
+              </p>
+              
+
+              <p>
+                Repro:
+              </p>
+              
+
+              <pre>
+                <code
+                  class="language-ts"
+                >
+                  await fetch('/api/stream?path=../../etc/passwd')
+// expected: 403 Forbidden
+// actual: 500 Internal Server Error
+
+                </code>
+              </pre>
+              
+
+              <p>
+                Reviewer note: add a regression scenario in 
+                <code>
+                  stream-handler.feature
+                </code>
+                 covering the 403 branch.
+              </p>
+            </div>
+          </div>
+          <div
+            class="flex gap-1 mt-2 flex-wrap"
+          >
+            <button
+              aria-label="Dismiss feedback FB-01"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700 disabled:cursor-not-allowed"
+              data-action="dismiss"
+              type="button"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      aria-disabled="true"
+      class="state-disabled pointer-events-none"
+      data-cell-state="disabled"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-01"
+        data-status="pending"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              🔍
+            </span>
+            <span>
+              Review Agent
+            </span>
+          </span>
+          <span
+            aria-label="Status: pending"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+            role="img"
+          >
+            pending
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          Stream handler throws on path-traversal 403 without test coverage
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-01
+           · Visit 
+          1
+           · 
+          Review Agent
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-error ring-1 ring-red-500"
+      data-cell-state="error"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-amber-400 dark:border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-01"
+        data-status="pending"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              🔍
+            </span>
+            <span>
+              Review Agent
+            </span>
+          </span>
+          <span
+            aria-label="Status: pending"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+            role="img"
+          >
+            pending
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          Stream handler throws on path-traversal 403 without test coverage
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-01
+           · Visit 
+          1
+           · 
+          Review Agent
+        </p>
+      </div>
+    </div>
+  </div>
+  <div
+    data-status-row="addressed"
+  >
+    <div
+      class="state-default"
+      data-cell-state="default"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-02"
+        data-status="addressed"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              💬
+            </span>
+            <span>
+              Comment
+            </span>
+          </span>
+          <span
+            aria-label="Status: addressed"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+            role="img"
+          >
+            addressed
+          </span>
+          <span
+            aria-label="2 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+            role="img"
+          >
+            2
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          FeedbackSheet escape-close test calls Dialog.close directly
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-02
+           · Visit 
+          2
+           · 
+          Comment
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-hover"
+      data-cell-state="hover"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-02"
+        data-status="addressed"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              💬
+            </span>
+            <span>
+              Comment
+            </span>
+          </span>
+          <span
+            aria-label="Status: addressed"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+            role="img"
+          >
+            addressed
+          </span>
+          <span
+            aria-label="2 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+            role="img"
+          >
+            2
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          FeedbackSheet escape-close test calls Dialog.close directly
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-02
+           · Visit 
+          2
+           · 
+          Comment
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-focus"
+      data-cell-state="focus"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-02"
+        data-status="addressed"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              💬
+            </span>
+            <span>
+              Comment
+            </span>
+          </span>
+          <span
+            aria-label="Status: addressed"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+            role="img"
+          >
+            addressed
+          </span>
+          <span
+            aria-label="2 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+            role="img"
+          >
+            2
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          FeedbackSheet escape-close test calls Dialog.close directly
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-02
+           · Visit 
+          2
+           · 
+          Comment
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-active"
+      data-cell-state="active"
+    >
+      <div
+        aria-expanded="true"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-02"
+        data-status="addressed"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              💬
+            </span>
+            <span>
+              Comment
+            </span>
+          </span>
+          <span
+            aria-label="Status: addressed"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+            role="img"
+          >
+            addressed
+          </span>
+          <span
+            aria-label="2 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+            role="img"
+          >
+            2
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          FeedbackSheet escape-close test calls Dialog.close directly
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-02
+           · Visit 
+          2
+           · 
+          Comment
+        </p>
+        <div
+          class="mt-2"
+        >
+          <div
+            class="text-xs text-stone-700 dark:text-stone-300 feedback-markdown prose prose-stone prose-sm dark:prose-invert max-w-none"
+          >
+            <div
+              class="prose prose-sm prose-stone dark:prose-invert max-w-none min-w-0 [overflow-wrap:anywhere]
+        prose-code:bg-stone-100 prose-code:dark:bg-stone-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:[overflow-wrap:anywhere]
+        prose-pre:bg-stone-100 prose-pre:dark:bg-stone-800 prose-pre:rounded-lg prose-pre:overflow-x-auto prose-pre:max-w-full prose-pre:whitespace-pre-wrap
+        prose-table:border-collapse prose-th:border prose-th:border-stone-300 prose-th:dark:border-stone-600 prose-th:px-3 prose-th:py-1.5
+        prose-td:border prose-td:border-stone-300 prose-td:dark:border-stone-600 prose-td:px-3 prose-td:py-1.5 "
+              id="feedback-body"
+            >
+              <p>
+                The test bypasses the browser keyboard path:
+              </p>
+              
+
+              <ul>
+                
+
+                <li>
+                  Expected: simulate a real 
+                  <em>
+                    keydown
+                  </em>
+                   of 
+                  <code>
+                    Escape
+                  </code>
+                   on the sheet.
+                </li>
+                
+
+                <li>
+                  Actual: calls 
+                  <code>
+                    dialog.close()
+                  </code>
+                   imperatively via the 
+                  <strong>
+                    test-only
+                  </strong>
+                   API.
+                  
+
+                  <ul>
+                    
+
+                    <li>
+                      This sidesteps the 
+                      <code>
+                        onOpenChange
+                      </code>
+                       callback we actually ship.
+                    </li>
+                    
+
+                    <li>
+                      It also hides a real bug where 
+                      <code>
+                        autoFocus
+                      </code>
+                       on the primary action     swallows the keystroke in Safari.
+                    </li>
+                    
+
+                  </ul>
+                  
+
+                </li>
+                
+
+              </ul>
+              
+
+              <p>
+                See 
+                <a
+                  href="packages/haiku-ui/src/components/feedback/FeedbackSheet.tsx:88"
+                >
+                  FeedbackSheet.tsx:88
+                </a>
+                 and compare with the 
+                <a
+                  href="https://www.radix-ui.com/docs"
+                >
+                  Radix dialog reference
+                </a>
+                .
+              </p>
+              
+
+              <p>
+                <em>
+                  Blocker for external-review gate.
+                </em>
+              </p>
+            </div>
+          </div>
+          <div
+            class="flex gap-1 mt-2 flex-wrap"
+          >
+            <button
+              aria-label="Verify and close feedback FB-02"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40 disabled:cursor-not-allowed"
+              data-action="verify-close"
+              type="button"
+            >
+              Verify & Close
+            </button>
+            <button
+              aria-label="Reopen feedback FB-02"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40 disabled:cursor-not-allowed"
+              data-action="reopen"
+              type="button"
+            >
+              Reopen
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      aria-disabled="true"
+      class="state-disabled pointer-events-none"
+      data-cell-state="disabled"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-02"
+        data-status="addressed"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              💬
+            </span>
+            <span>
+              Comment
+            </span>
+          </span>
+          <span
+            aria-label="Status: addressed"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+            role="img"
+          >
+            addressed
+          </span>
+          <span
+            aria-label="2 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+            role="img"
+          >
+            2
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          FeedbackSheet escape-close test calls Dialog.close directly
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-02
+           · Visit 
+          2
+           · 
+          Comment
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-error ring-1 ring-red-500"
+      data-cell-state="error"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-blue-400 dark:border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-02"
+        data-status="addressed"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              💬
+            </span>
+            <span>
+              Comment
+            </span>
+          </span>
+          <span
+            aria-label="Status: addressed"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+            role="img"
+          >
+            addressed
+          </span>
+          <span
+            aria-label="2 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+            role="img"
+          >
+            2
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          FeedbackSheet escape-close test calls Dialog.close directly
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-02
+           · Visit 
+          2
+           · 
+          Comment
+        </p>
+      </div>
+    </div>
+  </div>
+  <div
+    data-status-row="closed"
+  >
+    <div
+      class="state-default"
+      data-cell-state="default"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-03"
+        data-status="closed"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              ✎
+            </span>
+            <span>
+              Annotation
+            </span>
+          </span>
+          <span
+            aria-label="Status: closed"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+            role="img"
+          >
+            closed
+          </span>
+          <span
+            aria-label="3 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+            role="img"
+          >
+            3
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          FeedbackSheet focus-trap regresses on nested Radix Dialog portals when user tabs past the final AnnotationCanvas pindrop
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-03
+           · Visit 
+          3
+           · 
+          Annotation
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-hover"
+      data-cell-state="hover"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-03"
+        data-status="closed"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              ✎
+            </span>
+            <span>
+              Annotation
+            </span>
+          </span>
+          <span
+            aria-label="Status: closed"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+            role="img"
+          >
+            closed
+          </span>
+          <span
+            aria-label="3 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+            role="img"
+          >
+            3
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          FeedbackSheet focus-trap regresses on nested Radix Dialog portals when user tabs past the final AnnotationCanvas pindrop
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-03
+           · Visit 
+          3
+           · 
+          Annotation
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-focus"
+      data-cell-state="focus"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-03"
+        data-status="closed"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              ✎
+            </span>
+            <span>
+              Annotation
+            </span>
+          </span>
+          <span
+            aria-label="Status: closed"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+            role="img"
+          >
+            closed
+          </span>
+          <span
+            aria-label="3 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+            role="img"
+          >
+            3
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          FeedbackSheet focus-trap regresses on nested Radix Dialog portals when user tabs past the final AnnotationCanvas pindrop
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-03
+           · Visit 
+          3
+           · 
+          Annotation
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-active"
+      data-cell-state="active"
+    >
+      <div
+        aria-expanded="true"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-03"
+        data-status="closed"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              ✎
+            </span>
+            <span>
+              Annotation
+            </span>
+          </span>
+          <span
+            aria-label="Status: closed"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+            role="img"
+          >
+            closed
+          </span>
+          <span
+            aria-label="3 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+            role="img"
+          >
+            3
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          FeedbackSheet focus-trap regresses on nested Radix Dialog portals when user tabs past the final AnnotationCanvas pindrop
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-03
+           · Visit 
+          3
+           · 
+          Annotation
+        </p>
+        <div
+          class="mt-2"
+        >
+          <div
+            class="text-xs text-stone-700 dark:text-stone-300 feedback-markdown prose prose-stone prose-sm dark:prose-invert max-w-none"
+          >
+            <div
+              class="prose prose-sm prose-stone dark:prose-invert max-w-none min-w-0 [overflow-wrap:anywhere]
+        prose-code:bg-stone-100 prose-code:dark:bg-stone-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:[overflow-wrap:anywhere]
+        prose-pre:bg-stone-100 prose-pre:dark:bg-stone-800 prose-pre:rounded-lg prose-pre:overflow-x-auto prose-pre:max-w-full prose-pre:whitespace-pre-wrap
+        prose-table:border-collapse prose-th:border prose-th:border-stone-300 prose-th:dark:border-stone-600 prose-th:px-3 prose-th:py-1.5
+        prose-td:border prose-td:border-stone-300 prose-td:dark:border-stone-600 prose-td:px-3 prose-td:py-1.5 "
+              id="feedback-body"
+            >
+              <p>
+                Focus-trap unit tests only cover the single-dialog path. The nested case — AnnotationCanvas pin dropdown inside the FeedbackSheet — is untested and breaks on Safari 17.4.
+              </p>
+            </div>
+          </div>
+          <p
+            class="text-xs text-blue-600 dark:text-blue-400 mt-1"
+          >
+            Closed by: 
+            unit-14-ui-gate
+          </p>
+          <div
+            class="flex gap-1 mt-2 flex-wrap"
+          >
+            <button
+              aria-label="Reopen feedback FB-03"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40 disabled:cursor-not-allowed"
+              data-action="reopen"
+              type="button"
+            >
+              Reopen
+            </button>
+            <button
+              aria-label="Delete feedback FB-03"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 disabled:cursor-not-allowed"
+              data-action="delete"
+              type="button"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      aria-disabled="true"
+      class="state-disabled pointer-events-none"
+      data-cell-state="disabled"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-03"
+        data-status="closed"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              ✎
+            </span>
+            <span>
+              Annotation
+            </span>
+          </span>
+          <span
+            aria-label="Status: closed"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+            role="img"
+          >
+            closed
+          </span>
+          <span
+            aria-label="3 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+            role="img"
+          >
+            3
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          FeedbackSheet focus-trap regresses on nested Radix Dialog portals when user tabs past the final AnnotationCanvas pindrop
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-03
+           · Visit 
+          3
+           · 
+          Annotation
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-error ring-1 ring-red-500"
+      data-cell-state="error"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-green-500 dark:border-l-green-400 bg-green-50/60 dark:bg-green-950/25 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-03"
+        data-status="closed"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              ✎
+            </span>
+            <span>
+              Annotation
+            </span>
+          </span>
+          <span
+            aria-label="Status: closed"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+            role="img"
+          >
+            closed
+          </span>
+          <span
+            aria-label="3 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+            role="img"
+          >
+            3
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          FeedbackSheet focus-trap regresses on nested Radix Dialog portals when user tabs past the final AnnotationCanvas pindrop
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-03
+           · Visit 
+          3
+           · 
+          Annotation
+        </p>
+      </div>
+    </div>
+  </div>
+  <div
+    data-status-row="rejected"
+  >
+    <div
+      class="state-default"
+      data-cell-state="default"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-04"
+        data-status="rejected"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              🔗
+            </span>
+            <span>
+              PR Comment
+            </span>
+          </span>
+          <span
+            aria-label="Status: rejected"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
+            role="img"
+          >
+            rejected
+          </span>
+          <span
+            aria-label="4 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+            role="img"
+          >
+            4
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          H·AI·K·U plugin · \`.haiku/intents/*/stages/*/feedback/FB-NN.md\` naming collision 🐞
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-04
+           · Visit 
+          4
+           · 
+          PR Comment
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-hover"
+      data-cell-state="hover"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-04"
+        data-status="rejected"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              🔗
+            </span>
+            <span>
+              PR Comment
+            </span>
+          </span>
+          <span
+            aria-label="Status: rejected"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
+            role="img"
+          >
+            rejected
+          </span>
+          <span
+            aria-label="4 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+            role="img"
+          >
+            4
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          H·AI·K·U plugin · \`.haiku/intents/*/stages/*/feedback/FB-NN.md\` naming collision 🐞
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-04
+           · Visit 
+          4
+           · 
+          PR Comment
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-focus"
+      data-cell-state="focus"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-04"
+        data-status="rejected"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              🔗
+            </span>
+            <span>
+              PR Comment
+            </span>
+          </span>
+          <span
+            aria-label="Status: rejected"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
+            role="img"
+          >
+            rejected
+          </span>
+          <span
+            aria-label="4 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+            role="img"
+          >
+            4
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          H·AI·K·U plugin · \`.haiku/intents/*/stages/*/feedback/FB-NN.md\` naming collision 🐞
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-04
+           · Visit 
+          4
+           · 
+          PR Comment
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-active"
+      data-cell-state="active"
+    >
+      <div
+        aria-expanded="true"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-04"
+        data-status="rejected"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              🔗
+            </span>
+            <span>
+              PR Comment
+            </span>
+          </span>
+          <span
+            aria-label="Status: rejected"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
+            role="img"
+          >
+            rejected
+          </span>
+          <span
+            aria-label="4 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+            role="img"
+          >
+            4
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          H·AI·K·U plugin · \`.haiku/intents/*/stages/*/feedback/FB-NN.md\` naming collision 🐞
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-04
+           · Visit 
+          4
+           · 
+          PR Comment
+        </p>
+        <div
+          class="mt-2"
+        >
+          <div
+            class="text-xs text-stone-700 dark:text-stone-300 feedback-markdown prose prose-stone prose-sm dark:prose-invert max-w-none"
+          >
+            <div
+              class="prose prose-sm prose-stone dark:prose-invert max-w-none min-w-0 [overflow-wrap:anywhere]
+        prose-code:bg-stone-100 prose-code:dark:bg-stone-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:[overflow-wrap:anywhere]
+        prose-pre:bg-stone-100 prose-pre:dark:bg-stone-800 prose-pre:rounded-lg prose-pre:overflow-x-auto prose-pre:max-w-full prose-pre:whitespace-pre-wrap
+        prose-table:border-collapse prose-th:border prose-th:border-stone-300 prose-th:dark:border-stone-600 prose-th:px-3 prose-th:py-1.5
+        prose-td:border prose-td:border-stone-300 prose-td:dark:border-stone-600 prose-td:px-3 prose-td:py-1.5 "
+              id="feedback-body"
+            >
+              <p>
+                The fixture generator at 
+                <code>
+                  .haiku/intents/foo/stages/development/
+                </code>
+                 collides with 
+                <code>
+                  current_visit
+                </code>
+                 semantics — both systems reserve the 
+                <code>
+                  unit-NN-*
+                </code>
+                 prefix. See §4 of the migration plan.
+              </p>
+              
+
+              <p>
+                Unicode characters in play: H·AI·K·U (U+00B7), 🐞 (U+1F41E), smart quotes “foo”, en-dash –.
+              </p>
+            </div>
+          </div>
+          <div
+            class="flex gap-1 mt-2 flex-wrap"
+          >
+            <button
+              aria-label="Reopen feedback FB-04"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40 disabled:cursor-not-allowed"
+              data-action="reopen"
+              type="button"
+            >
+              Reopen
+            </button>
+            <button
+              aria-label="Delete feedback FB-04"
+              class="touch-target inline-flex items-center justify-center text-xs font-medium px-3 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 disabled:cursor-not-allowed"
+              data-action="delete"
+              type="button"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      aria-disabled="true"
+      class="state-disabled pointer-events-none"
+      data-cell-state="disabled"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-04"
+        data-status="rejected"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              🔗
+            </span>
+            <span>
+              PR Comment
+            </span>
+          </span>
+          <span
+            aria-label="Status: rejected"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
+            role="img"
+          >
+            rejected
+          </span>
+          <span
+            aria-label="4 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+            role="img"
+          >
+            4
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          H·AI·K·U plugin · \`.haiku/intents/*/stages/*/feedback/FB-NN.md\` naming collision 🐞
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-04
+           · Visit 
+          4
+           · 
+          PR Comment
+        </p>
+      </div>
+    </div>
+    <div
+      class="state-error ring-1 ring-red-500"
+      data-cell-state="error"
+    >
+      <div
+        aria-expanded="false"
+        class="p-2.5 rounded-lg border overflow-hidden min-w-0 border-l-[3px] border-l-stone-400 dark:border-l-stone-500 bg-stone-100 dark:bg-stone-800/50 hover:border-teal-400 dark:hover:border-teal-500 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-stone-900"
+        data-feedback-id="FB-04"
+        data-status="rejected"
+        data-testid="feedback-item"
+        role="button"
+        tabindex="0"
+      >
+        <div
+          class="flex items-center gap-2 mb-1 flex-wrap"
+        >
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+          >
+            <span
+              aria-hidden="true"
+            >
+              🔗
+            </span>
+            <span>
+              PR Comment
+            </span>
+          </span>
+          <span
+            aria-label="Status: rejected"
+            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-500 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-400"
+            role="img"
+          >
+            rejected
+          </span>
+          <span
+            aria-label="4 visits"
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold leading-none bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+            role="img"
+          >
+            4
+            x
+          </span>
+        </div>
+        <p
+          class="text-xs font-medium text-stone-800 dark:text-stone-200 truncate"
+        >
+          H·AI·K·U plugin · \`.haiku/intents/*/stages/*/feedback/FB-NN.md\` naming collision 🐞
+        </p>
+        <p
+          class="text-xs text-stone-600 dark:text-stone-300"
+        >
+          FB-04
+           · Visit 
+          4
+           · 
+          PR Comment
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+`;

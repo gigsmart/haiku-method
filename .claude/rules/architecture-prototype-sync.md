@@ -41,6 +41,18 @@ The AI-DLC paper (`website/content/papers/ai-dlc-2026.md`) and several docs (`do
 
 The prototype reflects the **implementation**, not the legacy paper terminology. When the paper/docs are revised to align with the implementation, this note can be removed and the prototype's User-actor modal "terminology drift" callout can also be removed.
 
+## Churn-reduction v2 (2026-04-19) — Feedback-as-unit fix loop + intent-completion review
+
+- **Stage `fix_hats`** — `STAGE.md` now declares `fix_hats:` as an ordered subset (or superset) of hats. When adversarial review produces open feedback, the FSM dispatches the fix-hat sequence directly against the feedback file. New orchestrator actions: `review_fix` (per-finding dispatch, serial, 3-bolt cap per finding), `upstream_finding_surfaced` (cross-stage routing — never auto-revisits). Fix-mode hats may live outside the main `hats:` rotation (e.g. a `feedback-assessor` hat that runs only in fix loops).
+- **Stage feedback-assessor hat** — every stage that opts into `fix_hats` now ships `hats/feedback-assessor.md` as a terminal validator that independently decides closure. Not part of the execute rotation.
+- **Studio-level review + fix** — new directories `plugin/studios/{studio}/review-agents/` and `plugin/studios/{studio}/fix-hats/` (NOT per-stage). Fires once, after the final stage's gate passes, when `intent.intent_completion_review === true`. New orchestrator actions: `intent_completion_review` (studio-wide agent dispatch), `intent_completion_fix` (studio-level fix loop). Findings are written at intent scope (`.haiku/intents/{slug}/feedback/FB-NN.md`). Cross-stage findings from this layer always surface to the human — no auto-revisit.
+- **Upstream finding routing** — `haiku_feedback` accepts optional `upstream_stage:` marking findings whose root cause lives elsewhere. FSM surfaces those rather than dispatching the wrong hats.
+
+These are NOT yet wired into the per-stage visualizations in `prototype-stage-flow.html` beyond the header banner. When adding them:
+- The stage-loop template should show a new branch at gate: pending feedback + `fix_hats` set → `review_fix` dispatch, not `feedback_revisit`.
+- The `payloadFor(...)` registry needs entries for the new action types.
+- The post-intent card should show the optional studio-level review layer between "all stages approved" and `intent_complete`.
+
 ## Recently closed gaps (track for related follow-up)
 
 - **Discovery fan-out via subagents** (closed 2026-04-14) — the orchestrator now injects a `## Discovery Fan-Out (REQUIRED)` section into the elaborate-phase `tool_use_result`, instructing the agent to spawn one `Task` subagent per declared `discovery/*.md` template (research + production). Per-studio hat md files do not carry this instruction; it's FSM-level so it applies uniformly across studios. Affected file: `packages/haiku/src/orchestrator.ts` (elaborate case, after `discoveryFiles` loop). Prototype reflects this in step ② of Elaborate ("FSM fans out one ↗ subagent per artifact") and in the `elab-to-gate` injection list.

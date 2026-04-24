@@ -1,11 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useEffect, useState } from "react"
 import { handleOAuthCallback } from "@/lib/browse/auth"
 
 export function CallbackClient({ provider }: { provider: string }) {
-	const [status, setStatus] = useState<"processing" | "success" | "error">("processing")
+	const [status, setStatus] = useState<"processing" | "success" | "error">(
+		"processing",
+	)
 	const [error, setError] = useState("")
 	const [returnPath, setReturnPath] = useState("/browse/")
 
@@ -33,9 +35,27 @@ export function CallbackClient({ provider }: { provider: string }) {
 			{status === "processing" && (
 				<>
 					<div className="mb-4">
-						<svg className="mx-auto h-12 w-12 animate-spin text-teal-500" fill="none" viewBox="0 0 24 24">
-							<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-							<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+						<svg
+							className="mx-auto h-12 w-12 animate-spin text-teal-500"
+							fill="none"
+							viewBox="0 0 24 24"
+							role="img"
+							aria-label="Loading"
+						>
+							<title>Loading</title>
+							<circle
+								className="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								strokeWidth="4"
+							/>
+							<path
+								className="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+							/>
 						</svg>
 					</div>
 					<h1 className="text-xl font-bold">Completing authentication...</h1>
@@ -45,8 +65,21 @@ export function CallbackClient({ provider }: { provider: string }) {
 			{status === "success" && (
 				<>
 					<div className="mb-4 text-green-500">
-						<svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+						<svg
+							className="mx-auto h-12 w-12"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							role="img"
+							aria-label="Success"
+						>
+							<title>Success</title>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M5 13l4 4L19 7"
+							/>
 						</svg>
 					</div>
 					<h1 className="mb-2 text-xl font-bold">Authenticated</h1>
@@ -57,8 +90,21 @@ export function CallbackClient({ provider }: { provider: string }) {
 			{status === "error" && (
 				<>
 					<div className="mb-4 text-red-500">
-						<svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+						<svg
+							className="mx-auto h-12 w-12"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							role="img"
+							aria-label="Error"
+						>
+							<title>Error</title>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M6 18L18 6M6 6l12 12"
+							/>
 						</svg>
 					</div>
 					<h1 className="mb-2 text-xl font-bold">Authentication Failed</h1>

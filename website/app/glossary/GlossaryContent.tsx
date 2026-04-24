@@ -1,8 +1,8 @@
 "use client"
 
-import type { GlossaryTerm } from "@/lib/glossary"
 import Link from "next/link"
 import { useMemo, useState } from "react"
+import type { GlossaryTerm } from "@/lib/glossary"
 
 /**
  * Get paper section anchor for a glossary term

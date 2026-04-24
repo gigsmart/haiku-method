@@ -1,7 +1,7 @@
 "use client"
 
-import type { NavSection } from "@/lib/navigation"
 import Link from "next/link"
+import type { NavSection } from "@/lib/navigation"
 
 interface MegaMenuSectionProps {
 	section: NavSection

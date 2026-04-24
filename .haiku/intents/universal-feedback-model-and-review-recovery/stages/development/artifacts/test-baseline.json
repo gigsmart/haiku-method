@@ -1,0 +1,2394 @@
+{
+  "recorded_at": "2026-04-21T04:11:14.845Z",
+  "head": "bbf55667e939f988445b00c076be3053d6f50229",
+  "count": 477,
+  "passed": 477,
+  "failed": 0,
+  "tests": [
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "parses inline array [a, b, c]",
+      "passed": true
+    },
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "returns empty array for empty inline array []",
+      "passed": true
+    },
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "returns empty array for missing field",
+      "passed": true
+    },
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "returns empty array for missing file",
+      "passed": true
+    },
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "handles single-item array",
+      "passed": true
+    },
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "REGRESSION: does NOT complete when only one stage has units",
+      "passed": true
+    },
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "all stages completed -> true",
+      "passed": true
+    },
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "one stage missing state.json -> false",
+      "passed": true
+    },
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "one stage active -> false",
+      "passed": true
+    },
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "stages field missing from intent.md -> false (graceful fallback)",
+      "passed": true
+    },
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "stages field is empty array -> false",
+      "passed": true
+    },
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "intent.md missing entirely -> false",
+      "passed": true
+    },
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "single stage completed -> true",
+      "passed": true
+    },
+    {
+      "file": "enforce-iteration.test.mjs",
+      "name": "stage with empty state.json -> false",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "GitHub PR approved returns status approved",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "GitHub PR merged returns status approved",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "GitHub PR CHANGES_REQUESTED returns status changes_requested",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "GitHub PR REVIEW_REQUIRED returns status pending",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "GitHub PR empty reviewDecision returns status pending",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "GitLab MR approved returns status approved",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "GitLab MR merged returns status approved",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "GitLab MR non-approved open returns status changes_requested",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "GitLab MR closed returns status pending",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "gh CLI not available returns status unknown",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "glab CLI not available returns status unknown",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "unknown URL returns status unknown",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "gh CLI returning invalid JSON returns status unknown",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "gh CLI returning non-zero exit returns status unknown",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "external changes_requested creates feedback and rolls back to elaborate",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "external approved proceeds normally — no feedback created",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "external pending returns awaiting_external_review — no feedback",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "external unknown status returns awaiting_external_review",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "no external URL falls through to gate review UI",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "GitLab MR changes_requested creates feedback with external-mr origin",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "multiple external review rounds create sequential feedback files",
+      "passed": true
+    },
+    {
+      "file": "external-review.test.mjs",
+      "name": "COMMENTED state returns pending — no feedback created",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "basic slugification",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "collapses consecutive hyphens",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "truncates to max length",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "strips trailing hyphens",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "agent origins return agent",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "human origins return human",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "creates feedback file with correct frontmatter",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "auto-increments sequential numbering",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "defaults origin to agent and author to agent",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "human origin sets correct author_type and default author",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "auto-creates feedback directory if missing",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "returns all parsed feedback items sorted by number",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "parsed items have all expected fields",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "returns empty array for nonexistent directory",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "counts all pending items",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "returns 0 for empty stage",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "finds by FB-NN identifier",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "finds by bare numeric prefix",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "returns null for nonexistent id",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "updates status field",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "updates closed_by field",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "rejects closed_by that references a ghost unit",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "accepts fix-loop marker as closed_by without unit file check",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "updates multiple fields at once",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "rejects when no updatable fields provided",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "rejects invalid status enum",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "rejects nonexistent feedback id",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "agent cannot close human-authored feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "human can close human-authored feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "cannot delete pending feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "agent cannot delete human-authored feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "human can delete non-pending human-authored feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "deletes addressed agent-authored feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "returns error for nonexistent feedback id",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "count reflects deletions and status changes",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "creates feedback via MCP tool",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP tool rejects missing intent",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP tool accepts missing stage (intent-scope feedback)",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP tool rejects missing title",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP tool rejects missing body",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP tool rejects title over 120 chars",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP tool rejects nonexistent intent",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP tool rejects invalid origin",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP tool rejects nonexistent stage",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP tool accepts all valid origins",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "updates status via MCP tool",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "updates closed_by via MCP tool",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP update rejects missing feedback_id",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP update rejects no updatable fields",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP update rejects invalid status",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP update rejects nonexistent feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP update: agent cannot close human-authored feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP delete rejects pending feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP delete rejects human-authored feedback (agent context)",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP delete removes addressed agent-authored feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP delete rejects nonexistent feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP delete rejects missing feedback_id",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "rejects agent-authored feedback with reason",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP reject fails on human-authored feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP reject fails on already rejected feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP reject fails without reason",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP reject fails for nonexistent feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "lists all feedback for a specific stage",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "lists feedback filtered by status",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "lists feedback across all stages",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "returns empty when no matching feedback",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP list rejects nonexistent intent",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP list rejects invalid status filter",
+      "passed": true
+    },
+    {
+      "file": "feedback.test.mjs",
+      "name": "MCP list rejects missing intent",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "gate handler rolls to elaborate when pending feedback exists",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "gate handler proceeds normally when no pending feedback exists",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "gate handler proceeds when all feedback is resolved",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "mixed pending and resolved feedback still triggers rollback",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "visits counter increments on each successive rollback",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "escalation leaves stage phase unchanged (does not pre-flip to elaborate)",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "missing feedback directory treated as zero pending",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "feedback check fires before auto gate type",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "feedback check fires before ask gate type",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "feedback check fires before external gate type",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "rollback preserves existing stage state",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "feedback items include summary info in pending_items",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "revisit without reasons returns stopgap",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "revisit with intent and stage but no reasons returns stopgap",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "empty reasons array is rejected",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "reason with empty title is rejected",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "reason with empty body is rejected",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "reason with missing title is rejected",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "reasons sent as JSON string are parsed, not iterated per-char",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "revisit from elaborate phase requires explicit stage",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "reasons sent as a non-array is rejected with a clear message",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "single reason creates feedback and rolls back",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "multiple reasons create multiple feedback files",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "reasons-created feedback has sequential numbering after existing files",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "revisit with reasons increments visits from existing value",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "feedback directory auto-created when first revisit-with-reasons fires",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "haiku_revisit tool has reasons parameter in schema",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "haiku_revisit description mentions reasons preference",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "reasons-created feedback blocks gate on next cycle",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "addressed revisit feedback does not block gate",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "feedback_revisit pending_items carries id, title, status, origin, author, file",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "gate dispatches review_fix when stage has fix_hats + pending feedback",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "review_fix escalates after 3 bolts without closure",
+      "passed": true
+    },
+    {
+      "file": "gate-feedback.test.mjs",
+      "name": "upstream_finding_surfaced when finding's root cause is in another stage",
+      "passed": true
+    },
+    {
+      "file": "guard-fsm-fields.test.mjs",
+      "name": "Write status: completed is blocked on intent.md",
+      "passed": true
+    },
+    {
+      "file": "guard-fsm-fields.test.mjs",
+      "name": "Edit that rewrites status to completed via slice is caught",
+      "passed": true
+    },
+    {
+      "file": "guard-fsm-fields.test.mjs",
+      "name": "Edit on non-haiku file passes through",
+      "passed": true
+    },
+    {
+      "file": "guard-fsm-fields.test.mjs",
+      "name": "Edit that sets phase: awaiting_completion_review via slice is blocked",
+      "passed": true
+    },
+    {
+      "file": "guard-fsm-fields.test.mjs",
+      "name": "Edit setting completion_review_dispatched: true is blocked",
+      "passed": true
+    },
+    {
+      "file": "guard-fsm-fields.test.mjs",
+      "name": "MultiEdit with a spoofing edit is blocked",
+      "passed": true
+    },
+    {
+      "file": "guard-fsm-fields.test.mjs",
+      "name": "legitimate phase: active edit is NOT blocked",
+      "passed": true
+    },
+    {
+      "file": "harness-instructions.test.mjs",
+      "name": "claude-code passes orchestrator output through unchanged",
+      "passed": true
+    },
+    {
+      "file": "harness-instructions.test.mjs",
+      "name": "cursor keeps <subagent tool=\"Agent\"> (primary tool = Agent)",
+      "passed": true
+    },
+    {
+      "file": "harness-instructions.test.mjs",
+      "name": "cursor strips subagent-context hook references",
+      "passed": true
+    },
+    {
+      "file": "harness-instructions.test.mjs",
+      "name": "gemini-cli rewrites <subagent tool=\"Agent\"> to its primary tool",
+      "passed": true
+    },
+    {
+      "file": "harness-instructions.test.mjs",
+      "name": "gemini-cli rewrites <subagent tool=\"Task\"> to its primary tool",
+      "passed": true
+    },
+    {
+      "file": "harness-instructions.test.mjs",
+      "name": "gemini-cli rewrites backtick `Agent` references in prose",
+      "passed": true
+    },
+    {
+      "file": "harness-instructions.test.mjs",
+      "name": "opencode rewrites XML tool= attribute consistently",
+      "passed": true
+    },
+    {
+      "file": "harness-instructions.test.mjs",
+      "name": "windsurf rewrites 'Spawn one `Task` subagent per artifact' to sequential",
+      "passed": true
+    },
+    {
+      "file": "harness-instructions.test.mjs",
+      "name": "windsurf rewrites 'Spawn a subagent for the \"X\" hat' to direct execution",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "parses YAML frontmatter and body",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "handles empty frontmatter",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "normalizes Date objects to ISO date strings",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "preserves null values",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "preserves arrays",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "handles numeric fields",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "handles nested objects",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "handles frontmatter with no body",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "handles body with markdown headings and lists",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "sets a string field",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "adds a new field",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "preserves body when setting field",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "sets numeric field",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "overwrites existing value",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "writeJson creates file with JSON content",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "readJson returns empty object for missing file",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "writeJson creates parent directories",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "writeJson overwrites existing file",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "writeJson produces formatted JSON with trailing newline",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "returns ISO string without milliseconds",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "returns a reasonable current time",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "findHaikuRoot finds .haiku directory",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "findHaikuRoot walks up directories",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "findHaikuRoot throws when no .haiku exists",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "intentDir returns correct path",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "stageDir returns correct path",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "unitPath returns correct path with .md extension",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "unitPath handles .md suffix gracefully",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "stageStatePath returns correct path",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "allows simple slugs",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "allows slugs with numbers",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "allows single word",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "rejects forward slash",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "rejects backslash",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "rejects double dot traversal",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "rejects path with slash",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "textMsg creates user message",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "textMsg creates assistant message",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "singleMessage creates GetPromptResult with one user message",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "returns array of paths",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "includes project-local studios path first",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "signature is identical regardless of title input order",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "signature ignores case and surrounding whitespace",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "signature differs when titles differ",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "signature for empty or all-blank input is empty string",
+      "passed": true
+    },
+    {
+      "file": "helpers.test.mjs",
+      "name": "signature has a stable prefix format",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "countPendingFeedback returns 0 for stage with no feedback dir",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "readFeedbackFiles returns [] for stage with no feedback dir",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "readFeedbackFiles returns [] for completely nonexistent stage",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "state.json without visits field loads cleanly and does not escalate",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "legacy state.json visits defaults to 0 in readJson",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "units without closes: field load cleanly and do not escalate at visits=0",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "units without closes: field trigger validation error when visits > 0",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "allStagesCompleted returns false when stages field is missing",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "readFrontmatterStringList returns empty array for missing stages field",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "readFrontmatterStringList returns empty array for empty stages field",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "haiku_feedback_list returns empty items for stage with no feedback dir",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "haiku_feedback_list returns empty items across all stages with no feedback",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "haiku_feedback_list works on intent with no stages dir at all",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "checkExternalState returns an object with status field, not boolean",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "checkExternalState approved returns full ExternalReviewState shape",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "checkExternalState changes_requested returns provider and url",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "checkExternalState pending returns provider and url",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "checkExternalState CLI error returns status unknown, no provider",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "runNext on legacy intent (no feedback dir, no visits) proceeds normally",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "runNext gate phase with no feedback dir proceeds to gate review",
+      "passed": true
+    },
+    {
+      "file": "migration-compat.test.mjs",
+      "name": "legacy intent with empty studio field still resolves stages",
+      "passed": true
+    },
+    {
+      "file": "orchestrator-integration.test.mjs",
+      "name": "changes_requested with annotations writes individual feedback files",
+      "passed": true
+    },
+    {
+      "file": "orchestrator-integration.test.mjs",
+      "name": "changes_requested with empty annotations writes only free-text feedback",
+      "passed": true
+    },
+    {
+      "file": "orchestrator-integration.test.mjs",
+      "name": "changes_requested with no feedback or annotations creates no files",
+      "passed": true
+    },
+    {
+      "file": "orchestrator-integration.test.mjs",
+      "name": "changes_requested on intent_review pre-execute context surfaces inline feedback without persisting files",
+      "passed": true
+    },
+    {
+      "file": "orchestrator-integration.test.mjs",
+      "name": "review action instructions contain haiku_feedback call instructions",
+      "passed": true
+    },
+    {
+      "file": "orchestrator-integration.test.mjs",
+      "name": "review instructions contain haiku_feedback call pattern for each agent",
+      "passed": true
+    },
+    {
+      "file": "orchestrator-integration.test.mjs",
+      "name": "closes: field on unit triggers feedback update when frontmatter is parsed",
+      "passed": true
+    },
+    {
+      "file": "orchestrator-integration.test.mjs",
+      "name": "closes: field in unit frontmatter is read correctly by orchestrator validation",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "has 7 orchestration tools",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_run_next tool defined with intent optional (auto-resolved)",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_create tool defined with title and description required",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_revisit tool defined with intent required",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_select_studio tool defined with intent required",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_reset tool defined with intent required",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_archive tool defined with intent required",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_unarchive tool defined with intent required",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_create rejects missing title",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_create rejects empty title",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_create rejects overlong title",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_create rejects multi-line title",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_create writes distinct title and description",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "returns error for nonexistent intent",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "returns complete for already-completed intent",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "returns error for archived intent",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "returns error for field-archived intent with unarchive hint",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "completed wins over archived: true (ordering guardrail)",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_archive sets archived:true and preserves other fields",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_archive is idempotent (noop on already-archived)",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_archive errors on missing intent",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_unarchive removes archived flag (clean restore)",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_unarchive is idempotent (noop on not-archived)",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_unarchive errors on missing intent",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_archive rejects slug with path traversal",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_archive rejects slug with forward slash",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_intent_unarchive rejects slug with path traversal",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_run_next rejects slug with backslash",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_run_next with no intent and zero active intents errors cleanly",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_run_next with no intent and sole active intent auto-resolves",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "haiku_run_next with no intent and multiple active intents errors with slug list",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "elaborate-to-execute gate auto-advances for unreviewed intent with auto review",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "elaborate-to-execute gate auto-advances for reviewed intent with auto review",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "elaborate-to-execute gate opens review UI for ask-review stages (intent_review)",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "elaborate-to-execute gate opens review UI for ask-review stages (normal)",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "starts first stage when no active_stage set",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "start_stage sets phase to elaborate",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "start_stage sets intent active_stage",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "returns elaborate when stage has no units",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "enforces collaborative elaboration minimum turns",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "rejects units with bad naming",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "accepts properly named units",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "detects unresolved dependencies",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "detects circular dependencies",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "accepts valid DAG",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "starts first ready unit (wave scheduling)",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "skips completed units and starts next ready",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "does not start unit with incomplete dependency",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "advances phase when all units completed (auto review)",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "skips stages listed in skip_stages",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "returns error for studio with no stages",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "synthesizes completion for empty prior stages when active stage has units",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "synthesizes completion for multiple empty prior stages",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "falls through to normal processing after clean repair",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "regresses phase to elaborate when units lack inputs",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "does not regress phase when all units have inputs",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "skips completed units when checking for missing inputs",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "flags stages with units as needing manual review",
+      "passed": true
+    },
+    {
+      "file": "orchestrator.test.mjs",
+      "name": "resets active_stage backwards when active stage has no units",
+      "passed": true
+    },
+    {
+      "file": "prompts-registered.test.mjs",
+      "name": "prompt list returns empty array after migration to skills",
+      "passed": true
+    },
+    {
+      "file": "prompts-registered.test.mjs",
+      "name": "no core prompts registered",
+      "passed": true
+    },
+    {
+      "file": "prompts-registered.test.mjs",
+      "name": "no simple prompts registered",
+      "passed": true
+    },
+    {
+      "file": "prompts-registered.test.mjs",
+      "name": "no complex prompts registered",
+      "passed": true
+    },
+    {
+      "file": "prompts-registered.test.mjs",
+      "name": "getPrompt throws for migrated prompt names",
+      "passed": true
+    },
+    {
+      "file": "prompts-registered.test.mjs",
+      "name": "returns empty completions for removed prompts",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "returns array of prompts",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "each prompt has name, title, description",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "prompts without arguments have no arguments field",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "prompts with arguments list them",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "returns messages for minimal prompt",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "passes arguments to handler",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "passes all arguments to handler",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "throws McpError for unknown prompt",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "throws McpError for missing required argument",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "allows missing optional argument",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "returns multiple messages",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "returns empty for non-prompt ref type",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "returns empty for unknown prompt",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "returns empty for argument without completer",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "returns completions for argument with completer",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "filters completions by prefix",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "returns empty for no-match prefix",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "returns empty for missing ref name",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "includes total and hasMore fields",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "overwriting a prompt replaces it",
+      "passed": true
+    },
+    {
+      "file": "prompts.test.mjs",
+      "name": "overwritten prompt uses new handler",
+      "passed": true
+    },
+    {
+      "file": "reject-hat-deadlock.test.mjs",
+      "name": "repeated scope-violation rejects trip max_bolts_exceeded",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "exact file match",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "exact file non-match",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "leading ./ normalized",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "trailing / matches files under",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "bare dir matches files under",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "dir prefix does NOT match sibling",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "trailing /** matches immediate children",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "trailing /** matches nested descendants",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "trailing /** matches the bare dir too",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "MID-STRING /**/  (regression: NUL placeholder must survive)",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "/*.ext matches filenames",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "/*.ext does NOT cross directories",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "/* matches any filename, not nested paths",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "dots in path are treated as literal, not regex",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "parens/brackets in paths are escaped",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "unit-04.md whitelist does not match unit-05.md",
+      "passed": true
+    },
+    {
+      "file": "scope-validation.test.mjs",
+      "name": "unit-04 whitelist does not accidentally match via prefix",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "no duplicate tool names across all tool sets",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "all tool names are non-empty strings",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "all tools have inputSchema with type object",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "all tools have properties in inputSchema",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "required fields reference existing properties",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_intent_get' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_intent_list' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_stage_get' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_unit_get' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_unit_set' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_unit_list' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_unit_start' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_unit_advance_hat' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_unit_reject_hat' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_unit_increment_bolt' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_knowledge_list' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_knowledge_read' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_studio_list' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_studio_get' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_studio_stage_get' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "state tool 'haiku_settings_get' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "orchestrator tool 'haiku_run_next' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "orchestrator tool 'haiku_intent_create' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "orchestrator tool 'haiku_revisit' exists",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "haiku_intent_get requires slug and field",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "haiku_unit_start requires intent, unit",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "haiku_unit_reject_hat requires intent, unit",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "haiku_unit_set requires intent, stage, unit, field, value",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "haiku_run_next: intent is optional (auto-resolved from branch or sole active intent)",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "haiku_run_next has optional external_review_url",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "haiku_intent_create requires title and description",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "haiku_intent_create has optional slug and context",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "haiku_revisit requires intent, stage optional",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "haiku_intent_list requires no arguments",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "haiku_studio_list requires no arguments",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "haiku_settings_get requires field",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "GetReviewStatusInput accepts valid input",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "GetReviewStatusInput rejects missing session_id",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "GetReviewStatusInput rejects non-string session_id",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "AskVisualQuestionInput accepts minimal valid input",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "AskVisualQuestionInput accepts full input",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "AskVisualQuestionInput accepts empty questions array",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "AskVisualQuestionInput rejects missing questions",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "AskVisualQuestionInput rejects question without options",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "DesignArchetypeSchema accepts valid archetype",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "DesignArchetypeSchema rejects non-numeric parameters",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "DesignArchetypeSchema rejects missing fields",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "DesignParameterSchema accepts valid parameter",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "DesignParameterSchema rejects missing labels",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "DesignParameterSchema rejects non-numeric min",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "PickDesignDirectionInput accepts minimal input",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "PickDesignDirectionInput accepts inline archetypes",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "PickDesignDirectionInput accepts file paths",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "PickDesignDirectionInput rejects missing intent_slug",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "all haiku_ tools are routed to either orchestrator or state handler",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "orchestrator and state tools don't overlap",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "non-haiku tools exist (ask_user_visual_question, pick_design_direction)",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "all tool properties have type field",
+      "passed": true
+    },
+    {
+      "file": "server-tools.test.mjs",
+      "name": "string properties use type 'string'",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "all tools have name and inputSchema",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "has expected number of tools",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "tool names all start with haiku_",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "required fields are specified for each tool",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads title from intent frontmatter",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads studio from intent",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads status from intent",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads mode from intent",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns empty string for missing field",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns empty string for missing intent",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns null fields as empty string",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "lists all intents",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "intent list includes slug and status",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "intent list includes completed intents",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "intent list filters archived intents by default",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "intent list omits archived field in default response",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "intent list with include_archived returns archived intents",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "intent list with include_archived tags non-archived intents archived:false",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "helper filters archived intents by default",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "helper with includeArchived:true returns archived intents",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "helper returns [] for missing directory",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "helper returns [] for empty intents directory",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "helper treats missing archived field as not-archived",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "listVisibleIntents returns {slug, data} tuples with frontmatter",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "listVisibleIntents exposes archived flag when includeArchived=true",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "haiku_intent_get rejects slug with path traversal",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "haiku_intent_get rejects slug with forward slash",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "haiku_stage_get rejects intent with path traversal",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "haiku_stage_get rejects stage with path traversal",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "haiku_unit_get rejects unit with path traversal",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "haiku_unit_get rejects unit with forward slash",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "haiku_feedback_update rejects feedback_id with path traversal",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "haiku_feedback_delete rejects feedback_id with forward slash",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "haiku_feedback_reject rejects feedback_id with backslash",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "haiku_intent_list still works (no slug to validate)",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "helper treats archived:false as not-archived",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads phase from stage state",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads status from stage state",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns empty for missing stage field",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns empty for missing stage directory",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads status from unit frontmatter",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads bolt count from unit",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads hat from unit",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads type from unit",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads depends_on as JSON",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns empty for missing unit",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "sets a field on a unit",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "set preserves body content",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "lists units in a stage with status",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "each unit has name, status, bolt, hat",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns empty array for stage with no units",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns empty array for nonexistent stage",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "increments bolt counter",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "increments again correctly",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "enforces max bolt limit",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns error for missing unit",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "lists knowledge files",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns empty for intent with no knowledge",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads knowledge file content",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns empty for missing knowledge file",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads top-level setting",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads nested setting with dot notation",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reads nested setting deep",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns empty for missing setting",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns JSON for object settings",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "blocks completion when last hat has empty outputs",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "allows completion when last hat has tracked outputs",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "returns error for unknown tool name",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "enforce-iteration.test.mjs          14 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "external-review.test.mjs            22 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "feedback.test.mjs                   69 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "gate-feedback.test.mjs              34 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "guard-fsm-fields.test.mjs           7 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "harness-instructions.test.mjs       9 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "helpers.test.mjs                    46 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "migration-compat.test.mjs           21 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "orchestrator-integration.test.mjs   8 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "orchestrator.test.mjs               59 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "prompts-registered.test.mjs         6 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "prompts.test.mjs                    21 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "reject-hat-deadlock.test.mjs        1 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "scope-validation.test.mjs           17 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "server-tools.test.mjs               59 passed, 0 failed",
+      "passed": true
+    },
+    {
+      "file": "state-tools-handlers.test.mjs",
+      "name": "state-tools-handlers.test.mjs       68 passed, 0 failed",
+      "passed": true
+    }
+  ]
+}

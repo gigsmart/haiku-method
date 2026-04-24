@@ -35,7 +35,10 @@ export function BrowseMarkdown({ children, assets, host, basePath }: Props) {
 			assetByName.set(asset.name.toLowerCase(), asset)
 			// Match by relative path from intent root
 			if (basePrefix && asset.path.startsWith(basePrefix)) {
-				assetByRelPath.set(asset.path.slice(basePrefix.length).toLowerCase(), asset)
+				assetByRelPath.set(
+					asset.path.slice(basePrefix.length).toLowerCase(),
+					asset,
+				)
 			}
 			// Also match full path
 			assetByRelPath.set(asset.path.toLowerCase(), asset)
@@ -70,8 +73,19 @@ export function BrowseMarkdown({ children, assets, host, basePath }: Props) {
 				img: ({ src, alt }) => {
 					const srcStr = typeof src === "string" ? src : ""
 					// Skip absolute URLs — they're already valid
-					if (srcStr.startsWith("http://") || srcStr.startsWith("https://") || srcStr.startsWith("data:")) {
-						return <img src={srcStr} alt={alt || ""} className="my-2 max-w-full rounded-lg" />
+					if (
+						srcStr.startsWith("http://") ||
+						srcStr.startsWith("https://") ||
+						srcStr.startsWith("data:")
+					) {
+						return (
+							// biome-ignore lint/performance/noImgElement: user-supplied markdown image URL; next/image requires a configured domain list which we can't enforce for arbitrary external sources
+							<img
+								src={srcStr}
+								alt={alt || ""}
+								className="my-2 max-w-full rounded-lg"
+							/>
+						)
 					}
 
 					// Try to match against intent assets
@@ -87,7 +101,9 @@ export function BrowseMarkdown({ children, assets, host, basePath }: Props) {
 									fullSize
 								/>
 								{alt && (
-									<span className="mt-1 block text-center text-xs italic text-stone-400">{alt}</span>
+									<span className="mt-1 block text-center text-xs italic text-stone-400">
+										{alt}
+									</span>
 								)}
 							</span>
 						)

@@ -1,81 +1,949 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "migration",
-  studio: "migration",
-  stages: ["assessment", "mapping", "migrate", "validation", "cutover"],
-  completionText: "All 5 stages passed. migrate-postgresql-12-to-16 delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1000, actions: [{"type":"typing"}] },
-    { delay: 800, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Migrate our production PostgreSQL 12 cluster to PostgreSQL 16"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: migrate-postgresql-12-to-16..."}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: migration. 5 stages: assessment → mapping → migrate → validation → cutover"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"assessment"}, {"type":"msg","role":"agent","label":"agent","text":"Entering assessment stage. Hat: migration-analyst.\nHow large is the current cluster? What’s the data volume?"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/assessment/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Primary + 2 read replicas. 1.2TB data across 340 tables. Heavy use of pg_trgm extensions and several custom functions. Runs on RDS."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"1.2TB with extensions and custom functions — that adds complexity. Decomposing assessment..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/assessment/units/unit-01-schema-inventory.md"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/assessment/units/unit-02-dependency-graph.md"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/assessment/units/unit-03-risk-register.md"}, {"type":"card","stage":"assessment","name":"schema-inventory","status":"in-progress"}, {"type":"card","stage":"assessment","name":"dependency-graph","status":""}, {"type":"card","stage":"assessment","name":"risk-register","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Schema inventory complete:\n  • 340 tables, 47 views, 23 materialized views\n  • 12 custom functions (PL/pgSQL)\n  • 3 extensions: pg_trgm, uuid-ossp, hstore\n  • 156 indexes including 18 GIN indexes for text search\n  • Largest table: events (420GB, 2.1B rows)"}, {"type":"updateCard","stage":"assessment","name":"schema-inventory","status":"completed"}, {"type":"updateCard","stage":"assessment","name":"dependency-graph","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: risk-assessor. Dependency graph shows 8 downstream services reading from replicas. Migration must maintain read availability.\n\nRisk register:\n  1. [High] pg_trgm index format changed in PG14 — requires REINDEX\n  2. [High] 420GB events table — migration time risk\n  3. [Medium] Custom PL/pgSQL functions may use deprecated syntax\n  4. [Low] hstore extension — compatible, no changes needed"}, {"type":"updateCard","stage":"assessment","name":"dependency-graph","status":"completed"}, {"type":"updateCard","stage":"assessment","name":"risk-register","status":"completed"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/knowledge/MIGRATION-INVENTORY.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Assessment complete. Review gate: auto. All criteria met — advancing."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to mapping stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"mapping"}, {"type":"msg","role":"agent","label":"agent","text":"Entering mapping stage. Hat: schema-mapper.\nLoading migration inventory..."}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/mapping/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → assessment/migration-inventory (knowledge/MIGRATION-INVENTORY.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Mapping source PG12 schemas to PG16 target. Checking for breaking changes..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/mapping/units/unit-01-schema-mapping.md"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/mapping/units/unit-02-function-compat.md"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/mapping/units/unit-03-extension-mapping.md"}, {"type":"card","stage":"mapping","name":"schema-mapping","status":"in-progress"}, {"type":"card","stage":"mapping","name":"function-compat","status":""}, {"type":"card","stage":"mapping","name":"extension-mapping","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Schema mapping: 340 tables map 1:1. No column type changes needed. 3 views reference deprecated implicit casts (integer to text) — these need explicit CAST expressions in PG16.\n\nHat: compatibility-reviewer. Edge cases flagged:\n  • Null handling: 2 functions rely on PG12’s implicit null coercion\n  • Encoding: UTF-8 throughout, no issues\n  • Precision: numeric(18,6) columns are safe"}, {"type":"updateCard","stage":"mapping","name":"schema-mapping","status":"completed"}, {"type":"updateCard","stage":"mapping","name":"function-compat","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Function compatibility: 10 of 12 functions pass. 2 need updates:\n  • calculate_trending_score() uses removed operator class\n  • merge_user_profiles() uses implicit type coercion\n\nBoth are straightforward fixes. Want me to show the diffs?"}] },
-    { delay: 1800, actions: [{"type":"msg","role":"user","label":"you","text":"Yes, show the diffs. Also — make sure the trending score function doesn’t break our recommendation engine."}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Good call. The trending score function feeds 3 materialized views that the recommendation engine queries. I’ll verify the output is identical after the fix."}, {"type":"updateCard","stage":"mapping","name":"function-compat","status":"completed"}, {"type":"updateCard","stage":"mapping","name":"extension-mapping","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"15"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Extensions: all 3 are available in PG16 on RDS. pg_trgm requires REINDEX after upgrade for GIN indexes. uuid-ossp and hstore are drop-in compatible."}, {"type":"updateCard","stage":"mapping","name":"extension-mapping","status":"completed"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/knowledge/MAPPING-SPEC.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Mapping stage complete. Review gate: ask."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Mapping","intent":"","criteria":["340 tables mapped 1:1 with transformation rules","3 views need explicit CAST expressions","2 functions updated with compatibility fixes","pg_trgm REINDEX planned for 18 GIN indexes","Recommendation engine impact verified"],"gateType":"ask gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2200, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. Build the migration scripts."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to migrate stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"migrate"}, {"type":"msg","role":"agent","label":"agent","text":"Entering migrate stage. Hat: migration-engineer.\nLoading mapping spec..."}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/migrate/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → mapping/mapping-spec (knowledge/MAPPING-SPEC.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Building idempotent migration scripts with dry-run mode..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/migrate/units/unit-01-migration-scripts.md"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/migrate/units/unit-02-rollback-plan.md"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/migrate/units/unit-03-integration-tests.md"}, {"type":"card","stage":"migrate","name":"migration-scripts","status":"in-progress"}, {"type":"card","stage":"migrate","name":"rollback-plan","status":""}, {"type":"card","stage":"migrate","name":"integration-tests","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"50"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Migration scripts ready:\n  • 01-pre-checks.sql: validates source state\n  • 02-schema-migrate.sql: DDL changes with explicit casts\n  • 03-function-updates.sql: 2 function fixes\n  • 04-data-migrate.sh: pg_dump/pg_restore with parallel jobs\n  • 05-reindex.sql: GIN index rebuild for pg_trgm\n  • 06-post-checks.sql: validates target state\n\nAll scripts are idempotent. Dry-run mode produces diff report."}, {"type":"updateCard","stage":"migrate","name":"migration-scripts","status":"completed"}, {"type":"updateCard","stage":"migrate","name":"rollback-plan","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Rollback plan documented. Point-of-no-return: after data migration starts (step 04). Before that, rollback is instant — just point services back to PG12. After, we need a reverse pg_restore."}, {"type":"updateCard","stage":"migrate","name":"rollback-plan","status":"completed"}, {"type":"updateCard","stage":"migrate","name":"integration-tests","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: integration-tester. Tests cover:\n  • Row count reconciliation for all 340 tables\n  • Null handling edge cases for the 2 updated functions\n  • GIN index queries return identical results\n  • Materialized view refresh produces same output\n  • Trending score function output matches to 6 decimal places"}, {"type":"updateCard","stage":"migrate","name":"integration-tests","status":"completed"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/knowledge/MIGRATION-ARTIFACTS.md"}, {"type":"file","path":"migration/scripts/01-pre-checks.sql"}, {"type":"file","path":"migration/scripts/02-schema-migrate.sql"}, {"type":"file","path":"migration/scripts/03-function-updates.sql"}, {"type":"file","path":"migration/scripts/04-data-migrate.sh"}, {"type":"file","path":"migration/scripts/05-reindex.sql"}, {"type":"file","path":"migration/scripts/06-post-checks.sql"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Migrate stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Scripts look solid. Run validation against staging."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to validation stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"validation"}, {"type":"msg","role":"agent","label":"agent","text":"Entering validation stage. Hat: validator.\nLoading migration artifacts..."}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/validation/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → migrate/migration-artifacts (knowledge/MIGRATION-ARTIFACTS.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Running full validation suite against staging PG16 instance..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/validation/units/unit-01-data-integrity.md"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/validation/units/unit-02-functional-parity.md"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/validation/units/unit-03-performance.md"}, {"type":"card","stage":"validation","name":"data-integrity","status":"in-progress"}, {"type":"card","stage":"validation","name":"functional-parity","status":""}, {"type":"card","stage":"validation","name":"performance","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"45"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Data integrity:\n  • Row counts: 340/340 tables match exactly\n  • Checksum validation: 100% match on sampled records (1000 per table)\n  • Foreign key constraints: all satisfied\n  • Events table: 2,104,837,291 rows — exact match"}, {"type":"updateCard","stage":"validation","name":"data-integrity","status":"completed"}, {"type":"updateCard","stage":"validation","name":"functional-parity","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: regression-tester. Functional parity:\n  • All 47 views return identical results\n  • 23 materialized views refresh with same output\n  • 12 functions return identical output\n  • Recommendation engine queries: output matches 100%\n  • Text search (pg_trgm): identical result sets after REINDEX"}, {"type":"updateCard","stage":"validation","name":"functional-parity","status":"completed"}, {"type":"updateCard","stage":"validation","name":"performance","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Performance benchmarks:\n  • Read queries: 8% faster on PG16 (query planner improvements)\n  • Write throughput: comparable (within 2%)\n  • Complex joins: 12% faster (incremental sort feature)\n  • Text search: 5% faster after GIN REINDEX\n\nAll within thresholds. PG16 is actually faster on most workloads."}, {"type":"updateCard","stage":"validation","name":"performance","status":"completed"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/knowledge/VALIDATION-REPORT.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Validation stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Numbers look great. Schedule the production cutover."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to cutover stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"cutover"}, {"type":"msg","role":"agent","label":"agent","text":"Entering cutover stage. Hat: cutover-coordinator.\nLoading validation report..."}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/cutover/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → validation/validation-report (knowledge/VALIDATION-REPORT.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Building cutover runbook with go/no-go checkpoints..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/cutover/units/unit-01-cutover-runbook.md"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/stages/cutover/units/unit-02-rollback-verification.md"}, {"type":"card","stage":"cutover","name":"cutover-runbook","status":"in-progress"}, {"type":"card","stage":"cutover","name":"rollback-verification","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Cutover runbook:\n  Step 1: Enable maintenance mode (owner: platform-team)\n  Step 2: Final WAL replay to sync target (owner: DBA)\n  Step 3: Run pre-checks on PG16 target\n  Step 4: Swap connection strings in config (go/no-go checkpoint)\n  Step 5: Verify all 8 services connect successfully\n  Step 6: Run post-checks and smoke tests\n  Step 7: Disable maintenance mode\n  Step 8: Monitor for 30 minutes (go/no-go checkpoint)\n\nPoint-of-no-return: Step 4. Rollback before that is instant."}, {"type":"updateCard","stage":"cutover","name":"cutover-runbook","status":"completed"}, {"type":"updateCard","stage":"cutover","name":"rollback-verification","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: rollback-engineer. Rollback procedure tested end-to-end on staging. Restores PG12 service within 3 minutes. Communication plan sent to all 8 downstream service owners."}, {"type":"updateCard","stage":"cutover","name":"rollback-verification","status":"completed"}, {"type":"file","path":".haiku/intents/migrate-postgresql-12-to-16/knowledge/CUTOVER-RUNBOOK.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Cutover stage complete. Review gate: external."}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Await gate: waiting for maintenance window and DBA sign-off..."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"Await resolved — DBA approved cutover. Maintenance window confirmed."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Cutover","intent":"","criteria":["Runbook with sequenced steps and go/no-go checkpoints","Rollback tested: 3-minute restore on staging","All 8 downstream services notified","Point-of-no-return clearly marked at Step 4","Post-cutover monitoring plan: 30-minute watch period"],"gateType":"external gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2400, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"External review approved. Cutover executed successfully. PG16 serving production traffic."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for migrate-postgresql-12-to-16.\n\nDelivered:\n  • Assessment: 340 tables, 12 functions, 3 extensions inventoried with risk register\n  • Mapping: full schema mapping with 2 function fixes and 3 view updates\n  • Migration: 6 idempotent scripts with dry-run mode and rollback plan\n  • Validation: 100% data integrity, functional parity, 8% faster reads\n  • Cutover: runbook executed, PG16 serving production with 0 downtime incidents\n\nMigrated: 1.2TB, 2.1B rows, 340 tables. Intent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "migration",
+	studio: "migration",
+	stages: ["assessment", "mapping", "migrate", "validation", "cutover"],
+	completionText: "All 5 stages passed. migrate-postgresql-12-to-16 delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1000, actions: [{ type: "typing" }] },
+		{
+			delay: 800,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Migrate our production PostgreSQL 12 cluster to PostgreSQL 16",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: migrate-postgresql-12-to-16...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: migration. 5 stages: assessment → mapping → migrate → validation → cutover",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "assessment" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering assessment stage. Hat: migration-analyst.\nHow large is the current cluster? What’s the data volume?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/assessment/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Primary + 2 read replicas. 1.2TB data across 340 tables. Heavy use of pg_trgm extensions and several custom functions. Runs on RDS.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "1.2TB with extensions and custom functions — that adds complexity. Decomposing assessment...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/assessment/units/unit-01-schema-inventory.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/assessment/units/unit-02-dependency-graph.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/assessment/units/unit-03-risk-register.md",
+				},
+				{
+					type: "card",
+					stage: "assessment",
+					name: "schema-inventory",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "assessment",
+					name: "dependency-graph",
+					status: "",
+				},
+				{
+					type: "card",
+					stage: "assessment",
+					name: "risk-register",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Schema inventory complete:\n  • 340 tables, 47 views, 23 materialized views\n  • 12 custom functions (PL/pgSQL)\n  • 3 extensions: pg_trgm, uuid-ossp, hstore\n  • 156 indexes including 18 GIN indexes for text search\n  • Largest table: events (420GB, 2.1B rows)",
+				},
+				{
+					type: "updateCard",
+					stage: "assessment",
+					name: "schema-inventory",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "assessment",
+					name: "dependency-graph",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: risk-assessor. Dependency graph shows 8 downstream services reading from replicas. Migration must maintain read availability.\n\nRisk register:\n  1. [High] pg_trgm index format changed in PG14 — requires REINDEX\n  2. [High] 420GB events table — migration time risk\n  3. [Medium] Custom PL/pgSQL functions may use deprecated syntax\n  4. [Low] hstore extension — compatible, no changes needed",
+				},
+				{
+					type: "updateCard",
+					stage: "assessment",
+					name: "dependency-graph",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "assessment",
+					name: "risk-register",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/knowledge/MIGRATION-INVENTORY.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Assessment complete. Review gate: auto. All criteria met — advancing.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to mapping stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "mapping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering mapping stage. Hat: schema-mapper.\nLoading migration inventory...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/mapping/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → assessment/migration-inventory (knowledge/MIGRATION-INVENTORY.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Mapping source PG12 schemas to PG16 target. Checking for breaking changes...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/mapping/units/unit-01-schema-mapping.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/mapping/units/unit-02-function-compat.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/mapping/units/unit-03-extension-mapping.md",
+				},
+				{
+					type: "card",
+					stage: "mapping",
+					name: "schema-mapping",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "mapping", name: "function-compat", status: "" },
+				{
+					type: "card",
+					stage: "mapping",
+					name: "extension-mapping",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Schema mapping: 340 tables map 1:1. No column type changes needed. 3 views reference deprecated implicit casts (integer to text) — these need explicit CAST expressions in PG16.\n\nHat: compatibility-reviewer. Edge cases flagged:\n  • Null handling: 2 functions rely on PG12’s implicit null coercion\n  • Encoding: UTF-8 throughout, no issues\n  • Precision: numeric(18,6) columns are safe",
+				},
+				{
+					type: "updateCard",
+					stage: "mapping",
+					name: "schema-mapping",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "mapping",
+					name: "function-compat",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Function compatibility: 10 of 12 functions pass. 2 need updates:\n  • calculate_trending_score() uses removed operator class\n  • merge_user_profiles() uses implicit type coercion\n\nBoth are straightforward fixes. Want me to show the diffs?",
+				},
+			],
+		},
+		{
+			delay: 1800,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Yes, show the diffs. Also — make sure the trending score function doesn’t break our recommendation engine.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Good call. The trending score function feeds 3 materialized views that the recommendation engine queries. I’ll verify the output is identical after the fix.",
+				},
+				{
+					type: "updateCard",
+					stage: "mapping",
+					name: "function-compat",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "mapping",
+					name: "extension-mapping",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "15" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Extensions: all 3 are available in PG16 on RDS. pg_trgm requires REINDEX after upgrade for GIN indexes. uuid-ossp and hstore are drop-in compatible.",
+				},
+				{
+					type: "updateCard",
+					stage: "mapping",
+					name: "extension-mapping",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/knowledge/MAPPING-SPEC.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Mapping stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Mapping",
+					intent: "",
+					criteria: [
+						"340 tables mapped 1:1 with transformation rules",
+						"3 views need explicit CAST expressions",
+						"2 functions updated with compatibility fixes",
+						"pg_trgm REINDEX planned for 18 GIN indexes",
+						"Recommendation engine impact verified",
+					],
+					gateType: "ask gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2200, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. Build the migration scripts.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to migrate stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "migrate" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering migrate stage. Hat: migration-engineer.\nLoading mapping spec...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/migrate/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → mapping/mapping-spec (knowledge/MAPPING-SPEC.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Building idempotent migration scripts with dry-run mode...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/migrate/units/unit-01-migration-scripts.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/migrate/units/unit-02-rollback-plan.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/migrate/units/unit-03-integration-tests.md",
+				},
+				{
+					type: "card",
+					stage: "migrate",
+					name: "migration-scripts",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "migrate", name: "rollback-plan", status: "" },
+				{
+					type: "card",
+					stage: "migrate",
+					name: "integration-tests",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "50" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Migration scripts ready:\n  • 01-pre-checks.sql: validates source state\n  • 02-schema-migrate.sql: DDL changes with explicit casts\n  • 03-function-updates.sql: 2 function fixes\n  • 04-data-migrate.sh: pg_dump/pg_restore with parallel jobs\n  • 05-reindex.sql: GIN index rebuild for pg_trgm\n  • 06-post-checks.sql: validates target state\n\nAll scripts are idempotent. Dry-run mode produces diff report.",
+				},
+				{
+					type: "updateCard",
+					stage: "migrate",
+					name: "migration-scripts",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "migrate",
+					name: "rollback-plan",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Rollback plan documented. Point-of-no-return: after data migration starts (step 04). Before that, rollback is instant — just point services back to PG12. After, we need a reverse pg_restore.",
+				},
+				{
+					type: "updateCard",
+					stage: "migrate",
+					name: "rollback-plan",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "migrate",
+					name: "integration-tests",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: integration-tester. Tests cover:\n  • Row count reconciliation for all 340 tables\n  • Null handling edge cases for the 2 updated functions\n  • GIN index queries return identical results\n  • Materialized view refresh produces same output\n  • Trending score function output matches to 6 decimal places",
+				},
+				{
+					type: "updateCard",
+					stage: "migrate",
+					name: "integration-tests",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/knowledge/MIGRATION-ARTIFACTS.md",
+				},
+				{ type: "file", path: "migration/scripts/01-pre-checks.sql" },
+				{ type: "file", path: "migration/scripts/02-schema-migrate.sql" },
+				{ type: "file", path: "migration/scripts/03-function-updates.sql" },
+				{ type: "file", path: "migration/scripts/04-data-migrate.sh" },
+				{ type: "file", path: "migration/scripts/05-reindex.sql" },
+				{ type: "file", path: "migration/scripts/06-post-checks.sql" },
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Migrate stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Scripts look solid. Run validation against staging.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to validation stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "validation" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering validation stage. Hat: validator.\nLoading migration artifacts...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/validation/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → migrate/migration-artifacts (knowledge/MIGRATION-ARTIFACTS.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Running full validation suite against staging PG16 instance...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/validation/units/unit-01-data-integrity.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/validation/units/unit-02-functional-parity.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/validation/units/unit-03-performance.md",
+				},
+				{
+					type: "card",
+					stage: "validation",
+					name: "data-integrity",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "validation",
+					name: "functional-parity",
+					status: "",
+				},
+				{ type: "card", stage: "validation", name: "performance", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "45" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Data integrity:\n  • Row counts: 340/340 tables match exactly\n  • Checksum validation: 100% match on sampled records (1000 per table)\n  • Foreign key constraints: all satisfied\n  • Events table: 2,104,837,291 rows — exact match",
+				},
+				{
+					type: "updateCard",
+					stage: "validation",
+					name: "data-integrity",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "validation",
+					name: "functional-parity",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: regression-tester. Functional parity:\n  • All 47 views return identical results\n  • 23 materialized views refresh with same output\n  • 12 functions return identical output\n  • Recommendation engine queries: output matches 100%\n  • Text search (pg_trgm): identical result sets after REINDEX",
+				},
+				{
+					type: "updateCard",
+					stage: "validation",
+					name: "functional-parity",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "validation",
+					name: "performance",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Performance benchmarks:\n  • Read queries: 8% faster on PG16 (query planner improvements)\n  • Write throughput: comparable (within 2%)\n  • Complex joins: 12% faster (incremental sort feature)\n  • Text search: 5% faster after GIN REINDEX\n\nAll within thresholds. PG16 is actually faster on most workloads.",
+				},
+				{
+					type: "updateCard",
+					stage: "validation",
+					name: "performance",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/knowledge/VALIDATION-REPORT.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Validation stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Numbers look great. Schedule the production cutover.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to cutover stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "cutover" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering cutover stage. Hat: cutover-coordinator.\nLoading validation report...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/cutover/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → validation/validation-report (knowledge/VALIDATION-REPORT.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Building cutover runbook with go/no-go checkpoints...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/cutover/units/unit-01-cutover-runbook.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/stages/cutover/units/unit-02-rollback-verification.md",
+				},
+				{
+					type: "card",
+					stage: "cutover",
+					name: "cutover-runbook",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "cutover",
+					name: "rollback-verification",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Cutover runbook:\n  Step 1: Enable maintenance mode (owner: platform-team)\n  Step 2: Final WAL replay to sync target (owner: DBA)\n  Step 3: Run pre-checks on PG16 target\n  Step 4: Swap connection strings in config (go/no-go checkpoint)\n  Step 5: Verify all 8 services connect successfully\n  Step 6: Run post-checks and smoke tests\n  Step 7: Disable maintenance mode\n  Step 8: Monitor for 30 minutes (go/no-go checkpoint)\n\nPoint-of-no-return: Step 4. Rollback before that is instant.",
+				},
+				{
+					type: "updateCard",
+					stage: "cutover",
+					name: "cutover-runbook",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "cutover",
+					name: "rollback-verification",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: rollback-engineer. Rollback procedure tested end-to-end on staging. Restores PG12 service within 3 minutes. Communication plan sent to all 8 downstream service owners.",
+				},
+				{
+					type: "updateCard",
+					stage: "cutover",
+					name: "rollback-verification",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/migrate-postgresql-12-to-16/knowledge/CUTOVER-RUNBOOK.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Cutover stage complete. Review gate: external.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Await gate: waiting for maintenance window and DBA sign-off...",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Await resolved — DBA approved cutover. Maintenance window confirmed.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Cutover",
+					intent: "",
+					criteria: [
+						"Runbook with sequenced steps and go/no-go checkpoints",
+						"Rollback tested: 3-minute restore on staging",
+						"All 8 downstream services notified",
+						"Point-of-no-return clearly marked at Step 4",
+						"Post-cutover monitoring plan: 30-minute watch period",
+					],
+					gateType: "external gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2400, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "External review approved. Cutover executed successfully. PG16 serving production traffic.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for migrate-postgresql-12-to-16.\n\nDelivered:\n  • Assessment: 340 tables, 12 functions, 3 extensions inventoried with risk register\n  • Mapping: full schema mapping with 2 function fixes and 3 view updates\n  • Migration: 6 idempotent scripts with dry-run mode and rollback plan\n  • Validation: 100% data integrity, functional parity, 8% faster reads\n  • Cutover: runbook executed, PG16 serving production with 0 downtime incidents\n\nMigrated: 1.2TB, 2.1B rows, 340 tables. Intent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

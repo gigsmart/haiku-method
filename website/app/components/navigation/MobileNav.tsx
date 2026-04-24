@@ -1,8 +1,8 @@
 "use client"
 
-import { navigation, primaryNavItems } from "@/lib/navigation"
 import Link from "next/link"
 import { useState } from "react"
+import { navigation, primaryNavItems } from "@/lib/navigation"
 
 interface MobileNavProps {
 	isOpen: boolean

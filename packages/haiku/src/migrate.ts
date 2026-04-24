@@ -9,8 +9,8 @@ import {
 	cpSync,
 	existsSync,
 	mkdirSync,
-	readFileSync,
 	readdirSync,
+	readFileSync,
 	writeFileSync,
 } from "node:fs"
 import { basename, join } from "node:path"
@@ -351,7 +351,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 			)
 		} else {
 			// Active: migrate intent + units in their stages, preserve active_stage
-			const skipStages = allStages.filter((s) => {
+			const _skipStages = allStages.filter((s) => {
 				// Skip stages that have no units and are past the active stage
 				if (!unitsByStage.has(s) && s !== mappedStage) return false
 				return false // Don't skip — keep all stages for active intents

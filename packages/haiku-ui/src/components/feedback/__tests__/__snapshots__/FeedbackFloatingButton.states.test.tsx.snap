@@ -1,0 +1,138 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FeedbackFloatingButton — state matrix > renders every documented state cell (snapshot) 1`] = `
+<div>
+  <div
+    data-cell="closed-no-count"
+  >
+    <button
+      aria-controls="feedback-sheet"
+      aria-expanded="false"
+      aria-haspopup="dialog"
+      aria-label="Open feedback panel"
+      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+      data-testid="feedback-fab"
+      type="button"
+    >
+      <span
+        aria-hidden="true"
+      >
+        💬
+      </span>
+    </button>
+  </div>
+  <div
+    data-cell="closed-pending-1"
+  >
+    <button
+      aria-controls="feedback-sheet"
+      aria-expanded="false"
+      aria-haspopup="dialog"
+      aria-label="Open feedback panel, 1 pending"
+      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+      data-testid="feedback-fab"
+      type="button"
+    >
+      <span
+        aria-hidden="true"
+      >
+        💬
+      </span>
+      <span
+        aria-hidden="true"
+        class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-2 border-white dark:border-stone-900"
+      >
+        1
+      </span>
+    </button>
+  </div>
+  <div
+    data-cell="closed-pending-5"
+  >
+    <button
+      aria-controls="feedback-sheet"
+      aria-expanded="false"
+      aria-haspopup="dialog"
+      aria-label="Open feedback panel, 5 pending"
+      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+      data-testid="feedback-fab"
+      type="button"
+    >
+      <span
+        aria-hidden="true"
+      >
+        💬
+      </span>
+      <span
+        aria-hidden="true"
+        class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-2 border-white dark:border-stone-900"
+      >
+        5
+      </span>
+    </button>
+  </div>
+  <div
+    data-cell="open"
+  >
+    <button
+      aria-controls="feedback-sheet"
+      aria-expanded="true"
+      aria-haspopup="dialog"
+      aria-label="Open feedback panel"
+      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+      data-testid="feedback-fab"
+      type="button"
+    >
+      <span
+        aria-hidden="true"
+      >
+        💬
+      </span>
+    </button>
+  </div>
+  <div
+    data-cell="open-with-count"
+  >
+    <button
+      aria-controls="feedback-sheet"
+      aria-expanded="true"
+      aria-haspopup="dialog"
+      aria-label="Open feedback panel, 2 pending"
+      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+      data-testid="feedback-fab"
+      type="button"
+    >
+      <span
+        aria-hidden="true"
+      >
+        💬
+      </span>
+      <span
+        aria-hidden="true"
+        class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-2 border-white dark:border-stone-900"
+      >
+        2
+      </span>
+    </button>
+  </div>
+  <div
+    data-cell="closed-zero"
+  >
+    <button
+      aria-controls="feedback-sheet"
+      aria-expanded="false"
+      aria-haspopup="dialog"
+      aria-label="Open feedback panel"
+      class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-700 hover:bg-teal-800 dark:bg-teal-700 dark:hover:bg-teal-800 text-white text-lg shadow-lg inline-flex items-center justify-center md:hidden feedback-fab-pulse touch-target focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+      data-testid="feedback-fab"
+      type="button"
+    >
+      <span
+        aria-hidden="true"
+      >
+        💬
+      </span>
+    </button>
+  </div>
+</div>
+`;

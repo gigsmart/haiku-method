@@ -7,11 +7,23 @@ const phases = [
 		name: "Elaboration",
 		description: "Define what will be done and why",
 		href: "/methodology/elaboration/",
-		color: "bg-teal-50 border-teal-200 dark:bg-teal-950/30 dark:border-teal-800",
+		color:
+			"bg-teal-50 border-teal-200 dark:bg-teal-950/30 dark:border-teal-800",
 		textColor: "text-teal-700 dark:text-teal-300",
 		icon: (
-			<svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-				<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+			<svg
+				className="h-6 w-6"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				aria-hidden="true"
+			>
+				<path
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					strokeWidth={1.5}
+					d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+				/>
 			</svg>
 		),
 	},
@@ -19,12 +31,29 @@ const phases = [
 		name: "Execution",
 		description: "Do the work through structured workflows",
 		href: "/methodology/execution/",
-		color: "bg-indigo-50 border-indigo-200 dark:bg-indigo-950/30 dark:border-indigo-800",
+		color:
+			"bg-indigo-50 border-indigo-200 dark:bg-indigo-950/30 dark:border-indigo-800",
 		textColor: "text-indigo-700 dark:text-indigo-300",
 		icon: (
-			<svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-				<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-				<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+			<svg
+				className="h-6 w-6"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				aria-hidden="true"
+			>
+				<path
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					strokeWidth={1.5}
+					d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+				/>
+				<path
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					strokeWidth={1.5}
+					d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+				/>
 			</svg>
 		),
 	},
@@ -32,12 +61,29 @@ const phases = [
 		name: "Operation",
 		description: "Manage what was delivered",
 		href: "/methodology/operation/",
-		color: "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800",
+		color:
+			"bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800",
 		textColor: "text-amber-700 dark:text-amber-300",
 		icon: (
-			<svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-				<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-				<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+			<svg
+				className="h-6 w-6"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				aria-hidden="true"
+			>
+				<path
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					strokeWidth={1.5}
+					d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+				/>
+				<path
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					strokeWidth={1.5}
+					d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+				/>
 			</svg>
 		),
 	},
@@ -45,24 +91,42 @@ const phases = [
 		name: "Reflection",
 		description: "Learn from what happened",
 		href: "/methodology/reflection/",
-		color: "bg-rose-50 border-rose-200 dark:bg-rose-950/30 dark:border-rose-800",
+		color:
+			"bg-rose-50 border-rose-200 dark:bg-rose-950/30 dark:border-rose-800",
 		textColor: "text-rose-700 dark:text-rose-300",
 		icon: (
-			<svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-				<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+			<svg
+				className="h-6 w-6"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				aria-hidden="true"
+			>
+				<path
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					strokeWidth={1.5}
+					d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+				/>
 			</svg>
 		),
 	},
 ]
 
 const categoryColors: Record<string, string> = {
-	Engineering: "border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30",
-	"Go-to-Market": "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30",
-	"General Purpose": "border-teal-200 bg-teal-50 dark:border-teal-800 dark:bg-teal-950/30",
+	Engineering:
+		"border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30",
+	"Go-to-Market":
+		"border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30",
+	"General Purpose":
+		"border-teal-200 bg-teal-50 dark:border-teal-800 dark:bg-teal-950/30",
 }
 
 function titleCase(s: string): string {
-	return s.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
+	return s
+		.split("-")
+		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+		.join(" ")
 }
 
 const principles = [
@@ -105,8 +169,8 @@ export default function Home() {
 						Human + AI Knowledge Unification
 					</p>
 					<p className="mx-auto mb-10 max-w-2xl text-lg text-stone-600 dark:text-stone-400">
-						A lifecycle orchestration system for any structured work.
-						Studios, stages, and quality gates — disciplined form, reliable results.
+						A lifecycle orchestration system for any structured work. Studios,
+						stages, and quality gates — disciplined form, reliable results.
 					</p>
 					<div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
 						<Link
@@ -114,8 +178,19 @@ export default function Home() {
 							className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-6 py-3 font-medium text-white transition hover:bg-teal-700"
 						>
 							How it works
-							<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+							<svg
+								className="h-4 w-4"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								aria-hidden="true"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M13 7l5 5m0 0l-5 5m5-5H6"
+								/>
 							</svg>
 						</Link>
 						<Link
@@ -160,8 +235,19 @@ export default function Home() {
 					</div>
 
 					<div className="text-center text-sm text-stone-400 dark:text-stone-500">
-						<svg className="mx-auto mb-1 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+						<svg
+							className="mx-auto mb-1 h-5 w-5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							aria-hidden="true"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={1.5}
+								d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+							/>
 						</svg>
 						Reflection feeds forward into the next Elaboration cycle
 					</div>
@@ -181,12 +267,11 @@ export default function Home() {
 			<section className="px-4 py-16">
 				<div className="mx-auto max-w-5xl">
 					<div className="mb-12 text-center">
-						<h2 className="mb-3 text-3xl font-bold">
-							Not Just for Software
-						</h2>
+						<h2 className="mb-3 text-3xl font-bold">Not Just for Software</h2>
 						<p className="mx-auto max-w-2xl text-stone-600 dark:text-stone-400">
 							H·AI·K·U is domain-agnostic. Studios customize the lifecycle for
-							your field — software, marketing, operations, or anything structured.
+							your field — software, marketing, operations, or anything
+							structured.
 						</p>
 					</div>
 
@@ -271,8 +356,19 @@ export default function Home() {
 							className="group rounded-xl border border-stone-200 p-6 transition hover:border-teal-300 hover:shadow-md dark:border-stone-800 dark:hover:border-teal-700"
 						>
 							<div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-950/50 dark:text-teal-400">
-								<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+								<svg
+									className="h-5 w-5"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									aria-hidden="true"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+									/>
 								</svg>
 							</div>
 							<h3 className="mb-1 font-semibold text-stone-900 dark:text-stone-100">
@@ -287,15 +383,27 @@ export default function Home() {
 							className="group rounded-xl border border-stone-200 p-6 transition hover:border-teal-300 hover:shadow-md dark:border-stone-800 dark:hover:border-teal-700"
 						>
 							<div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
-								<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+								<svg
+									className="h-5 w-5"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									aria-hidden="true"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+									/>
 								</svg>
 							</div>
 							<h3 className="mb-1 font-semibold text-stone-900 dark:text-stone-100">
 								For teams
 							</h3>
 							<p className="text-sm text-stone-600 dark:text-stone-400">
-								Read the methodology to understand how H·AI·K·U structures collaboration.
+								Read the methodology to understand how H·AI·K·U structures
+								collaboration.
 							</p>
 						</Link>
 						<Link
@@ -303,8 +411,19 @@ export default function Home() {
 							className="group rounded-xl border border-stone-200 p-6 transition hover:border-teal-300 hover:shadow-md dark:border-stone-800 dark:hover:border-teal-700"
 						>
 							<div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400">
-								<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+								<svg
+									className="h-5 w-5"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									aria-hidden="true"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+									/>
 								</svg>
 							</div>
 							<h3 className="mb-1 font-semibold text-stone-900 dark:text-stone-100">

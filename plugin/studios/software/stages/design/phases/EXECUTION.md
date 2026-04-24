@@ -1,5 +1,11 @@
 # Design Stage — Execution
 
+## Phase Instructions (RFC 2119)
+
+The key words "MUST", "MUST NOT", "SHALL", "SHALL NOT", "REQUIRED" in this section are to be interpreted as described in RFC 2119.
+
+During execute, the designer hat **MUST** produce **high-fidelity mockups** from the approved wireframes. The agent **MUST** apply real design tokens, specify all interactive states, and define responsive behavior at each breakpoint. The output **MUST** be production-ready design — polished, not sketched.
+
 ## Builder Focus
 
 - Explore wireframes, mockups, or prototypes to clarify the visual and interaction direction
@@ -14,7 +20,3 @@
 - Check consistency with existing design system tokens and patterns
 - Confirm interaction flows cover error states, empty states, and loading states
 - Ensure accessibility considerations are documented (contrast, focus order, ARIA semantics)
-
-## Completion Signal
-
-The design stage is complete when the design direction is clear enough to inform subsequent product or dev stages without ambiguity. The artifacts are guides for thinking, not specs to implement pixel-for-pixel.

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Revisit Unit List — Wireframe</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: {} }
+    };
+  </script>
+  <style>
+
+    /* unit-16: max-w-page token — see knowledge/DESIGN-TOKENS.md §1.3 */
+    :root { --max-page-width: 1400px; }
+    .max-w-page { max-width: var(--max-page-width); }
+    body { font-family: system-ui, -apple-system, sans-serif; }
+
+    /* Locked card overlay */
+    .locked-card {
+      position: relative;
+    }
+    .locked-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 0.5rem;
+      pointer-events: none;
+    }
+    /* Locked / completed cards are focusable for read-only inspection
+       (keyboard users can still land on them to read the SR summary). The
+       focus ring is teal even though the card is dimmed — the ring must be
+       brighter than the surrounding content so keyboard users see where
+       they are. FB-25: focus ring documented for locked/completed units. */
+    .locked-card:focus-visible {
+      outline: 2px solid rgb(20 184 166);
+      outline-offset: 3px;
+      opacity: 0.95; /* briefly restore visibility of content while focused */
+    }
+    .locked-card:hover {
+      opacity: 0.8; /* pointer hover restores some visibility too */
+    }
+    /* Reduced-motion — no transitions on focus/hover opacity */
+    @media (prefers-reduced-motion: reduce) {
+      .locked-card { transition: none; }
+    }
+  </style>
+</head>
+<body class="dark bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 min-h-screen">
+
+  <!-- Skip link — first focusable (FB-30 / aria-landmark-spec §7) -->
+  <a href="#main-content" class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-[100] focus-visible:px-3 focus-visible:py-2 focus-visible:bg-teal-600 focus-visible:text-white focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900">Skip to main content</a>
+
+  <!-- Header (role="banner") -->
+  <header role="banner" class="sticky top-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800">
+    <div class="max-w-page mx-auto px-4 sm:px-5 py-3 flex items-center justify-between">
+      <h1 class="text-lg font-semibold truncate text-stone-900 dark:text-stone-100">Review: Universal Feedback Model</h1>
+      <button aria-label="Toggle color theme" class="text-xs px-2 py-1 rounded border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-400 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+        <span aria-hidden="true">&#x263E;</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main-content" role="main" aria-label="Revisit unit list" class="max-w-page mx-auto px-4 sm:px-5 py-6">
+
+    <!-- Review Context Header -->
+    <div class="bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm overflow-hidden mb-4">
+      <div class="px-5 pt-5 pb-4 border-b border-stone-200 dark:border-stone-700">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500 mb-1">Review Type</p>
+            <h1 class="text-xl font-semibold text-stone-900 dark:text-stone-100">
+              Review Elaboration: <span class="text-teal-600 dark:text-teal-400 capitalize">development</span>
+              <span class="text-sm font-normal text-stone-500 dark:text-stone-400 ml-2">(visit 2)</span>
+            </h1>
+            <p class="text-sm text-stone-500 dark:text-stone-400 mt-1">Universal Feedback Model &amp; Review Recovery</p>
+          </div>
+          <div class="flex flex-col items-end gap-2">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+              &#x1F512; ask
+            </span>
+          </div>
+        </div>
+
+        <!-- Stage progress strip -->
+        <nav aria-label="Stage progress" class="flex items-center gap-0 mt-2">
+          <div class="flex flex-col items-center">
+            <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+              <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+            </div>
+            <span class="text-xs text-stone-700 dark:text-stone-300 mt-1">Inception</span>
+          </div>
+          <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
+          <div class="flex flex-col items-center relative">
+            <div class="w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center">
+              <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5l2 2 4-4"/></svg>
+            </div>
+            <span class="text-xs text-stone-700 dark:text-stone-300 mt-1">Design</span>
+            <span class="absolute -top-1 -right-2 inline-flex items-center px-1 py-0.5 rounded-md text-xs font-bold bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300">2x</span>
+          </div>
+          <div class="h-0.5 flex-1 min-w-4 bg-teal-600 mt-[-14px]"></div>
+          <div class="flex flex-col items-center relative">
+            <div class="w-[18px] h-[18px] rounded-sm bg-teal-600 text-white flex items-center justify-center shadow-sm ring-2 ring-teal-400/50" style="transform: rotate(45deg);">
+              <span class="text-xs font-bold" style="transform: rotate(-45deg);">◆</span>
+            </div>
+            <span class="text-xs font-semibold text-teal-600 dark:text-teal-400 mt-1.5">Development</span>
+            <span class="absolute -top-1 -right-2 inline-flex items-center px-1 py-0.5 rounded-md text-xs font-bold bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">2x</span>
+          </div>
+          <div class="h-0.5 flex-1 min-w-4 bg-stone-300 dark:bg-stone-600 mt-[-14px]"></div>
+          <div class="flex flex-col items-center">
+            <div class="w-4 h-4 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600"></div>
+            <span class="text-xs text-stone-500 dark:text-stone-500 mt-1">Operations</span>
+          </div>
+          <div class="h-0.5 flex-1 min-w-4 bg-stone-300 dark:bg-stone-600 mt-[-14px]"></div>
+          <div class="flex flex-col items-center">
+            <div class="w-4 h-4 rounded-full bg-stone-200 dark:bg-stone-700 border border-stone-300 dark:border-stone-600"></div>
+            <span class="text-xs text-stone-500 dark:text-stone-500 mt-1">Security</span>
+          </div>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Scope expansion banner -->
+    <div class="bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800 rounded-lg px-5 py-4 mb-4">
+      <div class="flex items-start gap-3">
+        <span class="text-teal-600 dark:text-teal-400 text-lg shrink-0 mt-0.5">&#x2139;&#xFE0F;</span>
+        <div>
+          <h3 class="text-sm font-semibold text-teal-800 dark:text-teal-200 mb-1">Scope expanded -- 2 new units added</h3>
+          <p class="text-xs text-teal-700 dark:text-teal-300">This revisit adds 2 new units to address feedback from the previous review cycle. The 7 existing units are preserved as read-only for context.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending feedback summary -->
+    <div class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-5 py-4 mb-4">
+      <div class="flex items-start gap-3">
+        <span class="text-amber-600 dark:text-amber-400 text-lg shrink-0 mt-0.5">&#x26A0;&#xFE0F;</span>
+        <div>
+          <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2">3 pending feedback items</h3>
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">FB-01</span>
+              <span>Feedback items cannot be individually tracked</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">&#x2192; unit-08</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">FB-03</span>
+              <span>Missing null check in handleSubmit</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">&#x2192; unit-09</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">FB-06</span>
+              <span class="text-amber-700 dark:text-amber-300">Extract feedback validation into shared module</span>
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">&#x26A0; no owning unit</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Units Section — highlighted, active -->
+    <section class="mb-6">
+      <div class="flex items-center gap-3 mb-4">
+        <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">
+          New Units <span class="text-sm font-normal text-stone-500 dark:text-stone-400">(2)</span>
+        </h2>
+        <span class="text-xs text-stone-500 dark:text-stone-400">-- addressing feedback</span>
+      </div>
+
+      <div class="space-y-3">
+        <!-- New unit 1 -->
+        <div class="bg-white dark:bg-stone-900 rounded-lg border-2 border-blue-400 dark:border-blue-500 shadow-sm p-5 transition-all hover:shadow-md">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">unit-08</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">pending</span>
+            </div>
+            <span class="text-xs text-stone-500 dark:text-stone-500">NEW</span>
+          </div>
+          <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100 mb-1">Feedback Item Status Lifecycle Implementation</h3>
+          <p class="text-xs text-stone-600 dark:text-stone-400 mb-3">Implement individual feedback item tracking with status transitions (pending, addressed, closed, rejected) and persistence as files on disk.</p>
+
+          <!-- Closes feedback items -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Closes:</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+              FB-01 <span class="text-amber-500">&#x2192;</span> addressed
+            </span>
+          </div>
+
+          <!-- Unit metadata row -->
+          <div class="flex items-center gap-3 mt-3 text-xs text-stone-500 dark:text-stone-500">
+            <span>Stage: development</span>
+            <span>&middot;</span>
+            <span>Discipline: backend</span>
+            <span>&middot;</span>
+            <span>Depends: unit-04</span>
+          </div>
+        </div>
+
+        <!-- New unit 2 -->
+        <div class="bg-white dark:bg-stone-900 rounded-lg border-2 border-blue-400 dark:border-blue-500 shadow-sm p-5 transition-all hover:shadow-md">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">unit-09</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">pending</span>
+            </div>
+            <span class="text-xs text-stone-500 dark:text-stone-500">NEW</span>
+          </div>
+          <h3 class="text-sm font-semibold text-stone-900 dark:text-stone-100 mb-1">Fix Null Check in handleSubmit Callback</h3>
+          <p class="text-xs text-stone-600 dark:text-stone-400 mb-3">Add guard for undefined annotations in the submit path and extract annotation validation into a shared utility.</p>
+
+          <!-- Closes feedback items -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500">Closes:</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+              FB-03 <span class="text-amber-500">&#x2192;</span> addressed
+            </span>
+          </div>
+
+          <div class="flex items-center gap-3 mt-3 text-xs text-stone-500 dark:text-stone-500">
+            <span>Stage: development</span>
+            <span>&middot;</span>
+            <span>Discipline: frontend</span>
+            <span>&middot;</span>
+            <span>Depends: unit-04</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Completed Units Section — read-only, grayed/locked -->
+    <section class="mb-6">
+      <div class="flex items-center gap-3 mb-4">
+        <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">
+          Completed Units <span class="text-sm font-normal text-stone-500 dark:text-stone-400">(7)</span>
+        </h2>
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-stone-200 text-stone-500 dark:bg-stone-700 dark:text-stone-400">
+          &#x1F512; read-only
+        </span>
+      </div>
+
+      <div class="space-y-2">
+        <!-- Completed unit 1 -->
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-01</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-500 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Feedback Data Model Design</h3>
+        </div>
+
+        <!-- Completed unit 2 -->
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-02</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-500 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Review Sidebar Segmented Control</h3>
+        </div>
+
+        <!-- Completed unit 3 -->
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-03</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-500 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Feedback Status Badge Component</h3>
+        </div>
+
+        <!-- Completed unit 4 -->
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-04</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-500 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Feedback CRUD API Endpoints</h3>
+        </div>
+
+        <!-- Completed unit 5 -->
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-05</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-500 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Feedback List with Grouping and Sorting</h3>
+        </div>
+
+        <!-- Completed unit 6 -->
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-06</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-500 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Mobile FAB and Bottom Sheet</h3>
+        </div>
+
+        <!-- Completed unit 7 -->
+        <div tabindex="0" role="article" aria-label="Completed unit (read-only — locked for editing, focusable for inspection)" class="locked-card bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60 transition-opacity outline-none">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-07</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+            </div>
+            <span class="text-stone-500 dark:text-stone-600 text-xs">&#x1F512;</span>
+          </div>
+          <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Comment-to-Feedback Migration Layer</h3>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         State-coverage reference (FB-25) — focus ring on locked units
+         and the full matrix for the new-unit and locked-unit cards.
+    ============================================================ -->
+    <section class="mb-6" aria-labelledby="state-ref-h">
+      <h2 id="state-ref-h" class="text-base font-semibold text-stone-900 dark:text-stone-100 mb-3">State coverage — read-only locked units</h2>
+      <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">Locked / completed unit cards are dimmed by default but remain in the Tab order (<code class="font-mono">tabindex="0"</code>) so keyboard users can land on them for read-only inspection. Focus ring restores visibility while focused. Hover opacity bumps also help pointer users spot them.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Default (dimmed) -->
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500 mb-2">Default (locked, opacity 60%)</p>
+          <div tabindex="0" role="article" aria-label="Locked unit default"
+               class="locked-card bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60 transition-opacity">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-01</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+              </div>
+              <span class="text-stone-500 dark:text-stone-600 text-xs">&#x1F512;</span>
+            </div>
+            <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Feedback Data Model Design</h3>
+          </div>
+        </div>
+
+        <!-- Hover (simulated 80% opacity) -->
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500 mb-2">Hover (opacity 80%)</p>
+          <div role="article" aria-label="Locked unit hover"
+               class="locked-card bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm p-4" style="opacity: 0.8;">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-01</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+              </div>
+              <span class="text-stone-500 dark:text-stone-600 text-xs">&#x1F512;</span>
+            </div>
+            <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Feedback Data Model Design</h3>
+          </div>
+        </div>
+
+        <!-- Focus (simulated teal ring) -->
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500 mb-2">Focus (teal 2px ring, opacity 95%)</p>
+          <div role="article" aria-label="Locked unit focus"
+               class="bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm p-4" style="opacity: 0.95; outline: 2px solid rgb(20 184 166); outline-offset: 3px;">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-01</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+              </div>
+              <span class="text-stone-500 dark:text-stone-600 text-xs">&#x1F512;</span>
+            </div>
+            <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Feedback Data Model Design</h3>
+          </div>
+        </div>
+
+        <!-- Disabled semantics spelled out -->
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500 mb-2">Semantic disabled (aria-disabled="true")</p>
+          <div role="article" aria-disabled="true" aria-label="Locked unit — cannot be edited"
+               class="locked-card bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 shadow-sm p-4 opacity-60">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">unit-01</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">completed</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-stone-200 text-stone-500 dark:bg-stone-700 dark:text-stone-400">read-only</span>
+              </div>
+              <span class="text-stone-500 dark:text-stone-600 text-xs">&#x1F512;</span>
+            </div>
+            <h3 class="text-sm font-medium text-stone-700 dark:text-stone-400 mt-1">Feedback Data Model Design</h3>
+            <p class="text-xs text-stone-500 dark:text-stone-500 mt-1 italic">Focus still works (tabindex=0, read-only inspection); content is uneditable.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="mt-12 pb-8 text-center text-xs text-stone-500 dark:text-stone-500">
+    Powered by
+    <a href="https://haikumethod.ai" target="_blank" rel="noopener noreferrer" class="text-teal-600 dark:text-teal-400 hover:underline">
+      H&middot;AI&middot;K&middot;U
+    </a>
+    -- Human + AI Knowledge Unification
+  </footer>
+</body>
+</html>

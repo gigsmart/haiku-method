@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>Feedback Inline Annotations — Desktop Wireframe</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: {} }
+    };
+  </script>
+  <style>
+
+    /* unit-16: max-w-page token — see knowledge/DESIGN-TOKENS.md §1.3 */
+    :root { --max-page-width: 1400px; }
+    .max-w-page { max-width: var(--max-page-width); }
+    body { font-family: system-ui, -apple-system, sans-serif; }
+
+    /* Status transition animation */
+    @keyframes feedback-status-change {
+      0%   { opacity: 1; }
+      30%  { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+    .feedback-status-changed {
+      animation: feedback-status-change 0.4s ease-in-out;
+    }
+
+    /* Connector lines from inline annotations to code */
+    .annotation-connector {
+      position: absolute;
+      width: 24px;
+      top: 50%;
+      right: 100%;
+    }
+
+    /* Pin marker — visual 28px (w-7 h-7), invisible 44×44 hit area via ::before.
+       Satisfies FB-12 / WCAG 2.5.5 touch-target minimum without inflating the
+       visual scale of the marker on dense artifacts. */
+    .pin-hit { position: relative; }
+    .pin-hit::before {
+      content: "";
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 44px; height: 44px;
+      transform: translate(-50%, -50%);
+      border-radius: 9999px;
+      /* transparent hit-area — captures pointer + touch without visual weight */
+    }
+
+    /* Pin interaction states. Visual transform (translate -50%,-50%) is
+       applied inline for positioning, so we avoid re-declaring transform here.
+       Hover/active use filter; focus uses outline. */
+    .pin-hit:hover { filter: brightness(1.08); }
+    .pin-hit:focus-visible { outline: 2px solid rgb(20 184 166); outline-offset: 3px; }
+    .pin-hit:active { filter: brightness(0.92); }
+    .pin-hit[aria-disabled="true"],
+    .pin-hit:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* Code line highlight for annotated lines */
+    .code-line-annotated {
+      @apply bg-amber-400/10;
+    }
+    .dark .code-line-annotated {
+      @apply bg-amber-400/5;
+    }
+
+    /* Pulse animation for scroll-to-highlight — uses Tailwind blue-500 color */
+    @keyframes review-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgb(59 130 246 / 0.5); }
+      50% { box-shadow: 0 0 0 6px rgb(59 130 246 / 0); }
+    }
+    .review-pulse { animation: review-pulse 0.6s ease-in-out 2; }
+
+    /* Reduced-motion — drop all animations to a static end-state so the visual
+       feedback still lands but without the motion. Focus rings and box-shadow
+       ends remain so users without motion still see the "you're here" cue. */
+    @media (prefers-reduced-motion: reduce) {
+      .feedback-status-changed { animation: none; }
+      .review-pulse { animation: none; }
+      .pin-hit:hover, .pin-hit:active { filter: none; }
+    }
+  </style>
+</head>
+<body class="dark bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 min-h-screen">
+
+  <!-- FB-30/FB-35: Skip links — first focusable elements; visually hidden until focused. Bypass header nav (landmark structure). -->
+  <a href="#main-content" class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-[200] focus-visible:px-3 focus-visible:py-2 focus-visible:bg-teal-600 focus-visible:text-white focus-visible:rounded-md focus-visible:shadow-lg focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900">Skip to main content</a>
+  <a href="#feedback-list" class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-44 focus-visible:z-[200] focus-visible:px-3 focus-visible:py-2 focus-visible:bg-teal-600 focus-visible:text-white focus-visible:rounded-md focus-visible:shadow-lg focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900">Skip to feedback list</a>
+
+  <!-- Header (role="banner") -->
+  <header role="banner" class="sticky top-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800">
+    <div class="max-w-page mx-auto px-4 sm:px-5 py-3 flex items-center justify-between">
+      <h1 class="text-lg font-semibold truncate">Review: Universal Feedback Model</h1>
+      <button class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-stone-300 dark:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none"
+              aria-label="Toggle color theme">
+        Light / Dark
+      </button>
+    </div>
+  </header>
+
+  <!-- Two-column layout -->
+  <div class="max-w-page mx-auto px-4 sm:px-5 py-6 lg:flex lg:gap-4">
+
+    <!-- Main content (role="main" explicit + aria-label for landmark clarity) -->
+    <main id="main-content" role="main" aria-label="Review content" class="flex-1 min-w-0">
+
+      <!-- Tabs -->
+      <div class="sticky top-[53px] z-30 bg-white dark:bg-stone-950 border-b border-stone-200 dark:border-stone-700 mb-4">
+        <div role="tablist" aria-label="Review sections" aria-orientation="horizontal" class="flex overflow-x-auto -mx-1">
+          <button role="tab" aria-selected="true" tabindex="0" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 focus-visible:ring-2 focus-visible:ring-teal-500">Overview</button>
+          <button role="tab" aria-selected="false" tabindex="-1" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500">Units (12)</button>
+          <button role="tab" aria-selected="false" tabindex="-1" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500">Knowledge</button>
+          <button role="tab" aria-selected="false" tabindex="-1" class="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500">Outputs (3)</button>
+        </div>
+      </div>
+
+      <!-- Overview Card with Inline Annotations (Code) -->
+      <div class="bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 p-4 mb-4">
+        <h2 class="text-lg font-semibold mb-3">Overview -- Comment on text</h2>
+        <p class="text-xs text-stone-500 dark:text-stone-400 mb-3">Select text to add inline comments.</p>
+
+          <!-- Prose content with inline annotation cards floating adjacent -->
+          <div class="relative">
+            <div class="prose prose-sm prose-gray dark:prose-invert max-w-none">
+              <h2>Problem</h2>
+              <p>The current review workflow treats feedback as ephemeral batch comments that vanish after submission. When a reviewer requests changes, the agent receives a single feedback string with no structured identity, status tracking, or lifecycle management.</p>
+
+              <!-- Annotated paragraph — highlighted -->
+              <div class="relative">
+                <p class="code-line-annotated rounded px-1 -mx-1">This means feedback items cannot be individually tracked, addressed, or closed. Revisiting a stage after changes loses all context about which items were addressed and which remain open.</p>
+
+                <!-- Floating inline annotation card — connected by dashed line -->
+                <div class="absolute -right-[340px] top-0 w-[300px] z-20">
+                  <div class="annotation-connector border-t border-dashed border-stone-400 dark:border-stone-600"></div>
+                  <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
+                        <span aria-hidden="true">&#x1F50D;</span> Review Agent
+                      </span>
+                      <span class="flex-1"></span>
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
+                    </div>
+                    <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">"This means feedback items cannot be individually tracked"</p>
+                    <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-01 &middot; Visit 1 &middot; adversarial-review</p>
+                  </div>
+                </div>
+              </div>
+
+              <h2>Solution</h2>
+              <p>Introduce a universal feedback model where each piece of feedback is a first-class file on disk with its own identity, status lifecycle, origin tracking, and resolution metadata.</p>
+
+              <!-- Another annotated paragraph -->
+              <div class="relative">
+                <p class="code-line-annotated rounded px-1 -mx-1">Each feedback item progresses through: pending &rarr; addressed/rejected &rarr; closed. The review app sidebar gains a dedicated feedback panel showing all items across review cycles.</p>
+
+                <!-- Floating card — addressed state -->
+                <div class="absolute -right-[340px] top-0 w-[300px] z-20">
+                  <div class="annotation-connector border-t border-dashed border-stone-400 dark:border-stone-600"></div>
+                  <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
+                        <span aria-hidden="true">&#x1F517;</span> PR Comment
+                      </span>
+                      <span class="flex-1"></span>
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" aria-label="Status: addressed">addressed</span>
+                    </div>
+                    <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Lifecycle transitions need validation guards</p>
+                    <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
+                    <p class="text-xs text-blue-500 dark:text-blue-400 mt-1">Addressed by: unit-04-feedback-crud-api</p>
+                  </div>
+                </div>
+              </div>
+
+              <p>The orchestrator reads feedback files from disk when entering a stage, injects them into the agent's context, and tracks resolution through the unit lifecycle.</p>
+            </div>
+          </div>
+        </div>
+
+      <!-- Mockup Card with Visual Pin Annotations -->
+      <div class="bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 p-4 mb-4">
+        <h2 class="text-lg font-semibold mb-3">Mockup -- Annotate</h2>
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-sm font-medium text-stone-600 dark:text-stone-400">Review App Wireframe</h4>
+            <a href="#" class="text-sm text-teal-600 dark:text-teal-400 hover:underline">Open in new tab ↗</a>
+          </div>
+
+        <!-- Image container with pin overlays -->
+        <div class="relative bg-stone-100 dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden" style="height: 320px;">
+          <!-- Placeholder image area -->
+          <div class="absolute inset-0 flex items-center justify-center text-stone-600 dark:text-stone-300">
+              <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <path d="m21 15-5-5L5 21" />
+              </svg>
+            </div>
+
+            <!-- Pin 1 — with floating annotation card. Visual 28px (w-7 h-7),
+                 hit area expanded to 44×44 via .pin-hit::before pseudo (FB-12).
+                 FB-17: tabindex=0 + aria-label naming FB id and normalized coords + aria-keyshortcuts="Enter" makes the pin keyboard-reachable. -->
+            <button type="button" tabindex="0"
+                    aria-label="Feedback FB-01 at 25% 30% — press Enter to view details"
+                    aria-keyshortcuts="Enter"
+                    data-fb-id="FB-01"
+                    class="pin-hit w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-stone-900"
+                    style="transform: translate(-50%, -50%); left: 25%; top: 30%;">1</button>
+            <div class="absolute z-20" style="left: calc(25% + 24px); top: calc(30% - 8px);">
+              <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer w-[240px]">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
+                    <span aria-hidden="true">&#x270E;</span> Annotation
+                  </span>
+                  <span class="flex-1"></span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
+                </div>
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Header alignment feels off</p>
+                <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-05 &middot; jwaldrip</p>
+              </div>
+            </div>
+
+            <!-- Pin 2 — 44×44 hit area via .pin-hit::before (FB-12); FB-17 keyboard reachable -->
+            <button type="button" tabindex="0"
+                    aria-label="Feedback FB-02 at 65% 55% — press Enter to view details"
+                    aria-keyshortcuts="Enter"
+                    data-fb-id="FB-02"
+                    class="pin-hit w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-stone-900"
+                    style="transform: translate(-50%, -50%); left: 65%; top: 55%;">2</button>
+
+            <!-- Pin 3 — 44×44 hit area via .pin-hit::before (FB-12); FB-17 keyboard reachable -->
+            <button type="button" tabindex="0"
+                    aria-label="Feedback FB-03 at 40% 75% — press Enter to view details"
+                    aria-keyshortcuts="Enter"
+                    data-fb-id="FB-03"
+                    class="pin-hit w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold cursor-pointer absolute z-10 bg-teal-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 dark:focus:ring-offset-stone-900"
+                    style="transform: translate(-50%, -50%); left: 40%; top: 75%;">3</button>
+          </div>
+        </div>
+
+      <!-- EXPANDED card example — showing full body visible -->
+      <div class="bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 p-4 mb-4">
+        <h2 class="text-lg font-semibold mb-3">Interaction States Reference</h2>
+        <p class="text-xs text-stone-500 dark:text-stone-400 mb-4">All card states shown below for reference.</p>
+
+          <div class="space-y-3">
+            <!-- Default / Collapsed -->
+            <div>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Default (collapsed)</p>
+              <div class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
+                    <span aria-hidden="true">&#x1F50D;</span> Review Agent
+                  </span>
+                  <span class="flex-1"></span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
+                </div>
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Missing null check in handleSubmit callback</p>
+                <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-03 &middot; Visit 1 &middot; adversarial-review</p>
+              </div>
+            </div>
+
+            <!-- Hover state -->
+            <div>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Hover (subtle lift + teal border)</p>
+              <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500 transition-all cursor-pointer" style="transform: translateY(-1px); box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
+                    <span aria-hidden="true">&#x1F916;</span> Agent
+                  </span>
+                  <span class="flex-1"></span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
+                </div>
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Consider extracting feedback validation into a shared module</p>
+                <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-06 &middot; Visit 2 &middot; agent</p>
+              </div>
+            </div>
+
+            <!-- Expanded state -->
+            <div>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Expanded (full body + action buttons)</p>
+              <div class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500 transition-all">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
+                    <span aria-hidden="true">&#x1F50D;</span> Review Agent
+                  </span>
+                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-bold leading-none bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">4x</span>
+                  <span class="flex-1"></span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
+                </div>
+                <p class="text-xs font-medium text-stone-700 dark:text-stone-300">Missing null check in handleSubmit callback</p>
+                <div class="prose prose-xs prose-gray dark:prose-invert max-w-none mt-2">
+                  <p class="text-xs text-stone-600 dark:text-stone-400">The <code>handleSubmit</code> function in <code>ReviewSidebar.tsx:84</code> calls <code>getAnnotations()</code> without checking if the result is undefined. When the user submits with no comments and no pins, this passes <code>undefined</code> to <code>submitDecision</code>, which then serializes it as the string <code>"undefined"</code> in the feedback payload.</p>
+                  <p class="text-xs text-stone-600 dark:text-stone-400">Add a guard: <code>const annotations = getAnnotations() ?? {}</code></p>
+                </div>
+                <p class="text-xs text-stone-600 dark:text-stone-300 mt-2">FB-03 &middot; Visit 1 &middot; adversarial-review</p>
+                <div class="flex gap-1 mt-2">
+                  <button class="text-xs font-medium px-2 py-1 rounded-md bg-stone-100 text-stone-700 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700 transition-colors">Dismiss</button>
+                  <button class="text-xs font-medium px-2 py-1 rounded-md bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40 transition-colors">Verify &amp; Close</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Addressed state -->
+            <div>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Addressed (blue left border + link)</p>
+              <div class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-gray-200 dark:border-gray-700 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
+                    <span aria-hidden="true">&#x1F517;</span> PR Comment
+                  </span>
+                  <span class="flex-1"></span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" aria-label="Status: addressed">addressed</span>
+                </div>
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Lifecycle transitions need validation guards</p>
+                <p class="text-xs text-blue-500 dark:text-blue-400 mt-1">Addressed by: unit-04-feedback-crud-api</p>
+                <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
+              </div>
+            </div>
+
+            <!-- Closed state -->
+            <div>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Closed (green border + checkmark glyph + "Closed" prefix — no opacity)</p>
+              <div class="fb-card-hover border-l-[3px] border-l-green-500 dark:border-l-green-400 p-2.5 rounded-lg bg-green-50/60 dark:bg-green-950/25 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer">
+                <div class="flex items-center gap-2 mb-1">
+                  <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-600 dark:bg-green-500 text-white text-xs font-bold leading-none">&check;</span>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
+                    <span aria-hidden="true">&#x270E;</span> Annotation
+                  </span>
+                  <span class="flex-1"></span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" aria-label="Status: closed">closed</span>
+                </div>
+                <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate"><span class="text-green-700 dark:text-green-400 font-semibold">Closed &middot;</span> Button spacing inconsistent on tablet</p>
+                <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-04 &middot; Visit 1 &middot; user-visual</p>
+              </div>
+            </div>
+
+            <!-- Rejected state -->
+            <div>
+              <p class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 mb-2">Rejected (stone border + X glyph + "Rejected" prefix + strikethrough at full opacity)</p>
+              <div class="fb-card-hover border-l-[3px] border-l-stone-400 dark:border-l-stone-500 p-2.5 rounded-lg bg-stone-100 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700 transition-all cursor-pointer">
+                <div class="flex items-center gap-2 mb-1">
+                  <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-stone-500 dark:bg-stone-400 text-white dark:text-stone-900 text-xs font-bold leading-none">&times;</span>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
+                    <span aria-hidden="true">&#x1F916;</span> Agent
+                  </span>
+                  <span class="flex-1"></span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-200" aria-label="Status: rejected">rejected</span>
+                </div>
+                <p class="text-xs font-medium text-stone-500 dark:text-stone-400 truncate"><span class="text-stone-600 dark:text-stone-300 font-semibold no-underline">Rejected &middot;</span> <span class="line-through decoration-stone-500 dark:decoration-stone-400">Consider using a state machine library</span></p>
+                <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-07 &middot; Visit 1 &middot; agent</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Review sidebar: sticky on desktop — <aside role="complementary" aria-label="Review sidebar"> (FB-35) -->
+    <div class="hidden lg:block w-80 xl:w-96 shrink-0">
+      <aside id="feedback-list"
+        role="complementary"
+        aria-label="Feedback list"
+        class="sticky top-20 bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 flex flex-col"
+        style="max-height: calc(100vh - 6rem); overflow-y: auto;">
+
+        <!-- Sidebar header with segmented control -->
+        <div class="shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm font-semibold text-stone-700 dark:text-stone-300">Review</h2>
+            <button class="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 focus-visible:ring-2 focus-visible:ring-teal-500">Clear all</button>
+          </div>
+
+          <!-- Segmented control: Feedback / Mine -->
+          <div class="flex border-b border-gray-200 dark:border-gray-700" role="tablist">
+            <button role="tab" aria-selected="true" class="border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 text-xs font-medium px-3 py-2 focus:ring-2 focus:ring-teal-500">
+              Feedback
+              <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">5</span>
+            </button>
+            <button role="tab" aria-selected="false" class="border-b-2 border-transparent text-gray-500 dark:text-gray-400 text-xs font-medium px-3 py-2 hover:text-gray-700 dark:hover:text-gray-200 focus:ring-2 focus:ring-teal-500">
+              Mine
+              <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-xs font-bold bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">2</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary bar with filter pills — role="group" wraps filter toggles; dots aria-hidden -->
+        <div class="shrink-0 px-3 py-2 bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2 flex-wrap" role="group" aria-label="Filter feedback by status">
+          <!-- FB-06 fix: active status-filter pill uses primary teal-600/white per DESIGN-BRIEF §3 line 617 + DESIGN-TOKENS §2.5 (was blue-100/blue-700, diverged from canonical) -->
+          <button aria-pressed="true" class="px-2 py-1 text-xs font-medium rounded-full bg-teal-600 text-white border border-transparent dark:bg-teal-500 dark:text-white dark:border-transparent transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">All</button>
+          <button aria-pressed="false" aria-label="Pending, 3 items" class="px-2 py-1 text-xs font-medium rounded-full border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:border-stone-300 dark:hover:border-stone-600 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+            <span aria-hidden="true" class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Pending
+            <span aria-hidden="true" class="ml-0.5 font-bold">3</span>
+          </button>
+          <button aria-pressed="false" aria-label="Addressed, 1 item" class="px-2 py-1 text-xs font-medium rounded-full border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:border-stone-300 dark:hover:border-stone-600 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+            <span aria-hidden="true" class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Addressed
+            <span aria-hidden="true" class="ml-0.5 font-bold">1</span>
+          </button>
+          <button aria-pressed="false" aria-label="Closed, 1 item" class="px-2 py-1 text-xs font-medium rounded-full border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:border-stone-300 dark:hover:border-stone-600 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+            <span aria-hidden="true" class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Closed
+            <span aria-hidden="true" class="ml-0.5 font-bold">1</span>
+          </button>
+        </div>
+
+        <!--
+          Feedback list (scrollable) — native <ul class="list-none"> + <li> per
+          unit-31 / FB-148 (aria-landmark-spec.md §2). Native list semantics are
+          more robust across AT than role="list" / role="listitem": no role-
+          flattening edge cases, list-count announcement ("5 items in a list")
+          and arrow-key list-navigation work consistently in VoiceOver, NVDA,
+          and JAWS. Mobile feedback-inline-mobile.html:274 matches — desktop
+          parity with FB-148 closes on this wrapper.
+        -->
+        <ul class="flex-1 overflow-y-auto p-3 space-y-2 list-none" aria-label="Feedback items">
+
+          <!-- Group: Current Visit -->
+          <div class="flex items-center gap-2 px-1 py-1">
+            <span class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300">Current Visit</span>
+            <div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
+          </div>
+
+          <!-- Pending item 1 -->
+          <li class="list-none"><div tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
+                <span aria-hidden="true">&#x1F50D;</span> Review Agent
+              </span>
+              <span class="flex-1"></span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
+            </div>
+            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Missing null check in handleSubmit</p>
+            <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-03 &middot; Visit 2 &middot; adversarial-review</p>
+          </div>
+
+          <!-- Pending item 2 -->
+          <li class="list-none"><div tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
+                <span aria-hidden="true">&#x270E;</span> Annotation
+              </span>
+              <span class="flex-1"></span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
+            </div>
+            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Header alignment feels off on the pin card</p>
+            <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-05 &middot; Visit 2 &middot; jwaldrip</p>
+          </div>
+
+          <!-- Pending item 3 (agent) -->
+          <li class="list-none"><div tabindex="0" class="fb-card-hover border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
+                <span aria-hidden="true">&#x1F916;</span> Agent
+              </span>
+              <span class="flex-1"></span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
+            </div>
+            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Consider extracting feedback validation</p>
+            <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-06 &middot; Visit 2 &middot; agent</p>
+          </div>
+
+          <!-- Group: Visit 1 -->
+          <div class="flex items-center gap-2 px-1 py-1 mt-3">
+            <span class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300">Visit 1</span>
+            <div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
+          </div>
+
+          <!-- Addressed item -->
+          <li class="list-none"><div tabindex="0" class="fb-card-hover border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
+                <span aria-hidden="true">&#x1F517;</span> PR Comment
+              </span>
+              <span class="flex-1"></span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" aria-label="Status: addressed">addressed</span>
+            </div>
+            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">Lifecycle transitions need validation guards</p>
+            <p class="text-xs text-blue-500 dark:text-blue-400 mt-1">Addressed by: unit-04-feedback-crud-api</p>
+            <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
+          </div>
+
+          <!-- Closed item -->
+          <div role="listitem" tabindex="0" class="fb-card-hover border-l-[3px] border-l-green-500 dark:border-l-green-400 p-2.5 rounded-lg bg-green-50/60 dark:bg-green-950/25 border border-stone-200 dark:border-stone-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+            <div class="flex items-center gap-2 mb-1">
+              <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-600 dark:bg-green-500 text-white text-xs font-bold leading-none">&check;</span>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
+                <span aria-hidden="true">&#x270E;</span> Annotation
+              </span>
+              <span class="flex-1"></span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" aria-label="Status: closed">closed</span>
+            </div>
+            <p class="text-xs font-medium text-stone-700 dark:text-stone-300 truncate"><span class="text-green-700 dark:text-green-400 font-semibold">Closed &middot;</span> Button spacing inconsistent on tablet</p>
+            <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-04 &middot; Visit 1 &middot; user-visual</p>
+          </div>
+        </div>
+
+        <!-- Footer: general comment + decision buttons -->
+        <div class="shrink-0 border-t border-stone-200 dark:border-stone-700 p-3 space-y-3 bg-stone-50/50 dark:bg-stone-800/50">
+          <div>
+            <label for="sidebar-general-comment" class="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">General comment</label>
+            <textarea id="sidebar-general-comment"
+                      class="w-full text-sm p-2 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 focus-visible:border-teal-500 focus:outline-none resize-y" rows="3" placeholder="Leave a general comment..."></textarea>
+          </div>
+          <div class="flex gap-2">
+            <button class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200 disabled:cursor-not-allowed">
+              Approve
+            </button>
+            <button class="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 disabled:bg-amber-200 disabled:text-amber-900 dark:disabled:bg-amber-900/40 dark:disabled:text-amber-200 disabled:cursor-not-allowed">
+              Request Changes
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!--
+    Live regions for screen reader announcements (FB-26 aria-live sequencing).
+    See aria-live-sequencing-spec.md for the three-phase announcement template per transition.
+    Separate polite/assertive nodes so in-flight "marking…" text is not overwritten before readout.
+  -->
+  <div id="feedback-live-polite" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+  <div id="feedback-live-assertive" role="alert" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
+</body>
+</html>

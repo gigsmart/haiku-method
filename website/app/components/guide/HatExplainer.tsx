@@ -70,7 +70,8 @@ export function HatExplainer() {
 						<li>What the agent MUST NOT do (boundaries)</li>
 						<li>Quality gates it must pass before finishing</li>
 						<li>
-							When to call <code className="text-green-500">/haiku:advance</code> or{" "}
+							When to call{" "}
+							<code className="text-green-500">/haiku:advance</code> or{" "}
 							<code className="text-rose-500">/haiku:fail</code>
 						</li>
 					</ul>
@@ -97,7 +98,11 @@ function Step({
 	num,
 	title,
 	desc,
-}: { num: number; title: string; desc: string }) {
+}: {
+	num: number
+	title: string
+	desc: string
+}) {
 	return (
 		<div className="flex w-full max-w-md items-center gap-3.5 rounded-lg border border-amber-200/40 bg-amber-50/40 p-3.5 dark:border-amber-700/25 dark:bg-amber-950/10">
 			<span className="flex h-7 w-7 min-w-[1.75rem] items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-stone-900">

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>H·AI·K·U Review</title>
+  <script>
+    // No-FOUC theme bootstrap. Reads the same localStorage key the
+    // ThemeToggle component uses (haiku-review-theme) and applies the `dark`
+    // class to <html> synchronously, before React mounts. See App.tsx for
+    // the post-mount side of this contract (matchMedia listener for live
+    // system-preference updates when no explicit choice is stored).
+    (() => {
+      try {
+        var stored = localStorage.getItem("haiku-review-theme");
+        var isDark =
+          stored === "dark" ||
+          (!stored &&
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (isDark) document.documentElement.classList.add("dark");
+      } catch (_e) {
+        /* localStorage denied — safe to ignore; light mode renders by default */
+      }
+    })();
+  </script>
+</head>
+<body class="bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 min-h-screen transition-colors">
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

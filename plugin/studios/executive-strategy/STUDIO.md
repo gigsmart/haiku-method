@@ -3,6 +3,7 @@ name: executive-strategy
 description: Executive decision-making and strategic planning lifecycle
 stages: [landscape, options, evaluate, decide, communicate]
 category: back-office
+default_model: sonnet
 ---
 
 # Executive Strategy Studio

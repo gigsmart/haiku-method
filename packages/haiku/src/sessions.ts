@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events"
+import { newSessionId } from "./session-id.js"
 
 const sessionEvents = new EventEmitter()
 // Prevent warnings when many sessions are active concurrently
@@ -7,10 +8,16 @@ sessionEvents.setMaxListeners(200)
 // ─── Presence / heartbeat tracking ───────────────────────────────────
 // Browser clients HEAD /api/session/:id/heartbeat every 10s. If no
 // heartbeat arrives within HEARTBEAT_GRACE_MS we mark the session as
-// disconnected and wake up any waiting handler so it can reopen the
-// browser or bail out. This replaces the WebSocket-based presence
-// detection that didn't work across tunnel proxies.
-const HEARTBEAT_GRACE_MS = 25_000
+// disconnected and wake up any waiting handler so it can react.
+//
+// Grace is deliberately generous (2 min) because modern browsers
+// aggressively throttle setInterval in backgrounded tabs — Chrome can
+// drop the effective heartbeat cadence to once per minute or slower
+// when a tab loses focus. A tighter grace causes spurious presence-lost
+// events on alive-but-backgrounded tabs, which previously triggered a
+// browser re-open loop that orphaned in-progress comments on the
+// original tab.
+const HEARTBEAT_GRACE_MS = 120_000
 const HEARTBEAT_SWEEP_INTERVAL = 5_000
 const lastHeartbeatAt = new Map<string, number>()
 const presenceLost = new Set<string>()
@@ -78,23 +85,49 @@ export function notifySessionUpdate(sessionId: string): void {
 
 /**
  * Await a session status change. Resolves when notifySessionUpdate is called
- * for the given session, or rejects on timeout.
+ * for the given session, rejects on timeout, or rejects if `signal` aborts.
+ *
+ * Signal support is how tool cancellation propagates — when the MCP
+ * client cancels an in-flight tool call, its abort signal fires; the
+ * handler's finally block needs to unwind promptly so the session can
+ * be cleaned up. Without signal support the handler would spin inside
+ * this promise for the full 30-minute timeout.
  */
 export function waitForSession(
 	sessionId: string,
 	timeoutMs: number = 30 * 60 * 1000,
+	signal?: AbortSignal,
 ): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const timer = setTimeout(() => {
 			sessionEvents.removeListener(`session:${sessionId}`, handler)
+			signal?.removeEventListener("abort", onAbort)
 			reject(new Error("Session timeout"))
 		}, timeoutMs)
 
 		function handler() {
 			clearTimeout(timer)
+			signal?.removeEventListener("abort", onAbort)
 			resolve()
 		}
 
+		function onAbort() {
+			clearTimeout(timer)
+			sessionEvents.removeListener(`session:${sessionId}`, handler)
+			reject(
+				new Error(
+					`Session wait aborted${signal?.reason ? `: ${String(signal.reason)}` : ""}`,
+				),
+			)
+		}
+
+		if (signal?.aborted) {
+			clearTimeout(timer)
+			reject(new Error("Session wait aborted before start"))
+			return
+		}
+
+		signal?.addEventListener("abort", onAbort, { once: true })
 		sessionEvents.once(`session:${sessionId}`, handler)
 	})
 }
@@ -105,6 +138,14 @@ export interface ReviewAnnotations {
 	comments?: Array<{ selectedText: string; comment: string; paragraph: number }>
 }
 
+/** Snapshot of a decided review for delta comparison on the next re-review. */
+export interface PreviousReviewSnapshot {
+	feedback: string
+	reviewedAt: string
+	intentRawContent: string
+	unitRawContents: Record<string, string>
+}
+
 export interface ReviewSession {
 	session_type: "review"
 	session_id: string
@@ -113,11 +154,27 @@ export interface ReviewSession {
 	review_type: "intent" | "unit"
 	target: string
 	status: "pending" | "approved" | "changes_requested" | "decided"
+	/** Ad-hoc sessions are opened on-demand via `haiku_review_open` (not a
+	 *  gate). The UI hides Approve, swaps the primary button to
+	 *  Done/Close (no feedback) or Request Changes (with feedback), and
+	 *  shows an "Ad-hoc review" badge in the header. The FSM does not
+	 *  treat an ad-hoc session's status as a gate decision — durable
+	 *  feedback left on the session routes through the usual fix-loop on
+	 *  the next `run_next`. */
+	ad_hoc?: boolean
+	/** For ad-hoc sessions: the stage the reviewer was browsing when the
+	 *  pane was opened. Used so the session-scoped URL can land on the
+	 *  right stage without guessing. */
+	stage?: string
 	decision: string
 	feedback: string
 	annotations?: ReviewAnnotations
 	gate_type?: string
 	html: string
+	/** If this review follows a prior changes_requested decision for the same
+	 *  intent, a snapshot of the prior review's content is attached here so
+	 *  the SPA can render a delta and show the previous feedback. */
+	previousReview?: PreviousReviewSnapshot
 	/** Parsed data for the SPA — stored at session creation so /api/session can return it */
 	parsedIntent?: unknown
 	parsedUnits?: unknown[]
@@ -211,28 +268,71 @@ const sessions = new Map<
 	ReviewSession | QuestionSession | DesignDirectionSession
 >()
 
+// ─── Previous-review snapshots (for re-review delta) ────────────────
+// Keyed by intent_dir absolute path. When a review ends in
+// changes_requested, we stash the intent/unit content the user just saw so
+// that the next review session for the same intent can attach it and render
+// a delta. Cleared on approved/external decisions.
+const previousReviewByIntentDir = new Map<string, PreviousReviewSnapshot>()
+
+export function getPreviousReviewSnapshot(
+	intentDir: string,
+): PreviousReviewSnapshot | undefined {
+	return previousReviewByIntentDir.get(intentDir)
+}
+
+export function setPreviousReviewSnapshot(
+	intentDir: string,
+	snapshot: PreviousReviewSnapshot,
+): void {
+	previousReviewByIntentDir.set(intentDir, snapshot)
+}
+
+export function clearPreviousReviewSnapshot(intentDir: string): void {
+	previousReviewByIntentDir.delete(intentDir)
+}
+
 // Cap total in-memory sessions and apply a 30-minute TTL to prevent unbounded growth
 const MAX_SESSIONS = 100
 const SESSION_TTL_MS = 30 * 60 * 1000
 const sessionCreatedAt = new Map<string, number>()
+
+/** Drop the previous-review snapshot for an intent_dir if no remaining
+ *  review session still references that intent. Called when a review
+ *  session is evicted so abandoned snapshots don't pile up. */
+function maybeClearOrphanedSnapshot(intentDir: string): void {
+	if (!previousReviewByIntentDir.has(intentDir)) return
+	for (const s of sessions.values()) {
+		if (s.session_type === "review" && s.intent_dir === intentDir) return
+	}
+	previousReviewByIntentDir.delete(intentDir)
+}
 
 function evictSessions(): void {
 	const now = Date.now()
 	// Evict expired sessions
 	for (const [id, ts] of sessionCreatedAt) {
 		if (now - ts > SESSION_TTL_MS) {
+			const evicted = sessions.get(id)
 			sessions.delete(id)
 			sessionCreatedAt.delete(id)
 			clearHeartbeat(id)
+			if (evicted?.session_type === "review") {
+				maybeClearOrphanedSnapshot(evicted.intent_dir)
+			}
 		}
 	}
 	// If still over cap, evict oldest
 	while (sessions.size >= MAX_SESSIONS) {
 		const oldest = sessionCreatedAt.entries().next().value
 		if (!oldest) break
+		const evicted = sessions.get(oldest[0])
 		sessions.delete(oldest[0])
 		sessionCreatedAt.delete(oldest[0])
 		clearHeartbeat(oldest[0])
+		if (evicted?.session_type === "review") {
+			maybeClearOrphanedSnapshot(evicted.intent_dir)
+		}
 	}
 }
 
@@ -243,7 +343,7 @@ export function createSession(
 	>,
 ): ReviewSession {
 	evictSessions()
-	const session_id = crypto.randomUUID()
+	const session_id = newSessionId()
 	const session: ReviewSession = {
 		...params,
 		session_type: "review",
@@ -264,7 +364,7 @@ export function createQuestionSession(
 	> & { imagePaths?: string[] },
 ): QuestionSession {
 	evictSessions()
-	const session_id = crypto.randomUUID()
+	const session_id = newSessionId()
 	const session: QuestionSession = {
 		...params,
 		session_type: "question",
@@ -286,7 +386,7 @@ export function createDesignDirectionSession(
 	>,
 ): DesignDirectionSession {
 	evictSessions()
-	const session_id = crypto.randomUUID()
+	const session_id = newSessionId()
 	const session: DesignDirectionSession = {
 		...params,
 		session_type: "design_direction",
@@ -305,6 +405,20 @@ export function getSession(
 	return sessions.get(sessionId)
 }
 
+/**
+ * Drop a session from the in-memory registry. Callers should use this
+ * when the session's purpose is complete (tool call returned, user
+ * abandoned the review, MCP process shutting down) so subsequent
+ * `getSession` lookups return 404 and the SPA's polling fallback
+ * transitions to the session-ended overlay on reload.
+ */
+export function deleteSession(sessionId: string): boolean {
+	const had = sessions.delete(sessionId)
+	sessionCreatedAt.delete(sessionId)
+	clearHeartbeat(sessionId)
+	return had
+}
+
 export function updateSession(
 	sessionId: string,
 	updates: Partial<
@@ -314,6 +428,40 @@ export function updateSession(
 	const session = sessions.get(sessionId)
 	if (!session || session.session_type !== "review") return undefined
 	Object.assign(session, updates)
+
+	// When the user requests changes, stash a snapshot of the content they
+	// just reviewed, keyed by intent_dir, so the NEXT review session for the
+	// same intent can attach it as `previousReview` and render a delta. On
+	// any other terminal decision, drop any prior snapshot so we don't show
+	// a stale "previous review" banner.
+	//
+	// Ad-hoc sessions skip snapshot stashing/clearing entirely — their
+	// decision is a UX signal (Done / Request Changes) not a gate
+	// outcome, so they must not disturb the next gate review's delta.
+	if (updates.status === "decided" && !session.ad_hoc) {
+		if (session.decision === "changes_requested") {
+			const intent = session.parsedIntent as { rawContent?: string } | undefined
+			const units =
+				(session.parsedUnits as
+					| Array<{ slug?: string; rawContent?: string }>
+					| undefined) ?? []
+			const unitRawContents: Record<string, string> = {}
+			for (const u of units) {
+				if (u?.slug && typeof u.rawContent === "string") {
+					unitRawContents[u.slug] = u.rawContent
+				}
+			}
+			setPreviousReviewSnapshot(session.intent_dir, {
+				feedback: session.feedback ?? "",
+				reviewedAt: new Date().toISOString(),
+				intentRawContent: intent?.rawContent ?? "",
+				unitRawContents,
+			})
+		} else {
+			clearPreviousReviewSnapshot(session.intent_dir)
+		}
+	}
+
 	notifySessionUpdate(sessionId)
 	return session
 }

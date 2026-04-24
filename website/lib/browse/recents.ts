@@ -13,12 +13,16 @@ export function getRecents(): RecentRepo[] {
 	if (typeof window === "undefined") return []
 	try {
 		return JSON.parse(localStorage.getItem(RECENTS_KEY) || "[]")
-	} catch { return [] }
+	} catch {
+		return []
+	}
 }
 
 export function addRecent(host: string, project: string, branch?: string) {
 	const b = branch || ""
-	const recents = getRecents().filter(r => !(r.host === host && r.project === project && r.branch === b))
+	const recents = getRecents().filter(
+		(r) => !(r.host === host && r.project === project && r.branch === b),
+	)
 	recents.unshift({
 		host,
 		project,

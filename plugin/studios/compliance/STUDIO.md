@@ -3,6 +3,7 @@ name: compliance
 description: Regulatory compliance lifecycle for audits, certifications, and policy management
 stages: [scope, assess, remediate, document, certify]
 category: back-office
+default_model: sonnet
 ---
 
 # Compliance Studio

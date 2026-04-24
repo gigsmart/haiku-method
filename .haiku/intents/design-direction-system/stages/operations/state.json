@@ -1,1 +1,9 @@
-{"stage":"operations","status":"completed","phase":"gate","started_at":"2026-03-31T22:08:00Z","completed_at":"2026-04-01T13:21:44Z","gate_entered_at":null,"gate_outcome":"advanced"}
+{
+	"stage": "operations",
+	"status": "completed",
+	"phase": "gate",
+	"started_at": "2026-03-31T22:08:00Z",
+	"completed_at": "2026-04-01T13:21:44Z",
+	"gate_entered_at": null,
+	"gate_outcome": "advanced"
+}

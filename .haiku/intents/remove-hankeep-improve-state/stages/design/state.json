@@ -1,1 +1,9 @@
-{"stage":"design","status":"completed","phase":"gate","started_at":"2026-03-14T18:25:47Z","completed_at":"2026-03-27T23:54:07Z","gate_entered_at":null,"gate_outcome":"advanced"}
+{
+	"stage": "design",
+	"status": "completed",
+	"phase": "gate",
+	"started_at": "2026-03-14T18:25:47Z",
+	"completed_at": "2026-03-27T23:54:07Z",
+	"gate_entered_at": null,
+	"gate_outcome": "advanced"
+}

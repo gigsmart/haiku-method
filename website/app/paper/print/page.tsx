@@ -1,10 +1,10 @@
-import { getMainPaper } from "@/lib/papers"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import ReactMarkdown from "react-markdown"
 import rehypeHighlight from "rehype-highlight"
 import rehypeSlug from "rehype-slug"
 import remarkGfm from "remark-gfm"
+import { getMainPaper } from "@/lib/papers"
 import { PrintButton } from "./PrintButton"
 
 export const metadata: Metadata = {

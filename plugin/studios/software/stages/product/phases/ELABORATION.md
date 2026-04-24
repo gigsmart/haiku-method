@@ -21,3 +21,4 @@ When generating criteria for this stage, focus on behavioral verification:
 Product criteria are verified by **behavioral testing** — automated tests that verify the system behaves as specified.
 
 Bad criteria: "Works correctly", "Handles errors", "Data is validated"
+

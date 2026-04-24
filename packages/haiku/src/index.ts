@@ -1,43 +1,40 @@
-export type {
-	IntentGit,
-	IntentFrontmatter,
-	UnitFrontmatter,
-	StageState,
-	DiscoveryFrontmatter,
-	Section,
-	CriterionItem,
-	ParsedIntent,
-	ParsedUnit,
-	ParsedDiscovery,
-	DAGNode,
-	DAGEdge,
-	DAGGraph,
-} from "./types.js"
-
-export {
-	markdownToHtml,
-	extractSections,
-	parseCriteria,
-} from "./markdown.js"
-
-export {
-	parseIntent,
-	parseUnit,
-	parseAllUnits,
-	parseDiscovery,
-	listIntents,
-	parseStageStates,
-	parseKnowledgeFiles,
-	parseStageArtifacts,
-	parseOutputArtifacts,
-} from "./parser.js"
-
-export type { OutputArtifact } from "./parser.js"
-
 export {
 	buildDAG,
-	topologicalSort,
-	getReadyUnits,
 	computeWaves,
+	getReadyUnits,
 	toMermaidDefinition,
+	topologicalSort,
 } from "./dag.js"
+
+export {
+	extractSections,
+	markdownToHtml,
+	parseCriteria,
+} from "./markdown.js"
+export type { OutputArtifact } from "./parser.js"
+export {
+	listIntents,
+	parseAllUnits,
+	parseDiscovery,
+	parseIntent,
+	parseKnowledgeFiles,
+	parseOutputArtifacts,
+	parseStageArtifacts,
+	parseStageStates,
+	parseUnit,
+} from "./parser.js"
+export type {
+	CriterionItem,
+	DAGEdge,
+	DAGGraph,
+	DAGNode,
+	DiscoveryFrontmatter,
+	IntentFrontmatter,
+	IntentGit,
+	ParsedDiscovery,
+	ParsedIntent,
+	ParsedUnit,
+	Section,
+	StageState,
+	UnitFrontmatter,
+} from "./types.js"

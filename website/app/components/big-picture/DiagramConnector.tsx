@@ -21,7 +21,7 @@ export function DiagramConnector({
 	const fromNode = nodes.get(connector.from)
 	const toNode = nodes.get(connector.to)
 
-	if (!fromNode || !toNode) return null
+	if (!(fromNode && toNode)) return null
 
 	// Calculate connection points
 	const fromX = fromNode.x + fromNode.width / 2

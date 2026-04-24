@@ -1,0 +1,25 @@
+{
+	"session_id": "test-question-1",
+	"session_type": "question",
+	"status": "pending",
+	"title": "Which direction should we explore?",
+	"context": "Our research surfaced several candidate palettes. Pick the one that best matches the mood in the brief.",
+	"questions": [
+		{
+			"question": "Which palette should we prototype first?",
+			"header": "Pick exactly one option below.",
+			"options": [
+				"Warm earth tones",
+				"Cool blues",
+				"High-contrast mono",
+				"Muted pastels",
+				"Vivid accent"
+			],
+			"multiSelect": false
+		}
+	],
+	"image_urls": [
+		"https://example.test/images/palette-a.png",
+		"https://example.test/images/palette-b.png"
+	]
+}

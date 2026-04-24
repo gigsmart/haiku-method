@@ -1,0 +1,55 @@
+{
+  "_notes": [
+    "Seed alias file for audit-scenario-coverage.mjs (FB-59 fix).",
+    "Keys are '<feature-file>::<Scenario Title>'. Values in `aliases` are",
+    "canonical test-name substrings that will be bidirectionally-substring-",
+    "matched against the combined backend+frontend test corpus. Use this",
+    "when a scenario's prose title legitimately diverges from the test",
+    "name (e.g., scenarios worded as HTTP-contract prose map to tests",
+    "worded as Node assertion sentences).",
+    "",
+    "`ignore` explicitly excludes scenarios that are spec-only (prose or",
+    "aspirational). Each entry MUST carry a justification in `_ignore_reasons`.",
+    "Reviewers should challenge the ignore-list size on every visit; the",
+    "default expectation is an empty list."
+  ],
+  "aliases": {
+    "review-ui-feedback.feature::GET /api/feedback/{intent}/{stage} returns existing feedback items": [
+      "returns all feedback items for a stage",
+      "feedback list endpoint"
+    ],
+    "review-ui-feedback.feature::POST /api/feedback/{intent}/{stage} creates a feedback file": [
+      "creates feedback item and returns 201"
+    ],
+    "review-ui-feedback.feature::PUT /api/feedback/{intent}/{stage}/{id} updates a feedback item": [
+      "updates status field and returns 200",
+      "updates closed_by field"
+    ],
+    "review-ui-feedback.feature::DELETE /api/feedback/{intent}/{stage}/{id} removes a feedback file": [
+      "DELETE returns 200 for non-pending feedback"
+    ],
+    "review-ui-feedback.feature::POST /api/feedback with missing title returns 400": [
+      "POST returns 400 for missing title"
+    ],
+    "review-ui-feedback.feature::PUT /api/feedback for non-existent feedback ID returns 404": [
+      "PUT returns 404 for nonexistent feedback id"
+    ],
+    "review-ui-feedback.feature::DELETE /api/feedback on a pending item returns 409": [
+      "DELETE returns 409 for pending feedback"
+    ],
+    "review-ui-feedback.feature::PUT /api/feedback with invalid status value returns 400": [
+      "PUT returns 400 for no updatable fields"
+    ],
+    "review-ui-feedback.feature::GET /api/feedback for a stage with no feedback directory returns empty array": [
+      "returns empty for status=closed when none exist"
+    ],
+    "review-ui-feedback.feature::Reviewer rejects agent-authored feedback via the review UI": [
+      "rejects agent-authored feedback with reason"
+    ],
+    "review-ui-feedback.feature::Reviewer closes human-authored feedback via the review UI": [
+      "human can close human-authored feedback via PUT"
+    ]
+  },
+  "ignore": [],
+  "_ignore_reasons": {}
+}

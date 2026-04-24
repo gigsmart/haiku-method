@@ -100,8 +100,8 @@ export default function TemplatesPage() {
 		<div className="mx-auto max-w-4xl px-4 py-12">
 			<h1 className="mb-4 text-4xl font-bold tracking-tight">Templates</h1>
 			<p className="mb-8 text-lg text-stone-600 dark:text-stone-400">
-				Downloadable templates to help you get started with H·AI·K·U. Use these as
-				starting points for your own intents and units.
+				Downloadable templates to help you get started with H·AI·K·U. Use these
+				as starting points for your own intents and units.
 			</p>
 
 			<section className="mb-12">
@@ -129,8 +129,8 @@ export default function TemplatesPage() {
 			<section className="rounded-lg border border-stone-200 bg-stone-50 p-6 dark:border-stone-800 dark:bg-stone-900">
 				<h2 className="mb-4 text-xl font-bold">Quick Setup</h2>
 				<p className="mb-4 text-stone-600 dark:text-stone-400">
-					Create your <code>.haiku/</code> directory and download templates
-					with these commands:
+					Create your <code>.haiku/</code> directory and download templates with
+					these commands:
 				</p>
 				<div className="overflow-x-auto rounded-lg bg-stone-900 p-4 font-mono text-sm text-stone-100 dark:bg-stone-950">
 					<pre>{`# Create directory structure
