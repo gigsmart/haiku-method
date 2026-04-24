@@ -81,7 +81,7 @@ Three trust boundaries not fully characterized in unit-01 are now documented:
 | CORS allow-list collapses to empty/unmatched origin under `HAIKU_REMOTE_REVIEW=1` with empty `siteUrl` (FB-12 / I1a) | LOW | Fail-closed — not an info-disclosure vector. Mitigation: startup warning naming `HAIKU_REVIEW_ALLOWED_ORIGINS` and `HAIKU_REVIEW_SITE_URL`. Scoped to blue-team fix-hat bolt 2. |
 | WebSocket draft loss before submission | LOW | v2: debounced persistence |
 | No visits cap | LOW | v2: max_visits threshold |
-| gray-matter YAML parsing (prototype pollution) | LOW | Pin to js-yaml >= 4.x; run npm audit in CI |
+| gray-matter YAML parsing (prototype pollution) | LOW | `gray-matter@4.0.3` (direct pin verified in `packages/haiku/package.json` and `website/package.json`) pulls transitive `js-yaml@3.14.2` — latest 3.x. gray-matter 4.x has not migrated to js-yaml 4.x; no upgrade path exists until a hypothetical gray-matter 5.x. `npm audit` in CI is **NOT yet wired** (`.github/workflows/ci.yml` has only `lint` + `test` jobs); tracked as open follow-up — see `threat-model-expanded.md` SC-1 mitigation #3. |
 | Insider threat via direct filesystem access | ACCEPTED | Developer tool; git trail detects; out of scope v1 |
 
 ### Expanded Test Coverage Verified

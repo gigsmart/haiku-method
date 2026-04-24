@@ -17,8 +17,11 @@ The implementation revealed three trust boundaries not fully characterized in un
 | SPA ↔ HTTP server (local) | HTTP server process | Browser / review app | Loopback only; no auth in local mode |
 | Tunnel proxy ↔ HTTP server | HTTP server JWT verification | External network (proxied tunnel) | HAIKU_REMOTE_REVIEW=1; JWT + JWT-claim session binding |
 | Subagent ↔ MCP server | MCP server process | Claude Task subagents | Subagents have full MCP tool access by inheritance |
-| HTTP server ↔ filesystem | Filesystem (git-tracked) | HTTP handler code | All writes must go through writeFeedbackFile, not raw fs |
+| HTTP server ↔ filesystem (writes) | Filesystem (git-tracked) | HTTP handler code | All writes must go through writeFeedbackFile, not raw fs |
+| HTTP server ↔ filesystem (attachment reads) | Filesystem under `feedbackRoot` | Caller-supplied `filename` on `/api/feedback-attachment/:intent/:stage/:filename` (E4) | `intent`/`stage` via `isValidSlug`; `filename` via whitelist regex + `serveUnderRoot` realpath escape check. Regex alone is insufficient (permits `foo.bar.png`); realpath is the authoritative traversal guard. |
 | Additive elaborate ↔ FSM state | FSM orchestrator | Agent-supplied `closes:` claims | Agent claims to close feedback; FSM validates independently |
+
+See base `THREAT-MODEL.md §0` for the full entry-point inventory (E1–E4 + MCP tools) with per-endpoint validation chains.
 
 ---
 
@@ -48,6 +51,8 @@ The implementation revealed three trust boundaries not fully characterized in un
 
 #### S2: Review SPA identity spoofing — any browser can POST feedback as "user"
 **Threat:** Since HTTP feedback endpoints use hardcoded `author: "user"` and `author_type: "human"` for the review UI context, a malicious actor who can reach the HTTP server can POST feedback that appears to be human-authored. In local mode (no tunnel), any process on the developer's machine can do this.
+
+**Scope note on `author` vs `author_type`:** The `FeedbackCreateRequestSchema` (packages/haiku-api/src/schemas/feedback.ts:116-123) exposes an optional client-supplied `author` free-text string, which the handler at `http.ts:1522-1530` intentionally **discards** and replaces with the literal `"user"`. The security-bearing field is `author_type` (server-derived from `origin`), not `author`. S2 focuses on `author_type`-bearing spoofing because it drives enforcement guards. The `author` field is covered separately in the trust-boundary discussion in unit-01 `THREAT-MODEL.md` §1/S — treat it as untrusted display-only input that is deliberately suppressed at the boundary. Any future change wiring `parsed.data.author` through without server-side derivation must be flagged as a regression of that mitigation; it would corrupt audit-trail display (git commit messages, review UI attribution) even though it would not bypass the `author_type`-gated close/delete guards.
 
 **Likelihood:** Low (local-only in default mode; attacker needs machine access)
 **Impact:** High (human-authored feedback cannot be closed by agents — creates irremovable gate blockers)
@@ -130,6 +135,29 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 ---
 
 ### I — Information Disclosure (Extended)
+
+#### I0: Attachment endpoint path traversal via `filename` param
+**Threat:** `/api/feedback-attachment/:intent/:stage/:filename` (E4) reads a binary file from `.haiku/intents/{intent}/stages/{stage}/feedback/{filename}` based on a caller-supplied `filename`. If validation is insufficient, an attacker could read arbitrary files on the host (e.g. `../../../../etc/passwd`, SSH keys, other intents' secrets).
+
+**Likelihood:** Low (requires reaching the HTTP server + passing tunnel JWT in remote mode)
+**Impact:** High (arbitrary file read under the user account running the MCP server)
+
+**Mitigation (layered, see base `THREAT-MODEL.md §3b`):**
+1. `requireTunnelAuth` gates access when `HAIKU_REMOTE_REVIEW=1` — no unauthenticated reader in tunnel mode.
+2. `isValidSlug(intent)` and `isValidSlug(stage)` reject `..`, `/`, `\` in those URL segments.
+3. Whitelist regex on `filename`: `^[A-Za-z0-9._-]+\.(png|jpg|jpeg|webp|svg)$`. Rejects path separators and non-image extensions outright.
+4. `serveUnderRoot(reply, feedbackRoot, filename)` joins under `feedbackRoot`, calls `fs.realpath`, and refuses to serve if the resolved path escapes `feedbackRoot`. This is the authoritative traversal guard — symlinks, case-folding quirks, and regex-permitted oddities like `foo.bar.png` are all handled correctly because realpath fails closed.
+
+**Known regex oddity:** The regex permits filenames with multiple dots in the stem (e.g. `foo.bar.png`). This is harmless because (a) `writeFeedbackFile` is the only writer under `feedbackRoot` and it controls the basename via `slugifyTitle`, so attacker-controlled multi-dot names never land there, and (b) even if one did, realpath resolution would succeed only for a file actually under `feedbackRoot`.
+
+**Verification evidence:**
+- `http.ts:1463-1488` — regex + `serveUnderRoot` chain.
+- `serveUnderRoot` realpath escape check rejects resolved paths outside `feedbackRoot`.
+- `isValidSlug` tests cover `..`, `/`, `\` rejection for the path segments that carry it.
+
+**Status:** Mitigated. Realpath is the security boundary; regex is a cheap upstream filter.
+
+---
 
 #### I1: CORS wildcard in tunnel mode leaks review UI content to any origin
 **Threat:** When `HAIKU_REMOTE_REVIEW=1` and no `allowedOrigins` is configured, the CORS header `Access-Control-Allow-Origin: *` could be returned, allowing any web page to cross-fetch review session data including feedback content.
@@ -300,13 +328,28 @@ Two failure modes follow:
 
 **Risk:** YAML parsing vulnerabilities (prototype pollution, DoS on large files).
 
+**Verified installed versions (as of 2026-04-23):**
+- Direct dependency: `gray-matter@4.0.3` declared in `packages/haiku/package.json` and `website/package.json` (caret pin `^4.0.3`) — resolved to `4.0.3` in `package-lock.json` (entry `node_modules/gray-matter`).
+- Transitive chain via `gray-matter@4.0.3` (`package-lock.json` entry `node_modules/gray-matter` -> dependencies):
+  - `js-yaml@^3.13.1` -> resolved to `js-yaml@3.14.2` (`node_modules/js-yaml`).
+  - `kind-of@^6.0.2` -> resolved via `node_modules/kind-of`.
+  - `strip-bom-string@^1.0.0` -> resolved via `node_modules/strip-bom-string`.
+  - `section-matter@^1.0.0` -> resolved via `node_modules/section-matter`.
+- The `website` package separately depends on `js-yaml@^4.1.1` (resolved to `js-yaml@4.1.1` at `website/node_modules/js-yaml`) for its own use — that is NOT the copy gray-matter loads.
+
 **Assessment:**
-- Widely-used, actively maintained library. No known critical CVEs.
-- Input is always local files from trusted write paths.
+- Widely-used, actively maintained library. No known critical CVEs against `gray-matter@4.0.3` or `js-yaml@3.14.2` at the time of this review.
+- gray-matter 4.0.3 is the current latest release (no 5.x exists); it has not bumped its `js-yaml` dependency to 4.x. An earlier version of this threat model incorrectly asserted "pin to a version using js-yaml >= 4.x" as an available mitigation — **that version does not exist** and the assertion is withdrawn.
+- Frontmatter input comes from local files under the project's `.haiku/` tree. The feedback-model work in this intent does expose write paths via HTTP endpoints (reply/update), but those write through the schema-validated `haiku_feedback*` tools and never hand raw YAML to gray-matter from the network.
+- Prototype-pollution exposure from `js-yaml@3.x` is primarily a concern when untrusted YAML is parsed with the unsafe `load()` API. gray-matter 4.0.3 uses `safeLoad` (js-yaml 3.x's safe schema, equivalent to js-yaml 4.x's default `load`), which does not instantiate custom tags. Exposure is therefore limited to DoS via deeply-nested or very large YAML.
 
-**Mitigation:** Pin `gray-matter` to a version using js-yaml >= 4.x (prototype pollution fixes). Run `npm audit` in CI.
+**Mitigations applied / required:**
+1. Direct `gray-matter@^4.0.3` pin is in place (verified above). No action required on the direct pin.
+2. Transitive `js-yaml@3.14.2` is the latest of the 3.x line (`3.14.2` shipped the known 3.x fixes). No upgrade path exists inside gray-matter 4.x.
+3. **`npm audit` in CI is NOT currently wired.** `.github/workflows/ci.yml` defines only `lint` (Biome) and `test` (MCP tests) jobs. No `npm audit` / `npm audit --audit-level=high` / `npm audit signatures` / `audit-ci` step runs against `package-lock.json`. This is an **open mitigation**, not an applied one — see the risk table below. A follow-up unit of work should add an `audit` job to `.github/workflows/ci.yml` that runs `npm audit --audit-level=high` after `npm ci` and fails the build on new HIGH/CRITICAL advisories.
+4. Recommend tracking gray-matter for a 5.x release that migrates to `js-yaml@^4.x`; if one appears, adopt it in the next dependency-maintenance pass.
 
-**Status:** Low risk.
+**Status:** LOW risk on the installed stack today. Mitigation #3 (`npm audit` in CI) is **NOT yet implemented** — tracked as an open mitigation, not a closed one.
 
 ---
 
@@ -338,13 +381,14 @@ Two failure modes follow:
 | Surface | Hardening Applied | Residual Risk |
 |---|---|---|
 | HTTP feedback mutations (remote mode) | JWT tunnel auth (FB-30), session header guard (FB-20), CORS origin check (FB-36) | Session UUID bookmarks (very low); empty-allowList silent-break misconfiguration (FB-12, blue-team fix pending) |
+| HTTP feedback-attachment read (E4) | `requireTunnelAuth` + `isValidSlug` on intent/stage + whitelist regex on filename + `serveUnderRoot` realpath escape check | Regex permits `foo.bar.png`-style names; realpath is the authoritative guard (very low) |
 | `closes:` validation | feedback-assessor hat auto-injected for all units with `closes:` | Agent `addressed` status on human items allows auto-gate pass |
 | `haiku_revisit` reasons | writeFeedbackFile constrains write path; reasons always `origin: agent` | No count cap (v2 enhancement needed) |
 | WebSocket session loss | Known v1 limitation | v2: debounced persistence |
 | Visits counter | Present and visible | v2: max_visits threshold |
 | JWT forgery | Standard JWT with tunnel URL + session binding | Standard library risk |
 | Insider threat | Git audit trail; branch protection recommended | Out of scope for v1 |
-| Supply chain | No new dependencies; pin gray-matter; run npm audit | Ongoing dependency management |
+| Supply chain | No new dependencies; `gray-matter@^4.0.3` pin verified; transitive `js-yaml@3.14.2` verified (latest 3.x); **`npm audit` CI job NOT yet wired** | Ongoing dependency management; `npm audit` in CI is an open follow-up |
 
 ---
 
@@ -356,5 +400,5 @@ Two failure modes follow:
 | Empty `allowedOrigins` + empty/wildcard `siteUrl` under `HAIKU_REMOTE_REVIEW=1` silently blocks all cross-origin requests (I1a / FB-12) | LOW | Fail-closed — no information leak. Mitigation is an operator-visible startup warning (blue-team fix-hat bolt 2). Tracked as residual until warning lands. |
 | WebSocket drop before submission loses draft comments | LOW | v2: debounced persistence |
 | No visits cap | LOW | v2: max_visits threshold |
-| YAML prototype pollution in gray-matter | LOW | Pin to js-yaml >= 4.x; run npm audit in CI |
+| YAML prototype pollution in gray-matter | LOW | `gray-matter@4.0.3` pulls `js-yaml@3.14.2` (verified in `package-lock.json`). gray-matter 4.x has not migrated to js-yaml 4.x; safe-load usage limits exposure to DoS, not arbitrary code. `npm audit` CI job is NOT currently wired (see SC-1 mitigation #3) — track as open follow-up. |
 | Insider threat (direct filesystem access) | ACCEPTED | Developer tool; git trail provides detection; out of scope v1 |
