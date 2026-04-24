@@ -881,15 +881,14 @@ async function buildApp(): Promise<FastifyInstance> {
 	})
 
 	// Expose the request ID back to the client via X-Request-Id response
-	// header so reviewers can grep logs for a specific click. The header
-	// is set on every response (success or error) before the body is
-	// sent, so 4xx/5xx responses carry the same correlation ID the
-	// server logged.
-	instance.addHook("onSend", async (req, reply, payload) => {
+	// header so reviewers can grep logs for a specific click. We set it
+	// in `onRequest` — before any handler runs and before headers are
+	// flushed — so streaming responses (file serves) don't trigger
+	// ERR_HTTP_HEADERS_SENT on a late `reply.header()`.
+	instance.addHook("onRequest", async (req, reply) => {
 		if (!reply.getHeader("x-request-id")) {
 			reply.header("x-request-id", req.id)
 		}
-		return payload
 	})
 
 	// Structured 4xx/5xx logging (FB-04). Fastify runs `logger: false`,
@@ -2069,7 +2068,21 @@ export async function startHttpServer(): Promise<number> {
 	if (app && actualPort !== null) return actualPort
 
 	app = await buildApp()
-	const bindAddr = process.env.HAIKU_FORCE_BIND_ADDR || "127.0.0.1"
+	// `HAIKU_FORCE_BIND_ADDR` is a test/dev-only override used to exercise the
+	// non-loopback failure path. If set to anything other than the default
+	// loopback, log a prominent warning so accidental or malicious overrides
+	// surface in operator logs immediately. The assertLoopbackBind() call
+	// below will still enforce loopback-only unless NODE_ENV=test permits an
+	// explicit bypass (see FB-12).
+	const forcedBindAddr = process.env.HAIKU_FORCE_BIND_ADDR
+	if (forcedBindAddr && forcedBindAddr !== "127.0.0.1") {
+		console.error(
+			`WARNING: HAIKU_FORCE_BIND_ADDR='${forcedBindAddr}' overrides the ` +
+				"default loopback bind. This is a test/dev-only knob; in production " +
+				"it will trigger the transport-invariant FATAL exit.",
+		)
+	}
+	const bindAddr = forcedBindAddr || "127.0.0.1"
 	const address = await app.listen({ host: bindAddr, port: 0 })
 	// FB-08: cap concurrent TCP connections on the underlying http.Server.
 	// Node enforces this at the listener — the (MAX_CONNECTIONS + 1)th
