@@ -47,7 +47,7 @@ All 10 categories verified with evidence or documented N/A justification. See TH
 
 ## Expanded Surface Threat Model (Unit-02)
 
-Full analysis at `stages/security/THREAT-MODEL-EXPANDED.md`.
+Full analysis at `stages/security/artifacts/threat-model-expanded.md`.
 
 ### New Trust Boundaries Characterized
 
