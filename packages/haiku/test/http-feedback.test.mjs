@@ -435,6 +435,100 @@ async function run() {
 	// longer an unscoped current-intent JSON endpoint — consumers that
 	// needed it were rolled into the SPA's per-session payload.
 
+	// ── GET /api/feedback-intent/:intent ────────────────────────────────────
+
+	console.log("\n=== GET /api/feedback-intent/:intent ===")
+
+	// Seed intent-scope feedback (stage = "" writes under
+	// `.haiku/intents/<slug>/feedback/`, not under a stage directory).
+	writeFeedbackFile(intentSlug, "", {
+		title: "Studio-review: cross-stage contract drift",
+		body: "DATA-CONTRACTS.md lists 4 enum values but implementation ships 6.",
+		origin: "studio-review",
+		author: "cross-stage-consistency",
+	})
+	writeFeedbackFile(intentSlug, "", {
+		title: "Studio-review: stale file path in knowledge",
+		body: "knowledge/ARCHITECTURE.md still points at packages/haiku/review-app/.",
+		origin: "studio-review",
+		author: "cross-stage-consistency",
+	})
+
+	await test("returns intent-scope feedback items", async () => {
+		const res = await fetch(`${baseUrl}/api/feedback-intent/${intentSlug}`)
+		assert.strictEqual(res.status, 200)
+		const data = await res.json()
+		assert.strictEqual(data.intent, intentSlug)
+		assert.strictEqual(data.stage, "")
+		assert.ok(data.count >= 2)
+		// Every returned item should carry scope: "intent" so the sidebar
+		// can render the chip. Stage-scope items are served by the other
+		// endpoint.
+		for (const item of data.items) {
+			assert.strictEqual(
+				item.scope,
+				"intent",
+				`expected scope="intent", got ${item.scope}`,
+			)
+		}
+		const titles = data.items.map((i) => i.title)
+		assert.ok(
+			titles.some((t) => t.includes("cross-stage contract drift")),
+			"seeded intent-scope item not in response",
+		)
+	})
+
+	await test("GET /api/feedback-intent filters by status=pending", async () => {
+		const res = await fetch(
+			`${baseUrl}/api/feedback-intent/${intentSlug}?status=pending`,
+		)
+		assert.strictEqual(res.status, 200)
+		const data = await res.json()
+		for (const item of data.items) {
+			assert.strictEqual(item.status, "pending")
+		}
+	})
+
+	await test("GET /api/feedback-intent returns 400 for invalid status filter", async () => {
+		const res = await fetch(
+			`${baseUrl}/api/feedback-intent/${intentSlug}?status=bogus`,
+		)
+		assert.strictEqual(res.status, 400)
+		const data = await res.json()
+		assert.ok(data.error.includes("Invalid status filter"))
+	})
+
+	await test("GET /api/feedback-intent returns 404 for nonexistent intent", async () => {
+		const res = await fetch(`${baseUrl}/api/feedback-intent/does-not-exist`)
+		assert.strictEqual(res.status, 404)
+	})
+
+	await test("GET /api/feedback-intent returns 400 for path-traversal slug", async () => {
+		const res = await fetch(`${baseUrl}/api/feedback-intent/..%2Fetc`)
+		assert.strictEqual(res.status, 400)
+	})
+
+	// Stage-scope endpoint must not leak intent-scope items — the
+	// merging happens client-side. Server-side the two surfaces are
+	// separate buckets.
+	await test(
+		"GET /api/feedback/:intent/:stage does NOT include intent-scope items",
+		async () => {
+			const res = await fetch(
+				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
+			)
+			assert.strictEqual(res.status, 200)
+			const data = await res.json()
+			for (const item of data.items) {
+				assert.strictEqual(
+					item.scope,
+					"stage",
+					`stage endpoint leaked an intent-scope item: ${item.feedback_id}`,
+				)
+			}
+		},
+	)
+
 	// ── Path traversal rejection (security) ──────────────────────────────────
 
 	console.log("\n=== Path traversal rejection ===")

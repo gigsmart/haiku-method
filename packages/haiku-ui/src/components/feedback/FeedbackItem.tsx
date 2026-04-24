@@ -341,8 +341,7 @@ export const FeedbackItem = forwardRef<HTMLDivElement, FeedbackItemProps>(
 				<div className="flex items-center gap-2 mb-1 flex-wrap">
 					<FeedbackOriginIcon origin={item.origin} showLabel />
 					<FeedbackStatusBadge status={item.status} />
-					{(item as unknown as { scope?: "intent" | "stage" }).scope ===
-						"intent" && (
+					{item.scope === "intent" && (
 						<span
 							className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-semibold leading-none bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
 							title="Intent-scope finding — logged by the studio-level completion review, not tied to a single stage"

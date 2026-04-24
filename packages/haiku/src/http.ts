@@ -367,7 +367,21 @@ async function serveFile(reply: FastifyReply, realPath: string): Promise<void> {
 		const data = await readFile(realPath)
 		const ext = extname(realPath).toLowerCase()
 		const contentType = MIME_TYPES[ext] ?? "application/octet-stream"
-		reply.header("Content-Type", contentType).send(data)
+		reply.header("Content-Type", contentType)
+		// SVG defense-in-depth: the feedback attachment schema already
+		// rejects `svg+xml` on POST (see FeedbackCreateRequestSchema),
+		// but a legacy intent directory could still contain `.svg`
+		// files from before that rejection, and `/mockups/`,
+		// `/wireframe/`, `/stage-artifacts/` also route through here
+		// for arbitrary session files. Browsers execute `<script>` in
+		// inline-rendered SVGs under the serving origin — in tunnel
+		// mode that's the reviewer's privileged tab. Force the
+		// browser to download instead of render, so a malicious SVG
+		// can't run JavaScript against the tunnel origin.
+		if (ext === ".svg") {
+			reply.header("Content-Disposition", "attachment")
+		}
+		reply.send(data)
 	} catch {
 		reply.status(404).send("Not found")
 	}
@@ -1445,7 +1459,12 @@ async function buildApp(): Promise<FastifyInstance> {
 			}
 			// Attachment basenames we generate look like `FB-01-some-slug.png`.
 			// Reject anything with path separators or odd characters.
-			if (!/^[A-Za-z0-9._-]+\.(png|jpg|jpeg|webp|svg)$/.test(filename)) {
+			// SVG is deliberately excluded — legacy feedback dirs may
+			// contain .svg files from before the schema rejected them,
+			// but serving them (even with Content-Disposition) leaves
+			// door open. Anyone who needs a legacy SVG can fetch it via
+			// git.
+			if (!/^[A-Za-z0-9._-]+\.(png|jpg|jpeg|webp)$/.test(filename)) {
 				reply.status(400).send({ error: "invalid_filename" })
 				return
 			}

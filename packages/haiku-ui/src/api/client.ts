@@ -109,13 +109,17 @@ export interface ApiClient {
 		): Promise<FeedbackDeleteResponse>
 	}
 	/**
-	 * Set the session ID the client will attach as `X-Haiku-Session-Id` on
-	 * feedback mutation requests. Pass `null` to clear. Called by the page
-	 * shell once the session ID is known (URL param or initial payload) —
-	 * required when the server runs with remote review enabled.
+	 * Publish the current session ID to the shared client. Pass `null`
+	 * to clear. Called by the page shell once the session ID is known
+	 * (URL param or initial payload). The client does NOT attach a
+	 * session header on mutations — the server reads the session from
+	 * the tunnel-auth JWT's `sid` claim. `setSessionId` is retained so
+	 * `getSessionId()` can surface the current session id for display,
+	 * WebSocket channel binding, or other session-scoped lookups.
 	 */
 	setSessionId(sessionId: string | null): void
-	/** Current session ID attached to mutations, or null if not set. */
+	/** Current session ID the UI is rendering (display / WS only — not
+	 *  used for mutation auth). Null if not set. */
 	getSessionId(): string | null
 	openWebSocket(sessionId: string): WebSocket | null
 }

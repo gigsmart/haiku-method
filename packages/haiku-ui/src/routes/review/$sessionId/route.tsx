@@ -6,8 +6,10 @@
  *   - `useSession` fetch + `useSessionWebSocket` subscription (per-session
  *     lifecycle). Loading + error + session-type-mismatch states render
  *     here so child routes see a narrowed session.
- *   - Document title sync + publishing the sessionId on the ApiClient so
- *     feedback mutations attach `X-Haiku-Session-Id`.
+ *   - Document title sync + publishing the sessionId on the ApiClient
+ *     for display + WebSocket binding. (Mutations authenticate via the
+ *     tunnel-auth JWT — the server reads the session from the `sid`
+ *     claim; no `X-Haiku-Session-Id` header is sent or required.)
  *   - The viewport layout (header + stage-progress strip + sidebar +
  *     main). Main content is driven by the child route via `<Outlet/>`.
  *   - Shared ephemeral state (highlight request, annotation scratchpad,
@@ -139,9 +141,12 @@ function ReviewLayout(): React.ReactElement {
 	})
 	const apiClient = useApiClient()
 
-	// Publish sessionId to the shared ApiClient so feedback mutations
-	// (POST/PUT/DELETE) attach the `X-Haiku-Session-Id` header — the
-	// server rejects them without it when remote review is enabled.
+	// Publish sessionId to the shared ApiClient so `getSessionId()` is
+	// available to callers that need it for display, WS channel binding,
+	// or other session-scoped lookups. Feedback mutations no longer
+	// depend on this — the server authenticates them via the tunnel JWT
+	// (`sid` claim). This setter is retained for non-auth callers that
+	// still need to know which session the UI is rendering.
 	useEffect(() => {
 		apiClient.setSessionId(sessionId)
 		return () => {

@@ -3212,6 +3212,21 @@ export interface FeedbackReply {
 	created_at: string
 }
 
+/** One per-bolt entry in a feedback's fix-loop history. Appended by
+ *  the orchestrator on every hat dispatch and every validator outcome,
+ *  so the UI can render "bolt 1: reconciler advanced → validator
+ *  reopened (reason: commit never landed); bolt 2: …" without
+ *  reconstructing it from scattered commits. */
+export interface FeedbackIteration {
+	bolt: number
+	hat: string
+	started_at?: string
+	completed_at?: string
+	result?: "advanced" | "closed" | "reopened" | "rejected"
+	commit?: string
+	reason?: string
+}
+
 /** Parsed feedback item returned by readFeedbackFiles. */
 export interface FeedbackItem {
 	id: string // "FB-NN"
@@ -3250,6 +3265,11 @@ export interface FeedbackItem {
 	// review sidebar; agent replies come from `feedback_answer` and from
 	// `feedback-assessor` hats recording their closure reasoning.
 	replies: FeedbackReply[]
+	// Per-bolt history of the fix loop. Mirror of the unit file's
+	// `iterations:` frontmatter so reviewers can audit exactly which
+	// hat fired, when, with what outcome. Empty for brand-new findings
+	// the FSM hasn't dispatched yet.
+	iterations: FeedbackIteration[]
 	// Inline-text anchor for comments attached to a span of rendered
 	// markdown. When present, the sidebar can surface a "jump to
 	// artifact" affordance that re-opens the artifact detail view and
@@ -3340,16 +3360,19 @@ export function writeFeedbackFile(
 	// Persist a sidecar attachment if the caller passed one. Filename is
 	// the same stem as the feedback .md (FB-NN-slug.<ext>) so the pair
 	// is obvious on disk and stays adjacent in directory listings.
-	// Vector SVG is the default shape from the built-in annotator;
-	// raster PNG/JPEG/WebP covers externally-sourced attachments.
+	// Raster PNG/JPEG/WebP only — SVG is deliberately rejected because
+	// the feedback-attachment serve path renders image/svg+xml inline,
+	// which executes embedded `<script>` in the tunnel origin. The
+	// FeedbackCreateRequestSchema also rejects svg+xml at the HTTP
+	// layer; this regex is the second gate.
 	let attachmentBasename: string | null = null
 	if (opts.attachmentDataUrl) {
 		const match = opts.attachmentDataUrl.match(
-			/^data:image\/(png|jpeg|webp|svg\+xml);base64,([A-Za-z0-9+/=]+)$/,
+			/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/,
 		)
 		if (match) {
 			const mime = match[1]
-			const ext = mime === "jpeg" ? "jpg" : mime === "svg+xml" ? "svg" : mime
+			const ext = mime === "jpeg" ? "jpg" : mime
 			attachmentBasename = `${nn}-${fileSlug}.${ext}`
 			const attachmentPath = join(dir, attachmentBasename)
 			writeFileSync(attachmentPath, Buffer.from(match[2], "base64"))
@@ -3490,10 +3513,95 @@ export function readFeedbackFiles(slug: string, stage: string): FeedbackItem[] {
 			resolution,
 			replies,
 			inline_anchor: parseInlineAnchor(data),
+			iterations: parseFeedbackIterations(data),
 		})
 	}
 
 	return items
+}
+
+function parseFeedbackIterations(
+	data: Record<string, unknown>,
+): FeedbackIteration[] {
+	const raw = data.iterations
+	if (!Array.isArray(raw)) return []
+	const out: FeedbackIteration[] = []
+	for (const entry of raw) {
+		if (!(entry && typeof entry === "object")) continue
+		const e = entry as Record<string, unknown>
+		const bolt = typeof e.bolt === "number" ? e.bolt : 0
+		const hat = typeof e.hat === "string" ? e.hat : ""
+		if (!hat) continue
+		const result = e.result
+		const validResult =
+			result === "advanced" ||
+			result === "closed" ||
+			result === "reopened" ||
+			result === "rejected"
+		out.push({
+			bolt,
+			hat,
+			...(typeof e.started_at === "string"
+				? { started_at: e.started_at }
+				: {}),
+			...(typeof e.completed_at === "string"
+				? { completed_at: e.completed_at }
+				: {}),
+			...(validResult ? { result: result as FeedbackIteration["result"] } : {}),
+			...(typeof e.commit === "string" ? { commit: e.commit } : {}),
+			...(typeof e.reason === "string" ? { reason: e.reason } : {}),
+		})
+	}
+	return out
+}
+
+/**
+ * Append one entry to a feedback file's `iterations:` frontmatter array.
+ * Designed to be safe under concurrent fix-chain execution: reads the
+ * current file, appends, writes back. Callers are the orchestrator
+ * (on bolt dispatch start) and the validator closure path (on bolt
+ * finish). If the file doesn't exist (shouldn't happen in normal
+ * operation), this is a no-op so startup races don't crash the FSM.
+ */
+export function appendFeedbackIteration(
+	slug: string,
+	stage: string,
+	feedbackId: string,
+	entry: FeedbackIteration,
+): void {
+	const dir = feedbackDir(slug, stage)
+	if (!existsSync(dir)) return
+	const nn = feedbackId.replace(/^FB-/, "")
+	const file = readdirSync(dir).find(
+		(f) => f.startsWith(`${nn}-`) && f.endsWith(".md"),
+	)
+	if (!file) return
+	const path = join(dir, file)
+	const raw = readFileSync(path, "utf8")
+	const parsed = matter(raw)
+	const current = Array.isArray((parsed.data as { iterations?: unknown }).iterations)
+		? ((parsed.data as { iterations: unknown[] }).iterations as unknown[])
+		: []
+	const next = [
+		...current,
+		{
+			bolt: entry.bolt,
+			hat: entry.hat,
+			...(entry.started_at ? { started_at: entry.started_at } : {}),
+			...(entry.completed_at ? { completed_at: entry.completed_at } : {}),
+			...(entry.result ? { result: entry.result } : {}),
+			...(entry.commit ? { commit: entry.commit } : {}),
+			...(entry.reason ? { reason: entry.reason } : {}),
+		},
+	]
+	const updated = {
+		...(parsed.data as Record<string, unknown>),
+		iterations: next,
+	}
+	writeFileSync(
+		path,
+		matter.stringify(parsed.content, normalizeDates(updated)),
+	)
 }
 
 function parseInlineAnchor(

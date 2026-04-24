@@ -124,6 +124,36 @@ export const FeedbackItemSchema = z
 			.describe(
 				"Whether this feedback lives under .haiku/intents/<slug>/feedback/ (intent scope, logged by the studio-level completion review) or .haiku/intents/<slug>/stages/<stage>/feedback/ (stage scope, the normal adversarial review output). UI shows intent-scope items with a distinguishing chip so cross-stage findings don't get hidden behind a stage tab.",
 			),
+		iterations: z
+			.array(
+				z.object({
+					bolt: z.number().int().nonnegative(),
+					hat: z.string().max(200),
+					started_at: z.string().max(40).optional(),
+					completed_at: z.string().max(40).optional(),
+					/** `advanced` = hat finished and handed off to the next hat
+					 *  in the chain. `closed` = validator verified resolution
+					 *  and marked the feedback closed. `reopened` = validator
+					 *  rejected the fix and the bolt's budget was spent with
+					 *  no resolution. `rejected` = a hat dismissed the finding
+					 *  (rare; uses `haiku_feedback_reject`). */
+					result: z
+						.enum(["advanced", "closed", "reopened", "rejected"])
+						.optional(),
+					/** Git SHA of the commit the hat produced, when one was
+					 *  made. Empty / absent for spec-reconciliation hats that
+					 *  only edit knowledge artifacts without committing. */
+					commit: z.string().max(64).optional(),
+					/** Free-form reason — required when `result` is "reopened"
+					 *  or "rejected" so the audit trail explains why a bolt
+					 *  didn't close the finding. */
+					reason: z.string().max(1000).optional(),
+				}),
+			)
+			.optional()
+			.describe(
+				"Per-bolt history of the fix loop — one entry per hat that fires against this finding. Mirrors the `iterations:` frontmatter on unit files so reviewers can see at a glance why a finding needed multiple tries.",
+			),
 	})
 	.describe("Wire shape of a feedback item")
 export type FeedbackItem = z.infer<typeof FeedbackItemSchema>
@@ -179,18 +209,26 @@ export const FeedbackCreateRequestSchema = z
 		resolution: FeedbackResolutionSchema.optional().describe(
 			"Author's preferred resolution path. Router defaults to stage_revisit when omitted.",
 		),
-		/** Optional image attachment captured by the review UI — typically
-		 *  a vector SVG of the reviewer's drawn strokes, but also
-		 *  accepts PNG / JPEG / WebP for externally-sourced raster
-		 *  annotations. Shipped as a `data:image/<mime>;base64,...` URL
-		 *  and persisted server-side as a sidecar file next to the
-		 *  feedback markdown. */
+		/** Optional image attachment captured by the review UI — a
+		 *  raster PNG / JPEG / WebP rendering of the reviewer's drawn
+		 *  strokes. Shipped as a `data:image/<mime>;base64,...` URL and
+		 *  persisted server-side as a sidecar file next to the
+		 *  feedback markdown.
+		 *
+		 *  SVG is deliberately rejected. The feedback-attachment serve
+		 *  route streams the raw bytes back to the browser with
+		 *  `image/svg+xml`, which executes any embedded `<script>` in
+		 *  the tunnel origin's security context. A reviewer — or anyone
+		 *  who reaches the feedback POST via a leaked JWT — could plant
+		 *  a stored-XSS payload against every future viewer. The
+		 *  built-in annotator now rasterises strokes to PNG before
+		 *  submitting. */
 		attachment_data_url: z
 			.string()
 			.max(FEEDBACK_ATTACHMENT_MAX_BYTES)
-			.regex(/^data:image\/(png|jpeg|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/, {
+			.regex(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/, {
 				message:
-					"attachment_data_url must be a base64-encoded data URL for png/jpeg/webp/svg+xml",
+					"attachment_data_url must be a base64-encoded data URL for png/jpeg/webp (svg rejected — stored-XSS risk)",
 			})
 			.optional(),
 	})
