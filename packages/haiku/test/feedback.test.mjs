@@ -158,6 +158,7 @@ try {
 	test("human origins return human", () => {
 		assert.strictEqual(deriveAuthorType("user-visual"), "human")
 		assert.strictEqual(deriveAuthorType("user-chat"), "human")
+		assert.strictEqual(deriveAuthorType("user-question"), "human")
 		assert.strictEqual(deriveAuthorType("external-pr"), "human")
 		assert.strictEqual(deriveAuthorType("external-mr"), "human")
 	})

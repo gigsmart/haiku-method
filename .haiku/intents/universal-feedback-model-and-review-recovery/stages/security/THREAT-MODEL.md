@@ -38,22 +38,25 @@ The feedback model introduces or touches the following HTTP entry points. Each o
 **Likelihood:** Low (local) / Medium (remote tunnel — authenticated but still trust-asymmetric with the create path)
 **Impact:** High
 
-**Mitigation:** `author_type` is derived server-side from `origin` via `deriveAuthorType()` (state-tools.ts:2002). The caller cannot supply `author_type` directly. Human origins (`user-visual`, `user-chat`, `external-pr`, `external-mr`) are only reachable through the HTTP API or orchestrator-internal paths — never through MCP tool handlers. MCP tool handlers always produce `agent` author_type because their origin values resolve to `agent` through the same derivation function.
+**Mitigation:** `author_type` is derived server-side from `origin` via `deriveAuthorType()` (state-tools.ts). The caller cannot supply `author_type` directly. Human origins (`user-visual`, `user-chat`, `user-question`, `external-pr`, `external-mr`) are only reachable through the HTTP API or orchestrator-internal paths — never through MCP tool handlers. MCP tool handlers always produce `agent` author_type because their origin values resolve to `agent` through the same derivation function.
+
+Trust-boundary crossing: every human-origin value in `FEEDBACK_ORIGINS` must also appear in `HUMAN_ORIGINS`. The review UI's question composer (`FeedbackSidebar.tsx`) crosses the UI → HTTP → state-tools boundary with `origin: "user-question"`, so `user-question` MUST be in `HUMAN_ORIGINS`. If it were omitted, human-authored questions would be stored with `author_type: "agent"` and the privilege guards in `updateFeedbackFile`/`deleteFeedbackFile` (which only protect `author_type === "human"` items) would let any agent close or delete them — an elevation-of-privilege vector across an internal trust boundary.
 
 **Required mitigation (FB-01 — not yet implemented):** The feedback-reply endpoint in `packages/haiku/src/http.ts` must hardcode `author: "user"` in the same way the feedback-create endpoint does, rather than accepting `parsed.data.author ?? "user"`. Until this is fixed, the `author` field on replies is attacker-controlled within the HTTP trust boundary, and the `FeedbackReplyCreateRequestSchema` contract ("when omitted the server stamps 'user' or the agent name from session context") is not enforced. The fix brings the reply path into parity with the create path at http.ts:1526, eliminating the inconsistent trust boundary.
 
 **Verification evidence:**
 - `deriveAuthorType()` is the sole determinant — no tool handler accepts `author_type` as an input parameter.
-- `HUMAN_ORIGINS` set is hardcoded (state-tools.ts:1994).
+- `HUMAN_ORIGINS` set is hardcoded (state-tools.ts `HUMAN_ORIGINS` constant) and lists every user-facing origin declared in `FEEDBACK_ORIGINS`.
 - `handleStateTool("haiku_feedback", ...)` never passes caller-supplied `author_type` to `writeFeedbackFile`.
-- HTTP feedback-create endpoint (`handleFeedbackPost`, http.ts:1526) hardcodes `author: "user"` and uses `user-visual` origin — **correct pattern**. The `author` field on `FeedbackCreateRequestSchema` (packages/haiku-api/src/schemas/feedback.ts) is accepted by the Zod validator for backward compatibility, but the handler does not propagate `parsed.data.author` into `writeFeedbackFile` — it is discarded at the trust boundary. The schema `describe()` text reflects this explicitly (FB-03 fix) so future developers do not re-introduce a session-context author resolution without also adding authenticated identity propagation.
+- HTTP feedback-create endpoint (`handleFeedbackPost`, http.ts:1526) hardcodes `author: "user"` and uses a human origin (`user-visual`, `user-chat`, or `user-question` depending on the composer mode) — **correct pattern**. The `author` field on `FeedbackCreateRequestSchema` (packages/haiku-api/src/schemas/feedback.ts) is accepted by the Zod validator for backward compatibility, but the handler does not propagate `parsed.data.author` into `writeFeedbackFile` — it is discarded at the trust boundary. The schema `describe()` text reflects this explicitly (FB-03 fix) so future developers do not re-introduce a session-context author resolution without also adding authenticated identity propagation.
 - HTTP feedback-reply endpoint (http.ts:1784) currently takes `author` from the request body (`parsed.data.author ?? "user"`) — **tracked as FB-01, required fix: hardcode `author: "user"` to match create path**.
-- Test: `feedback.test.mjs` verifies `author_type: "agent"` for MCP-created items and `author_type: "human"` for HTTP-created items. A regression test must be added asserting that a reply POST with a client-supplied `author` value is ignored and `"user"` is written.
+- Test: `feedback.test.mjs` verifies `deriveAuthorType` returns `"human"` for every entry in `HUMAN_ORIGINS` (including `user-question`) and `"agent"` for MCP-originated values. It also verifies `author_type: "agent"` for MCP-created items and `author_type: "human"` for HTTP-created items. A regression test must be added asserting that a reply POST with a client-supplied `author` value is ignored and `"user"` is written.
 
-<<<<<<< HEAD
 #### Trust boundary: `FeedbackCreateRequestSchema.author` is a suppressed client input (intentional)
 
 **Surface:** `FeedbackCreateRequestSchema` (packages/haiku-api/src/schemas/feedback.ts:116-123) accepts an optional `author` string from clients. The handler at `packages/haiku/src/http.ts:1522-1530` **ignores** `parsed.data.author` entirely and hardcodes `author: "user"` into the call to `writeFeedbackFile`.
+
+**Trust boundary crossing:** HTTP request body → Zod validation (`FeedbackCreateRequestSchema`) → handler. The `title`, `body`, `origin`, `source_ref`, `anchor`, `resolution`, and `attachment_data_url` fields cross the boundary and are persisted after validation. The `author` field crosses the boundary but is **dropped** before persistence — server always stamps `"user"`. Any reviewer adding new persisted-author logic MUST also add authenticated-session identity resolution; otherwise this field becomes a spoofing vector.
 
 **Trust classification:** Client-supplied `author` is **untrusted input that crosses into the server trust zone and is deliberately dropped at the boundary**. It never reaches the persisted feedback file. The field is retained in the schema as a reserved/forward-compat slot, not as an active input.
 
@@ -77,9 +80,6 @@ The feedback model introduces or touches the following HTTP entry points. Each o
 - `FeedbackCreateRequestSchema` has no test coverage asserting the field round-trips, because it intentionally does not.
 
 **Status:** Mitigated by suppression. Guardrail documented for future maintainers.
-=======
-**Trust boundary crossing:** HTTP request body → Zod validation (`FeedbackCreateRequestSchema`) → handler. The `title`, `body`, `origin`, `source_ref`, `anchor`, `resolution`, and `attachment_data_url` fields cross the boundary and are persisted after validation. The `author` field crosses the boundary but is **dropped** before persistence — server always stamps `"user"`. Any reviewer adding new persisted-author logic MUST also add authenticated-session identity resolution; otherwise this field becomes a spoofing vector.
->>>>>>> haiku/universal-feedback-model-and-review-recovery/fix-security-FB-03
 
 ---
 
