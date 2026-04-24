@@ -2,7 +2,7 @@
 title: >-
   JWT token exposed in WebSocket URL query parameter — logged by proxies and
   servers
-status: pending
+status: closed
 origin: adversarial-review
 author: security (from development)
 author_type: agent
@@ -10,8 +10,8 @@ created_at: '2026-04-24T14:42:00Z'
 iteration: 1
 visit: 1
 source_ref: null
-closed_by: null
-bolt: 0
+closed_by: 'fix-loop:FB-08:bolt-1'
+bolt: 1
 upstream_stage: null
 resolution: null
 replies: []

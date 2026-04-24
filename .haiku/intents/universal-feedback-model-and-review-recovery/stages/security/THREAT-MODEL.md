@@ -7,23 +7,46 @@ Scope: Feedback file creation/mutation (MCP tools + HTTP API), gate-phase enforc
 
 ---
 
+## 0. Entry-Point Inventory
+
+The feedback model introduces or touches the following HTTP entry points. Each one is an untrusted-input boundary where caller-supplied parameters cross into filesystem / state operations. Validation chains are enumerated per endpoint so the defense-in-depth layer covering each surface is explicit.
+
+| # | Endpoint | Method | Caller-supplied params | Validation chain | Filesystem reach |
+|---|---|---|---|---|---|
+| E1 | `/api/feedback/:intent/:stage` | POST | `intent`, `stage` (URL); JSON body validated by `FeedbackCreateSchema` | `requireTunnelAuth` → `isValidSlug(intent)` → `isValidSlug(stage)` → `validateIntent(intent)` → Zod body schema → `writeFeedbackFile` (which calls `slugifyTitle` for filenames and joins under `intentDir`) | Writes `.haiku/intents/{intent}/stages/{stage}/feedback/FB-NN-*.md` (+ optional attachment PNG) |
+| E2 | `/api/feedback/:intent/:stage/:id` | PUT | `intent`, `stage`, `id` (URL); JSON body validated by `FeedbackUpdateSchema` | `requireTunnelAuth` → `verifyFeedbackMutationAuth` (JWT sid-binding) → `isValidSlug(intent/stage/id)` → `updateFeedbackFile` (`callerContext: "human"`) | Mutates frontmatter on existing feedback file |
+| E3 | `/api/feedback/:intent/:stage/:id` | DELETE | `intent`, `stage`, `id` (URL) | `requireTunnelAuth` → `verifyFeedbackMutationAuth` → `isValidSlug(intent/stage/id)` → `deleteFeedbackFile` (`callerContext: "human"`) | Deletes feedback file |
+| E4 | `/api/feedback-attachment/:intent/:stage/:filename` | GET | `intent`, `stage`, `filename` (URL) | `requireTunnelAuth` → `isValidSlug(intent)` → `isValidSlug(stage)` → filename regex `^[A-Za-z0-9._-]+\.(png\|jpg\|jpeg\|webp\|svg)$` → `serveUnderRoot(reply, feedbackRoot, filename)` (realpath escape check) | Reads `.haiku/intents/{intent}/stages/{stage}/feedback/{filename}` as `image/*` body |
+| M1 | MCP tool `haiku_feedback` / `haiku_feedback_update` / `haiku_feedback_delete` / `haiku_feedback_reject` | MCP | `intent`, `stage`, `feedback_id`, body fields | `validateSlugArgs` (covers `intent`, `slug`, `stage`, `unit`, `feedback_id`) → `writeFeedbackFile` / `updateFeedbackFile` / `deleteFeedbackFile` (`callerContext: "agent"`) | Same feedback directory; author-type guards prevent agent-close of human items |
+
+**Notes on the attachment endpoint (E4):**
+
+- The validation chain for E4 is **different** from E1/E2/E3. E4 does NOT route through `validateSlugArgs` (which is MCP-only) and the `filename` parameter does NOT use `isValidSlug` (because attachment filenames legitimately contain `.` for the extension, which `isValidSlug` rejects). Instead, E4 pairs a **whitelist-regex** (restricts to allowed image extensions and the `[A-Za-z0-9._-]` charset — no `/`, `\`, or `..` substrings) with **`serveUnderRoot`**, which resolves the final path via `realpath` and verifies it stays within `feedbackRoot`. Either layer alone would be insufficient; together they are defense-in-depth (see §3a).
+- The regex **does** allow filenames like `foo.bar.png` (dots in the stem), and it would also match `..png` if preceded by a non-dot character. Neither is a traversal vector because the filename is joined under `feedbackRoot` with `path.join`, and `serveUnderRoot` rejects any resolved path whose `realpath` escapes `feedbackRoot`. The regex is there to reject obvious separators and force a known image extension; the realpath escape check is the authoritative traversal guard.
+- E4 is read-only and serves locally-generated attachments created by `writeFeedbackFile`. It does not accept uploads. No agent-authored or HTTP-authored request can cause arbitrary files to land under `feedbackRoot` — only `writeFeedbackFile` writes there, and it controls the basename.
+
+---
+
 ## 1. STRIDE Analysis
 
 ### S — Spoofing
 
-**Threat:** An agent impersonates a human author to create feedback that cannot be agent-rejected or agent-closed, effectively creating irremovable gate blockers.
+**Threat:** An agent impersonates a human author to create feedback that cannot be agent-rejected or agent-closed, effectively creating irremovable gate blockers. **Secondary vector:** an HTTP caller (or any loopback caller in local mode) forges the `author` label on a feedback **reply** to impersonate a specific actor (e.g., `"orchestrator"`, `"security-agent"`, or another user), exploiting the trust-boundary gap between the create path (which hardcodes `author: "user"`) and the reply path (which accepts a client-supplied value).
 
-**Likelihood:** Low
+**Likelihood:** Low (local) / Medium (remote tunnel — authenticated but still trust-asymmetric with the create path)
 **Impact:** High
 
 **Mitigation:** `author_type` is derived server-side from `origin` via `deriveAuthorType()` (state-tools.ts:2002). The caller cannot supply `author_type` directly. Human origins (`user-visual`, `user-chat`, `external-pr`, `external-mr`) are only reachable through the HTTP API or orchestrator-internal paths — never through MCP tool handlers. MCP tool handlers always produce `agent` author_type because their origin values resolve to `agent` through the same derivation function.
+
+**Required mitigation (FB-01 — not yet implemented):** The feedback-reply endpoint in `packages/haiku/src/http.ts` must hardcode `author: "user"` in the same way the feedback-create endpoint does, rather than accepting `parsed.data.author ?? "user"`. Until this is fixed, the `author` field on replies is attacker-controlled within the HTTP trust boundary, and the `FeedbackReplyCreateRequestSchema` contract ("when omitted the server stamps 'user' or the agent name from session context") is not enforced. The fix brings the reply path into parity with the create path at http.ts:1526, eliminating the inconsistent trust boundary.
 
 **Verification evidence:**
 - `deriveAuthorType()` is the sole determinant — no tool handler accepts `author_type` as an input parameter.
 - `HUMAN_ORIGINS` set is hardcoded (state-tools.ts:1994).
 - `handleStateTool("haiku_feedback", ...)` never passes caller-supplied `author_type` to `writeFeedbackFile`.
-- HTTP endpoints (`handleFeedbackPost`) hardcode `author: "user"` and use `user-visual` origin.
-- Test: `feedback.test.mjs` verifies `author_type: "agent"` for MCP-created items and `author_type: "human"` for HTTP-created items.
+- HTTP feedback-create endpoint (`handleFeedbackPost`, http.ts:1526) hardcodes `author: "user"` and uses `user-visual` origin — **correct pattern**.
+- HTTP feedback-reply endpoint (http.ts:1784) currently takes `author` from the request body (`parsed.data.author ?? "user"`) — **tracked as FB-01, required fix: hardcode `author: "user"` to match create path**.
+- Test: `feedback.test.mjs` verifies `author_type: "agent"` for MCP-created items and `author_type: "human"` for HTTP-created items. A regression test must be added asserting that a reply POST with a client-supplied `author` value is ignored and `"user"` is written.
 
 #### Trust boundary: `FeedbackCreateRequestSchema.author` is a suppressed client input (intentional)
 
@@ -239,9 +262,11 @@ The feedback system makes no outbound HTTP requests. All operations are local fi
 
 ## 3. Defense-in-Depth Measures
 
-### 3a. `validateSlugArgs` hardening
+### 3a. `validateSlugArgs` hardening (MCP layer)
 
 `feedback_id` has been added to the checked keys array in `validateSlugArgs()` (state-tools.ts). This ensures that any MCP tool receiving a `feedback_id` argument will reject path traversal attempts (`../`, `/`, `\`) before any filesystem access occurs.
+
+**Scope note:** `validateSlugArgs` runs only inside `handleStateTool` — it does **not** cover HTTP entry points. HTTP entry points are covered by `isValidSlug()` (E1–E3) and by the dedicated regex + `serveUnderRoot` chain on the attachment endpoint (E4). See §3b for the full dual-layer picture.
 
 **Verification:** Three new tests in `state-tools-handlers.test.mjs`:
 1. `haiku_feedback_update` rejects `feedback_id` with `../../../etc/passwd`
@@ -252,9 +277,17 @@ The feedback system makes no outbound HTTP requests. All operations are local fi
 
 Feedback identifiers are validated at two independent layers:
 1. **MCP layer:** `validateSlugArgs` in `handleStateTool` (covers all MCP tool invocations).
-2. **HTTP layer:** `isValidSlug()` in each HTTP handler (`handleFeedbackPut`, `handleFeedbackDelete`).
+2. **HTTP layer:** `isValidSlug()` in each feedback CRUD handler (E1 POST, E2 PUT, E3 DELETE).
 
 Neither layer trusts the other. Both reject independently.
+
+**Attachment endpoint (E4) is a separate case.** The `filename` parameter of `/api/feedback-attachment/:intent/:stage/:filename` is not a slug in the `isValidSlug` sense (it must contain a `.ext` suffix). It is instead validated by:
+1. A whitelist regex `^[A-Za-z0-9._-]+\.(png|jpg|jpeg|webp|svg)$` — which structurally excludes `/`, `\`, and any non-image extension. This rejects the common `..%2F`, `foo/bar`, and `foo\bar` traversal shapes at the HTTP layer.
+2. `serveUnderRoot(reply, feedbackRoot, filename)` — which joins `filename` under `feedbackRoot`, calls `fs.realpath` on the result, and verifies the resolved path still starts with `feedbackRoot`. This catches any residual edge case (e.g. symlinks, case-folded filesystems) that the regex alone would miss.
+
+The `intent` and `stage` params on E4 still go through `isValidSlug` just like E1–E3, so cross-stage or cross-intent traversal via those segments is blocked by the same rule as the other endpoints.
+
+**Why the regex alone is not considered sufficient:** The regex permits filenames with multiple dots in the stem (e.g. `foo.bar.png`). In a vanilla filesystem this is harmless, but `realpath` is the authoritative check because it normalizes away any exotic case and fails closed if resolution escapes `feedbackRoot`. The regex exists to cheaply reject malformed input; the realpath check is the security boundary.
 
 ### 3c. Immutable derivation
 
