@@ -2,7 +2,7 @@
 
 STRIDE analysis of the feedback model's attack surface, plus OWASP Top 10 verification.
 
-Date: 2026-04-15 (last updated 2026-04-24 to incorporate FB-06 — HTTP rate-limit gap)
+Date: 2026-04-15 (last updated 2026-04-24 to incorporate FB-06 — HTTP rate-limit gap — and FB-07 — reply endpoint cross-reference)
 Scope: Feedback file creation/mutation (MCP tools + HTTP API), gate-phase enforcement, review-UI pipeline, external-PR detection, tunnel-mode HTTP surface.
 
 ---
@@ -24,6 +24,8 @@ The feedback model introduces or touches the following HTTP entry points. Each o
 - The validation chain for E4 is **different** from E1/E2/E3. E4 does NOT route through `validateSlugArgs` (which is MCP-only) and the `filename` parameter does NOT use `isValidSlug` (because attachment filenames legitimately contain `.` for the extension, which `isValidSlug` rejects). Instead, E4 pairs a **whitelist-regex** (restricts to allowed image extensions and the `[A-Za-z0-9._-]` charset — no `/`, `\`, or `..` substrings) with **`serveUnderRoot`**, which resolves the final path via `realpath` and verifies it stays within `feedbackRoot`. Either layer alone would be insufficient; together they are defense-in-depth (see §3a).
 - The regex **does** allow filenames like `foo.bar.png` (dots in the stem), and it would also match `..png` if preceded by a non-dot character. Neither is a traversal vector because the filename is joined under `feedbackRoot` with `path.join`, and `serveUnderRoot` rejects any resolved path whose `realpath` escapes `feedbackRoot`. The regex is there to reject obvious separators and force a known image extension; the realpath escape check is the authoritative traversal guard.
 - E4 is read-only and serves locally-generated attachments created by `writeFeedbackFile`. It does not accept uploads. No agent-authored or HTTP-authored request can cause arbitrary files to land under `feedbackRoot` — only `writeFeedbackFile` writes there, and it controls the basename.
+
+**Reply endpoint (HTTP-only):** `POST /api/feedback/:intent/:stage/:feedbackId/replies` introduced during implementation is analyzed in `artifacts/threat-model-expanded.md` (§ Trust Boundaries + S3 + E3). The base threat model below covers feedback CRUD; the reply endpoint is asymmetric (HTTP-only, no MCP equivalent) and is characterized separately to avoid conflating CRUD and thread-append surfaces.
 
 ---
 
