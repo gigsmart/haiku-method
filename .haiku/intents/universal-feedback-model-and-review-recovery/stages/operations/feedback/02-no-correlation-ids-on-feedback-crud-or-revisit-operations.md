@@ -1,6 +1,6 @@
 ---
 title: No correlation IDs on feedback CRUD or revisit operations
-status: fixing
+status: closed
 origin: adversarial-review
 author: observability
 author_type: agent
@@ -8,7 +8,7 @@ created_at: '2026-04-24T04:02:08Z'
 iteration: 1
 visit: 1
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-02:bolt-3'
 bolt: 3
 upstream_stage: null
 resolution: null
