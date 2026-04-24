@@ -61,7 +61,7 @@ Three trust boundaries not fully characterized in unit-01 are now documented:
 | Threat | Likelihood | Impact | Status |
 |---|---|---|---|
 | S1: Agent injects feedback via haiku_revisit reasons | Low | Medium | Mitigated — origin hardcoded to "agent"; rejectable |
-| S2: Remote spoofing of human-authored feedback | Low (remote) | High | Mitigated — JWT + JWT-claim session binding + CORS in tunnel mode |
+| S2: Remote spoofing of human-authored feedback | Low (remote) | High | Mitigated — JWT + session-header + CORS in tunnel mode |
 | T1: False closes: [FB-NN] claims | Medium | High | Partially mitigated — feedback-assessor validates; MEDIUM residual for auto-gates |
 | T2: Direct filesystem frontmatter tampering | Very Low | High | Mitigated — git audit trail (same as unit-01) |
 | R1: WebSocket drop loses draft review comments | Medium | Low | Open v1 risk — accepted; v2 debounced persistence |
@@ -69,7 +69,7 @@ Three trust boundaries not fully characterized in unit-01 are now documented:
 | I2: Session UUID in URL replay | Very Low | Low | Accepted — 30-min TTL, in-memory only |
 | D1: Visits counter grows unboundedly | Low | Medium | Accepted — no hard cap; v2 threshold recommended |
 | D2: Large reasons array creates filesystem load | Very Low | Low | Accepted — local tool; no count cap |
-| E1: JWT forgery bypasses tunnel auth | Low | High | Mitigated — tunnel URL + JWT-claim session binding; standard library |
+| E1: JWT forgery bypasses tunnel auth | Low | High | Mitigated — tunnel URL + session binding; standard library |
 | E2: Rogue subagent marks human items "addressed" | Low | High | Partially mitigated — agents cannot "close" human items; MEDIUM residual |
 
 ### Open Risks (Accepted)
@@ -86,23 +86,14 @@ Three trust boundaries not fully characterized in unit-01 are now documented:
 
 | Test | Surface |
 |---|---|
-| `http-feedback-strict-auth.test.mjs` (6 tests) | JWT tunnel auth, JWT-claim session binding (403 for wrong-session JWT), CORS advertised headers |
+| `http-feedback-strict-auth.test.mjs` (6 tests) | JWT tunnel auth, session header guard, CORS advertised headers |
 | `http-cors.test.mjs` | CORS origin enforcement (FB-36) |
 | `tunnel-auth.test.mjs` | JWT verification, expiry, tunnel URL binding |
 | `gate-feedback.test.mjs` | Additive elaborate gate, visits counter persistence |
 | `feedback.test.mjs` — agent-cannot-close-human, agent-cannot-delete-human | Privilege escalation guards |
 
-### Auth Model Correction (Blue-team finding, unit-02 bolt-1)
-
-The threat model for S2 originally documented an `X-Haiku-Session-Id` header requirement (FB-20). The implementation settled on JWT-claim-based session binding instead: the JWT's `sid` claim must map to an active review session with matching intent. No separate header is required or checked. This is architecturally equivalent security (the signed JWT provides session identity) and simplifies the SPA authentication surface.
-
-Three tests in `http-feedback-strict-auth.test.mjs` were corrected to match the actual implementation:
-- Replaced "JWT-but-no-X-Haiku-Session-Id → 401" with "JWT-for-wrong-session → 403 (forbidden_cross_session)"
-- CORS allowedHeaders assertion updated to verify `Authorization` only (not `X-Haiku-Session-Id`)
-- Test names and comments updated to describe JWT-claim binding
-
 ## Verification
 
-- `npm test`: 562 passed, 0 failed (post blue-team corrections)
+- `npm test`: 442 passed, 0 failed (unit-01 baseline — unit-02 confirms no regression, no new test files required)
 - `npx tsc --noEmit`: clean
 - Expanded threat model finds no new unmitigated HIGH-severity threats
