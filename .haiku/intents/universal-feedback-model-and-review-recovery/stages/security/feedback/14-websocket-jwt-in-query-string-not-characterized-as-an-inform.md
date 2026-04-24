@@ -2,7 +2,7 @@
 title: >-
   WebSocket JWT in query string not characterized as an information disclosure
   surface
-status: fixing
+status: closed
 origin: adversarial-review
 author: threat-coverage
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-24T14:42:22Z'
 iteration: 1
 visit: 1
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-14:bolt-1'
 bolt: 1
 upstream_stage: null
 resolution: null
