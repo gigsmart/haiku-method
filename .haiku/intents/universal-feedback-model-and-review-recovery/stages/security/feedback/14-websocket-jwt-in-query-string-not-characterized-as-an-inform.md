@@ -15,6 +15,7 @@ bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
+integrator_attempts: 1
 ---
 
 The client-side WebSocket upgrade in `packages/haiku-ui/src/api/client.ts` (the `openWebSocket` method) appends the tunnel JWT as `?t=<jwt>` in the URL:
