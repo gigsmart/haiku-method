@@ -15,7 +15,7 @@ bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
-integrator_attempts: 1
+integrator_attempts: 2
 ---
 
 **Threat:** Agents can call `haiku_feedback_update` to set `status: "addressed"` on human-authored feedback items. The `updateFeedbackFile` guard only blocks agents from setting `status: "closed"` on human-authored items (state-tools.ts:2243-2252). The `addressed` status is not blocked. Since `countPendingFeedback` counts only items where `status === "pending"` (not `addressed`), an agent marking human feedback as `addressed` causes the gate to open, allowing stage advancement without any human action.
