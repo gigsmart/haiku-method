@@ -1,6 +1,6 @@
 ---
 title: Health check returns liveness-only "ok" — no readiness verification
-status: fixing
+status: closed
 origin: adversarial-review
 author: reliability
 author_type: agent
@@ -8,7 +8,7 @@ created_at: '2026-04-24T04:04:35Z'
 iteration: 1
 visit: 1
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:manual-validation'
 bolt: 3
 upstream_stage: null
 resolution: null
