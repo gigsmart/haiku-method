@@ -7,6 +7,26 @@ Scope: Feedback file creation/mutation (MCP tools + HTTP API), gate-phase enforc
 
 ---
 
+## 0. Entry-Point Inventory
+
+The feedback model introduces or touches the following HTTP entry points. Each one is an untrusted-input boundary where caller-supplied parameters cross into filesystem / state operations. Validation chains are enumerated per endpoint so the defense-in-depth layer covering each surface is explicit.
+
+| # | Endpoint | Method | Caller-supplied params | Validation chain | Filesystem reach |
+|---|---|---|---|---|---|
+| E1 | `/api/feedback/:intent/:stage` | POST | `intent`, `stage` (URL); JSON body validated by `FeedbackCreateSchema` | `requireTunnelAuth` → `isValidSlug(intent)` → `isValidSlug(stage)` → `validateIntent(intent)` → Zod body schema → `writeFeedbackFile` (which calls `slugifyTitle` for filenames and joins under `intentDir`) | Writes `.haiku/intents/{intent}/stages/{stage}/feedback/FB-NN-*.md` (+ optional attachment PNG) |
+| E2 | `/api/feedback/:intent/:stage/:id` | PUT | `intent`, `stage`, `id` (URL); JSON body validated by `FeedbackUpdateSchema` | `requireTunnelAuth` → `verifyFeedbackMutationAuth` (JWT sid-binding) → `isValidSlug(intent/stage/id)` → `updateFeedbackFile` (`callerContext: "human"`) | Mutates frontmatter on existing feedback file |
+| E3 | `/api/feedback/:intent/:stage/:id` | DELETE | `intent`, `stage`, `id` (URL) | `requireTunnelAuth` → `verifyFeedbackMutationAuth` → `isValidSlug(intent/stage/id)` → `deleteFeedbackFile` (`callerContext: "human"`) | Deletes feedback file |
+| E4 | `/api/feedback-attachment/:intent/:stage/:filename` | GET | `intent`, `stage`, `filename` (URL) | `requireTunnelAuth` → `isValidSlug(intent)` → `isValidSlug(stage)` → filename regex `^[A-Za-z0-9._-]+\.(png\|jpg\|jpeg\|webp\|svg)$` → `serveUnderRoot(reply, feedbackRoot, filename)` (realpath escape check) | Reads `.haiku/intents/{intent}/stages/{stage}/feedback/{filename}` as `image/*` body |
+| M1 | MCP tool `haiku_feedback` / `haiku_feedback_update` / `haiku_feedback_delete` / `haiku_feedback_reject` | MCP | `intent`, `stage`, `feedback_id`, body fields | `validateSlugArgs` (covers `intent`, `slug`, `stage`, `unit`, `feedback_id`) → `writeFeedbackFile` / `updateFeedbackFile` / `deleteFeedbackFile` (`callerContext: "agent"`) | Same feedback directory; author-type guards prevent agent-close of human items |
+
+**Notes on the attachment endpoint (E4):**
+
+- The validation chain for E4 is **different** from E1/E2/E3. E4 does NOT route through `validateSlugArgs` (which is MCP-only) and the `filename` parameter does NOT use `isValidSlug` (because attachment filenames legitimately contain `.` for the extension, which `isValidSlug` rejects). Instead, E4 pairs a **whitelist-regex** (restricts to allowed image extensions and the `[A-Za-z0-9._-]` charset — no `/`, `\`, or `..` substrings) with **`serveUnderRoot`**, which resolves the final path via `realpath` and verifies it stays within `feedbackRoot`. Either layer alone would be insufficient; together they are defense-in-depth (see §3a).
+- The regex **does** allow filenames like `foo.bar.png` (dots in the stem), and it would also match `..png` if preceded by a non-dot character. Neither is a traversal vector because the filename is joined under `feedbackRoot` with `path.join`, and `serveUnderRoot` rejects any resolved path whose `realpath` escapes `feedbackRoot`. The regex is there to reject obvious separators and force a known image extension; the realpath escape check is the authoritative traversal guard.
+- E4 is read-only and serves locally-generated attachments created by `writeFeedbackFile`. It does not accept uploads. No agent-authored or HTTP-authored request can cause arbitrary files to land under `feedbackRoot` — only `writeFeedbackFile` writes there, and it controls the basename.
+
+---
+
 ## 1. STRIDE Analysis
 
 ### S — Spoofing
@@ -212,9 +232,11 @@ The feedback system makes no outbound HTTP requests. All operations are local fi
 
 ## 3. Defense-in-Depth Measures
 
-### 3a. `validateSlugArgs` hardening
+### 3a. `validateSlugArgs` hardening (MCP layer)
 
 `feedback_id` has been added to the checked keys array in `validateSlugArgs()` (state-tools.ts). This ensures that any MCP tool receiving a `feedback_id` argument will reject path traversal attempts (`../`, `/`, `\`) before any filesystem access occurs.
+
+**Scope note:** `validateSlugArgs` runs only inside `handleStateTool` — it does **not** cover HTTP entry points. HTTP entry points are covered by `isValidSlug()` (E1–E3) and by the dedicated regex + `serveUnderRoot` chain on the attachment endpoint (E4). See §3b for the full dual-layer picture.
 
 **Verification:** Three new tests in `state-tools-handlers.test.mjs`:
 1. `haiku_feedback_update` rejects `feedback_id` with `../../../etc/passwd`
@@ -225,9 +247,17 @@ The feedback system makes no outbound HTTP requests. All operations are local fi
 
 Feedback identifiers are validated at two independent layers:
 1. **MCP layer:** `validateSlugArgs` in `handleStateTool` (covers all MCP tool invocations).
-2. **HTTP layer:** `isValidSlug()` in each HTTP handler (`handleFeedbackPut`, `handleFeedbackDelete`).
+2. **HTTP layer:** `isValidSlug()` in each feedback CRUD handler (E1 POST, E2 PUT, E3 DELETE).
 
 Neither layer trusts the other. Both reject independently.
+
+**Attachment endpoint (E4) is a separate case.** The `filename` parameter of `/api/feedback-attachment/:intent/:stage/:filename` is not a slug in the `isValidSlug` sense (it must contain a `.ext` suffix). It is instead validated by:
+1. A whitelist regex `^[A-Za-z0-9._-]+\.(png|jpg|jpeg|webp|svg)$` — which structurally excludes `/`, `\`, and any non-image extension. This rejects the common `..%2F`, `foo/bar`, and `foo\bar` traversal shapes at the HTTP layer.
+2. `serveUnderRoot(reply, feedbackRoot, filename)` — which joins `filename` under `feedbackRoot`, calls `fs.realpath` on the result, and verifies the resolved path still starts with `feedbackRoot`. This catches any residual edge case (e.g. symlinks, case-folded filesystems) that the regex alone would miss.
+
+The `intent` and `stage` params on E4 still go through `isValidSlug` just like E1–E3, so cross-stage or cross-intent traversal via those segments is blocked by the same rule as the other endpoints.
+
+**Why the regex alone is not considered sufficient:** The regex permits filenames with multiple dots in the stem (e.g. `foo.bar.png`). In a vanilla filesystem this is harmless, but `realpath` is the authoritative check because it normalizes away any exotic case and fails closed if resolution escapes `feedbackRoot`. The regex exists to cheaply reject malformed input; the realpath check is the security boundary.
 
 ### 3c. Immutable derivation
 
