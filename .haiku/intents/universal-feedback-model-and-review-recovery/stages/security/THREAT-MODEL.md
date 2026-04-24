@@ -31,19 +31,22 @@ The feedback model introduces or touches the following HTTP entry points. Each o
 
 ### S — Spoofing
 
-**Threat:** An agent impersonates a human author to create feedback that cannot be agent-rejected or agent-closed, effectively creating irremovable gate blockers.
+**Threat:** An agent impersonates a human author to create feedback that cannot be agent-rejected or agent-closed, effectively creating irremovable gate blockers. **Secondary vector:** an HTTP caller (or any loopback caller in local mode) forges the `author` label on a feedback **reply** to impersonate a specific actor (e.g., `"orchestrator"`, `"security-agent"`, or another user), exploiting the trust-boundary gap between the create path (which hardcodes `author: "user"`) and the reply path (which accepts a client-supplied value).
 
-**Likelihood:** Low
+**Likelihood:** Low (local) / Medium (remote tunnel — authenticated but still trust-asymmetric with the create path)
 **Impact:** High
 
 **Mitigation:** `author_type` is derived server-side from `origin` via `deriveAuthorType()` (state-tools.ts:2002). The caller cannot supply `author_type` directly. Human origins (`user-visual`, `user-chat`, `external-pr`, `external-mr`) are only reachable through the HTTP API or orchestrator-internal paths — never through MCP tool handlers. MCP tool handlers always produce `agent` author_type because their origin values resolve to `agent` through the same derivation function.
+
+**Required mitigation (FB-01 — not yet implemented):** The feedback-reply endpoint in `packages/haiku/src/http.ts` must hardcode `author: "user"` in the same way the feedback-create endpoint does, rather than accepting `parsed.data.author ?? "user"`. Until this is fixed, the `author` field on replies is attacker-controlled within the HTTP trust boundary, and the `FeedbackReplyCreateRequestSchema` contract ("when omitted the server stamps 'user' or the agent name from session context") is not enforced. The fix brings the reply path into parity with the create path at http.ts:1526, eliminating the inconsistent trust boundary.
 
 **Verification evidence:**
 - `deriveAuthorType()` is the sole determinant — no tool handler accepts `author_type` as an input parameter.
 - `HUMAN_ORIGINS` set is hardcoded (state-tools.ts:1994).
 - `handleStateTool("haiku_feedback", ...)` never passes caller-supplied `author_type` to `writeFeedbackFile`.
-- HTTP endpoints (`handleFeedbackPost`) hardcode `author: "user"` and use `user-visual` origin.
-- Test: `feedback.test.mjs` verifies `author_type: "agent"` for MCP-created items and `author_type: "human"` for HTTP-created items.
+- HTTP feedback-create endpoint (`handleFeedbackPost`, http.ts:1526) hardcodes `author: "user"` and uses `user-visual` origin — **correct pattern**.
+- HTTP feedback-reply endpoint (http.ts:1784) currently takes `author` from the request body (`parsed.data.author ?? "user"`) — **tracked as FB-01, required fix: hardcode `author: "user"` to match create path**.
+- Test: `feedback.test.mjs` verifies `author_type: "agent"` for MCP-created items and `author_type: "human"` for HTTP-created items. A regression test must be added asserting that a reply POST with a client-supplied `author` value is ignored and `"user"` is written.
 
 ---
 
