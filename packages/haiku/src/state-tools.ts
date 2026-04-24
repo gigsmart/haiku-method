@@ -3041,10 +3041,25 @@ export const MAX_CONCURRENT_SUBAGENTS = (() => {
 
 export type FeedbackStatus = (typeof FEEDBACK_STATUSES)[number]
 
-/** Origins that imply a human author. */
+/** Origins that imply a human author.
+ *
+ * Any origin produced by a human-facing entry point (review UI composer, HTTP
+ * endpoints, external VCS review systems) MUST be listed here so that
+ * `deriveAuthorType()` classifies the resulting feedback as `"human"` and the
+ * agent-facing privilege guards in `updateFeedbackFile` / `deleteFeedbackFile`
+ * refuse to let agents close or delete it.
+ *
+ * Note specifically: `user-question` IS a human origin. It is created by the
+ * review UI question composer (`FeedbackSidebar.tsx` → `createFeedback` with
+ * `origin: "user-question"`) when a human reviewer submits a reply-seeking
+ * item. Historically this was omitted, which caused human questions to be
+ * stored with `author_type: "agent"` and therefore become removable by agents
+ * — an elevation-of-privilege hole across the MCP/HTTP trust boundary.
+ */
 const HUMAN_ORIGINS: ReadonlySet<string> = new Set([
 	"user-visual",
 	"user-chat",
+	"user-question",
 	"external-pr",
 	"external-mr",
 ])

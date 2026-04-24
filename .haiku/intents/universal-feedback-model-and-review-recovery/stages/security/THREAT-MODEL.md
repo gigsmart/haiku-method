@@ -16,14 +16,16 @@ Scope: Feedback file creation/mutation (MCP tools + HTTP API), gate-phase enforc
 **Likelihood:** Low
 **Impact:** High
 
-**Mitigation:** `author_type` is derived server-side from `origin` via `deriveAuthorType()` (state-tools.ts:2002). The caller cannot supply `author_type` directly. Human origins (`user-visual`, `user-chat`, `external-pr`, `external-mr`) are only reachable through the HTTP API or orchestrator-internal paths — never through MCP tool handlers. MCP tool handlers always produce `agent` author_type because their origin values resolve to `agent` through the same derivation function.
+**Mitigation:** `author_type` is derived server-side from `origin` via `deriveAuthorType()` (state-tools.ts). The caller cannot supply `author_type` directly. Human origins (`user-visual`, `user-chat`, `user-question`, `external-pr`, `external-mr`) are only reachable through the HTTP API or orchestrator-internal paths — never through MCP tool handlers. MCP tool handlers always produce `agent` author_type because their origin values resolve to `agent` through the same derivation function.
+
+Trust-boundary crossing: every human-origin value in `FEEDBACK_ORIGINS` must also appear in `HUMAN_ORIGINS`. The review UI's question composer (`FeedbackSidebar.tsx`) crosses the UI → HTTP → state-tools boundary with `origin: "user-question"`, so `user-question` MUST be in `HUMAN_ORIGINS`. If it were omitted, human-authored questions would be stored with `author_type: "agent"` and the privilege guards in `updateFeedbackFile`/`deleteFeedbackFile` (which only protect `author_type === "human"` items) would let any agent close or delete them — an elevation-of-privilege vector across an internal trust boundary.
 
 **Verification evidence:**
 - `deriveAuthorType()` is the sole determinant — no tool handler accepts `author_type` as an input parameter.
-- `HUMAN_ORIGINS` set is hardcoded (state-tools.ts:1994).
+- `HUMAN_ORIGINS` set is hardcoded (state-tools.ts `HUMAN_ORIGINS` constant) and lists every user-facing origin declared in `FEEDBACK_ORIGINS`.
 - `handleStateTool("haiku_feedback", ...)` never passes caller-supplied `author_type` to `writeFeedbackFile`.
-- HTTP endpoints (`handleFeedbackPost`) hardcode `author: "user"` and use `user-visual` origin.
-- Test: `feedback.test.mjs` verifies `author_type: "agent"` for MCP-created items and `author_type: "human"` for HTTP-created items.
+- HTTP endpoints (`handleFeedbackPost`) hardcode `author: "user"` and use a human origin (`user-visual`, `user-chat`, or `user-question` depending on the composer mode).
+- Test: `feedback.test.mjs` verifies `deriveAuthorType` returns `"human"` for every entry in `HUMAN_ORIGINS` (including `user-question`) and `"agent"` for MCP-originated values.
 
 ---
 
