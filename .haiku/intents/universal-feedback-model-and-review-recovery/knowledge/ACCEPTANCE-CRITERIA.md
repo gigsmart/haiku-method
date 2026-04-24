@@ -71,9 +71,23 @@
 ### AC-02.4: Update feedback status
 
 - **Given** a pending feedback item FB-02 authored by an agent
-- **When** `haiku_feedback_update({ intent: "my-intent", stage: "development", feedback_id: "02", status: "addressed", addressed_by: "unit-03-fix-null-check" })` is called
-- **Then** the feedback file's frontmatter is updated with `status: addressed` and `addressed_by: unit-03-fix-null-check`
+- **When** `haiku_feedback_update({ intent: "my-intent", stage: "development", feedback_id: "02", status: "addressed", closed_by: "unit-03-fix-null-check" })` is called
+- **Then** the feedback file's frontmatter is updated with `status: addressed` and `closed_by: unit-03-fix-null-check`
 - **And** a git commit is created
+
+### AC-02.4a: Set resolution routing hint
+
+- **Given** a pending feedback item FB-02 authored by an agent
+- **When** `haiku_feedback_update({ intent: "my-intent", stage: "development", feedback_id: "02", resolution: "inline_fix" })` is called
+- **Then** the feedback file's frontmatter is updated with `resolution: inline_fix`
+- **And** a git commit is created
+
+### AC-02.4b: No-op error when no updatable fields are provided
+
+- **Given** a pending feedback item FB-02
+- **When** `haiku_feedback_update({ intent: "my-intent", stage: "development", feedback_id: "02" })` is called with no `status`, `closed_by`, or `resolution`
+- **Then** the call returns an error: "at least one of 'status' / 'closed_by' / 'resolution' must be provided"
+- **And** the file is unchanged
 
 ### AC-02.5: Agent cannot close human-authored feedback
 
@@ -85,7 +99,7 @@
 ### AC-02.6: Agent can mark human-authored feedback as addressed
 
 - **Given** a pending feedback item authored by `author_type: human`
-- **When** an agent calls `haiku_feedback_update({ ..., feedback_id: "01", status: "addressed", addressed_by: "unit-04-layout-fix" })`
+- **When** an agent calls `haiku_feedback_update({ ..., feedback_id: "01", status: "addressed", closed_by: "unit-04-layout-fix" })`
 - **Then** the update succeeds and status changes to `addressed`
 
 ### AC-02.7: Delete feedback — cannot delete pending items
