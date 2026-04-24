@@ -27,14 +27,21 @@ inputs:
 model: sonnet
 status: active
 bolt: 1
-hat: threat-modeler
+hat: red-team
 started_at: '2026-04-24T13:59:29Z'
-hat_started_at: '2026-04-24T13:59:29Z'
+hat_started_at: '2026-04-24T14:07:13Z'
 iterations:
   - hat: threat-modeler
     started_at: '2026-04-24T13:59:29Z'
+    completed_at: '2026-04-24T14:07:13Z'
+    result: advance
+  - hat: red-team
+    started_at: '2026-04-24T14:07:13Z'
     completed_at: null
     result: null
+outputs:
+  - stages/security/artifacts/assessments.md
+  - stages/security/artifacts/threat-model-expanded.md
 ---
 # Expanded-Surface Threat Model and Hardening
 
