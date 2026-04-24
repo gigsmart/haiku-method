@@ -5476,6 +5476,49 @@ function buildRunInstructions(
 				}
 			}
 
+			// Explicit "read all preceding stages" directive. The `inputs:`
+			// block above lists what the studio declared as required for
+			// this stage, but the elaboration agent MAY need context from
+			// any prior stage — not just the one immediately preceding
+			// this one, and not just the declared inputs. Enumerate them
+			// explicitly so the parent knows to look across the whole
+			// intent history before drafting units.
+			{
+				const orderedStages = resolveIntentStages(
+					existsSync(join(dir, "intent.md"))
+						? readFrontmatter(join(dir, "intent.md"))
+						: {},
+					studio,
+				)
+				const myIdx = orderedStages.indexOf(stage)
+				const priorStages = myIdx > 0 ? orderedStages.slice(0, myIdx) : []
+				if (priorStages.length > 0) {
+					const enumLines: string[] = [
+						"## Prior-Stage Context (READ BEFORE DRAFTING UNITS)",
+						"",
+						`This stage (\`${stage}\`) has ${priorStages.length} preceding stage${priorStages.length === 1 ? "" : "s"} — **${priorStages.join(", ")}**. Every one of them has committed artifacts on the intent branch that may inform your unit decomposition. The \`inputs:\` block above lists what the studio formally declared as required; this block covers everything else the parent should enumerate before planning work.`,
+						"",
+						"For **each** preceding stage, read whatever applies:",
+						"",
+					]
+					for (const prior of priorStages) {
+						const priorDir = `.haiku/intents/${slug}/stages/${prior}`
+						enumLines.push(
+							`- **${prior}**`,
+							`  - Discovery / knowledge artifacts: \`${priorDir}/knowledge/\`, plus any project-scope docs under \`.haiku/knowledge/\` produced during that stage`,
+							`  - Unit specs: \`${priorDir}/units/unit-*.md\` — tell you WHAT was built and the acceptance criteria used`,
+							`  - Stage outputs: any files under \`${priorDir}/\` outside \`units/\` (e.g. \`${priorDir}/*.md\` reports, \`${priorDir}/artifacts/\`)`,
+							`  - Resolved feedback: \`${priorDir}/feedback/*.md\` — closed findings explain quality decisions and trade-offs`,
+						)
+					}
+					enumLines.push(
+						"",
+						"Do NOT limit yourself to the declared `inputs:` list when drafting units — it is the **minimum**, not the maximum. When a unit references an artifact from a prior stage you discovered via enumeration, add that path to the unit's own `inputs:` frontmatter so the execution agents (one per hat in the unit's hat sequence) have the same context.",
+					)
+					sections.push(enumLines.join("\n"))
+				}
+			}
+
 			// Discovery fan-out — one subagent per declared discovery artifact,
 			// each in its own isolation worktree off the stage branch. The
 			// pattern mirrors fix-chain worktrees: subagents write in their
@@ -5491,6 +5534,12 @@ function buildRunInstructions(
 			const discoveryArtifactsAll: Array<{
 				name: string
 				templatePath: string
+				/** Resolved absolute output path from the template's
+				 *  `location:` frontmatter. Used to detect "already on disk"
+				 *  so we don't re-dispatch subagents for artifacts that have
+				 *  already landed in a prior tick. Null if the template has
+				 *  no `location:` field (defensive — older templates). */
+				outputPath: string | null
 			}> = []
 			{
 				const seen = new Set<string>()
@@ -5502,20 +5551,45 @@ function buildRunInstructions(
 					)) {
 						if (seen.has(f)) continue
 						seen.add(f)
+						const templatePath = join(discoveryDir, f)
+						// Parse the template's frontmatter for its `location:`
+						// field. Resolves studio-agnostically:
+						// `.haiku/knowledge/...` paths go under the repo root
+						// (process.cwd()); anything else is treated as relative
+						// to the intent dir. Templates without a `location:`
+						// fall back to the legacy <NAME>.md convention under
+						// `knowledge/` so older studios still work.
+						const tplRaw = readFileSync(templatePath, "utf8")
+						const { data: tplFM } = parseFrontmatter(tplRaw)
+						const loc = (tplFM as { location?: unknown }).location
+						let outputPath: string | null = null
+						if (typeof loc === "string" && loc.length > 0) {
+							if (loc.startsWith(".haiku/")) {
+								outputPath = join(process.cwd(), loc)
+							} else if (loc.startsWith("/")) {
+								outputPath = loc
+							} else {
+								outputPath = join(dir, loc)
+							}
+						}
 						discoveryArtifactsAll.push({
 							name: f.replace(/\.md$/i, "").toLowerCase(),
-							templatePath: join(discoveryDir, f),
+							templatePath,
+							outputPath,
 						})
 					}
 				}
 			}
 
 			// Filter out artifacts whose output files already exist on disk
-			// (produced on a prior tick, already merged). Convention: the
-			// template filename (uppercased) is the artifact's output name
-			// under `knowledge/`.
+			// (produced on a prior tick, already merged). Uses the template's
+			// declared `location:` path when present so this works across
+			// studios with different output conventions.
 			const knowledgeDir = join(dir, "knowledge")
 			const discoveryArtifacts = discoveryArtifactsAll.filter((a) => {
+				if (a.outputPath) return !existsSync(a.outputPath)
+				// Fallback for templates without `location:` — the legacy
+				// `knowledge/<NAME>.md` shape.
 				const candidate = join(knowledgeDir, `${a.name.toUpperCase()}.md`)
 				return !existsSync(candidate)
 			})

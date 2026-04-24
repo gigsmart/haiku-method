@@ -1562,6 +1562,13 @@ export function isGitRepo(): boolean {
 	return _isGitRepo
 }
 
+/** Reset the cached git-repo detection. Intended for tests that change cwd
+ *  between different repos (real git / non-git / different real git). Not
+ *  called in production — the process runs with a single cwd. */
+export function _resetIsGitRepoForTests(): void {
+	_isGitRepo = null
+}
+
 // ── Inline quality gates (for hookless harnesses) ─────────────────────────
 //
 // Mirrors the quality-gate Stop hook logic but runs inside haiku_unit_advance_hat.
