@@ -1767,7 +1767,7 @@ function fsmFinalizeStageIntoIntentMain(slug: string, stage: string): void {
 		const mergeResult = mergeStageBranchIntoMain(slug, stage)
 		if (!mergeResult.success) {
 			console.error(
-				`[fsmFinalizeStageIntoIntentMain] merge ${stageBranch}→${intentMain} failed: ${mergeResult.message}. Intent-completion review will still open; resolve the merge manually before approving the final gate.`,
+				`[fsmFinalizeStageIntoIntentMain] merge ${stageBranch}→${intentMain} failed: ${mergeResult.message}.\nIntent-completion review will still open; resolve the merge manually before approving the final gate.\nRecovery paths for the stage branch if the reap below loses it before you can merge:\n  - \`git reflog show ${stageBranch}\` — the branch's tip is still in reflog until gc runs (default 90 days).\n  - \`origin/${stageBranch}\` — if the branch was pushed, the remote tracking ref still has the tip.\n  - \`git fsck --lost-found\` — catches dangling commits even after the branch ref is deleted.`,
 			)
 			// Intentionally don't return — still try to switch to main so
 			// at least subsequent operations run against the correct
