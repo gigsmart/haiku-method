@@ -1,7 +1,7 @@
 ---
 title: FeedbackStatus and FeedbackOrigin enums expanded in implementation without
   updating product-stage DATA-CONTRACTS.md
-status: pending
+status: closed
 origin: studio-review
 author: cross-stage-consistency
 author_type: agent
@@ -9,6 +9,7 @@ created_at: '2026-04-24T19:30:00Z'
 visit: 0
 source_ref: null
 addressed_by: null
+closed_by: intent-fix:FB-01:bolt-1
 ---
 
 The product stage's `knowledge/DATA-CONTRACTS.md` specifies:
