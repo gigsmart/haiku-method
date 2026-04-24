@@ -20,7 +20,7 @@ Replaces the former Sentry bug-report tool (renamed to `haiku_report`).
 | `stage` | string | yes | Must match a declared stage directory under the intent | `"development"` |
 | `title` | string | yes | Non-empty, max 120 chars, used to derive filename slug | `"Missing null check in writeFeedbackFile"` |
 | `body` | string | yes | Non-empty markdown, no max length | `"The function at state-tools.ts:1720 does not handle the case where..."` |
-| `origin` | string | no | Enum: `adversarial-review`, `studio-review`, `external-pr`, `external-mr`, `user-visual`, `user-chat`, `user-question`, `agent`. Defaults to `"agent"` | `"adversarial-review"` |
+| `origin` | string | no | Enum: `adversarial-review`, `external-pr`, `external-mr`, `user-visual`, `user-chat`, `agent`. Defaults to `"agent"` | `"adversarial-review"` |
 | `source_ref` | string | no | Free-form reference (PR URL, review agent name, annotation ID) | `"https://github.com/org/repo/pull/42"` |
 | `author` | string | no | Who created it. Defaults to `"agent"` for agent callers, `"user"` for human-origin items | `"security-review-agent"` |
 
@@ -34,7 +34,7 @@ Replaces the former Sentry bug-report tool (renamed to `haiku_report`).
     stage:      { type: "string", description: "Stage name" },
     title:      { type: "string", description: "Short title for the feedback item (max 120 chars)" },
     body:       { type: "string", description: "Markdown body describing the finding" },
-    origin:     { type: "string", description: "Source: adversarial-review | studio-review | external-pr | external-mr | user-visual | user-chat | user-question | agent (default: agent)" },
+    origin:     { type: "string", description: "Source: adversarial-review | external-pr | external-mr | user-visual | user-chat | agent (default: agent)" },
     source_ref: { type: "string", description: "Optional reference — PR URL, review agent name, annotation ID" },
     author:     { type: "string", description: "Who created it (default: agent)" },
   },
@@ -63,7 +63,7 @@ Replaces the former Sentry bug-report tool (renamed to `haiku_report`).
 | Missing `body` | `true` | `"Error: body is required"` |
 | `title` exceeds 120 chars | `true` | `"Error: title must be 120 characters or fewer"` |
 | Intent not found | `true` | `"Error: intent 'bad-slug' not found"` |
-| Invalid `origin` enum value | `true` | `"Error: origin must be one of: adversarial-review, studio-review, external-pr, external-mr, user-visual, user-chat, user-question, agent"` |
+| Invalid `origin` enum value | `true` | `"Error: origin must be one of: adversarial-review, external-pr, external-mr, user-visual, user-chat, agent"` |
 | Stage not found | `true` | `"Error: stage 'nonexistent' not found under intent 'my-intent'"` |
 
 **Side Effects:**
@@ -86,7 +86,7 @@ Update mutable fields on an existing feedback item.
 | `intent` | string | yes | Existing intent slug | `"universal-feedback-model-and-review-recovery"` |
 | `stage` | string | yes | Existing stage name | `"development"` |
 | `feedback_id` | string | yes | `FB-NN` identifier (e.g., `"FB-03"`) or numeric prefix (e.g., `"03"`) | `"FB-03"` |
-| `status` | string | no | Enum: `pending`, `fixing`, `addressed`, `answered`, `closed`, `rejected` | `"addressed"` |
+| `status` | string | no | Enum: `pending`, `addressed`, `closed`, `rejected` | `"addressed"` |
 | `addressed_by` | string | no | Unit slug that claims to address this item | `"unit-04-fix-null-check"` |
 
 **MCP inputSchema (TypeScript):**
@@ -98,7 +98,7 @@ Update mutable fields on an existing feedback item.
     intent:       { type: "string", description: "Intent slug" },
     stage:        { type: "string", description: "Stage name" },
     feedback_id:  { type: "string", description: "FB-NN identifier or numeric prefix" },
-    status:       { type: "string", description: "New status: pending | fixing | addressed | answered | closed | rejected" },
+    status:       { type: "string", description: "New status: pending | addressed | closed | rejected" },
     addressed_by: { type: "string", description: "Unit slug that addresses this feedback" },
   },
   required: ["intent", "stage", "feedback_id"],
@@ -128,7 +128,7 @@ Update mutable fields on an existing feedback item.
 | Feedback file not found | `true` | `"Error: feedback 'FB-03' not found in stage 'development'"` |
 | Agent tries to close human-authored | `true` | `"Error: agents cannot set status 'closed' on human-authored feedback. Only the original author can close it."` |
 | No updatable fields provided | `true` | `"Error: at least one of 'status' or 'addressed_by' must be provided"` |
-| Invalid `status` enum | `true` | `"Error: status must be one of: pending, fixing, addressed, answered, closed, rejected"` |
+| Invalid `status` enum | `true` | `"Error: status must be one of: pending, addressed, closed, rejected"` |
 
 **Side Effects:**
 
@@ -265,7 +265,7 @@ List feedback items with optional filtering.
 |---|---|---|---|---|
 | `intent` | string | yes | Existing intent slug | `"universal-feedback-model-and-review-recovery"` |
 | `stage` | string | no | Stage name. If omitted, lists feedback across all stages. | `"development"` |
-| `status` | string | no | Filter by status: `pending`, `fixing`, `addressed`, `answered`, `closed`, `rejected`. If omitted, returns all. | `"pending"` |
+| `status` | string | no | Filter by status: `pending`, `addressed`, `closed`, `rejected`. If omitted, returns all. | `"pending"` |
 
 **MCP inputSchema (TypeScript):**
 
@@ -275,7 +275,7 @@ List feedback items with optional filtering.
   properties: {
     intent: { type: "string", description: "Intent slug" },
     stage:  { type: "string", description: "Stage name (optional -- omit to list all stages)" },
-    status: { type: "string", description: "Filter by status: pending | fixing | addressed | answered | closed | rejected" },
+    status: { type: "string", description: "Filter by status: pending | addressed | closed | rejected" },
   },
   required: ["intent"],
 }
@@ -367,7 +367,7 @@ Note: `feedback_id` values (e.g., `FB-01`) are scoped per-stage. The same `FB-01
 | Condition | `isError` | Text |
 |---|---|---|
 | Intent not found | `true` | `"Error: intent 'bad-slug' not found"` |
-| Invalid `status` filter | `true` | `"Error: status must be one of: pending, fixing, addressed, answered, closed, rejected"` |
+| Invalid `status` filter | `true` | `"Error: status must be one of: pending, addressed, closed, rejected"` |
 
 **Side Effects:** None (read-only).
 
@@ -467,7 +467,7 @@ GET /api/feedback/universal-feedback-model-and-review-recovery/development HTTP/
 
 | Param | Type | Required | Description |
 |---|---|---|---|
-| `status` | string | no | Filter: `pending`, `fixing`, `addressed`, `answered`, `closed`, `rejected` |
+| `status` | string | no | Filter: `pending`, `addressed`, `closed`, `rejected` |
 
 **Success Response (`200`):**
 
@@ -540,7 +540,7 @@ Content-Type: application/json
 z.object({
   title:      z.string().min(1).max(120),
   body:       z.string().min(1),
-  origin:     z.enum(["adversarial-review", "studio-review", "external-pr", "external-mr", "user-visual", "user-chat", "user-question", "agent"]).optional().default("user-visual"),
+  origin:     z.enum(["adversarial-review", "external-pr", "external-mr", "user-visual", "user-chat", "agent"]).optional().default("user-visual"),
   source_ref: z.string().nullable().optional(),
 })
 ```
@@ -587,7 +587,7 @@ Content-Type: application/json
 
 ```typescript
 z.object({
-  status:       z.enum(["pending", "fixing", "addressed", "answered", "closed", "rejected"]).optional(),
+  status:       z.enum(["pending", "addressed", "closed", "rejected"]).optional(),
   addressed_by: z.string().optional(),
 }).refine(data => data.status !== undefined || data.addressed_by !== undefined, {
   message: "At least one of 'status' or 'addressed_by' must be provided",
@@ -653,6 +653,54 @@ DELETE /api/feedback/universal-feedback-model-and-review-recovery/development/FB
 
 ---
 
+### 2.5 `POST /api/feedback/{intent}/{stage}/{id}/replies`
+
+Add a reply to a feedback item thread. Used for answering questions, recording justifications, and short back-and-forth discussion without creating a new feedback item.
+
+**Request:**
+
+```
+POST /api/feedback/universal-feedback-model-and-review-recovery/development/FB-03/replies HTTP/1.1
+Content-Type: application/json
+
+{
+  "body": "Confirmed -- the null check was added in unit-05 at line 45.",
+  "close_as_answered": true
+}
+```
+
+**Request Body (Zod schema):**
+
+```typescript
+z.object({
+  body:             z.string().min(1).max(5_000),
+  author:           z.string().max(200).optional(),   // ignored by server; stamped from session context
+  close_as_answered: z.boolean().optional(),           // transitions parent to `answered` in the same write
+})
+```
+
+**Success Response (`201`):**
+
+```json
+{
+  "feedback_id": "FB-03",
+  "reply_index": 0,
+  "status": "answered",
+  "message": "Reply added to FB-03."
+}
+```
+
+**Error Responses:**
+
+| Status | Body | Condition |
+|---|---|---|
+| `400` | `{ "error": "validation_failed", ... }` | Body fails schema validation |
+| `404` | `{ "error": "Feedback 'FB-99' not found in stage 'development'" }` | Feedback item not found |
+
+**Side Effects:** Appends the reply object to the feedback file's `replies:` frontmatter array. If `close_as_answered: true`, sets `status: answered` in the same write. Calls `gitCommitState`.
+
+---
+
 ## 3. Feedback File Schema
 
 ### 3.1 File Location
@@ -694,14 +742,18 @@ addressed_by: null
 | Field | Type | Required | Default | Enum Values | Validation | Example |
 |---|---|---|---|---|---|---|
 | `title` | string | yes | -- | -- | Non-empty, max 120 chars | `"Missing null check in writeFeedbackFile"` |
-| `status` | string | yes | `"pending"` | `pending`, `fixing`, `addressed`, `answered`, `closed`, `rejected` | Must be one of the enum values | `"pending"` |
-| `origin` | string | yes | `"agent"` | `adversarial-review`, `studio-review`, `external-pr`, `external-mr`, `user-visual`, `user-chat`, `user-question`, `agent` | Must be one of the enum values | `"adversarial-review"` |
+| `status` | string | yes | `"pending"` | `pending`, `fixing`, `addressed`, `answered`, `closed`, `rejected` | Must be one of the enum values. `fixing` = a fix-hat bolt is actively running against this item. `answered` = question resolved via reply, no code delta needed. Only `pending` and `fixing` block the stage gate. | `"pending"` |
+| `origin` | string | yes | `"agent"` | `adversarial-review`, `studio-review`, `external-pr`, `external-mr`, `user-visual`, `user-chat`, `user-question`, `agent` | Must be one of the enum values. `studio-review` = intent-completion review agent. `user-question` = reply-seeking item routed via `feedback_answer` rather than a fix loop. | `"adversarial-review"` |
 | `author` | string | yes | `"agent"` or `"user"` | -- | Non-empty. `"user"` for all human-sourced feedback (v1 -- no identity resolution). Agent name for agent-sourced. | `"security-review-agent"` |
 | `author_type` | string | yes | derived | `human`, `agent` | Derived from context: `"human"` when origin is `user-visual`, `user-chat`, `user-question`, `external-pr`, `external-mr`; `"agent"` when origin is `adversarial-review`, `studio-review`, `agent` | `"agent"` |
 | `created_at` | string (ISO 8601) | yes | current timestamp | -- | ISO 8601 format, no milliseconds (matches `timestamp()` helper: `2026-04-15T21:15:00Z`) | `"2026-04-15T21:15:00Z"` |
 | `visit` | number | yes | current `state.visits` value | -- | Non-negative integer. Captures which visit cycle this feedback was created in. | `0` |
 | `source_ref` | string \| null | no | `null` | -- | Free-form. PR URL, review agent name, annotation ID, etc. | `"https://github.com/org/repo/pull/42#discussion_r123"` |
 | `addressed_by` | string \| null | no | `null` | -- | Unit slug (e.g., `"unit-04-fix-null-check"`) or null. Set when a unit claims to address this feedback. | `"unit-04-fix-null-check"` |
+| `closed_by` | string \| null | no | `null` | -- | Unit slug whose feedback-assessor hat certified closure, or null while open. | `"unit-04-fix-null-check"` |
+| `resolution` | string \| null | no | `null` | `question`, `inline_fix`, `stage_revisit`, `upstream_rewind` | Routing hint for the FSM's feedback resolver. `null` / absent defaults to `stage_revisit`. `question` skips the fix loop; `inline_fix` runs a single bolt of fix_hats; `stage_revisit` re-loops the whole stage; `upstream_rewind` routes the finding to the upstream stage. | `"inline_fix"` |
+| `replies` | array \| null | no | `null` / omitted | -- | Thread of reply objects (see §3.6). Empty / absent = no replies yet. Used for answering questions and recording justifications. | `[]` |
+| `inline_anchor` | object \| null | no | `null` / omitted | -- | Inline text-anchor metadata (see §3.7). Present when feedback was created by selecting text in a rendered artifact. Null / absent for visual-pin or plain chat feedback. | (see §3.7) |
 
 ### 3.4 `author_type` Derivation Rules
 
@@ -790,19 +842,17 @@ The feedback body is rendered as raw HTML in the review panel, which could allow
 ```
                   +-> fixing -----+-> addressed --+
                   |               |               |
-pending ----------+               |               +-> closed
+pending ----------+               +               +-> closed
                   |               |               |
-                  +-> addressed --+               |
-                  |                               |
-                  +-> answered -------------------+
+                  +-> answered ---+               |
                   |                               |
                   +-> rejected -------------------+
 ```
 
 - `pending`: Initial state. Blocks the review-to-gate transition.
-- `fixing`: The fix-loop FSM is actively working this item (dispatched via `review_fix`). Still blocks the gate.
-- `addressed`: A unit claims to fix this. Still subject to re-review verification. Does NOT block the gate (only `pending` and `fixing` block).
-- `answered`: A question-type finding was resolved by a reply without a code delta. Does not block the gate. Terminal state.
+- `fixing`: A fix-hat bolt is actively running against this item (dispatched by the FSM fix-loop). Still blocks the gate (treated equivalently to `pending` in gate checks).
+- `addressed`: A unit or fix-hat has applied a code change. Still subject to re-review verification. Does NOT block the gate.
+- `answered`: Question resolved via reply thread; no code delta needed. Does NOT block the gate. Terminal-ish (re-openable by human).
 - `rejected`: Dismissed with a reason. Does not block the gate.
 - `closed`: Verified resolved. Terminal state. Does not block the gate.
 
@@ -810,18 +860,78 @@ Transitions allowed:
 
 | From | To | Who |
 |---|---|---|
-| `pending` | `fixing` | FSM (fix-loop dispatch) |
+| `pending` | `fixing` | FSM (automated, via fix_hats dispatch) |
 | `pending` | `addressed` | Agent or human |
-| `pending` | `answered` | Agent or human (question resolved by reply) |
+| `pending` | `answered` | Agent (via `feedback_answer`) or human |
 | `pending` | `rejected` | Agent (agent-authored only) or human (any) |
 | `pending` | `closed` | Human only |
-| `fixing` | `addressed` | Agent (fix-hat closes the finding) |
-| `fixing` | `pending` | Agent (fix-hat exhausts bolts without resolving) or human (re-open) |
+| `fixing` | `addressed` | Fix-hat agent or human |
+| `fixing` | `pending` | Human (re-open) or FSM on bolt cap exceeded |
 | `addressed` | `closed` | Human only (verification) |
 | `addressed` | `pending` | Human (re-open) or agent |
+| `answered` | `closed` | Human (confirm resolved) |
 | `answered` | `pending` | Human (re-open) |
 | `rejected` | `pending` | Human (re-open) |
 | `closed` | `pending` | Human (re-open) |
+
+---
+
+### 3.7 `FeedbackReply` Object Schema
+
+Replies live under the `replies:` frontmatter array on a feedback file. Each element matches the `FeedbackReplySchema` in `packages/haiku-api/src/schemas/common.ts`.
+
+| Field | Type | Required | Validation | Example |
+|---|---|---|---|---|
+| `author` | string | yes | Non-empty, max 200 chars | `"user"`, `"security-review-agent"` |
+| `author_type` | string | yes | `human` or `agent` | `"human"` |
+| `body` | string | yes | Non-empty, max 5,000 chars | `"Confirmed -- the null check exists at line 45."` |
+| `created_at` | string | yes | ISO 8601, max 40 chars | `"2026-04-15T22:00:00Z"` |
+
+**Example frontmatter snippet:**
+
+```yaml
+replies:
+  - author: user
+    author_type: human
+    body: "The null check was added in unit-05. This can be closed."
+    created_at: "2026-04-15T22:10:00Z"
+```
+
+**Use cases:**
+- Answering a `user-question` feedback item (sets `status: answered`)
+- Recording an agent's justification for a `rejected` transition
+- Short back-and-forth without creating a new feedback item
+
+---
+
+### 3.8 `FeedbackInlineAnchor` Object Schema
+
+The `inline_anchor:` frontmatter field is present on feedback items created by selecting text in a rendered review artifact (as opposed to visual pin-drops or plain chat comments). Matches `FeedbackInlineAnchorSchema` in `packages/haiku-api/src/schemas/feedback.ts`.
+
+| Field | Type | Required | Validation | Description |
+|---|---|---|---|---|
+| `selected_text` | string | yes | Non-empty, max 1,000 chars | The exact text span the reviewer highlighted. Agents use this + `file_path` to locate the anchor. |
+| `paragraph` | number | yes | Non-negative integer, max 10,000 | Zero-based paragraph index inside the reviewed artifact — disambiguates duplicate text. |
+| `location` | string | yes | Max 500 chars | Human-readable label shown in the feedback card (e.g. `"Unit: Threat model and security hardening"`). Display-only, not used for routing. |
+| `comment_id` | string | no | Max 200 chars | DOM `id` of the `<span class="inline-highlight">` at time of save. Lets the viewer scroll-to-element without a fragile text-match. |
+| `file_path` | string | no | Max 1,000 chars | Full relative path from repo root to the artifact file (e.g. `.haiku/intents/<slug>/stages/<stage>/units/unit-01-*.md`). Agent opens this + greps for `selected_text` to find the exact line. |
+| `content_sha` | string | no | Max 64 chars | Hash of the artifact's raw content at comment save time. UI paints the highlight "stale" and shows a "content changed" note if the file has since been modified. |
+
+**Relationship to `InlineCommentSchema`:**
+
+`InlineCommentSchema` (in `common.ts`) is the review-session annotation wire format used during the live review session — it carries `selectedText` (camelCase), `comment`, `paragraph`, and optional `location`. `FeedbackInlineAnchorSchema` is the persisted form stored in the feedback file's frontmatter after the review session completes. The session handler (changes_requested path in `orchestrator.ts`) maps `InlineComment → FeedbackInlineAnchor` when converting annotations to feedback files: `selectedText → selected_text`, `comment → feedback body`, and adds `file_path` / `content_sha` from the live document context.
+
+**Example frontmatter snippet:**
+
+```yaml
+inline_anchor:
+  selected_text: "mkdirSync(feedbackDir, { recursive: true })"
+  paragraph: 3
+  location: "Unit: Fix null check in writeFeedbackFile"
+  comment_id: "inline-highlight-7f3a"
+  file_path: ".haiku/intents/my-intent/stages/development/units/unit-05-fix-null-check.md"
+  content_sha: "a3f9c1d2"
+```
 
 ---
 
