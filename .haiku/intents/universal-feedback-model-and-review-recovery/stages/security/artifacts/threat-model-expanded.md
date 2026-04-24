@@ -173,9 +173,9 @@ This is **asymmetric** with the create endpoint (`handleFeedbackPost`), which ig
 - Human-authored feedback items require human closure (`status: closed`). Even a dishonest feedback-assessor hat cannot close human-authored items via MCP tools.
 - Pending items still block the gate on the next tick — if a unit with `closes:` items passes but the feedback assessor failed to close the items, they remain `pending` and the gate rolls back again.
 
-**Residual risk (MEDIUM):** In auto-gate stages, agent-driven `status: addressed` can allow advancement past human-authored feedback without human verification. This is an accepted design tradeoff — `addressed` is the agent's "I believe this is fixed" signal; the human gate is the verification layer. Stages processing human-authored feedback should use `ask` or `external` gates, not `auto`.
+**Residual risk (MEDIUM — see E2 for full treatment):** In `auto`-gate stages, agent-driven `status: addressed` can allow advancement past human-authored feedback without human verification. This is NOT accepted as residual — see E2 for the required defense-in-depth mitigations (M1 human-author-aware pending count, M2 stage-config enforcement, M3 audit trail). The prior "the human gate is the verification layer" framing was a design assumption, not a mitigation, and failed the defense-in-depth test.
 
-**Status:** Partially mitigated. `addressed` gate residual risk accepted for `auto`-gate stages.
+**Status:** Partially mitigated for the `closes:` channel; see E2 for the full required mitigation stack for agent-driven `addressed` status on human-authored items.
 
 ---
 
@@ -499,20 +499,52 @@ This is a belt-and-suspenders measure — no known forgery path exists today, bu
 ---
 
 #### E2: Rogue subagent marks human items "addressed" to bypass human gate
-**Threat:** A rogue or hallucinating review subagent calls `haiku_feedback_update` with `status: addressed` on human-authored items. This does not close them (agents cannot close human items), but `addressed` items no longer block the gate. In an auto-gate stage, the FSM could advance without human verification of the fix.
+**Threat:** A rogue or hallucinating review subagent calls `haiku_feedback_update` with `status: addressed` on human-authored items. This does not close them via the `closed` guard (agents cannot set `status: closed` on human items), but `addressed` items no longer increment `countPendingFeedback` (state-tools.ts:3351-3363). In an `auto`-gate stage, the FSM advances without any human verification — a single agent call converts a human-authored blocker into a resolved item.
 
-**Likelihood:** Low
-**Impact:** High (for auto-gate stages with human-authored feedback)
+**Trust boundary crossed:** Agent-trust actor (MCP `callerContext: "agent"`) is mutating a field whose gate-clearing semantics belong to the human-trust actor. The `closed` field is guarded at state-tools.ts:3477-3492; the `addressed` status has equivalent gate-clearing effect for `auto` gates but is NOT guarded. The existing guard enforces the wrong invariant: it protects the `closed` label, not the *gate-clearing semantics*.
 
-**Mitigation:**
-- Agents CANNOT set `status: closed` on human-authored feedback.
-- Agents CANNOT delete human-authored feedback.
-- The human gate (`ask` or `external`) requires a human reviewer to explicitly close addressed items.
-- Review subagent prompts instruct subagents to only call `haiku_feedback` (create), not update/reject.
+**Likelihood:** Low (adversarial or hallucinating agent required)
+**Impact:** High (for `auto`-gate stages with human-authored feedback — bypasses the entire human-sign-off layer)
 
-**Remaining risk (MEDIUM):** Auto-gate stages processing human-authored feedback are lower trust. Design recommendation: stages that accept human annotations should use `ask` or `external` gates, not `auto`.
+**Why the prior "partial mitigation" was insufficient (FB-19 finding):**
+The prior writeup listed the human gate (`ask`/`external`) as "the verification backstop." This is a *design assumption*, not a *mitigation*. A mitigation is code/enforcement that stops the attack. The design assumption has three enforcement gaps:
+1. Nothing in `STAGE.md` loading, gate resolution, or feedback creation validates that a stage receiving human-authored feedback uses `ask`/`external` gate.
+2. Stages configured with `review: auto` can still receive human-authored feedback (via `POST /api/feedback/{intent}/{stage}` from the review UI or via `user-visual`/`user-chat` origins).
+3. `countPendingFeedback` applies identical gate-clearing semantics to `closed`, `addressed`, and `rejected` (state-tools.ts:3361-3363), regardless of the item's `author_type` or the actor who transitioned it to that status.
 
-**Status:** Partially mitigated. MEDIUM residual accepted.
+Accepting "MEDIUM residual" without a second mitigation layer violates defense-in-depth: a single point of enforcement (agent-level prompt instruction + downstream gate-type convention) is not layered defense.
+
+**Required mitigations (defense-in-depth — both MUST be implemented):**
+
+*Mitigation E2-M1 (layer 1 — data-layer enforcement):* `countPendingFeedback` MUST treat `status: addressed` as still-pending for items where `author_type === "human"` unless one of the following is true:
+  (a) the status transition to `addressed` was performed by a `callerContext: "human"` actor (requires persisting the last-transitioning actor in frontmatter, e.g. `addressed_by: "agent"|"human"`), OR
+  (b) a human has explicitly acknowledged the addressed state via a lifecycle action recorded in the feedback file.
+
+This shifts the enforcement from "the gate type will protect us" to "the count itself refuses to let agent-authored `addressed` transitions on human items clear the gate." It is a pure state-tools.ts change and is the *primary* mitigation.
+
+*Mitigation E2-M2 (layer 2 — configuration-layer enforcement):* The FSM MUST validate, at stage load or at feedback-write time, that any stage which can receive human-authored feedback (i.e., HTTP feedback endpoints target it, or its review gate is `ask`/`external`/compound) declares `review: ask | external | [external, ask] | [ask, external]`. Stages declaring `review: auto` MUST either:
+  (a) refuse human-authored feedback writes (HTTP returns 409/400), OR
+  (b) automatically upgrade their effective gate to `ask` for the revisit cycle in which human feedback is pending.
+
+This is the configuration-layer backstop. Even if M1 is circumvented (e.g., by a future `addressed_by: "human"` field being spoofed), the gate type itself is structurally forced to surface to a human.
+
+*Mitigation E2-M3 (layer 3 — audit/observability):* Every `status: addressed` transition on a human-authored item MUST be logged to the git commit trail with the `callerContext` of the transition (e.g., `feedback: agent-addressed FB-01 in security`). This is already partially achieved via git commit messages but should be made explicit for `addressed` transitions on human items so audits can detect the pattern.
+
+**Residual risk after all three mitigations:** Very Low. A rogue subagent marking human items `addressed` now (a) leaves them counted as pending for gate purposes until a human actor confirms, (b) cannot land on a stage that hasn't been configured to allow human feedback through the `ask`/`external` gate, and (c) leaves an auditable trail if it still tries.
+
+**Implementation targets (for downstream stages, not this threat-modeler unit):**
+- `packages/haiku/src/state-tools.ts` `countPendingFeedback` (3351-3363): apply human-author-aware pending count.
+- `packages/haiku/src/state-tools.ts` `updateFeedbackFile` (~3419-3495): persist `addressed_by` / transition actor on status mutation.
+- `packages/haiku/src/orchestrator.ts` gate resolution: enforce or auto-upgrade gate type for stages with human-authored pending/addressed feedback.
+- `packages/haiku/src/http.ts` feedback POST handler: refuse human-authored feedback on `auto`-gate stages OR emit a stage-config warning at session start.
+
+**Verification evidence required (to be produced by development / testing stages):**
+- Unit test: agent `addressed` transition on human feedback — `countPendingFeedback` still returns > 0.
+- Unit test: human `addressed` transition on human feedback — `countPendingFeedback` returns 0.
+- Integration test: `auto`-gate stage with one human-authored feedback item — gate blocks advancement even after an agent `addressed` transition.
+- Integration test: `auto`-gate stage auto-upgrades to `ask` (or refuses write) when a human-authored feedback item lands.
+
+**Status:** NOT accepted as residual. Required defense-in-depth mitigations M1 + M2 + M3 identified and routed to downstream stages. This threat is no longer a "design assumption accepts the risk" entry; it is an actionable security requirement with specific enforcement points at each trust boundary.
 
 ---
 
@@ -655,7 +687,8 @@ In **remote/tunnel mode**, the path is gated by:
 | WebSocket upgrade auth (remote mode) | JWT via `?t=` query param (browser header limitation); tunnel+sid+TTL three-way binding | JWT exposure in proxy access logs — E1.a, LOW residual |
 | HTTP feedback-attachment read (E4) | `requireTunnelAuth` + `isValidSlug` on intent/stage + whitelist regex on filename + `serveUnderRoot` realpath escape check | Regex permits `foo.bar.png`-style names; realpath is the authoritative guard (very low) |
 | WebSocket session channel (remote mode) | Tunnel JWT in `?t=` query string (browser-platform constraint); 1-hour TTL + tun/sid binding + `logger:false` (I3) | Query-string token leak via future access logs / browser history / screen-share (low–medium) |
-| `closes:` validation | feedback-assessor hat auto-injected for all units with `closes:` | Agent `addressed` status on human items allows auto-gate pass |
+| `closes:` validation | feedback-assessor hat auto-injected for all units with `closes:` | Agent `addressed` status on human items — see E2 required mitigation stack (M1+M2+M3) |
+| Agent `addressed` transition on human-authored feedback | REQUIRED M1: human-author-aware `countPendingFeedback`; M2: stage-config enforcement / auto-upgrade to `ask`; M3: explicit audit trail per transition | Very Low after full stack implemented |
 | `haiku_revisit` reasons | writeFeedbackFile constrains write path; reasons always `origin: agent` | No count cap (v2 enhancement needed) |
 | WebSocket session loss | Known v1 limitation | v2: debounced persistence |
 | Visits counter | Present and visible | v2: max_visits threshold |
@@ -672,8 +705,11 @@ In **remote/tunnel mode**, the path is gated by:
 
 | Risk | Severity | Rationale |
 |---|---|---|
+<<<<<<< HEAD
 | `addressed` status on human-authored feedback allows gate pass without explicit close | MEDIUM | Human gate (`ask`/`external`) is the verification backstop. Auto-gate stages with human feedback are lower-trust by design. |
 | JWT header `alg`/`typ` not explicitly asserted (FB-18) | LOW | Structurally safe today because verifier never dispatches on `alg` (HMAC-SHA256 is hardcoded). Hardening recommendation routed to `development` — add explicit `header.alg === "HS256"` and `header.typ === "JWT"` asserts to trap future regressions. |
+=======
+>>>>>>> haiku/universal-feedback-model-and-review-recovery/fix-security-FB-19
 | Empty `allowedOrigins` + empty/wildcard `siteUrl` under `HAIKU_REMOTE_REVIEW=1` silently blocks all cross-origin requests (I1a / FB-12) | LOW | Fail-closed — no information leak. Mitigation is an operator-visible startup warning (blue-team fix-hat bolt 2). Tracked as residual until warning lands. |
 | WebSocket JWT exposed in URL query string, recoverable from proxy access logs during 30-minute TTL (E1.a) | LOW | Browser `WebSocket()` has no headers API. Three-way binding (tunnel URL + `sid` + TTL) + in-memory session lifecycle narrows the replay window. Operators of `HAIKU_REMOTE_REVIEW=1` should treat proxy access logs as sensitive. v2: per-message auth or cookie-session redesign. |
 | WebSocket drop before submission loses draft comments | LOW | v2: debounced persistence |
@@ -684,7 +720,23 @@ In **remote/tunnel mode**, the path is gated by:
 | Reply endpoint `close_as_answered` bypasses `updateFeedbackFile` guards in local mode (E3) | MEDIUM (local) / LOW (remote) | Remote mode protected by JWT + session binding. Local mode accepts trusted-host posture. v2: route through shared caller-context guard; restrict to question-origin items. |
 | Insider threat (direct filesystem access) | ACCEPTED | Developer tool; git trail provides detection; out of scope v1 |
 
-## 6. Open Risks (Fix Required Before v1 Ship)
+---
+
+## 6. Required Mitigations (Handoff to Downstream Stages)
+
+This section enumerates mitigations that the threat-modeler has identified as REQUIRED (not optional) for the feedback model to meet its defense-in-depth goals. These are the actionable security requirements that the development and testing stages MUST implement. Each row names the trust-boundary invariant it enforces.
+
+| ID | Threat | Trust Boundary | Required Control | Enforcement Point |
+|---|---|---|---|---|
+| E2-M1 | Agent `addressed` on human feedback clears gate | Agent-actor mutating human-trust gate semantics | `countPendingFeedback` treats `status: addressed` on `author_type: human` items as pending unless the addressed transition was performed by a `callerContext: "human"` actor (or a human-lifecycle acknowledgement is recorded) | `packages/haiku/src/state-tools.ts` `countPendingFeedback` (3351-3363); `updateFeedbackFile` to persist transition actor |
+| E2-M2 | `auto`-gate stages silently accept human feedback | Stage-config actor vs runtime-routing actor | FSM rejects OR auto-upgrades `auto` gate to `ask` for any stage that receives a human-authored feedback item | `packages/haiku/src/orchestrator.ts` gate resolution; `packages/haiku/src/http.ts` feedback POST handler |
+| E2-M3 | Audit opacity on human-item status transitions | Human-trust audit trail | Git commit message MUST encode `callerContext` for every status transition on human-authored feedback (e.g. `feedback: agent-addressed FB-NN in {stage}` vs `feedback: human-addressed ...`) | `packages/haiku/src/state-tools.ts` `updateFeedbackFile` commit-message construction |
+
+These are security requirements, not recommendations. The "human gate is the verification backstop" framing is a design assumption and does not count as a mitigation absent enforcement.
+
+---
+
+## 7. Open Risks (Fix Required Before v1 Ship)
 
 | Risk | Severity | Required Action | Owner |
 |---|---|---|---|

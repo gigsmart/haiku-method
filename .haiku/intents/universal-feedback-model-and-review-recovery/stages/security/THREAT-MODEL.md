@@ -234,10 +234,13 @@ Either path, left unguarded, lets an agent self-approve work by closing a human 
 4. `deleteFeedbackFile` rejects agent deletion of human-authored items entirely.
 5. `validateSlugArgs` checks `feedback_id` in addition to `intent`, `slug`, `stage`, and `unit` — preventing path traversal to access feedback files outside the intended scope.
 
+**Known gap (see threat-model-expanded.md E2):** The `closed` guard above protects the literal `closed` label, but not the *gate-clearing semantics*. An agent can set `status: addressed` on human-authored feedback; `countPendingFeedback` treats `addressed` as resolved, so in `auto`-gate stages a single agent call clears the gate without any human sign-off. The expanded threat model's E2 section defines the required defense-in-depth stack (M1 human-author-aware pending count; M2 stage-config enforcement; M3 explicit audit trail) that the development and testing stages MUST implement.
+
 **Verification evidence:**
 - `feedback.test.mjs` has explicit tests: "MCP update rejects agent closing human-authored feedback" (via `closed_by`), "MCP delete rejects agent deleting human-authored feedback".
 - **Required new test (FB-24):** "MCP update rejects agent setting status=closed on human-authored feedback" — exercises the second path to the closed state.
 - `state-tools-handlers.test.mjs` verifies `feedback_id` path traversal rejection (3 tests: `../` sequences, forward slashes, backslashes).
+- Pending (required by E2-M1): `countPendingFeedback` refuses to clear gate on agent-driven `addressed` transition of human-authored items.
 
 **Invariant statement (must hold under all mutation paths):**
 
