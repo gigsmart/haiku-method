@@ -22,8 +22,10 @@ Scope: Feedback file creation/mutation (MCP tools + HTTP API), gate-phase enforc
 - `deriveAuthorType()` is the sole determinant — no tool handler accepts `author_type` as an input parameter.
 - `HUMAN_ORIGINS` set is hardcoded (state-tools.ts:1994).
 - `handleStateTool("haiku_feedback", ...)` never passes caller-supplied `author_type` to `writeFeedbackFile`.
-- HTTP endpoints (`handleFeedbackPost`) hardcode `author: "user"` and use `user-visual` origin.
+- HTTP endpoints (`handleFeedbackPost`) hardcode `author: "user"` and use `user-visual` origin. The `author` field on `FeedbackCreateRequestSchema` (packages/haiku-api/src/schemas/feedback.ts) is accepted by the Zod validator for backward compatibility, but the handler at http.ts:1526 does not propagate `parsed.data.author` into `writeFeedbackFile` — it is discarded at the trust boundary. The schema `describe()` text reflects this explicitly so future developers do not re-introduce a session-context author resolution without also adding authenticated identity propagation.
 - Test: `feedback.test.mjs` verifies `author_type: "agent"` for MCP-created items and `author_type: "human"` for HTTP-created items.
+
+**Trust boundary crossing:** HTTP request body → Zod validation (`FeedbackCreateRequestSchema`) → handler. The `title`, `body`, `origin`, `source_ref`, `anchor`, `resolution`, and `attachment_data_url` fields cross the boundary and are persisted after validation. The `author` field crosses the boundary but is **dropped** before persistence — server always stamps `"user"`. Any reviewer adding new persisted-author logic MUST also add authenticated-session identity resolution; otherwise this field becomes a spoofing vector.
 
 ---
 
