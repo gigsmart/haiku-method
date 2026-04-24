@@ -1,6 +1,6 @@
 ---
 title: 'Unit: Threat Model and Security Hardening: Something here'
-status: pending
+status: rejected
 origin: user-chat
 author: user
 author_type: human
