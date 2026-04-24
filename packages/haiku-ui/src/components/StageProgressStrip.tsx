@@ -168,7 +168,7 @@ export function StageProgressStrip({
 								<span
 									className={`mt-2 text-xs font-semibold uppercase tracking-wider leading-none whitespace-nowrap ${
 										isViewingDifferent
-											? "text-teal-600 dark:text-teal-400 underline decoration-teal-500 decoration-2 underline-offset-4"
+											? "text-amber-600 dark:text-amber-400"
 											: isCurrent
 												? "text-teal-600 dark:text-teal-400"
 												: isCompleted
@@ -183,7 +183,7 @@ export function StageProgressStrip({
 										pending > 0
 											? "text-amber-600 dark:text-amber-500 font-bold"
 											: isViewingDifferent
-												? "text-teal-500 dark:text-teal-500 font-semibold"
+												? "text-amber-500 dark:text-amber-400 font-semibold"
 												: isCurrent && stage.sublabel
 													? "text-teal-500 dark:text-teal-500"
 													: "text-transparent select-none"
@@ -248,7 +248,7 @@ function StageMarker({
 		// reviewer needs to see WHERE THEY ARE first — pending state is
 		// still conveyed by the amber count badge overlay on the marker.
 		const ringClass = isViewing
-			? "ring-4 ring-teal-400 dark:ring-teal-400"
+			? "ring-4 ring-amber-400 dark:ring-amber-300"
 			: hasPending
 				? "ring-2 ring-amber-300 dark:ring-amber-700/60"
 				: "ring-2 ring-green-200 dark:ring-green-900/40"
@@ -279,7 +279,7 @@ function StageMarker({
 		// the reviewer is currently viewing this stage, swap in a thick
 		// teal ring so it reads as "you are here" at a glance.
 		const viewingRing = isViewing
-			? "ring-4 ring-teal-400 dark:ring-teal-400 border-teal-500 dark:border-teal-400"
+			? "ring-4 ring-amber-400 dark:ring-amber-300 border-amber-500 dark:border-amber-400"
 			: "border-stone-400 dark:border-stone-500 hover:border-teal-400 dark:hover:border-teal-400"
 		return (
 			<div

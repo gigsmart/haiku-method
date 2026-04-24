@@ -210,7 +210,7 @@ describe("StageProgressStrip — state matrix", () => {
 	// "viewing" sublabel so the reviewer can see where they are without losing
 	// sight of the FSM pointer.
 
-	it("viewing-different: completed stage gains teal ring + underline + location marker", () => {
+	it("viewing-different: completed stage gains amber ring on marker + location aria", () => {
 		render(
 			<StageProgressStrip
 				stages={STAGES}
@@ -222,17 +222,14 @@ describe("StageProgressStrip — state matrix", () => {
 		expect(viewed.getAttribute("aria-current")).toBe("location")
 		expect(viewed.getAttribute("aria-label")).toMatch(/currently viewing/)
 		expect(viewed.getAttribute("data-viewing")).toBe("true")
-		// Label gets the teal underline treatment
 		expect(viewed.textContent).toContain("inception")
-		const labelSpan = viewed.querySelector("span.underline")
-		expect(labelSpan).not.toBeNull()
-		expect(labelSpan?.className).toContain("decoration-teal-500")
 		// Sublabel slot reads "viewing"
 		expect(viewed.textContent).toMatch(/viewing/i)
-		// Marker picks up a thick teal ring
+		// Marker picks up a thick amber ring (stands out against the
+		// teal FSM-current diamond).
 		const marker = viewed.querySelector('[aria-hidden="true"].rounded-full')
 		expect(marker?.className).toMatch(/ring-4/)
-		expect(marker?.className).toMatch(/ring-teal-400/)
+		expect(marker?.className).toMatch(/ring-amber-400/)
 	})
 
 	it("viewing-different: FSM-current stage still carries aria-current='step'", () => {
@@ -266,7 +263,7 @@ describe("StageProgressStrip — state matrix", () => {
 		}
 	})
 
-	it("viewing-different: viewing a visited future stage gains teal ring on the outlined circle", () => {
+	it("viewing-different: viewing a visited future stage gains amber ring on the outlined circle", () => {
 		render(
 			<StageProgressStrip
 				stages={STAGES.map((s) =>
@@ -280,6 +277,6 @@ describe("StageProgressStrip — state matrix", () => {
 		expect(viewed.getAttribute("aria-current")).toBe("location")
 		const marker = viewed.querySelector('[aria-hidden="true"].rounded-full')
 		expect(marker?.className).toMatch(/ring-4/)
-		expect(marker?.className).toMatch(/ring-teal-400/)
+		expect(marker?.className).toMatch(/ring-amber-400/)
 	})
 })
