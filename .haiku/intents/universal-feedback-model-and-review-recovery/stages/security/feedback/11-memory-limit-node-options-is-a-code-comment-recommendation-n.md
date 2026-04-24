@@ -2,7 +2,7 @@
 title: >-
   Memory limit (NODE_OPTIONS) is a code comment recommendation, not an enforced
   configuration
-status: pending
+status: rejected
 origin: adversarial-review
 author: reliability (from operations)
 author_type: agent
@@ -26,3 +26,7 @@ replies: []
 - No process manager config exists in the repo for the MCP server process
 
 **Recommendation:** Either enforce `NODE_OPTIONS=--max-old-space-size=512` (or similar) in the npm start script / MCP server launch config, or document the rationale for leaving it to operator discretion with an explicit default value callout. The current state means different operators will get different memory behavior silently.
+
+---
+
+**Rejection reason:** Out of scope — NODE_OPTIONS memory-limit enforcement is ops/deployment config, belongs in the production-observability follow-up intent (grouped with FB-03/FB-05/FB-07 from operations). Security stage doesn't own process-launch configuration.
