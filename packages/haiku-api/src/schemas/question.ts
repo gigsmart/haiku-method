@@ -14,12 +14,17 @@ import { QuestionAnnotationsSchema } from "./common.js"
 
 export const QuestionAnswerItemSchema = z
 	.object({
-		question: z.string().describe("Question prompt text (echoed back)"),
+		question: z
+			.string()
+			.max(1_000)
+			.describe("Question prompt text (echoed back)"),
 		selectedOptions: z
-			.array(z.string())
+			.array(z.string().max(200))
+			.max(50)
 			.describe("Options the user selected (may contain one or many)"),
 		otherText: z
 			.string()
+			.max(2_000)
 			.optional()
 			.describe("Free-text 'other' input, when the question allows it"),
 	})
@@ -28,8 +33,8 @@ export type QuestionAnswerItem = z.infer<typeof QuestionAnswerItemSchema>
 
 export const QuestionAnswerRequestSchema = z
 	.object({
-		answers: z.array(QuestionAnswerItemSchema),
-		feedback: z.string().optional(),
+		answers: z.array(QuestionAnswerItemSchema).max(50),
+		feedback: z.string().max(10_000).optional(),
 		annotations: QuestionAnnotationsSchema.optional(),
 	})
 	.describe("POST /question/:sessionId/answer request body")
