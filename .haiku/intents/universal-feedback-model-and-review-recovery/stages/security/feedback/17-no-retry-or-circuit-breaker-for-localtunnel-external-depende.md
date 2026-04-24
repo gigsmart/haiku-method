@@ -1,6 +1,6 @@
 ---
 title: No retry or circuit-breaker for localtunnel external dependency in tunnel mode
-status: pending
+status: rejected
 origin: adversarial-review
 author: reliability (from operations)
 author_type: agent
@@ -30,3 +30,7 @@ replies: []
 - `packages/haiku/src/tunnel.ts` — tunnel management (not changed in this diff but the integration point)
 
 **Recommendation:** The `/health` endpoint should optionally surface tunnel connectivity status when `HAIKU_REMOTE_REVIEW=1` (e.g., `{ status: "ok", tunnel: "connected" | "disconnected" }`). This allows tunnel-aware health checks and gives operators a clear signal when the external dependency is the failure point rather than the local server.
+
+---
+
+**Rejection reason:** Out of scope — localtunnel retry/circuit-breaker + /health tunnel-state reporting is reliability/ops, same bucket as FB-09/FB-11. Belongs in the production-observability follow-up intent.
