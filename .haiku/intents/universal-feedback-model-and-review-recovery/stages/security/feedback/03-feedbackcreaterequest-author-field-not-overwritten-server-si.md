@@ -2,7 +2,7 @@
 title: >-
   FeedbackCreateRequest.author field not overwritten server-side — schema
   comment conflicts with implementation
-status: fixing
+status: closed
 origin: adversarial-review
 author: security (from development)
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-24T14:41:28Z'
 iteration: 1
 visit: 1
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-03:bolt-1'
 bolt: 1
 upstream_stage: null
 resolution: null
