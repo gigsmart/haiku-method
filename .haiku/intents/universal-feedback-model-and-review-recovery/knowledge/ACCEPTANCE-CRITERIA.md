@@ -538,6 +538,129 @@
 
 ---
 
+## US-13: FeedbackResolution Routing Hint
+
+**As** an agent or reviewer,
+**I want to** attach a resolution-routing hint to a feedback item,
+**so that** the FSM dispatches the correct fix strategy without requiring manual triage.
+
+**Priority:** P0
+
+### AC-13.1: resolution field accepted on feedback create
+
+- **Given** a POST body with `resolution: "inline_fix"`
+- **When** `POST /api/feedback/{intent}/{stage}` is called
+- **Then** the created feedback file has `resolution: inline_fix` in frontmatter
+- **And** the FSM's feedback-resolver uses `inline_fix` routing for this item (single-bolt fix_hats dispatch)
+
+### AC-13.2: resolution field accepted on feedback update
+
+- **Given** an existing feedback item with `resolution: null`
+- **When** `PUT /api/feedback/{intent}/{stage}/{id}` is called with `{ "resolution": "question" }`
+- **Then** the frontmatter `resolution` field is updated to `question`
+- **And** the FSM routes this item via `feedback_answer` instead of the fix loop
+
+### AC-13.3: Absent or null resolution defaults to stage_revisit
+
+- **Given** a feedback item created without a `resolution` field
+- **When** the FSM processes this item
+- **Then** it behaves identically to `resolution: "stage_revisit"` (re-loops the whole stage)
+
+### AC-13.4: upstream_rewind resolution surfaces to human rather than auto-fixing
+
+- **Given** a feedback item with `resolution: "upstream_rewind"`
+- **When** the FSM processes this item
+- **Then** it emits `upstream_finding_surfaced` (not `review_fix`) and does NOT auto-dispatch the stage's fix_hats
+- **And** the human is notified that the root cause lives in an upstream stage
+
+---
+
+## US-14: Feedback Reply Threading
+
+**As** an agent or reviewer,
+**I want to** append replies to a feedback item,
+**so that** questions can be answered and justifications recorded without creating additional feedback files.
+
+**Priority:** P0
+
+### AC-14.1: POST /replies creates a reply on the feedback file
+
+- **Given** an existing feedback item FB-03
+- **When** `POST /api/feedback/{intent}/{stage}/FB-03/replies` is called with `{ "body": "Confirmed fix applied." }`
+- **Then** a reply object is appended to `replies:` in the frontmatter
+- **And** the reply has `author_type: human`, `body: "Confirmed fix applied."`, and a current `created_at` timestamp
+- **And** a git commit is created via `gitCommitState`
+
+### AC-14.2: close_as_answered transitions parent to answered in same write
+
+- **Given** a pending feedback item with `origin: user-question`
+- **When** `POST /api/feedback/{intent}/{stage}/{id}/replies` is called with `{ "body": "Yes, that is correct.", "close_as_answered": true }`
+- **Then** the reply is appended AND `status` changes to `answered` in the same frontmatter write
+- **And** the gate no longer counts this item as pending
+
+### AC-14.3: Replies do not block the stage gate
+
+- **Given** a stage where all feedback items have at least one reply and status is `answered`
+- **When** `haiku_run_next` fires at the gate phase
+- **Then** the pending-feedback check counts zero blocking items
+- **And** the gate proceeds normally
+
+### AC-14.4: Replies appear in GET feedback response
+
+- **Given** a feedback item with 2 replies in frontmatter
+- **When** `GET /api/feedback/{intent}/{stage}` is called
+- **Then** the item in the response includes `replies: [ {author, author_type, body, created_at}, {…} ]`
+
+### AC-14.5: 404 for replies on non-existent feedback
+
+- **Given** feedback ID FB-99 does not exist in the stage
+- **When** `POST /api/feedback/{intent}/{stage}/FB-99/replies` is called
+- **Then** a 404 response is returned: `{ "error": "Feedback 'FB-99' not found in stage 'development'" }`
+
+---
+
+## US-15: FeedbackInlineAnchor — Inline Text-Selection Comments
+
+**As** a reviewer selecting text in a rendered artifact,
+**I want to** attach a comment anchored to that specific text span,
+**so that** agents can precisely locate the relevant code or content without grep ambiguity.
+
+**Priority:** P0
+
+### AC-15.1: Inline anchor persisted on feedback create
+
+- **Given** a POST body with `inline_anchor: { selected_text: "...", paragraph: 2, location: "Unit: xyz" }`
+- **When** `POST /api/feedback/{intent}/{stage}` is called
+- **Then** the created feedback file has `inline_anchor:` in frontmatter with the provided fields
+- **And** the item has `origin: user-visual` (or whichever origin was supplied)
+
+### AC-15.2: inline_anchor appears in GET response
+
+- **Given** a feedback item with an `inline_anchor` frontmatter block
+- **When** `GET /api/feedback/{intent}/{stage}` is called
+- **Then** the item includes `inline_anchor: { selected_text, paragraph, location, comment_id?, file_path?, content_sha? }`
+
+### AC-15.3: Inline anchor is optional — absence does not error
+
+- **Given** a feedback item created without `inline_anchor`
+- **When** the item is returned via GET
+- **Then** `inline_anchor` is null or absent in the response body (not an error)
+
+### AC-15.4: file_path enables agent to locate the exact line
+
+- **Given** a feedback item with `inline_anchor.file_path = ".haiku/intents/my-intent/stages/development/units/unit-01-foo.md"` and `inline_anchor.selected_text = "handleSubmit"`
+- **When** an agent processes this feedback in a fix loop
+- **Then** the agent opens the file at `file_path` and greps for `selected_text` to land on the exact line
+- **And** `paragraph` disambiguates if the same text appears in multiple paragraphs
+
+### AC-15.5: Inline anchor and visual anchor are independent fields
+
+- **Given** a feedback item with both `anchor:` (pin drop) and `inline_anchor:` set
+- **When** the GET endpoint returns this item
+- **Then** both fields are present without conflict (pin drop and text selection are orthogonal mechanisms)
+
+---
+
 ## P1 (Follow-Up) Stories
 
 ### US-P1.1: Individual External PR Comment Parsing
@@ -785,3 +908,6 @@
 | US-10 (Changes-Requested) | Group 6 | `orchestrator.ts` |
 | US-11 (CRUD Endpoints) | Group 11 | `http.ts` |
 | US-12 (Revisit with Reasons) | Group 5 (gate feedback check), Group 1 (writeFeedbackFile) | `orchestrator.ts`, `state-tools.ts` |
+| US-13 (FeedbackResolution Routing) | Group 11 (HTTP CRUD), Group 5 (gate FSM), Group 8 (fix_hats dispatch) | `http.ts`, `orchestrator.ts`, `schemas/feedback.ts` |
+| US-14 (Reply Threading) | Group 11 (POST /replies endpoint), Group 1 (writeFeedbackFile) | `http.ts`, `state-tools.ts`, `schemas/feedback.ts` |
+| US-15 (FeedbackInlineAnchor) | Group 11 (HTTP CRUD), Group 6 (changes-requested handler) | `http.ts`, `orchestrator.ts`, `schemas/feedback.ts` |
