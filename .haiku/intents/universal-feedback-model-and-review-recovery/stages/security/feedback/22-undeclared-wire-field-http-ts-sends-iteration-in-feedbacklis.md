@@ -2,7 +2,7 @@
 title: >-
   Undeclared wire field: http.ts sends `iteration` in FeedbackListResponse but
   FeedbackItemSchema does not declare it
-status: pending
+status: rejected
 origin: adversarial-review
 author: architecture (from development)
 author_type: agent
@@ -40,3 +40,7 @@ The `haiku-api` package is explicitly positioned as the canonical wire contract 
 ## Recommendation
 
 Either: (a) add `iteration` to `FeedbackItemSchema` (with the same description as `visit`) and document the alias, or (b) remove `iteration: i.visit` from the http.ts mapping. The field appears to be a legacy alias (`iteration` was the old name, `visit` is the current canonical name per the schema comment). If the intent is backward-compat aliasing, the alias belongs in the schema declaration.
+
+---
+
+**Rejection reason:** Out of scope — undeclared `iteration` field on FeedbackListResponse is a schema-contract drift, not a security concern. Consumers tolerating extra fields is the current wire-compat posture. Fix belongs in an API-contract consolidation intent.
