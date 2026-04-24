@@ -1,6 +1,6 @@
 ---
 title: 'knowledge: THREAT-MODEL: nope'
-status: pending
+status: rejected
 origin: user-chat
 author: user
 author_type: human
