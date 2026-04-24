@@ -2677,13 +2677,23 @@ export function runNext(slug: string): OrchestratorAction {
 		//   - decides whether the intent has evolved enough to warrant new
 		//     units, revisions to pending units, or no changes at all
 		//   - signals "no changes needed" by calling run_next without adding
-		//     new units — the FSM detects the no-op via the snapshot below
-		//     and advances directly to gate (skips pre_review + execute).
+		//     new units — the FSM detects the no-op on the second tick
+		//     (elaboration_turns > 1 with no pending units) and advances
+		//     directly to the gate (skips pre_review + execute).
 		//
-		// Snapshot state lives on stage state: `elaborate_snapshot_taken`
-		// (bool) + `elaborate_entry_unit_count` (number). They are cleared
-		// either when the agent actually adds units (proceed through normal
-		// flow) or when we advance to the next phase.
+		// Detection uses the `elaboration_turns` counter (already persisted
+		// for collaborative enforcement) + the unit census. No separate
+		// snapshot fields — they were fragile against downstream writes
+		// that reintroduced the old values via `{...stageState, ...}`.
+		//
+		// State machine (iteration === 1 only — iteration > 1 takes the
+		// additive-elaborate path below with `closes:` validation):
+		//   pendingUnits > 0                         → normal flow (user
+		//                                              has pending work
+		//                                              already drafted)
+		//   completedUnits > 0, pendingUnits === 0:
+		//     updatedTurns === 1 (this tick is 1st)  → emit iterative
+		//     updatedTurns > 1 (2nd+ tick)           → no-op, advance to gate
 		const existingUnits = hasUnits ? listUnits(iDir, currentStage) : []
 		const completedUnitsList = existingUnits.filter(
 			(u) => u.status === "completed",
@@ -2692,91 +2702,46 @@ export function runNext(slug: string): OrchestratorAction {
 			(u) => u.status !== "completed",
 		)
 		const iterativeEntryIteration = getStageIterationCount(stageState)
-		const snapshotTaken = Boolean(stageState.elaborate_snapshot_taken)
-		const snapshotCount = stageState.elaborate_entry_unit_count as
-			| number
-			| undefined
 
-		// Iterative re-entry only fires on iteration === 1 (fresh
-		// fsmStartStage entry where completed units already exist on
-		// disk from a prior intent cycle). For iteration > 1, the
-		// additive-elaborate mode below handles revisit-with-feedback
-		// semantics including `closes:` validation — don't short-circuit
-		// past it.
 		if (
 			iterativeEntryIteration === 1 &&
 			completedUnitsList.length > 0 &&
-			!snapshotTaken
+			pendingUnitsList.length === 0
 		) {
-			// Fresh re-entry into a stage that has completed work. Take the
-			// snapshot and emit iterative elaborate.
-			writeJson(join(iDir, "stages", currentStage, "state.json"), {
-				...stageState,
-				elaborate_snapshot_taken: true,
-				elaborate_entry_unit_count: existingUnits.length,
-			})
-			return {
-				action: "elaborate",
-				intent: slug,
-				studio,
-				stage: currentStage,
-				elaboration: elaborationMode,
-				iteration: getStageIterationCount(stageState),
-				visits: getStageIterationCount(stageState),
-				iterative: true,
-				completed_units: completedUnitsList.map((u) => u.name),
-				pending_units: pendingUnitsList.map((u) => u.name),
-				stage_metadata: resolveStageMetadata(studio, currentStage),
-				message: `Re-entering stage '${currentStage}' with ${completedUnitsList.length} completed unit(s) from prior iteration(s). Treat completed work as knowledge; decide whether this iteration needs new or modified units.`,
-			}
-		}
-
-		if (snapshotTaken) {
-			// Second tick after iterative elaborate. Compare unit count
-			// against snapshot to decide: advance, or proceed through
-			// normal validation.
-			const addedCount =
-				existingUnits.length - (snapshotCount ?? existingUnits.length)
-			const hasPending = pendingUnitsList.length > 0
-
-			// Clear snapshot either way — we're moving past the iterative
-			// decision point.
-			const clearedState = { ...stageState }
-			delete (clearedState as Record<string, unknown>)
-				.elaborate_snapshot_taken
-			delete (clearedState as Record<string, unknown>)
-				.elaborate_entry_unit_count
-
-			if (addedCount === 0 && !hasPending) {
-				// Agent declared no-op — no new or modified units needed
-				// for this iteration. Advance directly to the gate; skip
-				// pre_review (nothing new to review) and execute (all units
-				// completed in a prior iteration). Post-execute review is
-				// also skipped because artifacts haven't changed. The human
-				// sees the gate and can approve or request changes.
-				clearedState.phase = "gate"
-				writeJson(
-					join(iDir, "stages", currentStage, "state.json"),
-					clearedState,
-				)
-				fsmAdvancePhase(slug, currentStage, "gate")
+			if (updatedTurns === 1) {
+				// First tick of this iteration — agent hasn't been given a
+				// decision point yet. Emit the iterative-mode elaborate
+				// action so the agent can either draft new units or call
+				// run_next to signal no-op.
 				return {
-					action: "advance_phase",
+					action: "elaborate",
 					intent: slug,
 					studio,
 					stage: currentStage,
-					from_phase: "elaborate",
-					to_phase: "gate",
-					message: `No new units needed for this iteration of '${currentStage}' — advancing directly to the gate.`,
+					elaboration: elaborationMode,
+					iteration: iterativeEntryIteration,
+					visits: iterativeEntryIteration,
+					iterative: true,
+					completed_units: completedUnitsList.map((u) => u.name),
+					pending_units: pendingUnitsList.map((u) => u.name),
+					stage_metadata: resolveStageMetadata(studio, currentStage),
+					message: `Re-entering stage '${currentStage}' with ${completedUnitsList.length} completed unit(s) from prior iteration(s). Treat completed work as knowledge; decide whether this iteration needs new or modified units.`,
 				}
 			}
-
-			// New or revised units exist — persist cleared snapshot and fall
-			// through to normal validation + pre_review flow below.
-			writeJson(
-				join(iDir, "stages", currentStage, "state.json"),
-				clearedState,
-			)
+			// Second+ tick with no pending units added — agent declared
+			// no-op (option C from the decision block). Nothing new to
+			// review or execute for this iteration. Skip straight to the
+			// gate so the human can approve or request changes.
+			fsmAdvancePhase(slug, currentStage, "gate")
+			return {
+				action: "advance_phase",
+				intent: slug,
+				studio,
+				stage: currentStage,
+				from_phase: "elaborate",
+				to_phase: "gate",
+				message: `No new units needed for this iteration of '${currentStage}' — advancing directly to the gate.`,
+			}
 		}
 
 		if (!hasUnits) {
