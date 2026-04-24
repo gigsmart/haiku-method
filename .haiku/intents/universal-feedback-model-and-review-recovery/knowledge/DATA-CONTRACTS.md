@@ -20,7 +20,7 @@ Replaces the former Sentry bug-report tool (renamed to `haiku_report`).
 | `stage` | string | yes | Must match a declared stage directory under the intent | `"development"` |
 | `title` | string | yes | Non-empty, max 120 chars, used to derive filename slug | `"Missing null check in writeFeedbackFile"` |
 | `body` | string | yes | Non-empty markdown, no max length | `"The function at state-tools.ts:1720 does not handle the case where..."` |
-| `origin` | string | no | Enum: `adversarial-review`, `external-pr`, `external-mr`, `user-visual`, `user-chat`, `agent`. Defaults to `"agent"` | `"adversarial-review"` |
+| `origin` | string | no | Enum: `adversarial-review`, `studio-review`, `external-pr`, `external-mr`, `user-visual`, `user-chat`, `user-question`, `agent`. Defaults to `"agent"` | `"adversarial-review"` |
 | `source_ref` | string | no | Free-form reference (PR URL, review agent name, annotation ID) | `"https://github.com/org/repo/pull/42"` |
 | `author` | string | no | Who created it. Defaults to `"agent"` for agent callers, `"user"` for human-origin items | `"security-review-agent"` |
 
@@ -34,7 +34,7 @@ Replaces the former Sentry bug-report tool (renamed to `haiku_report`).
     stage:      { type: "string", description: "Stage name" },
     title:      { type: "string", description: "Short title for the feedback item (max 120 chars)" },
     body:       { type: "string", description: "Markdown body describing the finding" },
-    origin:     { type: "string", description: "Source: adversarial-review | external-pr | external-mr | user-visual | user-chat | agent (default: agent)" },
+    origin:     { type: "string", description: "Source: adversarial-review | studio-review | external-pr | external-mr | user-visual | user-chat | user-question | agent (default: agent)" },
     source_ref: { type: "string", description: "Optional reference — PR URL, review agent name, annotation ID" },
     author:     { type: "string", description: "Who created it (default: agent)" },
   },
@@ -63,7 +63,7 @@ Replaces the former Sentry bug-report tool (renamed to `haiku_report`).
 | Missing `body` | `true` | `"Error: body is required"` |
 | `title` exceeds 120 chars | `true` | `"Error: title must be 120 characters or fewer"` |
 | Intent not found | `true` | `"Error: intent 'bad-slug' not found"` |
-| Invalid `origin` enum value | `true` | `"Error: origin must be one of: adversarial-review, external-pr, external-mr, user-visual, user-chat, agent"` |
+| Invalid `origin` enum value | `true` | `"Error: origin must be one of: adversarial-review, studio-review, external-pr, external-mr, user-visual, user-chat, user-question, agent"` |
 | Stage not found | `true` | `"Error: stage 'nonexistent' not found under intent 'my-intent'"` |
 
 **Side Effects:**
@@ -86,7 +86,7 @@ Update mutable fields on an existing feedback item.
 | `intent` | string | yes | Existing intent slug | `"universal-feedback-model-and-review-recovery"` |
 | `stage` | string | yes | Existing stage name | `"development"` |
 | `feedback_id` | string | yes | `FB-NN` identifier (e.g., `"FB-03"`) or numeric prefix (e.g., `"03"`) | `"FB-03"` |
-| `status` | string | no | Enum: `pending`, `addressed`, `closed`, `rejected` | `"addressed"` |
+| `status` | string | no | Enum: `pending`, `fixing`, `addressed`, `answered`, `closed`, `rejected` | `"addressed"` |
 | `addressed_by` | string | no | Unit slug that claims to address this item | `"unit-04-fix-null-check"` |
 
 **MCP inputSchema (TypeScript):**
@@ -98,7 +98,7 @@ Update mutable fields on an existing feedback item.
     intent:       { type: "string", description: "Intent slug" },
     stage:        { type: "string", description: "Stage name" },
     feedback_id:  { type: "string", description: "FB-NN identifier or numeric prefix" },
-    status:       { type: "string", description: "New status: pending | addressed | closed | rejected" },
+    status:       { type: "string", description: "New status: pending | fixing | addressed | answered | closed | rejected" },
     addressed_by: { type: "string", description: "Unit slug that addresses this feedback" },
   },
   required: ["intent", "stage", "feedback_id"],
@@ -128,7 +128,7 @@ Update mutable fields on an existing feedback item.
 | Feedback file not found | `true` | `"Error: feedback 'FB-03' not found in stage 'development'"` |
 | Agent tries to close human-authored | `true` | `"Error: agents cannot set status 'closed' on human-authored feedback. Only the original author can close it."` |
 | No updatable fields provided | `true` | `"Error: at least one of 'status' or 'addressed_by' must be provided"` |
-| Invalid `status` enum | `true` | `"Error: status must be one of: pending, addressed, closed, rejected"` |
+| Invalid `status` enum | `true` | `"Error: status must be one of: pending, fixing, addressed, answered, closed, rejected"` |
 
 **Side Effects:**
 
@@ -265,7 +265,7 @@ List feedback items with optional filtering.
 |---|---|---|---|---|
 | `intent` | string | yes | Existing intent slug | `"universal-feedback-model-and-review-recovery"` |
 | `stage` | string | no | Stage name. If omitted, lists feedback across all stages. | `"development"` |
-| `status` | string | no | Filter by status: `pending`, `addressed`, `closed`, `rejected`. If omitted, returns all. | `"pending"` |
+| `status` | string | no | Filter by status: `pending`, `fixing`, `addressed`, `answered`, `closed`, `rejected`. If omitted, returns all. | `"pending"` |
 
 **MCP inputSchema (TypeScript):**
 
@@ -275,7 +275,7 @@ List feedback items with optional filtering.
   properties: {
     intent: { type: "string", description: "Intent slug" },
     stage:  { type: "string", description: "Stage name (optional -- omit to list all stages)" },
-    status: { type: "string", description: "Filter by status: pending | addressed | closed | rejected" },
+    status: { type: "string", description: "Filter by status: pending | fixing | addressed | answered | closed | rejected" },
   },
   required: ["intent"],
 }
@@ -367,7 +367,7 @@ Note: `feedback_id` values (e.g., `FB-01`) are scoped per-stage. The same `FB-01
 | Condition | `isError` | Text |
 |---|---|---|
 | Intent not found | `true` | `"Error: intent 'bad-slug' not found"` |
-| Invalid `status` filter | `true` | `"Error: status must be one of: pending, addressed, closed, rejected"` |
+| Invalid `status` filter | `true` | `"Error: status must be one of: pending, fixing, addressed, answered, closed, rejected"` |
 
 **Side Effects:** None (read-only).
 
@@ -467,7 +467,7 @@ GET /api/feedback/universal-feedback-model-and-review-recovery/development HTTP/
 
 | Param | Type | Required | Description |
 |---|---|---|---|
-| `status` | string | no | Filter: `pending`, `addressed`, `closed`, `rejected` |
+| `status` | string | no | Filter: `pending`, `fixing`, `addressed`, `answered`, `closed`, `rejected` |
 
 **Success Response (`200`):**
 
@@ -540,7 +540,7 @@ Content-Type: application/json
 z.object({
   title:      z.string().min(1).max(120),
   body:       z.string().min(1),
-  origin:     z.enum(["adversarial-review", "external-pr", "external-mr", "user-visual", "user-chat", "agent"]).optional().default("user-visual"),
+  origin:     z.enum(["adversarial-review", "studio-review", "external-pr", "external-mr", "user-visual", "user-chat", "user-question", "agent"]).optional().default("user-visual"),
   source_ref: z.string().nullable().optional(),
 })
 ```
@@ -587,7 +587,7 @@ Content-Type: application/json
 
 ```typescript
 z.object({
-  status:       z.enum(["pending", "addressed", "closed", "rejected"]).optional(),
+  status:       z.enum(["pending", "fixing", "addressed", "answered", "closed", "rejected"]).optional(),
   addressed_by: z.string().optional(),
 }).refine(data => data.status !== undefined || data.addressed_by !== undefined, {
   message: "At least one of 'status' or 'addressed_by' must be provided",
@@ -694,10 +694,10 @@ addressed_by: null
 | Field | Type | Required | Default | Enum Values | Validation | Example |
 |---|---|---|---|---|---|---|
 | `title` | string | yes | -- | -- | Non-empty, max 120 chars | `"Missing null check in writeFeedbackFile"` |
-| `status` | string | yes | `"pending"` | `pending`, `addressed`, `closed`, `rejected` | Must be one of the enum values | `"pending"` |
-| `origin` | string | yes | `"agent"` | `adversarial-review`, `external-pr`, `external-mr`, `user-visual`, `user-chat`, `agent` | Must be one of the enum values | `"adversarial-review"` |
+| `status` | string | yes | `"pending"` | `pending`, `fixing`, `addressed`, `answered`, `closed`, `rejected` | Must be one of the enum values | `"pending"` |
+| `origin` | string | yes | `"agent"` | `adversarial-review`, `studio-review`, `external-pr`, `external-mr`, `user-visual`, `user-chat`, `user-question`, `agent` | Must be one of the enum values | `"adversarial-review"` |
 | `author` | string | yes | `"agent"` or `"user"` | -- | Non-empty. `"user"` for all human-sourced feedback (v1 -- no identity resolution). Agent name for agent-sourced. | `"security-review-agent"` |
-| `author_type` | string | yes | derived | `human`, `agent` | Derived from context: `"human"` when origin is `user-visual`, `user-chat`, `external-pr`, `external-mr`; `"agent"` when origin is `adversarial-review`, `agent` | `"agent"` |
+| `author_type` | string | yes | derived | `human`, `agent` | Derived from context: `"human"` when origin is `user-visual`, `user-chat`, `user-question`, `external-pr`, `external-mr`; `"agent"` when origin is `adversarial-review`, `studio-review`, `agent` | `"agent"` |
 | `created_at` | string (ISO 8601) | yes | current timestamp | -- | ISO 8601 format, no milliseconds (matches `timestamp()` helper: `2026-04-15T21:15:00Z`) | `"2026-04-15T21:15:00Z"` |
 | `visit` | number | yes | current `state.visits` value | -- | Non-negative integer. Captures which visit cycle this feedback was created in. | `0` |
 | `source_ref` | string \| null | no | `null` | -- | Free-form. PR URL, review agent name, annotation ID, etc. | `"https://github.com/org/repo/pull/42#discussion_r123"` |
@@ -708,9 +708,11 @@ addressed_by: null
 | `origin` value | `author_type` | `author` default |
 |---|---|---|
 | `adversarial-review` | `agent` | agent name (e.g., `"security-review-agent"`) |
+| `studio-review` | `agent` | agent name (e.g., `"cross-stage-consistency"`) |
 | `agent` | `agent` | `"agent"` |
 | `user-visual` | `human` | `"user"` |
 | `user-chat` | `human` | `"user"` |
+| `user-question` | `human` | `"user"` |
 | `external-pr` | `human` | `"user"` |
 | `external-mr` | `human` | `"user"` |
 
@@ -786,15 +788,21 @@ The feedback body is rendered as raw HTML in the review panel, which could allow
 ### 3.6 Status Lifecycle
 
 ```
-                  +-> addressed --+
-                  |               |
-pending ----------+               +-> closed
-                  |               |
-                  +-> rejected ---+
+                  +-> fixing -----+-> addressed --+
+                  |               |               |
+pending ----------+               |               +-> closed
+                  |               |               |
+                  +-> addressed --+               |
+                  |                               |
+                  +-> answered -------------------+
+                  |                               |
+                  +-> rejected -------------------+
 ```
 
 - `pending`: Initial state. Blocks the review-to-gate transition.
-- `addressed`: A unit claims to fix this. Still subject to re-review verification. Does NOT block the gate (only `pending` blocks).
+- `fixing`: The fix-loop FSM is actively working this item (dispatched via `review_fix`). Still blocks the gate.
+- `addressed`: A unit claims to fix this. Still subject to re-review verification. Does NOT block the gate (only `pending` and `fixing` block).
+- `answered`: A question-type finding was resolved by a reply without a code delta. Does not block the gate. Terminal state.
 - `rejected`: Dismissed with a reason. Does not block the gate.
 - `closed`: Verified resolved. Terminal state. Does not block the gate.
 
@@ -802,11 +810,16 @@ Transitions allowed:
 
 | From | To | Who |
 |---|---|---|
+| `pending` | `fixing` | FSM (fix-loop dispatch) |
 | `pending` | `addressed` | Agent or human |
+| `pending` | `answered` | Agent or human (question resolved by reply) |
 | `pending` | `rejected` | Agent (agent-authored only) or human (any) |
 | `pending` | `closed` | Human only |
+| `fixing` | `addressed` | Agent (fix-hat closes the finding) |
+| `fixing` | `pending` | Agent (fix-hat exhausts bolts without resolving) or human (re-open) |
 | `addressed` | `closed` | Human only (verification) |
 | `addressed` | `pending` | Human (re-open) or agent |
+| `answered` | `pending` | Human (re-open) |
 | `rejected` | `pending` | Human (re-open) |
 | `closed` | `pending` | Human (re-open) |
 

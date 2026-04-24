@@ -108,6 +108,64 @@ Feature: Feedback file CRUD via haiku_feedback MCP tool and companions
     And the file's frontmatter addressed_by is "unit-03-fix-parser"
     And gitCommitState is called once
 
+  Scenario: FSM sets status to "fixing" when dispatching the fix loop
+    Given feedback file "01-open-finding.md" exists with status "pending" and author_type "agent"
+    When the FSM dispatches the review_fix action for feedback_id "01"
+    Then the file's frontmatter status is "fixing"
+    And the gate remains blocked
+    # "fixing" signals the fix loop is actively working this item; it still blocks the stage gate
+
+  Scenario: Fix-hat advances status from "fixing" to "addressed" after resolving the finding
+    Given feedback file "01-fixing-item.md" exists with status "fixing" and author_type "agent"
+    When the fix-hat resolves the finding and calls haiku_feedback_update with:
+      | intent      | universal-feedback-model |
+      | stage       | development              |
+      | feedback_id | 01                       |
+      | status      | addressed                |
+      | addressed_by| unit-04-fix-null-check   |
+    Then the file's frontmatter status is "addressed"
+    And the gate is no longer blocked by this item
+
+  Scenario: Fix-hat exhausts bolts without resolving — status reverts to "pending"
+    Given feedback file "01-fixing-item.md" exists with status "fixing" and author_type "agent"
+    When the fix-hat exhausts all bolts and calls haiku_feedback_update with:
+      | intent      | universal-feedback-model |
+      | stage       | development              |
+      | feedback_id | 01                       |
+      | status      | pending                  |
+    Then the file's frontmatter status is "pending"
+    And the gate remains blocked
+
+  Scenario: User resolves a question-type finding — status set to "answered"
+    Given feedback file "01-question-item.md" exists with status "pending" and origin "user-question"
+    When I call haiku_feedback_update with:
+      | intent      | universal-feedback-model |
+      | stage       | development              |
+      | feedback_id | 01                       |
+      | status      | answered                 |
+    Then the file's frontmatter status is "answered"
+    And the gate is no longer blocked by this item
+    # "answered" is the terminal state for question-type findings resolved by reply (no code delta)
+
+  Scenario: List filters by "fixing" status
+    Given feedback files exist in "stages/development/feedback/":
+      | file                        | status    |
+      | 01-finding-a.md             | pending   |
+      | 02-finding-b.md             | fixing    |
+      | 03-finding-c.md             | addressed |
+    When I call haiku_feedback_list with status filter "fixing"
+    Then the result contains 1 item
+    And that item has status "fixing"
+
+  Scenario: List filters by "answered" status
+    Given feedback files exist in "stages/development/feedback/":
+      | file                        | status    |
+      | 01-question-a.md            | answered  |
+      | 02-finding-b.md             | pending   |
+    When I call haiku_feedback_list with status filter "answered"
+    Then the result contains 1 item
+    And that item has status "answered"
+
   # ---------------------------------------------------------------------------
   # Happy Path: Reject
   # ---------------------------------------------------------------------------
