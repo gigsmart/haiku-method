@@ -87,7 +87,8 @@ Update mutable fields on an existing feedback item.
 | `stage` | string | yes | Existing stage name | `"development"` |
 | `feedback_id` | string | yes | `FB-NN` identifier (e.g., `"FB-03"`) or numeric prefix (e.g., `"03"`) | `"FB-03"` |
 | `status` | string | no | Enum: `pending`, `addressed`, `closed`, `rejected` | `"addressed"` |
-| `addressed_by` | string | no | Unit slug that claims to address this item | `"unit-04-fix-null-check"` |
+| `closed_by` | string | no | Unit slug whose feedback-assessor hat certified closure | `"unit-04-fix-null-check"` |
+| `resolution` | string | no | Routing hint: `question`, `inline_fix`, `stage_revisit`, `upstream_rewind` | `"inline_fix"` |
 
 **MCP inputSchema (TypeScript):**
 
@@ -99,7 +100,8 @@ Update mutable fields on an existing feedback item.
     stage:        { type: "string", description: "Stage name" },
     feedback_id:  { type: "string", description: "FB-NN identifier or numeric prefix" },
     status:       { type: "string", description: "New status: pending | addressed | closed | rejected" },
-    addressed_by: { type: "string", description: "Unit slug that addresses this feedback" },
+    closed_by:    { type: "string", description: "Unit slug whose feedback-assessor hat certified closure" },
+    resolution:   { type: "string", description: "Routing hint: question | inline_fix | stage_revisit | upstream_rewind" },
   },
   required: ["intent", "stage", "feedback_id"],
 }
@@ -108,7 +110,7 @@ Update mutable fields on an existing feedback item.
 **Guards:**
 
 - Agents (`author_type: agent` on the calling context) **cannot** set `status: closed` on feedback where `author_type: human`. Only the user (via the review UI or MCP tools in a human-origin context) can close human-authored feedback.
-- At least one of `status` or `addressed_by` must be provided (otherwise the call is a no-op error).
+- At least one of `status`, `closed_by`, or `resolution` must be provided (otherwise the call is a no-op error).
 
 **Success Response:**
 
@@ -116,7 +118,7 @@ Update mutable fields on an existing feedback item.
 {
   "feedback_id": "FB-03",
   "file": ".haiku/intents/universal-feedback-model-and-review-recovery/stages/development/feedback/03-missing-null-check-in-write-feedback-file.md",
-  "updated_fields": ["status", "addressed_by"],
+  "updated_fields": ["status", "closed_by"],
   "message": "Feedback FB-03 updated."
 }
 ```
@@ -127,8 +129,9 @@ Update mutable fields on an existing feedback item.
 |---|---|---|
 | Feedback file not found | `true` | `"Error: feedback 'FB-03' not found in stage 'development'"` |
 | Agent tries to close human-authored | `true` | `"Error: agents cannot set status 'closed' on human-authored feedback. Only the original author can close it."` |
-| No updatable fields provided | `true` | `"Error: at least one of 'status' or 'addressed_by' must be provided"` |
+| No updatable fields provided | `true` | `"Error: at least one of 'status' / 'closed_by' / 'resolution' must be provided"` |
 | Invalid `status` enum | `true` | `"Error: status must be one of: pending, addressed, closed, rejected"` |
+| Invalid `resolution` enum | `true` | `"Error: resolution must be one of: question, inline_fix, stage_revisit, upstream_rewind"` |
 
 **Side Effects:**
 
@@ -587,10 +590,11 @@ Content-Type: application/json
 
 ```typescript
 z.object({
-  status:       z.enum(["pending", "addressed", "closed", "rejected"]).optional(),
-  addressed_by: z.string().optional(),
-}).refine(data => data.status !== undefined || data.addressed_by !== undefined, {
-  message: "At least one of 'status' or 'addressed_by' must be provided",
+  status:     z.enum(["pending", "addressed", "closed", "rejected"]).optional(),
+  closed_by:  z.string().max(200).optional(),
+  resolution: z.enum(["question", "inline_fix", "stage_revisit", "upstream_rewind"]).nullable().optional(),
+}).refine(data => data.status !== undefined || data.closed_by !== undefined || data.resolution !== undefined, {
+  message: "At least one of 'status' / 'closed_by' / 'resolution' must be provided",
 })
 ```
 
@@ -609,7 +613,7 @@ z.object({
 | Status | Body | Condition |
 |---|---|---|
 | `400` | `{ "error": "Invalid request body", "details": "..." }` | Zod validation failure |
-| `400` | `{ "error": "At least one of 'status' or 'addressed_by' must be provided" }` | No fields to update |
+| `400` | `{ "error": "At least one of 'status' / 'closed_by' / 'resolution' must be provided" }` | No fields to update |
 | `404` | `{ "error": "Feedback 'FB-99' not found in stage 'development'" }` | File not found |
 
 **Guards:** The HTTP endpoint is used by the review UI (human context). No author-type restrictions apply -- humans can close any feedback item, including agent-authored ones. This is the inverse of the MCP tool constraint (agents can't close human-authored items).
@@ -736,6 +740,8 @@ created_at: "2026-04-15T21:15:00Z"
 visit: 0
 source_ref: null
 addressed_by: null
+closed_by: null
+resolution: null
 ---
 ```
 
@@ -785,6 +791,8 @@ created_at: "2026-04-15T21:15:00Z"
 visit: 0
 source_ref: null
 addressed_by: null
+closed_by: null
+resolution: null
 ---
 
 **Severity:** HIGH

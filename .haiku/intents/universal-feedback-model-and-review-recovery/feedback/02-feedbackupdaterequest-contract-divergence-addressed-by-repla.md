@@ -2,7 +2,7 @@
 title: >-
   FeedbackUpdateRequest contract divergence — addressed_by replaced by closed_by
   + resolution without product-stage update
-status: fixing
+status: closed
 origin: studio-review
 author: cross-stage-consistency
 author_type: agent
@@ -10,7 +10,8 @@ created_at: '2026-04-24T19:30:00Z'
 visit: 0
 source_ref: null
 addressed_by: null
-bolt: 2
+bolt: 3
+closed_by: 'intent-fix:FB-02:bolt-3'
 ---
 
 The product stage's `knowledge/DATA-CONTRACTS.md` specifies the `PUT /api/feedback/{intent}/{stage}/{id}` request body as:
