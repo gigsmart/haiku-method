@@ -428,40 +428,12 @@ async function run() {
 		assert.strictEqual(data.deleted, true)
 	})
 
-	// ── GET /api/review/current ─────────────────────────────────────────────
-
-	console.log("\n=== GET /api/review/current ===")
-
-	await test("returns current active intent state", async () => {
-		const res = await fetch(`${baseUrl}/api/review/current`)
-		assert.strictEqual(res.status, 200)
-		const data = await res.json()
-		assert.strictEqual(data.intent, intentSlug)
-		assert.strictEqual(data.stage, stageName)
-		assert.strictEqual(data.phase, "execute")
-		assert.ok(Array.isArray(data.units))
-		assert.ok(data.units.length > 0)
-		assert.ok(data.feedback_summary)
-		assert.ok(typeof data.feedback_summary.pending === "number")
-		assert.ok(typeof data.feedback_summary.addressed === "number")
-		assert.ok(typeof data.feedback_summary.closed === "number")
-		assert.ok(typeof data.feedback_summary.rejected === "number")
-		assert.ok(Array.isArray(data.stages))
-		assert.ok(data.stages.length >= 1)
-		// Stage data should include name and status
-		const devStage = data.stages.find((s) => s.name === stageName)
-		assert.ok(devStage)
-		assert.strictEqual(devStage.status, "active")
-	})
-
-	await test("review current includes unit info", async () => {
-		const res = await fetch(`${baseUrl}/api/review/current`)
-		const data = await res.json()
-		const unit = data.units.find((u) => u.slug === "unit-01-example")
-		assert.ok(unit)
-		assert.strictEqual(unit.title, "Example Unit")
-		assert.strictEqual(unit.status, "active")
-	})
+	// ── GET /api/review/current removed ─────────────────────────────────────
+	// The legacy `/api/review/current` route was deleted when the ad-hoc
+	// review UX moved to session-scoped URLs (see `haiku_review_open`
+	// in server.ts + `/review/<sessionId>` in http.ts). There is no
+	// longer an unscoped current-intent JSON endpoint — consumers that
+	// needed it were rolled into the SPA's per-session payload.
 
 	// ── Path traversal rejection (security) ──────────────────────────────────
 
