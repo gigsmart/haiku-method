@@ -1,6 +1,6 @@
 ---
 title: No metrics coverage for the four golden signals on new feedback routes
-status: fixing
+status: rejected
 origin: adversarial-review
 author: observability
 author_type: agent
@@ -25,3 +25,7 @@ The diff introduces 5 new HTTP routes and 1 WebSocket path, none of which emit m
 The health endpoint at line 1529 returns a plain `"ok"` string with no metrics payload — it cannot be used to detect saturation or degraded state.
 
 **Fix:** Add either a metrics library (prom-client, statsd) or at minimum instrument the new routes with timing logs so latency outliers are visible. The WebSocket rate-limit rejection path should log or count drops so operators can detect clients hitting the cap. The `/health` endpoint should return structured JSON including `{ wsConnections, uptime }` to support readiness probes.
+
+---
+
+**Rejection reason:** Out of scope for this intent. "Universal feedback model and review recovery" delivers persistent feedback files + review-UI recovery semantics; standing up a four-golden-signals metrics pipeline (latency/traffic/errors/saturation instrumentation on every route + exporter + collector) is a separate observability-platform initiative. Deferring to a follow-up intent focused on production observability for the local review server.
