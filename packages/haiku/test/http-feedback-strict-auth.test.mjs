@@ -204,25 +204,26 @@ async function run() {
 	)
 
 	await test(
-		"POST with JWT but no X-Haiku-Session-Id returns 401 (feedback gate: missing_session_header)",
+		"POST with valid JWT proceeds (201) — JWT is the only auth required",
 		async () => {
 			const res = await fetch(
 				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
 				{
 					method: "POST",
 					headers: { "Content-Type": "application/json", ...authz },
-					body: JSON.stringify({ title: "unauth", body: "x" }),
+					body: JSON.stringify({ title: "authed", body: "x" }),
 				},
 			)
-			assert.strictEqual(res.status, 401)
-			const data = await res.json()
-			assert.strictEqual(data.error, "unauthorized")
-			assert.strictEqual(data.reason, "missing_session_header")
+			assert.strictEqual(
+				res.status,
+				201,
+				`expected 201 with valid JWT, got ${res.status}`,
+			)
 		},
 	)
 
 	await test(
-		"PUT with JWT but no X-Haiku-Session-Id returns 401",
+		"PUT with valid JWT proceeds (200)",
 		async () => {
 			const res = await fetch(
 				`${baseUrl}/api/feedback/${intentSlug}/${stageName}/${seeded.feedback_id}`,
@@ -232,49 +233,107 @@ async function run() {
 					body: JSON.stringify({ status: "addressed" }),
 				},
 			)
-			assert.strictEqual(res.status, 401)
-			const data = await res.json()
-			assert.strictEqual(data.error, "unauthorized")
-		},
-	)
-
-	await test(
-		"DELETE with JWT but no X-Haiku-Session-Id returns 401",
-		async () => {
-			const res = await fetch(
-				`${baseUrl}/api/feedback/${intentSlug}/${stageName}/${seeded.feedback_id}`,
-				{ method: "DELETE", headers: authz },
+			assert.strictEqual(
+				res.status,
+				200,
+				`expected 200 with valid JWT, got ${res.status}`,
 			)
-			assert.strictEqual(res.status, 401)
 		},
 	)
 
+	// JWT-claim session binding: the session embedded in the JWT must
+	// match the intent in the URL. A JWT bound to one intent's session
+	// cannot mutate a different intent's feedback even though the token
+	// is cryptographically valid. This is the real auth invariant — the
+	// prior `X-Haiku-Session-Id` header check was superseded.
 	await test(
-		"POST with matching JWT + X-Haiku-Session-Id proceeds (201)",
+		"JWT for session bound to a DIFFERENT intent returns 403 forbidden_cross_session",
 		async () => {
+			// Create a session bound to a different intent slug, mint a JWT
+			// for it, then try to POST feedback against our intent.
+			const otherIntent = "strict-auth-other-intent"
+			const otherIntentDir = join(haikuRoot, "intents", otherIntent)
+			mkdirSync(join(otherIntentDir, "stages", stageName, "units"), {
+				recursive: true,
+			})
+			writeFileSync(
+				join(otherIntentDir, "intent.md"),
+				`---\ntitle: Other\nstudio: software\nmode: continuous\nactive_stage: ${stageName}\nstatus: active\nstages:\n  - ${stageName}\n---\n\nOther intent.\n`,
+			)
+			writeFileSync(
+				join(otherIntentDir, "stages", stageName, "state.json"),
+				JSON.stringify(
+					{
+						stage: stageName,
+						status: "active",
+						phase: "execute",
+						started_at: "2026-04-21T18:05:00Z",
+						completed_at: null,
+						gate_entered_at: null,
+						gate_outcome: null,
+						visits: 0,
+					},
+					null,
+					2,
+				),
+			)
+			const otherSession = createSession({
+				intent_slug: otherIntent,
+				intent_dir: otherIntentDir,
+				review_type: "intent",
+				target: "review",
+			})
+			const otherJwt = mintJWT(otherSession.session_id)
+
+			// Use otherIntent's JWT against OUR intent's feedback endpoint.
 			const res = await fetch(
 				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
 				{
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
-						"X-Haiku-Session-Id": session.session_id,
-						...authz,
+						Authorization: `Bearer ${otherJwt}`,
 					},
-					body: JSON.stringify({ title: "authed", body: "x" }),
+					body: JSON.stringify({ title: "cross-intent", body: "x" }),
 				},
 			)
-			assert.strictEqual(res.status, 201)
+			assert.strictEqual(
+				res.status,
+				403,
+				`expected 403 cross-intent, got ${res.status}`,
+			)
+			const data = await res.json()
+			assert.strictEqual(data.error, "forbidden_cross_session")
+			assert.strictEqual(data.reason, "intent_mismatch")
 		},
 	)
 
 	await test(
-		"CORS preflight advertises X-Haiku-Session-Id and Authorization in Allow-Headers",
+		"JWT with unknown session id returns 403 forbidden_cross_session",
 		async () => {
-			// Real browser preflights always carry an Origin header. Since FB-36
-			// made withCors gate ACAH on an allow-listed Origin, the test must
-			// send one from the allow-list (defaults to HAIKU_REVIEW_SITE_URL)
-			// to exercise the "headers advertised" path.
+			// Mint a JWT referencing a session id that was never created.
+			const bogusJwt = mintJWT("sess-does-not-exist")
+			const res = await fetch(
+				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${bogusJwt}`,
+					},
+					body: JSON.stringify({ title: "bogus", body: "x" }),
+				},
+			)
+			assert.strictEqual(res.status, 403)
+			const data = await res.json()
+			assert.strictEqual(data.error, "forbidden_cross_session")
+			assert.strictEqual(data.reason, "unknown_session")
+		},
+	)
+
+	await test(
+		"CORS preflight advertises Authorization in Allow-Headers",
+		async () => {
 			const res = await fetch(
 				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
 				{
@@ -285,15 +344,10 @@ async function run() {
 					},
 				},
 			)
-			// 204 with CORS middleware applied.
 			assert.strictEqual(res.status, 204)
 			const allow = res.headers.get("access-control-allow-headers") ?? ""
-			assert.ok(
-				/x-haiku-session-id/i.test(allow),
-				`Access-Control-Allow-Headers missing X-Haiku-Session-Id — got "${allow}"`,
-			)
-			// FB-30: Authorization is the tunnel-auth bearer header the SPA
-			// now attaches on every tunnel-reachable call.
+			// Authorization is the tunnel-auth bearer header — the only
+			// header the SPA now attaches on every tunnel-reachable call.
 			assert.ok(
 				/authorization/i.test(allow),
 				`Access-Control-Allow-Headers missing Authorization — got "${allow}"`,
@@ -304,11 +358,20 @@ async function run() {
 	console.log(`\n${passed} passed, ${failed} failed\n`)
 }
 
+// Guard against silent exits — run() throwing before any test() call would
+// leave `failed === 0` and the finally would `process.exit(0)`, hiding the
+// real failure. Capture any pre-test crash explicitly.
+let hardFailure = null
 try {
 	await run()
+} catch (err) {
+	hardFailure = err
+	console.error(`\n✗ run() crashed before completing tests: ${err instanceof Error ? err.message : err}`)
+	if (err instanceof Error && err.stack) console.error(err.stack)
 } finally {
 	__setActiveTunnelForTesting(null)
 	process.chdir(origCwd)
 	rmSync(tmp, { recursive: true })
-	process.exit(failed > 0 ? 1 : 0)
+	const exitCode = failed > 0 || hardFailure ? 1 : 0
+	process.exit(exitCode)
 }

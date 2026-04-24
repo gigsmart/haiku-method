@@ -1853,17 +1853,14 @@ async function buildApp(): Promise<FastifyInstance> {
 		return "ok"
 	})
 
-	// CORS preflight catch-all (only when remote review is enabled).
-	// When @fastify/cors rejects the origin it falls through to normal
-	// routing, which 404s for OPTIONS on paths with no explicit OPTIONS
-	// handler. The prior hand-rolled server answered every OPTIONS with
-	// 204; the browser then reads CORS headers (or their absence) to
-	// decide. Restore that shape.
-	if (isRemoteReviewEnabled()) {
-		instance.options("/*", async (_req, reply) => {
-			reply.status(204).send()
-		})
-	}
+	// NOTE on OPTIONS routing: @fastify/cors (registered above) owns
+	// the global `OPTIONS *` route. For allowed origins it attaches
+	// ACAO/ACAM/ACAH/ACEH and responds 204; for disallowed origins it
+	// responds 204 WITHOUT those headers so the browser blocks the
+	// real request. We do NOT add our own `instance.options("/*")` —
+	// that would collide with cors's registration and throw
+	// `Method 'OPTIONS' already declared for route '/*'` at buildApp
+	// time. See node_modules/@fastify/cors/index.js:79.
 
 	instance.get("/", async (_req, reply) => {
 		reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
@@ -1881,6 +1878,16 @@ async function buildApp(): Promise<FastifyInstance> {
 				req.url.startsWith("/direction/"))
 		) {
 			reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
+			return
+		}
+		// OPTIONS preflight from a disallowed origin: @fastify/cors
+		// declines to handle it (calls callNotFound at index.js:82) so
+		// it lands here. Return 204 with NO ACAO/ACAM/ACAH/ACEH headers
+		// — same shape as an allowed-origin preflight, but without the
+		// grant so the browser blocks the real request. The bare 204
+		// doesn't leak route existence differently from the 404 path.
+		if (req.method === "OPTIONS") {
+			reply.status(204).send()
 			return
 		}
 		reply.status(404).send("Not Found")
@@ -1968,9 +1975,34 @@ async function buildApp(): Promise<FastifyInstance> {
 	// ── WebSocket upgrade ──────────────────────────────────────────────
 
 	instance.register(async (ws) => {
-		ws.get<{ Params: { sessionId: string } }>(
+		ws.get<{ Params: { sessionId: string }; Querystring: { t?: string } }>(
 			"/ws/session/:sessionId",
-			{ websocket: true },
+			{
+				websocket: true,
+				// Reject before the HTTP upgrade completes so tunnel-auth
+				// clients see HTTP/1.1 401 on the upgrade response — not
+				// a 101 Switching Protocols immediately followed by a
+				// close(4401). The socket-close path is still there as a
+				// defense-in-depth inside the handler.
+				preValidation: async (req, reply) => {
+					if (!isRemoteReviewEnabled()) return
+					const { sessionId } = req.params as { sessionId: string }
+					const token = (req.query as { t?: string })?.t
+					if (!token) {
+						reply
+							.status(401)
+							.send({ error: "unauthorized", reason: "missing_token" })
+						return
+					}
+					const verified = verifyTunnelJWT(token, sessionId)
+					if (!verified.ok) {
+						reply
+							.status(401)
+							.send({ error: "unauthorized", reason: verified.reason })
+						return
+					}
+				},
+			},
 			(socket, req) => {
 				const { sessionId } = req.params
 				if (isRemoteReviewEnabled()) {
