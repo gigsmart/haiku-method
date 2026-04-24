@@ -15,6 +15,7 @@ bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
+integrator_attempts: 1
 ---
 
 **Threat:** The feedback creation endpoint (`POST /api/feedback/:intent/:stage`) accepts bodies up to 8 MiB (`FEEDBACK_CREATE_MAX_BYTES = 8_388_608`, haiku-api/src/schemas/common.ts:221). The 8 MiB limit accommodates base64-encoded screenshots. However, there is no per-IP rate limit, no per-session creation cap, and no limit on the total number of feedback files per stage. Combined, these three gaps mean a single authenticated session can:
