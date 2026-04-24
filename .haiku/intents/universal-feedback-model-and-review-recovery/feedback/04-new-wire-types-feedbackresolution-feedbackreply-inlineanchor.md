@@ -1,7 +1,8 @@
 ---
-title: New wire types FeedbackResolution/FeedbackReply/FeedbackInlineAnchor shipped
+title: >-
+  New wire types FeedbackResolution/FeedbackReply/FeedbackInlineAnchor shipped
   in haiku-api with no product-stage spec coverage
-status: pending
+status: fixing
 origin: studio-review
 author: cross-stage-consistency
 author_type: agent
@@ -9,6 +10,7 @@ created_at: '2026-04-24T19:30:00Z'
 visit: 0
 source_ref: null
 addressed_by: null
+bolt: 1
 ---
 
 Three substantial new types are present in the shipped `packages/haiku-api/src/schemas/` that have no corresponding specification in the product-stage artifacts:
