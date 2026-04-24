@@ -269,18 +269,12 @@ async function run() {
 		assert.strictEqual(res.status, 401)
 	})
 
-	await test("GET /api/review/current without token returns 401", async () => {
-		const res = await fetch(`${baseUrl}/api/review/current`)
-		assert.strictEqual(res.status, 401)
-	})
-
-	await test("GET /api/review/current with any valid tunnel-bound token returns non-401", async () => {
-		const token = mintToken(session.session_id)
-		const res = await fetch(`${baseUrl}/api/review/current`, {
-			headers: { Authorization: `Bearer ${token}` },
-		})
-		assert.notStrictEqual(res.status, 401)
-	})
+	// `/api/review/current` was removed when review moved to session-
+	// scoped URLs (see `haiku_review_open` + the session-scoped
+	// `/review/<sessionId>` route). No token gate is exercised here
+	// anymore; the intent-scope surface no longer exists. Auth coverage
+	// for session-scoped routes is preserved by the `/api/feedback/...`,
+	// `/files/...`, and `/api/session/:id` tests below.
 
 	await test("GET /api/feedback/:intent/:stage without token returns 401", async () => {
 		const res = await fetch(
@@ -348,10 +342,8 @@ async function run() {
 
 	console.log("\n=== Exempt routes (SPA shells + health) ===")
 
-	await test("GET /review/current (SPA shell) does NOT require a token", async () => {
-		const res = await fetch(`${baseUrl}/review/current`)
-		assert.notStrictEqual(res.status, 401)
-	})
+	// `/review/current` SPA shell route was removed alongside the
+	// intent-scope JSON endpoint — reviews are session-scoped now.
 
 	await test("GET /review/:sid (SPA shell) does NOT require a token", async () => {
 		const res = await fetch(`${baseUrl}/review/${session.session_id}`)
