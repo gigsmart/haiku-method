@@ -15,7 +15,7 @@ bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
-integrator_attempts: 1
+integrator_attempts: 2
 ---
 
 In `packages/haiku/src/http.ts` at `resolveAllowedCorsOrigin` (line 844-849):
