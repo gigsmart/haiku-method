@@ -1872,7 +1872,10 @@ function runIntentCompletionReview(
 				continue
 			}
 
-			const fbAbsPath = join(findHaikuRoot(), fb.file)
+			// fb.file is repo-relative (e.g. `.haiku/intents/.../feedback/NN.md`)
+			// so it joins from process.cwd(), NOT findHaikuRoot() — findHaikuRoot
+			// already returns `<cwd>/.haiku` which would double the prefix.
+			const fbAbsPath = join(process.cwd(), fb.file)
 			const { data: fbFM } = parseFrontmatter(
 				readFileSync(fbAbsPath, "utf8"),
 			)
@@ -3510,7 +3513,10 @@ export function runNext(slug: string): OrchestratorAction {
 				// Conflict detected — increment integrator attempt counter
 				// on the feedback frontmatter and route to the integrator
 				// (or escalate if we've already burned the budget).
-				const fbAbsPath = join(findHaikuRoot(), fb.file)
+				// fb.file is repo-relative (e.g. `.haiku/intents/.../feedback/NN.md`)
+			// so it joins from process.cwd(), NOT findHaikuRoot() — findHaikuRoot
+			// already returns `<cwd>/.haiku` which would double the prefix.
+			const fbAbsPath = join(process.cwd(), fb.file)
 				const { data: fbFM } = parseFrontmatter(
 					readFileSync(fbAbsPath, "utf8"),
 				)
