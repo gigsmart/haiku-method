@@ -53,21 +53,45 @@ export function useFeedback(intent: string | null, stage: string | null) {
 
 	const fetchFeedback = useCallback(
 		async (statusFilter?: string) => {
-			if (!(intent && stage)) return
+			if (!intent) return
 			setLoading(true)
 			setError(null)
 			try {
 				const qs = statusFilter ? `?status=${statusFilter}` : ""
-				const res = await fetch(
-					`/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}${qs}`,
-					{ headers: readHeaders(FETCH_HEADERS) },
-				)
-				if (!res.ok) {
-					const body = await res.json().catch(() => ({}))
-					throw new Error(body.error || `HTTP ${res.status}`)
+				// Fetch stage-scoped + intent-scoped feedback in parallel and
+				// merge. Intent-scope items (logged by the studio-level
+				// completion review + intent-completion fix loop) need to
+				// surface in the sidebar regardless of which stage tab the
+				// reviewer is on — otherwise cross-stage findings get hidden
+				// behind a tab nobody opens.
+				const [stageRes, intentRes] = await Promise.all([
+					stage
+						? fetch(
+								`/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}${qs}`,
+								{ headers: readHeaders(FETCH_HEADERS) },
+							)
+						: Promise.resolve<Response | null>(null),
+					fetch(
+						`/api/feedback-intent/${encodeURIComponent(intent)}${qs}`,
+						{ headers: readHeaders(FETCH_HEADERS) },
+					),
+				])
+				const merged: FeedbackItemData[] = []
+				if (stageRes) {
+					if (!stageRes.ok) {
+						const body = await stageRes.json().catch(() => ({}))
+						throw new Error(body.error || `HTTP ${stageRes.status}`)
+					}
+					const stageData: FeedbackListResponse = await stageRes.json()
+					merged.push(...stageData.items)
 				}
-				const data: FeedbackListResponse = await res.json()
-				setItems(data.items)
+				if (!intentRes.ok) {
+					const body = await intentRes.json().catch(() => ({}))
+					throw new Error(body.error || `HTTP ${intentRes.status}`)
+				}
+				const intentData: FeedbackListResponse = await intentRes.json()
+				merged.push(...intentData.items)
+				setItems(merged)
 			} catch (err) {
 				setError(
 					err instanceof Error ? err.message : "Failed to fetch feedback",

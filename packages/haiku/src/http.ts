@@ -1350,6 +1350,77 @@ async function buildApp(): Promise<FastifyInstance> {
 					created_at: r.created_at,
 				})),
 				inline_anchor: i.inline_anchor ?? null,
+				scope: "stage" as const,
+			})),
+		}
+		reply.send(payload)
+	})
+
+	// Intent-scope feedback — lives at `.haiku/intents/<slug>/feedback/`
+	// (no stage path segment). Written by the studio-level completion
+	// review layer and the intent-completion fix loop. The UI fetches
+	// this separately from per-stage feedback and merges both into the
+	// sidebar so cross-stage findings aren't hidden behind a stage tab.
+	instance.get<{
+		Params: { intent: string }
+	}>("/api/feedback-intent/:intent", async (req, reply) => {
+		if (!requireTunnelAuth(req, reply, null)) return
+		const { intent } = req.params
+		if (!isValidSlug(intent)) {
+			reply.status(400).send({
+				error:
+					"Invalid slug — must not contain path separators or traversal sequences",
+			})
+			return
+		}
+		if (!validateIntent(intent)) {
+			reply.status(404).send({ error: "Intent not found" })
+			return
+		}
+		const statusFilter = (req.query as Record<string, string | undefined>)
+			?.status
+		if (
+			statusFilter &&
+			!(FEEDBACK_STATUSES as readonly string[]).includes(statusFilter)
+		) {
+			reply.status(400).send({
+				error: `Invalid status filter. Must be one of: ${FEEDBACK_STATUSES.join(", ")}`,
+			})
+			return
+		}
+		let items: FeedbackItem[] = readFeedbackFiles(intent, "")
+		if (statusFilter) {
+			items = items.filter((i) => i.status === statusFilter)
+		}
+		const payload: FeedbackListResponse = {
+			intent,
+			stage: "",
+			count: items.length,
+			items: items.map((i) => ({
+				feedback_id: i.id,
+				title: i.title,
+				body: i.body,
+				status: i.status as FeedbackListResponse["items"][number]["status"],
+				origin: i.origin as FeedbackListResponse["items"][number]["origin"],
+				author: i.author,
+				author_type:
+					i.author_type as FeedbackListResponse["items"][number]["author_type"],
+				created_at: i.created_at,
+				iteration: i.visit,
+				visit: i.visit,
+				source_ref: i.source_ref ?? null,
+				closed_by: i.closed_by ?? null,
+				resolution: i.resolution as
+					| FeedbackListResponse["items"][number]["resolution"]
+					| null,
+				replies: i.replies.map((r) => ({
+					author: r.author,
+					author_type: r.author_type,
+					body: r.body,
+					created_at: r.created_at,
+				})),
+				inline_anchor: i.inline_anchor ?? null,
+				scope: "intent" as const,
 			})),
 		}
 		reply.send(payload)

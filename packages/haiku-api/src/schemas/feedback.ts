@@ -118,6 +118,12 @@ export const FeedbackItemSchema = z
 			.describe(
 				"Inline-text anchor metadata. Present when the feedback was created by selecting text in a rendered artifact and attaching a comment. Null / absent for visual-pin or plain chat feedback.",
 			),
+		scope: z
+			.enum(["intent", "stage"])
+			.optional()
+			.describe(
+				"Whether this feedback lives under .haiku/intents/<slug>/feedback/ (intent scope, logged by the studio-level completion review) or .haiku/intents/<slug>/stages/<stage>/feedback/ (stage scope, the normal adversarial review output). UI shows intent-scope items with a distinguishing chip so cross-stage findings don't get hidden behind a stage tab.",
+			),
 	})
 	.describe("Wire shape of a feedback item")
 export type FeedbackItem = z.infer<typeof FeedbackItemSchema>
