@@ -181,6 +181,25 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 
 **Status:** Accepted. Local-tool blast radius only.
 
+**Scope note:** This rating applies ONLY to the MCP `haiku_revisit` path. The analogous flood via the HTTP `POST /api/feedback/:intent/:stage` endpoint is a **separate attack surface** with a different trust boundary (session-JWT-bounded rather than local-process-bounded) and is tracked as **D-HTTP** in `THREAT-MODEL.md §1 D`. Do not cite D2 to rate-accept HTTP-path floods.
+
+---
+
+#### D3: HTTP feedback-create flood — 8 MiB × unbounded rate per session
+**Threat:** `POST /api/feedback/:intent/:stage` accepts 8 MiB bodies (`FEEDBACK_CREATE_MAX_BYTES`, common.ts:221) and has no per-IP, per-session, or per-stage rate/count cap. One authenticated session can flood the endpoint for the 1-hour JWT TTL, consuming disk (8 MiB × 1000 ≈ 8 GB), blocking the event loop on a git-commit-per-file storm, and degrading `nextFeedbackNumber` via unbounded O(n) directory growth.
+
+**Likelihood:** Low-Medium (session JWTs are replayable for 1 hour and travel in URL fragments in tunnel mode — clipboard, history, or network logs all expand the attacker set)
+**Impact:** Medium (disk exhaustion + event-loop stall on the host running the review server)
+
+**Mitigation (required):**
+- Register `@fastify/rate-limit` (tracked under FB-06) with per-IP + per-session caps on feedback-create.
+- Per-session creation counter (hard cap, returns 429).
+- Per-stage feedback-file ceiling enforced at `nextFeedbackNumber` time.
+- Reduce `FEEDBACK_CREATE_MAX_BYTES` on the non-attachment path (attachment endpoint should own the 8 MiB budget).
+- Debounce/batch `gitCommitState` so a request flood does not translate 1:1 into child-process spawns.
+
+**Status:** Gap identified. See `THREAT-MODEL.md §1 D D-HTTP` for full analysis. Must ship before public-tunnel review deployment.
+
 ---
 
 ### E — Elevation of Privilege (Extended)

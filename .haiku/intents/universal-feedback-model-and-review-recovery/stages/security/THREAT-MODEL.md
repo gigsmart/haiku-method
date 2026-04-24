@@ -86,20 +86,74 @@ Scope: Feedback file creation/mutation (MCP tools + HTTP API), gate-phase enforc
 
 ### D — Denial of Service
 
+The DoS analysis splits into two attack surfaces with different trust boundaries and threat profiles. **D-MCP** is the local MCP tool path. **D-HTTP** is the authenticated HTTP API path, which in tunnel mode (`HAIKU_REMOTE_REVIEW=1`) extends to any actor with a replayable session JWT.
+
+#### D-MCP: Feedback creation via MCP tool (local blast radius)
+
 **Threat:** Feedback creation is abused to fill disk space by creating thousands of feedback files, or to stall the gate indefinitely by creating pending items faster than they can be addressed.
 
 **Likelihood:** Low
 **Impact:** Low
 
+**Trust boundary:** Process-local. Caller is whoever controls the MCP server (the developer on their own machine).
+
 **Mitigation:**
-1. Feedback creation is a local MCP tool — the blast radius is the developer's own machine. There is no remote unauthenticated creation path (HTTP requires an active review session).
-2. Feedback files are small markdown documents (typically < 1KB). Even 10,000 files would consume < 10MB.
+1. Feedback creation is a local MCP tool — the blast radius is the developer's own machine.
+2. Feedback files are small markdown documents (typically < 1KB in the MCP path, which does not accept base64 screenshots). Even 10,000 files would consume < 10MB.
 3. The `nextFeedbackNumber` function uses a sequential NN prefix, so creation cost is O(n) for reading the directory listing. At scale (>1000 files per stage), this could slow down, but this is a self-inflicted local concern.
 4. For gate stalling: the `visits` counter provides a mechanism for future escalation thresholds (e.g., "if visits > 3, escalate to human").
 
 **Verification evidence:**
-- No unauthenticated remote feedback creation path exists.
+- MCP tool handlers have no large-body vector (`haiku_feedback` takes structured fields, not base64 blobs).
 - `nextFeedbackNumber` reads `readdirSync` — bounded by local filesystem performance.
+
+---
+
+#### D-HTTP: Feedback creation via HTTP API (session-JWT-bounded blast radius)
+
+**Threat:** The `POST /api/feedback/:intent/:stage` endpoint accepts bodies up to `FEEDBACK_CREATE_MAX_BYTES = 8 MiB` (haiku-api/src/schemas/common.ts:221, enforced via `bodyLimit` at http.ts:1496). The 8 MiB budget exists to accommodate base64-encoded screenshots, but the endpoint has **no per-IP rate cap, no per-session creation cap, and no ceiling on total feedback files per stage**. A single authenticated session can therefore:
+
+1. POST 8 MiB × N requests back-to-back (one 8 MiB body per request) for the 1-hour JWT TTL, writing a file and a git commit for every request.
+2. Create unboundedly many feedback files — `nextFeedbackNumber` (state-tools.ts:3082-3094) is O(n) in the directory listing, so each creation gets incrementally slower as N grows, amplifying the stall.
+3. Fill disk: 8 MiB × 1000 = ~8 GB of writes inside one automated session; a 1-hour window over a persistent connection allows far more.
+4. Trigger a git commit storm: each feedback write calls `gitCommitState()`, spawning a child process. Rapid creation blocks the Node event loop on `spawn`/`wait` syscalls.
+
+**Likelihood:** Low-Medium (requires a live session JWT, but in tunnel mode JWTs are embedded in the review URL fragment and replayable for 1 hour — clipboard, browser history, or network logs all expand the attacker set beyond "the developer running the MCP").
+
+**Impact:** Medium (disk exhaustion, event-loop stall, slowdown of all stage-state reads) — scoped to the local project, but it takes the review server and the developer's host down together.
+
+**Trust boundary (where trusted data becomes untrusted):** The HTTP request body crosses from "untrusted network payload" to "trusted on-disk feedback artifact" the moment `handleFeedbackPost` invokes `writeFeedbackFile`. Today the only pre-crossing checks are:
+- `verifyTunnelJWT` (existence + expiry of session JWT — does not cap request rate)
+- `bodyLimit: FEEDBACK_CREATE_MAX_BYTES` (per-request byte ceiling — does not cap request count)
+- Zod schema validation (structural — does not cap rate or total)
+
+No layer restricts request **rate** or aggregate **count** per session/IP.
+
+**Data flows in scope:**
+- `HTTP client → Fastify request handler → Zod schema → writeFeedbackFile → fs.writeFileSync → gitCommitState (spawn) → disk`
+- Trust boundary: HTTP request handler / Zod layer (network → local-state mutation).
+- Inside-to-inside flow: `handleFeedbackPost → nextFeedbackNumber` (readdirSync) per request — O(n) cost amplifies under flood.
+
+**Mitigation gaps vs. root cause:**
+- **Connection cap (MAX_CONNECTIONS = 256, http.ts:226-234):** bounds simultaneous sockets, not request rate. A single persistent keep-alive connection can fire hundreds of sequential 8 MiB POSTs in the 1-hour JWT window.
+- **JWT TTL (3600s, tunnel.ts:308):** the only temporal bound. One hour is longer than any DoS window needs.
+- **FB-06 (`@fastify/rate-limit` declared but never registered):** the dependency is in package.json but never wired into the server, so there is literally zero active rate limiting today.
+- **`bodyLimit` per request:** caps the single-request cost but does nothing to cap cumulative cost.
+
+**Required mitigations (defense-in-depth):**
+1. **Register `@fastify/rate-limit`** (tracked under FB-06) and configure it on `POST /api/feedback/:intent/:stage` with a per-session and per-IP cap (e.g., 20 creations/minute, 200/hour). This is the primary second layer.
+2. **Per-session creation counter** in session state (e.g., `session.feedbackCreated`) with a hard cap (e.g., 500 items per session) returning HTTP 429 once exceeded.
+3. **Per-stage feedback-file ceiling** checked at `nextFeedbackNumber` time — if `count >= MAX_FEEDBACK_PER_STAGE` (e.g., 1000), reject with 429. This caps the O(n) amplification on its own term.
+4. **Reduced `FEEDBACK_CREATE_MAX_BYTES`** for non-attachment paths. If attachments move to a separate endpoint (see FB-02), the feedback-create body can drop to ~64 KiB.
+5. **Debounced/batched `gitCommitState`** so a flood of requests does not translate 1:1 into child-process spawns.
+
+**Verification evidence (current state):**
+- FB-06 confirms rate-limit middleware is declared but unregistered — no active rate limit on this path today.
+- `bodyLimit: FEEDBACK_CREATE_MAX_BYTES` is the only per-request guard (http.ts:1496).
+- `nextFeedbackNumber` performs an unbounded directory scan on every creation (state-tools.ts:3082-3094).
+- `threat-model-expanded.md §D2` acknowledges "large reasons array creates filesystem load" but rates it "very low / local" — that rating does **not** transfer to the HTTP path and is explicitly superseded by this section for the HTTP attack surface.
+
+**Status:** Gap identified. Primary mitigation (rate limit) is tracked under FB-06; secondary caps (per-session counter, per-stage ceiling, reduced body limit, commit debounce) are new defense-in-depth requirements surfaced by this analysis and must be scheduled before any public-tunnel review deployment.
 
 ---
 
