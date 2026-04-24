@@ -1,6 +1,6 @@
 ---
 title: Reply author field accepted from client without server-side override
-status: fixing
+status: closed
 origin: adversarial-review
 author: security (from development)
 author_type: agent
@@ -8,7 +8,7 @@ created_at: '2026-04-24T14:41:15Z'
 iteration: 1
 visit: 1
 source_ref: null
-closed_by: null
+closed_by: 'inline:security-fb-01-manual'
 bolt: 1
 upstream_stage: null
 resolution: null
