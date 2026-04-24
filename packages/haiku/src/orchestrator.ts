@@ -23,8 +23,10 @@ import { features, resolvePluginRoot } from "./config.js"
 import { computeWaves, topologicalSort } from "./dag.js"
 import {
 	branchExists,
+	cleanupFixChainWorktree,
 	cleanupIntentWorktrees,
 	cleanupOrphanedStageBranches,
+	createFixChainWorktree,
 	createIntentBranch,
 	createStageBranch,
 	createUnitWorktree,
@@ -32,9 +34,12 @@ import {
 	deleteStageBranch,
 	ensureOnStageBranch,
 	finalizeIntentBranches,
+	fixChainBranchName,
+	fixChainWorktreePath,
 	getMainlineBranch,
 	isBranchMerged,
 	isOnStageBranch,
+	mergeFixChainWorktree,
 	mergeStageBranchForward,
 	mergeStageBranchIntoMain,
 	prepareRevisitBranch,
@@ -1764,6 +1769,43 @@ function runIntentCompletionReview(
 	// Classify pending intent-scope feedback. Findings here were authored
 	// by studio-level review agents; `stage: ""` in the storage path.
 	const allFeedback = readFeedbackFiles(slug, "")
+
+	// Reconcile studio-level fix-chain worktrees from the prior tick.
+	// Closed findings get their isolation worktrees merged back into
+	// intent main; anything else is reaped so the next bolt (if any)
+	// starts fresh. Mirrors the stage-level reconciliation in the
+	// main run_next gate handler.
+	if (isGitRepo()) {
+		for (const fb of allFeedback) {
+			const wtPath = fixChainWorktreePath(slug, "intent", fb.id)
+			if (!existsSync(wtPath)) continue
+			const isClosed =
+				fb.status === "closed" ||
+				fb.status === "addressed" ||
+				fb.status === "rejected" ||
+				!!fb.closed_by
+			if (isClosed) {
+				const res = mergeFixChainWorktree(slug, "intent", fb.id)
+				if (!res.success) {
+					console.error(
+						`[haiku] intent fix-chain merge failed for ${fb.id}: ${res.message}. Leaving worktree in place; next tick will retry.`,
+					)
+				} else {
+					emitTelemetry("haiku.intent_fix_chain.merged", {
+						intent: slug,
+						feedback_id: fb.id,
+					})
+				}
+			} else {
+				cleanupFixChainWorktree(slug, "intent", fb.id)
+				emitTelemetry("haiku.intent_fix_chain.cleaned", {
+					intent: slug,
+					feedback_id: fb.id,
+				})
+			}
+		}
+	}
+
 	const pendingItems = allFeedback.filter((item) => {
 		if (item.closed_by) return false
 		return (
@@ -1894,20 +1936,29 @@ function runIntentCompletionReview(
 			}
 		}
 
+		// Allocate an isolation worktree per intent-scope chain (scope =
+		// "intent"), forked off intent main. Same rationale as the stage
+		// fix loop: parallel chains cannot clobber each other, and no
+		// chain can accidentally commit on a foreign branch.
 		const dispatchedScope: {
 			feedback_id: string
 			feedback_file: string
 			feedback_title: string
 			bolt: number
+			worktree: string | null
+			branch: string | null
 		}[] = []
 		for (const item of eligibleScope) {
 			const bumped = incrementFeedbackBolt(slug, "", item.id)
 			if (!bumped) continue
+			const wt = createFixChainWorktree(slug, "intent", item.id)
 			dispatchedScope.push({
 				feedback_id: item.id,
 				feedback_file: item.file,
 				feedback_title: item.title,
 				bolt: bumped.bolt,
+				worktree: wt,
+				branch: wt ? fixChainBranchName(slug, "intent", item.id) : null,
 			})
 		}
 
@@ -3032,6 +3083,47 @@ export function runNext(slug: string): OrchestratorAction {
 	//   only safe option is local human approval. Compound gates containing `external`
 	//   strip it and keep remaining types (e.g., [external, ask] → ask).
 	if (phase === "gate") {
+		// ── Fix-chain worktree reconciliation ─────────────────────────────
+		// A prior `review_fix` dispatch may have allocated per-finding
+		// isolation worktrees. Before we decide what to do with the current
+		// gate, merge the ones whose findings closed and reap the ones
+		// whose findings didn't (next bolt, if any, starts fresh).
+		//
+		// Skip in non-git environments — no worktrees were ever created.
+		if (isGitRepo()) {
+			const allFeedback = readFeedbackFiles(slug, currentStage)
+			for (const fb of allFeedback) {
+				const wtPath = fixChainWorktreePath(slug, currentStage, fb.id)
+				if (!existsSync(wtPath)) continue
+				const isClosed =
+					fb.status === "closed" ||
+					fb.status === "addressed" ||
+					fb.status === "rejected" ||
+					!!fb.closed_by
+				if (isClosed) {
+					const res = mergeFixChainWorktree(slug, currentStage, fb.id)
+					if (!res.success) {
+						console.error(
+							`[haiku] fix-chain merge failed for ${fb.id}: ${res.message}. Leaving worktree in place; next tick will retry.`,
+						)
+					} else {
+						emitTelemetry("haiku.fix_chain.merged", {
+							intent: slug,
+							stage: currentStage,
+							feedback_id: fb.id,
+						})
+					}
+				} else {
+					cleanupFixChainWorktree(slug, currentStage, fb.id)
+					emitTelemetry("haiku.fix_chain.cleaned", {
+						intent: slug,
+						stage: currentStage,
+						feedback_id: fb.id,
+					})
+				}
+			}
+		}
+
 		// ── Pending feedback check ─────────────────────────────────────────
 		// Before any gate logic, check if there are unresolved feedback items.
 		// When pending feedback exists we have three routes, in priority order:
@@ -3235,11 +3327,22 @@ export function runNext(slug: string): OrchestratorAction {
 				// Increment bolt for every eligible item and build dispatch
 				// batch. Items whose increment fails (file deleted mid-tick)
 				// are skipped, not fatal — the tick still dispatches the rest.
+				//
+				// Allocate an isolation worktree per chain so parallel fix
+				// subagents can't clobber each other's edits (and can't
+				// accidentally commit on a foreign branch — the cwd is
+				// pinned to the worktree). Chains run `ops-engineer →
+				// feedback-assessor` inside the worktree; the gate's
+				// reconciliation pass merges the worktree back into the
+				// stage branch when the assessor closes the finding, or
+				// reaps it otherwise. No-op (null path) in non-git mode.
 				const dispatched: {
 					feedback_id: string
 					feedback_file: string
 					feedback_title: string
 					bolt: number
+					worktree: string | null
+					branch: string | null
 				}[] = []
 				for (const item of eligibleItems) {
 					const bumped = incrementFeedbackBolt(
@@ -3248,11 +3351,16 @@ export function runNext(slug: string): OrchestratorAction {
 						item.id,
 					)
 					if (!bumped) continue
+					const wt = createFixChainWorktree(slug, currentStage, item.id)
 					dispatched.push({
 						feedback_id: item.id,
 						feedback_file: item.file,
 						feedback_title: item.title,
 						bolt: bumped.bolt,
+						worktree: wt,
+						branch: wt
+							? fixChainBranchName(slug, currentStage, item.id)
+							: null,
 					})
 				}
 
@@ -6198,6 +6306,8 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 				feedback_file: string
 				feedback_title: string
 				bolt: number
+				worktree?: string | null
+				branch?: string | null
 			}>) || []
 			const totalPending = (action.total_pending as number) || items.length
 			const escalatedCount = (action.escalated_count as number) || 0
@@ -6246,6 +6356,8 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 				feedback_file: fbFile,
 				feedback_title: fbTitle,
 				bolt: fixBolt,
+				worktree: fbWorktree,
+				branch: fbBranch,
 			} of items) {
 				const fbAbsPath = join(haikuRoot, fbFile)
 				sections.push(
@@ -6275,13 +6387,35 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					const promptLines: string[] = [
 						`You are the **${hat}** hat running in **fix-mode** against feedback **${fbId}** (bolt ${fixBolt} of ${fixMaxBolts}) in stage **${fixStage}** of intent **${slug}**.`,
 						"",
-						"## Parallel-batch warning",
-						`This fix loop is running in parallel with other findings. Multiple chains may edit the **same files** at overlapping times. When you edit, read the file immediately before writing so you don't clobber another chain's change. If your edit depends on state another chain may have already fixed, verify the current file content rather than trusting the feedback body's line numbers verbatim. The assessor will catch incomplete fixes and the FSM will retry on the next bolt.`,
-						"",
+					]
+					if (fbWorktree) {
+						promptLines.push(
+							"## Isolation worktree (REQUIRED)",
+							`Do ALL work for this chain inside the dedicated worktree at:`,
+							``,
+							`    ${fbWorktree}`,
+							``,
+							`This worktree is on branch \`${fbBranch}\`, forked from the stage branch at dispatch time. It exists so parallel fix chains cannot clobber each other.`,
+							"",
+							`**Rules:**`,
+							`- All file edits, reads of stage artifacts, and git operations MUST happen inside this path.`,
+							`- Use \`git -C "${fbWorktree}" <cmd>\` for every git command, or \`cd\` into it once and operate there. Do NOT run bare \`git\` in the parent tree — you will commit on the wrong branch.`,
+							`- Commit frequently inside the worktree with messages like \`haiku: fix ${fbId} bolt ${fixBolt} (${hat})\`. Do NOT push.`,
+							`- Do NOT run \`git worktree remove\`, \`git branch -d\`, or \`git merge\` — the FSM owns the merge-back on the next \`haiku_run_next\` after this chain's final hat closes the finding.`,
+							"",
+						)
+					} else {
+						promptLines.push(
+							"## Parallel-batch warning",
+							`This fix loop is running in parallel with other findings. Multiple chains may edit the **same files** at overlapping times (no isolation worktree is allocated in this environment). When you edit, read the file immediately before writing so you don't clobber another chain's change. If your edit depends on state another chain may have already fixed, verify the current file content rather than trusting the feedback body's line numbers verbatim. The assessor will catch incomplete fixes and the FSM will retry on the next bolt.`,
+							"",
+						)
+					}
+					promptLines.push(
 						"## Required context (inlined below)",
 						"You are NOT wearing this hat to build a new unit. You are wearing it to resolve ONE specific feedback finding on artifacts that already exist.",
 						"",
-					]
+					)
 					if (stageBasePath) {
 						promptLines.push(
 							inlineFile(stageBasePath, `Stage scope: ${fixStage}`),
@@ -6311,8 +6445,11 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					)
 					let step = 1
 					if (isGitRepo()) {
+						const commitTarget = fbWorktree
+							? `the isolation worktree (\`git -C "${fbWorktree}" add -A && git -C "${fbWorktree}" commit -m "..."\`)`
+							: "the current branch"
 						promptLines.push(
-							`${step++}. Work on the current branch. Commit the fix with a message like \`haiku: fix ${fbId} bolt ${fixBolt} (${hat})\` — do NOT push.`,
+							`${step++}. Work on ${commitTarget}. Commit the fix with a message like \`haiku: fix ${fbId} bolt ${fixBolt} (${hat})\` — do NOT push.`,
 						)
 					}
 					if (isLast) {
@@ -6447,6 +6584,8 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 				feedback_file: string
 				feedback_title: string
 				bolt: number
+				worktree?: string | null
+				branch?: string | null
 			}>) || []
 			const totalPending = (action.total_pending as number) || items.length
 			const escalatedCount = (action.escalated_count as number) || 0
@@ -6482,6 +6621,8 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 				feedback_file: fbFile,
 				feedback_title: fbTitle,
 				bolt: fixBolt,
+				worktree: fbWorktree,
+				branch: fbBranch,
 			} of items) {
 				const fbAbsPath = join(haikuRoot, fbFile)
 				sections.push(
@@ -6500,13 +6641,35 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					const promptLines: string[] = [
 						`You are the **${hat}** studio fix-hat running against intent-scope feedback **${fbId}** (bolt ${fixBolt} of ${fixMaxBolts}) for intent **${slug}**.`,
 						"",
-						"## Parallel-batch warning",
-						`This fix loop is running in parallel with other findings. Multiple chains may edit the **same files** at overlapping times. When you edit, read the file immediately before writing so you don't clobber another chain's change. The assessor will catch incomplete fixes and the FSM will retry on the next bolt.`,
-						"",
+					]
+					if (fbWorktree) {
+						promptLines.push(
+							"## Isolation worktree (REQUIRED)",
+							`Do ALL work for this chain inside the dedicated worktree at:`,
+							``,
+							`    ${fbWorktree}`,
+							``,
+							`This worktree is on branch \`${fbBranch}\`, forked from intent main at dispatch time. It exists so parallel fix chains cannot clobber each other.`,
+							"",
+							`**Rules:**`,
+							`- All file edits, reads, and git operations MUST happen inside this path.`,
+							`- Use \`git -C "${fbWorktree}" <cmd>\` or \`cd\` into the worktree once. Do NOT run bare \`git\` in the parent tree.`,
+							`- Commit frequently with \`haiku: intent-fix ${fbId} bolt ${fixBolt} (${hat})\`. Do NOT push.`,
+							`- Do NOT run \`git worktree remove\`, \`git branch -d\`, or \`git merge\` — the FSM owns merge-back on the next \`haiku_run_next\` after the assessor closes the finding.`,
+							"",
+						)
+					} else {
+						promptLines.push(
+							"## Parallel-batch warning",
+							`This fix loop is running in parallel with other findings. Multiple chains may edit the **same files** at overlapping times (no isolation worktree is allocated in this environment). When you edit, read the file immediately before writing so you don't clobber another chain's change. The assessor will catch incomplete fixes and the FSM will retry on the next bolt.`,
+							"",
+						)
+					}
+					promptLines.push(
 						"## Required context (inlined below)",
 						"You are addressing ONE whole-intent finding. Your mandate is studio-wide, not stage-specific — you reconcile artifacts across the whole intent against studio standards.",
 						"",
-					]
+					)
 					if (hatPath && existsSync(hatPath)) {
 						promptLines.push(inlineFile(hatPath, `Fix-hat mandate: ${hat}`))
 					}
@@ -6528,8 +6691,11 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					)
 					let step = 1
 					if (isGitRepo()) {
+						const commitTarget = fbWorktree
+							? `the isolation worktree (\`git -C "${fbWorktree}" add -A && git -C "${fbWorktree}" commit -m "..."\`)`
+							: "the current branch"
 						promptLines.push(
-							`${step++}. Work on the current branch. Commit with a message like \`haiku: intent-fix ${fbId} bolt ${fixBolt} (${hat})\` — do NOT push.`,
+							`${step++}. Work on ${commitTarget}. Commit with a message like \`haiku: intent-fix ${fbId} bolt ${fixBolt} (${hat})\` — do NOT push.`,
 						)
 					}
 					if (isLast) {
