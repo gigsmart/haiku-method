@@ -25,7 +25,7 @@ inputs:
   - packages/haiku-api/src/schemas/question.ts
   - deploy/auth-proxy/src/index.ts
 model: sonnet
-status: active
+status: completed
 bolt: 1
 hat: security-reviewer
 started_at: '2026-04-24T13:59:29Z'
@@ -45,11 +45,12 @@ iterations:
     result: advance
   - hat: security-reviewer
     started_at: '2026-04-24T14:21:05Z'
-    completed_at: null
-    result: null
+    completed_at: '2026-04-24T14:23:53Z'
+    result: advance
 outputs:
   - stages/security/artifacts/assessments.md
   - stages/security/artifacts/threat-model-expanded.md
+completed_at: '2026-04-24T14:23:53Z'
 ---
 # Expanded-Surface Threat Model and Hardening
 
