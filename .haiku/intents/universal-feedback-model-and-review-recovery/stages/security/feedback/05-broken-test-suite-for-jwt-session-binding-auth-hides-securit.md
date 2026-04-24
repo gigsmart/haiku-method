@@ -1,6 +1,6 @@
 ---
 title: Broken test suite for JWT session-binding auth hides security regressions
-status: pending
+status: closed
 origin: adversarial-review
 author: security (from development)
 author_type: agent
@@ -8,7 +8,7 @@ created_at: '2026-04-24T14:41:43Z'
 iteration: 1
 visit: 1
 source_ref: null
-closed_by: null
+closed_by: 'inline:unit-02-fb-05-manual'
 bolt: 0
 upstream_stage: development
 resolution: null
