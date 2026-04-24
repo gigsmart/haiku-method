@@ -1,6 +1,6 @@
 ---
 title: 'agent-feedback-toggle-spec: wefwefwefwef'
-status: pending
+status: rejected
 origin: user-visual
 author: user
 author_type: human
@@ -19,4 +19,3 @@ attachment: 17-agent-feedback-toggle-spec-wefwefwefwef.png
 wefwefwefwef
 
 ![annotation](/api/feedback-attachment/universal-feedback-model-and-review-recovery/design/17-agent-feedback-toggle-spec-wefwefwefwef.png)
-
