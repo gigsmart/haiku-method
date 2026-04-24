@@ -3541,9 +3541,7 @@ function parseFeedbackIterations(
 		out.push({
 			bolt,
 			hat,
-			...(typeof e.started_at === "string"
-				? { started_at: e.started_at }
-				: {}),
+			...(typeof e.started_at === "string" ? { started_at: e.started_at } : {}),
 			...(typeof e.completed_at === "string"
 				? { completed_at: e.completed_at }
 				: {}),
@@ -3579,7 +3577,9 @@ export function appendFeedbackIteration(
 	const path = join(dir, file)
 	const raw = readFileSync(path, "utf8")
 	const parsed = matter(raw)
-	const current = Array.isArray((parsed.data as { iterations?: unknown }).iterations)
+	const current = Array.isArray(
+		(parsed.data as { iterations?: unknown }).iterations,
+	)
 		? ((parsed.data as { iterations: unknown[] }).iterations as unknown[])
 		: []
 	const next = [
@@ -3598,10 +3598,7 @@ export function appendFeedbackIteration(
 		...(parsed.data as Record<string, unknown>),
 		iterations: next,
 	}
-	writeFileSync(
-		path,
-		matter.stringify(parsed.content, normalizeDates(updated)),
-	)
+	writeFileSync(path, matter.stringify(parsed.content, normalizeDates(updated)))
 }
 
 function parseInlineAnchor(
