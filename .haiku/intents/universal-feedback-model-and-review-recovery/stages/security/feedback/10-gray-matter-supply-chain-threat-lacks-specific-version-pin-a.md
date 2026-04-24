@@ -2,7 +2,7 @@
 title: >-
   gray-matter supply chain threat lacks specific version pin and CI enforcement
   evidence
-status: pending
+status: closed
 origin: adversarial-review
 author: threat-coverage
 author_type: agent
@@ -10,8 +10,8 @@ created_at: '2026-04-24T14:42:05Z'
 iteration: 1
 visit: 1
 source_ref: null
-closed_by: null
-bolt: 0
+closed_by: 'fix-loop:FB-10:bolt-1'
+bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
