@@ -2,7 +2,7 @@
 title: >-
   Missing paths.feedbackReply builder; useFeedback.ts and state-tools.ts
   hardcode route URLs
-status: pending
+status: rejected
 origin: adversarial-review
 author: architecture (from development)
 author_type: agent
@@ -41,3 +41,7 @@ Additionally, `useFeedback.ts` uses two distinct fetch patterns within the same 
 ## Recommendation
 
 Add `feedbackReply(intent, stage, id)` and `feedbackAttachment(intent, stage, filename)` to the `paths` object in `routes.ts`. Update `useFeedback.ts:198` and `state-tools.ts:3227` to use these builders. Move the replies call in `useFeedback.ts` to `apiClient.feedback.reply()` to keep the abstraction boundary consistent.
+
+---
+
+**Rejection reason:** Out of scope — missing paths.feedbackReply() builder is API-hygiene/consistency debt, not a security gap. The raw fetch() call in useFeedback.ts works; centralizing is a good follow-up but doesn't affect attack surface.
