@@ -15,5 +15,7 @@
       "trigger": "initial",
       "result": null
     }
-  ]
+  ],
+  "pre_review_dispatched": true,
+  "pre_review_dispatched_at": "2026-04-24T12:52:03Z"
 }
