@@ -268,13 +268,28 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 
 **Risk:** YAML parsing vulnerabilities (prototype pollution, DoS on large files).
 
+**Verified installed versions (as of 2026-04-23):**
+- Direct dependency: `gray-matter@4.0.3` declared in `packages/haiku/package.json` and `website/package.json` (caret pin `^4.0.3`) — resolved to `4.0.3` in `package-lock.json` (entry `node_modules/gray-matter`).
+- Transitive chain via `gray-matter@4.0.3` (`package-lock.json` entry `node_modules/gray-matter` -> dependencies):
+  - `js-yaml@^3.13.1` -> resolved to `js-yaml@3.14.2` (`node_modules/js-yaml`).
+  - `kind-of@^6.0.2` -> resolved via `node_modules/kind-of`.
+  - `strip-bom-string@^1.0.0` -> resolved via `node_modules/strip-bom-string`.
+  - `section-matter@^1.0.0` -> resolved via `node_modules/section-matter`.
+- The `website` package separately depends on `js-yaml@^4.1.1` (resolved to `js-yaml@4.1.1` at `website/node_modules/js-yaml`) for its own use — that is NOT the copy gray-matter loads.
+
 **Assessment:**
-- Widely-used, actively maintained library. No known critical CVEs.
-- Input is always local files from trusted write paths.
+- Widely-used, actively maintained library. No known critical CVEs against `gray-matter@4.0.3` or `js-yaml@3.14.2` at the time of this review.
+- gray-matter 4.0.3 is the current latest release (no 5.x exists); it has not bumped its `js-yaml` dependency to 4.x. An earlier version of this threat model incorrectly asserted "pin to a version using js-yaml >= 4.x" as an available mitigation — **that version does not exist** and the assertion is withdrawn.
+- Frontmatter input comes from local files under the project's `.haiku/` tree. The feedback-model work in this intent does expose write paths via HTTP endpoints (reply/update), but those write through the schema-validated `haiku_feedback*` tools and never hand raw YAML to gray-matter from the network.
+- Prototype-pollution exposure from `js-yaml@3.x` is primarily a concern when untrusted YAML is parsed with the unsafe `load()` API. gray-matter 4.0.3 uses `safeLoad` (js-yaml 3.x's safe schema, equivalent to js-yaml 4.x's default `load`), which does not instantiate custom tags. Exposure is therefore limited to DoS via deeply-nested or very large YAML.
 
-**Mitigation:** Pin `gray-matter` to a version using js-yaml >= 4.x (prototype pollution fixes). Run `npm audit` in CI.
+**Mitigations applied / required:**
+1. Direct `gray-matter@^4.0.3` pin is in place (verified above). No action required on the direct pin.
+2. Transitive `js-yaml@3.14.2` is the latest of the 3.x line (`3.14.2` shipped the known 3.x fixes). No upgrade path exists inside gray-matter 4.x.
+3. **`npm audit` in CI is NOT currently wired.** `.github/workflows/ci.yml` defines only `lint` (Biome) and `test` (MCP tests) jobs. No `npm audit` / `npm audit --audit-level=high` / `npm audit signatures` / `audit-ci` step runs against `package-lock.json`. This is an **open mitigation**, not an applied one — see the risk table below. A follow-up unit of work should add an `audit` job to `.github/workflows/ci.yml` that runs `npm audit --audit-level=high` after `npm ci` and fails the build on new HIGH/CRITICAL advisories.
+4. Recommend tracking gray-matter for a 5.x release that migrates to `js-yaml@^4.x`; if one appears, adopt it in the next dependency-maintenance pass.
 
-**Status:** Low risk.
+**Status:** LOW risk on the installed stack today. Mitigation #3 (`npm audit` in CI) is **NOT yet implemented** — tracked as an open mitigation, not a closed one.
 
 ---
 
@@ -312,7 +327,7 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 | Visits counter | Present and visible | v2: max_visits threshold |
 | JWT forgery | Standard JWT with tunnel URL + session binding | Standard library risk |
 | Insider threat | Git audit trail; branch protection recommended | Out of scope for v1 |
-| Supply chain | No new dependencies; pin gray-matter; run npm audit | Ongoing dependency management |
+| Supply chain | No new dependencies; `gray-matter@^4.0.3` pin verified; transitive `js-yaml@3.14.2` verified (latest 3.x); **`npm audit` CI job NOT yet wired** | Ongoing dependency management; `npm audit` in CI is an open follow-up |
 
 ---
 
@@ -323,5 +338,5 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 | `addressed` status on human-authored feedback allows gate pass without explicit close | MEDIUM | Human gate (`ask`/`external`) is the verification backstop. Auto-gate stages with human feedback are lower-trust by design. |
 | WebSocket drop before submission loses draft comments | LOW | v2: debounced persistence |
 | No visits cap | LOW | v2: max_visits threshold |
-| YAML prototype pollution in gray-matter | LOW | Pin to js-yaml >= 4.x; run npm audit in CI |
+| YAML prototype pollution in gray-matter | LOW | `gray-matter@4.0.3` pulls `js-yaml@3.14.2` (verified in `package-lock.json`). gray-matter 4.x has not migrated to js-yaml 4.x; safe-load usage limits exposure to DoS, not arbitrary code. `npm audit` CI job is NOT currently wired (see SC-1 mitigation #3) — track as open follow-up. |
 | Insider threat (direct filesystem access) | ACCEPTED | Developer tool; git trail provides detection; out of scope v1 |

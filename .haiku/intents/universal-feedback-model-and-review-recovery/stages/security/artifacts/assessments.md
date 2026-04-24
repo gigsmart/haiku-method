@@ -79,7 +79,7 @@ Three trust boundaries not fully characterized in unit-01 are now documented:
 | Agent marking human-authored feedback as "addressed" allows gate pass without human explicit close | MEDIUM | Human gate (ask/external) is the verification backstop. Auto-gate stages processing human feedback are lower-trust. |
 | WebSocket draft loss before submission | LOW | v2: debounced persistence |
 | No visits cap | LOW | v2: max_visits threshold |
-| gray-matter YAML parsing (prototype pollution) | LOW | Pin to js-yaml >= 4.x; run npm audit in CI |
+| gray-matter YAML parsing (prototype pollution) | LOW | `gray-matter@4.0.3` (direct pin verified in `packages/haiku/package.json` and `website/package.json`) pulls transitive `js-yaml@3.14.2` — latest 3.x. gray-matter 4.x has not migrated to js-yaml 4.x; no upgrade path exists until a hypothetical gray-matter 5.x. `npm audit` in CI is **NOT yet wired** (`.github/workflows/ci.yml` has only `lint` + `test` jobs); tracked as open follow-up — see `threat-model-expanded.md` SC-1 mitigation #3. |
 | Insider threat via direct filesystem access | ACCEPTED | Developer tool; git trail detects; out of scope v1 |
 
 ### Expanded Test Coverage Verified
