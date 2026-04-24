@@ -1,6 +1,6 @@
 ---
 title: 'agent-feedback-toggle-spec: This is bad'
-status: pending
+status: rejected
 origin: user-visual
 author: user
 author_type: human
@@ -19,4 +19,3 @@ attachment: 26-agent-feedback-toggle-spec-this-is-bad.png
 This is bad
 
 ![annotation](/api/feedback-attachment/universal-feedback-model-and-review-recovery/design/26-agent-feedback-toggle-spec-this-is-bad.png)
-
