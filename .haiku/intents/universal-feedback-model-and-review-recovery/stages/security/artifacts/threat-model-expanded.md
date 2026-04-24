@@ -141,9 +141,41 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 
 **Verification evidence:**
 - `http-cors.test.mjs` — origin-matched and origin-mismatched CORS behavior tested.
-- `http.ts:846-861` — allowedOrigins construction logic.
+- `http.ts:844-849` — allowedOrigins construction logic.
+- `config.ts:137-149` — `stripWildcardAllowedOrigins()` defense-in-depth guard logs a warning and drops any `*` entries from `HAIKU_REVIEW_ALLOWED_ORIGINS` at startup.
 
-**Status:** Mitigated.
+**Status:** Mitigated for the wildcard path. See I1a for the empty-allowList failure mode.
+
+---
+
+#### I1a: Empty CORS allow-list under `HAIKU_REMOTE_REVIEW=1` — silent CORS breakage or operator misconfiguration
+**Threat:** `resolveAllowedCorsOrigin` (`http.ts:844-849`) falls back to `[review.siteUrl]` when `review.allowedOrigins` is empty (or contains only `*`, which `stripWildcardAllowedOrigins()` strips at startup). `review.siteUrl` defaults to the literal `"https://haikumethod.ai"` (`config.ts:106`), so the zero-config path points at the hosted marketing/review site — not at whatever origin the operator actually intends to accept.
+
+Two failure modes follow:
+1. **Operator deploys remote review with their own UI** (e.g., `https://review.example.com`) but forgets to set either `HAIKU_REVIEW_SITE_URL` or `HAIKU_REVIEW_ALLOWED_ORIGINS`. The allow-list collapses to `["https://haikumethod.ai"]`, which will not match their UI's origin. Every cross-origin request is silently blocked by the browser's CORS check, and the feedback UI appears broken with no server-side error and no startup warning — the operator sees 4xx/CORS-blocked requests in devtools with no pointer back to the misconfiguration.
+2. **Operator explicitly clears `HAIKU_REVIEW_SITE_URL=""` or sets it to `"*"`** to "unblock" CORS. `allowList` becomes `[""]` or `["*"]`:
+   - `[""]` → no origin can match (`allowList.includes(origin)` is always false for non-empty browser Origin headers), same silent breakage as case 1.
+   - `["*"]` is NOT treated as wildcard here — `allowList.includes(origin)` would only match an origin literally equal to `"*"`, which browsers never send. So this also silently blocks all origins. The operator may not realize the wildcard is not honored in this fallback and move on to less-safe workarounds (e.g., putting a permissive reverse proxy in front).
+
+**Likelihood:** Medium (configuration-driven; easy to miss for self-hosted operators)
+**Impact:** Low to Medium — not an information-disclosure vector in itself (the fallback fails closed), but (a) degrades to silent UI breakage with no operator-visible signal, and (b) creates pressure for operators to disable CORS enforcement downstream, which can reintroduce I1.
+
+**Mitigation (recommended — to be implemented by the blue-team fix-hat):**
+1. Add a startup guard that, when `HAIKU_REMOTE_REVIEW=1`, inspects the effective allow-list after `stripWildcardAllowedOrigins()` and emits a `console.warn(...)` when:
+   - `review.allowedOrigins` is empty AND
+   - `review.siteUrl` is empty, falsy, or equals the literal `"*"`.
+   The warning must name the offending env vars (`HAIKU_REVIEW_ALLOWED_ORIGINS`, `HAIKU_REVIEW_SITE_URL`) so it is greppable in operator logs.
+2. Document the fallback behavior in `config.ts` JSDoc for `review.allowedOrigins` so the single-origin collapse is discoverable without reading `resolveAllowedCorsOrigin`.
+
+**Why a warning and not a hard fail:** the current default `siteUrl` (`https://haikumethod.ai`) is non-empty, so the common case (operator running the hosted UI) is unaffected. A hard fail would regress the zero-config happy path. A warning makes the misconfiguration visible to operators before they experience the failure as "the review UI is broken."
+
+**Verification evidence (to add after blue-team fix):**
+- `http-cors.test.mjs` — new test asserting the warning fires when `HAIKU_REMOTE_REVIEW=1` with empty `allowedOrigins` and empty/wildcard `siteUrl`.
+- `http-cors.test.mjs` — new test asserting the warning does NOT fire in the zero-config default (non-empty `siteUrl`).
+
+**Status:** Open (identified by adversarial review as FB-12). Mitigation scoped to blue-team fix-hat. Residual risk is LOW after mitigation: silent CORS breakage becomes a loud startup warning; the fail-closed behavior itself is not an information-disclosure risk.
+
+**Files referenced:** `packages/haiku/src/http.ts:844-849`, `packages/haiku/src/config.ts:106,122,137-149`.
 
 ---
 
@@ -305,7 +337,7 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 
 | Surface | Hardening Applied | Residual Risk |
 |---|---|---|
-| HTTP feedback mutations (remote mode) | JWT tunnel auth (FB-30), session header guard (FB-20), CORS origin check (FB-36) | Session UUID bookmarks (very low) |
+| HTTP feedback mutations (remote mode) | JWT tunnel auth (FB-30), session header guard (FB-20), CORS origin check (FB-36) | Session UUID bookmarks (very low); empty-allowList silent-break misconfiguration (FB-12, blue-team fix pending) |
 | `closes:` validation | feedback-assessor hat auto-injected for all units with `closes:` | Agent `addressed` status on human items allows auto-gate pass |
 | `haiku_revisit` reasons | writeFeedbackFile constrains write path; reasons always `origin: agent` | No count cap (v2 enhancement needed) |
 | WebSocket session loss | Known v1 limitation | v2: debounced persistence |
@@ -321,6 +353,7 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 | Risk | Severity | Rationale |
 |---|---|---|
 | `addressed` status on human-authored feedback allows gate pass without explicit close | MEDIUM | Human gate (`ask`/`external`) is the verification backstop. Auto-gate stages with human feedback are lower-trust by design. |
+| Empty `allowedOrigins` + empty/wildcard `siteUrl` under `HAIKU_REMOTE_REVIEW=1` silently blocks all cross-origin requests (I1a / FB-12) | LOW | Fail-closed — no information leak. Mitigation is an operator-visible startup warning (blue-team fix-hat bolt 2). Tracked as residual until warning lands. |
 | WebSocket drop before submission loses draft comments | LOW | v2: debounced persistence |
 | No visits cap | LOW | v2: max_visits threshold |
 | YAML prototype pollution in gray-matter | LOW | Pin to js-yaml >= 4.x; run npm audit in CI |

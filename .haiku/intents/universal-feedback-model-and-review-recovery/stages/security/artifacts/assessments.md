@@ -66,6 +66,7 @@ Three trust boundaries not fully characterized in unit-01 are now documented:
 | T2: Direct filesystem frontmatter tampering | Very Low | High | Mitigated — git audit trail (same as unit-01) |
 | R1: WebSocket drop loses draft review comments | Medium | Low | Open v1 risk — accepted; v2 debounced persistence |
 | I1: CORS wildcard leaks review content | Low | Medium | Mitigated — FB-36 origin-checked CORS |
+| I1a: Empty `allowedOrigins`+empty `siteUrl` under remote review silently blocks all origins | Medium (config) | Low-Medium | Open — FB-12; blue-team fix-hat to add startup warning |
 | I2: Session UUID in URL replay | Very Low | Low | Accepted — 30-min TTL, in-memory only |
 | D1: Visits counter grows unboundedly | Low | Medium | Accepted — no hard cap; v2 threshold recommended |
 | D2: Large reasons array creates filesystem load | Very Low | Low | Accepted — local tool; no count cap |
@@ -77,6 +78,7 @@ Three trust boundaries not fully characterized in unit-01 are now documented:
 | Risk | Severity | Notes |
 |---|---|---|
 | Agent marking human-authored feedback as "addressed" allows gate pass without human explicit close | MEDIUM | Human gate (ask/external) is the verification backstop. Auto-gate stages processing human feedback are lower-trust. |
+| CORS allow-list collapses to empty/unmatched origin under `HAIKU_REMOTE_REVIEW=1` with empty `siteUrl` (FB-12 / I1a) | LOW | Fail-closed — not an info-disclosure vector. Mitigation: startup warning naming `HAIKU_REVIEW_ALLOWED_ORIGINS` and `HAIKU_REVIEW_SITE_URL`. Scoped to blue-team fix-hat bolt 2. |
 | WebSocket draft loss before submission | LOW | v2: debounced persistence |
 | No visits cap | LOW | v2: max_visits threshold |
 | gray-matter YAML parsing (prototype pollution) | LOW | Pin to js-yaml >= 4.x; run npm audit in CI |
