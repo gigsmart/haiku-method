@@ -32,6 +32,24 @@ export interface ReviewRouteContextValue {
 	 *  Set by the sidebar, consumed by StageReview, cleared one-shot. */
 	highlightFeedbackId: string | null
 	setHighlightFeedbackId: (id: string | null) => void
+	/** Feedback-card click on an inline-anchored item → InlineComments
+	 *  scrolls to the matching span (by `commentId`, falling back to a
+	 *  text-search on `selectedText`) and flashes it. Set by the
+	 *  stage-content layer after it navigates to the correct artifact
+	 *  detail URL; cleared by InlineComments when the flash animation
+	 *  finishes. */
+	pendingFlashAnchor: {
+		commentId?: string
+		selectedText: string
+		paragraph?: number
+	} | null
+	setPendingFlashAnchor: (
+		a: {
+			commentId?: string
+			selectedText: string
+			paragraph?: number
+		} | null,
+	) => void
 	/** Terminal success state after a Approve / External decision. */
 	submittedDecision: "approved" | "external" | null
 	setSubmittedDecision: (d: "approved" | "external" | null) => void

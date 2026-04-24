@@ -11,7 +11,7 @@
 // obvious case — we're only coding the project-specific bits.
 
 import { randomUUID } from "node:crypto"
-import { appendFileSync, existsSync, readdirSync, readFileSync } from "node:fs"
+import { appendFileSync, existsSync } from "node:fs"
 import { readFile, realpath } from "node:fs/promises"
 import { dirname, extname, join, resolve } from "node:path"
 import Fastify, {
@@ -42,7 +42,6 @@ import {
 	FileServeParamsSchema,
 	QuestionAnswerRequestSchema,
 	type QuestionAnswerResponse,
-	type ReviewCurrentPayload,
 	ReviewDecisionRequestSchema,
 	type ReviewDecisionResponse,
 	RevisitRequestSchema,
@@ -73,14 +72,10 @@ import {
 	FEEDBACK_ORIGINS,
 	FEEDBACK_STATUSES,
 	type FeedbackItem,
-	findHaikuRoot,
 	gitCommitState,
 	gitCommitStateBackgroundPush,
 	intentDir,
-	parseFrontmatter,
 	readFeedbackFiles,
-	readJson,
-	stageStatePath,
 	updateFeedbackFile,
 	writeFeedbackFile,
 } from "./state-tools.js"
@@ -547,6 +542,8 @@ function respondSessionApi(reply: FastifyReply, sessionId: string): void {
 		if (session.stageArtifacts) data.stage_artifacts = session.stageArtifacts
 		if (session.outputArtifacts) data.output_artifacts = session.outputArtifacts
 		if (session.previousReview) data.previous_review = session.previousReview
+		if (session.ad_hoc) data.ad_hoc = true
+		if (session.stage) data.stage = session.stage
 	}
 	if (session.session_type === "question") {
 		data.title = session.title
@@ -566,137 +563,6 @@ function respondSessionApi(reply: FastifyReply, sessionId: string): void {
 		data.selection = session.selection
 	}
 	reply.send(data)
-}
-
-// ── Review-current aggregate ────────────────────────────────────────────
-
-function respondReviewCurrent(reply: FastifyReply): void {
-	let root: string
-	try {
-		root = findHaikuRoot()
-	} catch {
-		reply.status(404).send({ error: "No .haiku directory found" })
-		return
-	}
-
-	const intentsPath = join(root, "intents")
-	if (!existsSync(intentsPath)) {
-		reply.status(404).send({ error: "No intents found" })
-		return
-	}
-
-	const dirs = readdirSync(intentsPath, { withFileTypes: true }).filter((d) =>
-		d.isDirectory(),
-	)
-
-	let activeIntent: string | null = null
-	let intentData: Record<string, unknown> = {}
-
-	for (const d of dirs) {
-		const intentMdPath = join(intentsPath, d.name, "intent.md")
-		if (!existsSync(intentMdPath)) continue
-		const raw = readFileSync(intentMdPath, "utf8")
-		const { data } = parseFrontmatter(raw)
-		if (data.status === "active") {
-			activeIntent = d.name
-			intentData = data
-			break
-		}
-	}
-
-	if (!activeIntent) {
-		reply.status(404).send({ error: "No active intent found" })
-		return
-	}
-
-	const activeStage = (intentData.active_stage as string) || null
-	const stagesList = (intentData.stages as string[]) || []
-	const stages: Array<{
-		name: string
-		status: string
-		phase?: string
-		iteration?: number
-		iterations?: unknown[]
-		visits?: number
-	}> = []
-	for (const stageName of stagesList) {
-		try {
-			const stateFile = stageStatePath(activeIntent, stageName)
-			const stageState = readJson(stateFile)
-			const iters = Array.isArray(stageState.iterations)
-				? (stageState.iterations as unknown[])
-				: undefined
-			const iteration = iters?.length ?? ((stageState.visits as number) || 0)
-			stages.push({
-				name: stageName,
-				status: (stageState.status as string) || "pending",
-				phase: (stageState.phase as string) || undefined,
-				iteration,
-				iterations: iters,
-				visits: iteration,
-			})
-		} catch {
-			stages.push({ name: stageName, status: "pending" })
-		}
-	}
-
-	let currentPhase: string | undefined
-	if (activeStage) {
-		try {
-			const stateFile = stageStatePath(activeIntent, activeStage)
-			const stageState = readJson(stateFile)
-			currentPhase = (stageState.phase as string) || undefined
-		} catch {
-			/* */
-		}
-	}
-
-	const feedbackSummary = { pending: 0, addressed: 0, closed: 0, rejected: 0 }
-	if (activeStage) {
-		const items = readFeedbackFiles(activeIntent, activeStage)
-		for (const item of items) {
-			const s = item.status as keyof typeof feedbackSummary
-			if (s in feedbackSummary) feedbackSummary[s]++
-		}
-	}
-
-	const units: Array<{ slug: string; title: string; status: string }> = []
-	if (activeStage) {
-		try {
-			const unitsDir = join(
-				intentDir(activeIntent),
-				"stages",
-				activeStage,
-				"units",
-			)
-			if (existsSync(unitsDir)) {
-				const unitFiles = readdirSync(unitsDir)
-					.filter((f) => f.endsWith(".md"))
-					.sort()
-				for (const f of unitFiles) {
-					const raw = readFileSync(join(unitsDir, f), "utf8")
-					const { data } = parseFrontmatter(raw)
-					units.push({
-						slug: f.replace(/\.md$/, ""),
-						title: (data.title as string) || f.replace(/\.md$/, ""),
-						status: (data.status as string) || "pending",
-					})
-				}
-			}
-		} catch {
-			/* */
-		}
-	}
-
-	const payload: ReviewCurrentPayload = {
-		intent: activeIntent,
-		stage: activeStage,
-		phase: currentPhase,
-		units,
-		feedback_summary: feedbackSummary,
-		stages,
-	}
-	reply.send(payload)
 }
 
 // ── Slug sanitisation + feedback validators ─────────────────────────────
@@ -1011,10 +877,6 @@ async function buildApp(): Promise<FastifyInstance> {
 
 	// ── SPA shell routes (no auth; token lives in URL fragment) ─────────
 
-	instance.get("/review/current", async (_req, reply) => {
-		reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
-	})
-
 	instance.get<{ Params: { sessionId: string } }>(
 		"/review/:sessionId",
 		async (req, reply) => {
@@ -1282,11 +1144,6 @@ async function buildApp(): Promise<FastifyInstance> {
 		},
 	)
 
-	instance.get("/api/review/current", async (req, reply) => {
-		if (!requireTunnelAuth(req, reply, null)) return
-		respondReviewCurrent(reply)
-	})
-
 	instance.post<{ Params: { sessionId: string } }>(
 		"/api/revisit/:sessionId",
 		async (req, reply) => {
@@ -1474,6 +1331,7 @@ async function buildApp(): Promise<FastifyInstance> {
 					body: r.body,
 					created_at: r.created_at,
 				})),
+				inline_anchor: i.inline_anchor ?? null,
 			})),
 		}
 		reply.send(payload)
@@ -1544,6 +1402,7 @@ async function buildApp(): Promise<FastifyInstance> {
 				FeedbackCreateRequestSchema,
 			)
 			if (!parsed.ok) return
+			const inlineAnchorWire = parsed.data.inline_anchor
 			const result = writeFeedbackFile(intent, stage, {
 				title: parsed.data.title,
 				body: parsed.data.body,
@@ -1552,6 +1411,22 @@ async function buildApp(): Promise<FastifyInstance> {
 				source_ref: parsed.data.source_ref ?? null,
 				resolution: parsed.data.resolution ?? null,
 				attachmentDataUrl: parsed.data.attachment_data_url ?? null,
+				inlineAnchor: inlineAnchorWire
+					? {
+							selectedText: inlineAnchorWire.selected_text,
+							paragraph: inlineAnchorWire.paragraph,
+							location: inlineAnchorWire.location,
+							...(inlineAnchorWire.comment_id
+								? { commentId: inlineAnchorWire.comment_id }
+								: {}),
+							...(inlineAnchorWire.file_path
+								? { filePath: inlineAnchorWire.file_path }
+								: {}),
+							...(inlineAnchorWire.content_sha
+								? { contentSha: inlineAnchorWire.content_sha }
+								: {}),
+						}
+					: null,
 			})
 			gitCommitStateBackgroundPush(`feedback: create ${result.feedback_id} in ${stage}`)
 			const response: FeedbackCreateResponse = {

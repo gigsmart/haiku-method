@@ -227,6 +227,11 @@ function ReviewLayoutLoaded({
 	const [highlightFeedbackId, setHighlightFeedbackId] = useState<string | null>(
 		null,
 	)
+	const [pendingFlashAnchor, setPendingFlashAnchor] = useState<{
+		commentId?: string
+		selectedText: string
+		paragraph?: number
+	} | null>(null)
 	const [inlineComments, setInlineComments] = useState<InlineCommentEntry[]>([])
 	const [pins, setPins] = useState<AnnotationPin[]>([])
 
@@ -259,7 +264,7 @@ function ReviewLayoutLoaded({
 	const gateBadges = gateModes.map(gateBadgeCopy)
 	const studioName =
 		(session.intent?.frontmatter?.studio as string | undefined) ?? null
-	const sessionIdShort = sessionId ? sessionId.slice(0, 8) : ""
+	const isAdHoc = (session as { ad_hoc?: boolean }).ad_hoc === true
 
 	// Which stage is in focus + whether the intent overview is active are
 	// both derived from the URL. The current location's pathname decides;
@@ -301,6 +306,8 @@ function ReviewLayoutLoaded({
 			activeStage,
 			highlightFeedbackId,
 			setHighlightFeedbackId,
+			pendingFlashAnchor,
+			setPendingFlashAnchor,
 			submittedDecision,
 			setSubmittedDecision,
 			inlineComments,
@@ -315,6 +322,7 @@ function ReviewLayoutLoaded({
 			wsRef,
 			activeStage,
 			highlightFeedbackId,
+			pendingFlashAnchor,
 			submittedDecision,
 			inlineComments,
 			pins,
@@ -365,11 +373,14 @@ function ReviewLayoutLoaded({
 									</button>
 								</>
 							)}
-							{sessionIdShort && (
+							{isAdHoc && (
 								<>
 									<span className="text-stone-300 dark:text-stone-600">·</span>
-									<span className="text-[11px] font-mono text-stone-500 dark:text-stone-500">
-										session <span>{sessionIdShort}</span>
+									<span
+										className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800"
+										title="Ad-hoc review — not a gate. Feedback routes through the normal fix-loop on the next run_next."
+									>
+										Ad-hoc review
 									</span>
 								</>
 							)}
@@ -406,6 +417,7 @@ function ReviewLayoutLoaded({
 							gateBadges={gateBadges}
 							gateType={session.gate_type}
 							getAnnotations={getAnnotations}
+							adHoc={isAdHoc}
 							onFeedbackItemClick={(id) => setHighlightFeedbackId(id)}
 							onDecisionSuccess={(decision) => {
 								if (decision === "approved" || decision === "external") {

@@ -123,6 +123,16 @@ export const ReviewSessionPayloadSchema = z
 		stage_artifacts: z.array(StageArtifactSchema).optional(),
 		output_artifacts: z.array(OutputArtifactSchema).optional(),
 		previous_review: PreviousReviewSnapshotSchema.optional(),
+		/** Ad-hoc sessions are opened on demand via `haiku_review_open`
+		 *  (not a gate). The UI hides Approve and shows an "Ad-hoc
+		 *  review" badge instead of the session short-id. Feedback left
+		 *  here is picked up by the normal fix-loop/revisit path on the
+		 *  next `run_next`. */
+		ad_hoc: z.boolean().optional(),
+		/** The stage the reviewer opened the ad-hoc pane against. Used
+		 *  for deep-link routing and for the header breadcrumb when the
+		 *  intent has multiple stages. */
+		stage: z.string().optional(),
 	})
 	.describe(
 		"Review session payload (GET /api/session/:id, session_type=review)",

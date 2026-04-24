@@ -199,31 +199,49 @@ pre {
 	outline-offset: 2px;
 }
 
-/* Inline highlight for comments */
-.inline-highlight {
+/* Inline comments — painted via the CSS Custom Highlight API.
+   `InlineComments` populates `CSS.highlights` with three named
+   layers; the ::highlight() pseudos below color them. No DOM spans,
+   no conflict with React-owned innerHTML, no interference with the
+   browser's native text selection. */
+::highlight(inline-comments-pending) {
 	background-color: color-mix(
 		in oklch,
 		var(--color-highlight),
-		transparent 70%
+		transparent 55%
 	);
-	border-bottom: 2px solid
-		color-mix(in oklch, var(--color-highlight), transparent 30%);
-	cursor: pointer;
-	transition: background-color 0.15s;
-	border-radius: 2px;
 }
-.inline-highlight:hover,
-.inline-highlight.active {
+::highlight(inline-comments-saved) {
 	background-color: color-mix(
 		in oklch,
 		var(--color-highlight),
-		transparent 50%
+		transparent 75%
 	);
+	text-decoration: underline;
+	text-decoration-color: color-mix(
+		in oklch,
+		var(--color-highlight),
+		transparent 30%
+	);
+	text-decoration-thickness: 2px;
+	text-underline-offset: 2px;
 }
-@media (prefers-reduced-motion: reduce) {
-	.inline-highlight {
-		transition: none;
-	}
+/* Stale highlights — the file changed since the comment was written,
+   so the anchor *may* no longer match the intended text. Gray / muted
+   to signal "please reverify" without drowning the reader in warnings. */
+::highlight(inline-comments-stale) {
+	background-color: color-mix(in oklch, gray, transparent 75%);
+	text-decoration: underline wavy;
+	text-decoration-color: color-mix(in oklch, gray, transparent 20%);
+	text-decoration-thickness: 1.5px;
+	text-underline-offset: 2px;
+}
+::highlight(inline-comments-flash) {
+	background-color: color-mix(
+		in oklch,
+		var(--color-highlight),
+		transparent 30%
+	);
 }
 
 /* Comment sidebar entries */

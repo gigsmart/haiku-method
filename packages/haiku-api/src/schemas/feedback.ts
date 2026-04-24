@@ -25,6 +25,48 @@ import {
 	FeedbackStatusSchema,
 } from "./common.js"
 
+/** Inline text-anchor metadata — fills the gap between the visual
+ *  `anchor` (viewport pin) and a text-selection comment. Wire format
+ *  matches the snake_case conventions of the rest of the feedback
+ *  surface so the same object shape flows through the schema, the
+ *  filesystem frontmatter, and the GET response.
+ *
+ *  `file_path` is the authoritative locator: the UI parses it to
+ *  decide which review tab and detail item to open, and an agent can
+ *  open it directly and grep for `selected_text` to land on the
+ *  exact line. Artifact kind + name are NOT stored separately —
+ *  they're derivable from the path structure
+ *  (`.haiku/intents/<slug>/stages/<stage>/units/<name>.md` →
+ *  kind=unit, name=<name>). */
+export const FeedbackInlineAnchorSchema = z
+	.object({
+		selected_text: z.string().min(1).max(1000),
+		paragraph: z.number().int().nonnegative().max(10000),
+		/** Human-readable label shown in the feedback card (e.g.
+		 *  "Unit: Threat model and security hardening"). Not used for
+		 *  routing — purely a display string. */
+		location: z.string().max(500),
+		/** DOM id attached to the `<span class="inline-highlight">` when
+		 *  the comment was saved. Lets the viewer scroll-to-element
+		 *  instead of doing a fragile text-match. */
+		comment_id: z.string().max(200).optional(),
+		/** Full relative path from the repo root to the artifact file —
+		 *  e.g. `.haiku/intents/<slug>/stages/<stage>/units/unit-01-*.md`
+		 *  or `.haiku/intents/<slug>/knowledge/DISCOVERY.md`. Agent
+		 *  opens this file + greps for `selected_text` to find the exact
+		 *  line; UI parses the path to pick the right review tab. */
+		file_path: z.string().max(1000).optional(),
+		/** Hash of the artifact's raw content at the moment the comment
+		 *  was saved. Used to detect drift on revisit: if the file has
+		 *  changed since, the UI paints the highlight in a "stale" style
+		 *  and tags the sidebar card with a "content changed" note so the
+		 *  reviewer knows the anchor may no longer match. A simple
+		 *  non-cryptographic hash — collision risk is irrelevant here. */
+		content_sha: z.string().max(64).optional(),
+	})
+	.describe("Inline text-anchor metadata for inline-comment feedback")
+export type FeedbackInlineAnchor = z.infer<typeof FeedbackInlineAnchorSchema>
+
 /** Canonical on-the-wire feedback item. `feedback_id` is the "FB-NN" identifier
  *  (aliased from the on-disk `id` field by handleFeedbackGet). */
 export const FeedbackItemSchema = z
@@ -70,6 +112,11 @@ export const FeedbackItemSchema = z
 			.optional()
 			.describe(
 				"Thread of replies on this feedback item. Empty / missing = no replies yet.",
+			),
+		inline_anchor: FeedbackInlineAnchorSchema.nullable()
+			.optional()
+			.describe(
+				"Inline-text anchor metadata. Present when the feedback was created by selecting text in a rendered artifact and attaching a comment. Null / absent for visual-pin or plain chat feedback.",
 			),
 	})
 	.describe("Wire shape of a feedback item")
@@ -122,6 +169,7 @@ export const FeedbackCreateRequestSchema = z
 			),
 		source_ref: z.string().max(1_000).nullable().optional(),
 		anchor: FeedbackAnchorSchema.optional(),
+		inline_anchor: FeedbackInlineAnchorSchema.optional(),
 		resolution: FeedbackResolutionSchema.optional().describe(
 			"Author's preferred resolution path. Router defaults to stage_revisit when omitted.",
 		),

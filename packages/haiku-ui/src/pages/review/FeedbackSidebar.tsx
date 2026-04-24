@@ -48,6 +48,11 @@ export interface FeedbackSidebarProps {
 	getAnnotations?: () => ReviewAnnotations | undefined
 	onFeedbackItemClick?: (feedbackId: string) => void
 	onDecisionSuccess?: (decision: DecisionKind) => void
+	/** When true, the pane is an ad-hoc on-demand review. Approve is
+	 *  hidden (no gate to advance); the primary button becomes "Done"
+	 *  (no pending feedback) or "Request Changes" (pending feedback
+	 *  persists and will be picked up by the next run_next). */
+	adHoc?: boolean
 	className?: string
 }
 
@@ -77,6 +82,7 @@ export function FeedbackSidebar({
 	getAnnotations,
 	onFeedbackItemClick,
 	onDecisionSuccess,
+	adHoc,
 	className,
 }: FeedbackSidebarProps): React.ReactElement {
 	const {
@@ -118,13 +124,22 @@ export function FeedbackSidebar({
 	// action (stage a comment). Any pending items → Request Changes is
 	// primary (fire revisit). Otherwise the stage is clean and we offer
 	// Approve.
+	//
+	// Ad-hoc pane: Approve is never shown (no gate). When nothing is
+	// pending the primary button becomes "Done" (just close the tab —
+	// the mode label stays "approve" internally but the rendered button
+	// is swapped below). When feedback is pending it becomes "Request
+	// Changes" that closes the tab without firing revisit — the next
+	// run_next picks the feedback up via the normal fix-loop.
 	const mode: "add" | "request" | "approve" | "disabled" = hasTyped
 		? "add"
 		: hasPending
 			? "request"
-			: isCurrent
+			: adHoc
 				? "approve"
-				: "disabled"
+				: isCurrent
+					? "approve"
+					: "disabled"
 
 	const handleAddComment = useCallback(async () => {
 		const body = composerText.trim()
@@ -195,8 +210,13 @@ export function FeedbackSidebar({
 		[onFeedbackItemClick],
 	)
 
-	const hintText =
-		mode === "add"
+	const hintText = adHoc
+		? mode === "add"
+			? "Adds a pending feedback item. Persisted immediately — the next run_next picks it up via the normal fix-loop."
+			: mode === "request"
+				? `${pendingCount} pending item${pendingCount === 1 ? "" : "s"} already persisted. Request Changes closes this pane; the next run_next routes each item through the normal fix-loop.`
+				: "Ad-hoc review — no gate to advance. Done closes the pane without touching the FSM."
+		: mode === "add"
 			? "Adds a pending feedback item. Use the Route dropdown to steer the agent, or leave it on \"Let agent decide\" and the triage pass will classify."
 			: mode === "request"
 				? `Hands ${pendingCount} item${pendingCount === 1 ? "" : "s"} to the agent on ${stage ?? "(stage)"}. Each routes per its resolution: reply, inline fix, stage revisit, or upstream rewind.`
@@ -356,7 +376,7 @@ export function FeedbackSidebar({
 									: "Type a comment to add"}
 						</button>
 					)}
-					{mode === "request" && (
+					{mode === "request" && !adHoc && (
 						<button
 							type="button"
 							onClick={() => setRevisitOpen(true)}
@@ -369,7 +389,21 @@ export function FeedbackSidebar({
 								: `Send ${pendingCount} on ${stage}`}
 						</button>
 					)}
-					{mode === "approve" && (
+					{mode === "request" && adHoc && (
+						<button
+							type="button"
+							onClick={() => void submit("changes_requested" as DecisionKind)}
+							disabled={submitting !== null}
+							data-decision="ad_hoc_request_changes"
+							className={`${touchTargetClass} ${focusRingClass} ${focusRingVariantClasses.requestChanges} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md bg-amber-600 hover:bg-amber-700 px-3 py-2 text-xs font-semibold text-white transition-colors`}
+							title="Ad-hoc review: pending feedback is already persisted. Clicking this closes the pane and signals the MCP call to return; the next run_next routes each item through the normal fix-loop."
+						>
+							{submitting
+								? "Submitting…"
+								: `Request Changes (${pendingCount})`}
+						</button>
+					)}
+					{mode === "approve" && !adHoc && (
 						<button
 							type="button"
 							onClick={() => void submit("approved")}
@@ -380,7 +414,19 @@ export function FeedbackSidebar({
 							{DECISION_LABELS.approved}
 						</button>
 					)}
-					{showExternal && mode === "approve" && (
+					{mode === "approve" && adHoc && (
+						<button
+							type="button"
+							onClick={() => void submit("approved")}
+							disabled={submitting !== null}
+							data-decision="ad_hoc_done"
+							className={`${touchTargetClass} ${focusRingClass} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md bg-stone-700 hover:bg-stone-800 px-3 py-2 text-xs font-semibold text-white transition-colors`}
+							title="Ad-hoc review — no gate to advance. Closes the pane and signals the MCP call to return."
+						>
+							{submitting ? "Submitting…" : "Done"}
+						</button>
+					)}
+					{showExternal && mode === "approve" && !adHoc && (
 						<button
 							type="button"
 							onClick={() => void submit("external")}
