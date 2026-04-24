@@ -3501,6 +3501,26 @@ export function updateFeedbackFile(
 		}
 	}
 
+	// FB-24: parallel guard against the `status: "closed"` bypass path. The
+	// `closed_by` check above blocks the canonical close route, but an agent
+	// could still set `status: "closed"` directly on a human item and have
+	// `countPendingFeedback` skip it at the gate. Block that too — the
+	// human-authored privilege is that ONLY a human can close the item, via
+	// any path. (`addressed` / `rejected` remain agent-accessible by design
+	// — they're downgrade paths the threat model accepts as medium residual
+	// and covers with separate gate-policy mitigations.)
+	if (
+		callerContext === "agent" &&
+		fields.status === "closed" &&
+		found.data.author_type === "human"
+	) {
+		return {
+			ok: false,
+			error:
+				"Error: agents cannot set status='closed' on human-authored feedback. Only the original author may close the item, via the review UI.",
+		}
+	}
+
 	// Guard: if closed_by uses the unit-NN-slug convention (pre-execute spec
 	// revisit), verify the unit spec actually exists on disk. Prevents the
 	// ghost-unit ledger drift: agents marking findings closed via a unit

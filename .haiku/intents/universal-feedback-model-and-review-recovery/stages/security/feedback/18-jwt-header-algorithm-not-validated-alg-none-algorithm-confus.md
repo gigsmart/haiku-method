@@ -2,7 +2,7 @@
 title: >-
   JWT header algorithm not validated — alg:none / algorithm confusion attack not
   blocked
-status: pending
+status: closed
 origin: adversarial-review
 author: mitigation-effectiveness
 author_type: agent
@@ -10,8 +10,8 @@ created_at: '2026-04-24T14:43:06Z'
 iteration: 1
 visit: 1
 source_ref: null
-closed_by: null
-bolt: 0
+closed_by: 'inline:security-fb-18-manual'
+bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
