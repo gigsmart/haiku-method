@@ -73,6 +73,7 @@ import {
 	isGitRepo,
 	MAX_CONCURRENT_SUBAGENTS,
 	MAX_FIX_LOOP_BOLTS,
+	MAX_INTEGRATOR_ATTEMPTS,
 	MAX_STAGE_ITERATIONS,
 	parseFrontmatter,
 	readFeedbackFiles,
@@ -1771,10 +1772,24 @@ function runIntentCompletionReview(
 	const allFeedback = readFeedbackFiles(slug, "")
 
 	// Reconcile studio-level fix-chain worktrees from the prior tick.
-	// Closed findings get their isolation worktrees merged back into
-	// intent main; anything else is reaped so the next bolt (if any)
-	// starts fresh. Mirrors the stage-level reconciliation in the
-	// main run_next gate handler.
+	// Closed findings merge back into intent main; conflicts route to the
+	// integrator (capped at MAX_INTEGRATOR_ATTEMPTS); anything else is
+	// reaped. Mirrors the stage-level reconciliation in run_next's gate
+	// handler.
+	const pendingIntegrationIC: Array<{
+		feedback_id: string
+		feedback_title: string
+		feedback_file: string
+		worktree: string
+		branch: string
+		conflict_files: string[]
+		attempt: number
+	}> = []
+	const exhaustedIntegrationIC: Array<{
+		feedback_id: string
+		title: string
+		attempts: number
+	}> = []
 	if (isGitRepo()) {
 		for (const fb of allFeedback) {
 			const wtPath = fixChainWorktreePath(slug, "intent", fb.id)
@@ -1784,25 +1799,102 @@ function runIntentCompletionReview(
 				fb.status === "addressed" ||
 				fb.status === "rejected" ||
 				!!fb.closed_by
-			if (isClosed) {
-				const res = mergeFixChainWorktree(slug, "intent", fb.id)
-				if (!res.success) {
-					console.error(
-						`[haiku] intent fix-chain merge failed for ${fb.id}: ${res.message}. Leaving worktree in place; next tick will retry.`,
-					)
-				} else {
-					emitTelemetry("haiku.intent_fix_chain.merged", {
-						intent: slug,
-						feedback_id: fb.id,
-					})
-				}
-			} else {
+			if (!isClosed) {
 				cleanupFixChainWorktree(slug, "intent", fb.id)
 				emitTelemetry("haiku.intent_fix_chain.cleaned", {
 					intent: slug,
 					feedback_id: fb.id,
 				})
+				continue
 			}
+
+			const res = mergeFixChainWorktree(slug, "intent", fb.id)
+			if (res.success) {
+				emitTelemetry("haiku.intent_fix_chain.merged", {
+					intent: slug,
+					feedback_id: fb.id,
+				})
+				continue
+			}
+
+			if (!res.isConflict) {
+				console.error(
+					`[haiku] intent fix-chain merge failed for ${fb.id}: ${res.message}. Leaving worktree in place; next tick will retry.`,
+				)
+				continue
+			}
+
+			const fbAbsPath = join(findHaikuRoot(), fb.file)
+			const { data: fbFM } = parseFrontmatter(
+				readFileSync(fbAbsPath, "utf8"),
+			)
+			const prevAttempts = Number(
+				(fbFM as { integrator_attempts?: number }).integrator_attempts ??
+					0,
+			)
+			const nextAttempt = prevAttempts + 1
+			setFrontmatterField(fbAbsPath, "integrator_attempts", nextAttempt)
+			if (nextAttempt > MAX_INTEGRATOR_ATTEMPTS) {
+				exhaustedIntegrationIC.push({
+					feedback_id: fb.id,
+					title: fb.title,
+					attempts: nextAttempt - 1,
+				})
+				emitTelemetry("haiku.intent_integrator.exhausted", {
+					intent: slug,
+					feedback_id: fb.id,
+					attempts: String(nextAttempt - 1),
+				})
+			} else {
+				pendingIntegrationIC.push({
+					feedback_id: fb.id,
+					feedback_title: fb.title,
+					feedback_file: fb.file,
+					worktree: wtPath,
+					branch: fixChainBranchName(slug, "intent", fb.id),
+					conflict_files: res.conflictFiles || [],
+					attempt: nextAttempt,
+				})
+				emitTelemetry("haiku.intent_integrator.dispatched", {
+					intent: slug,
+					feedback_id: fb.id,
+					attempt: String(nextAttempt),
+				})
+			}
+		}
+	}
+
+	if (exhaustedIntegrationIC.length > 0) {
+		const target = exhaustedIntegrationIC[0]
+		return {
+			action: "escalate",
+			intent: slug,
+			stage: null,
+			reason: "integrator_cap_exceeded",
+			iteration: target.attempts,
+			max_iterations: MAX_INTEGRATOR_ATTEMPTS,
+			message:
+				`Intent-scope fix-chain for ${target.feedback_id} ("${target.title}") still has unresolved merge conflicts after ${target.attempts} integrator attempt(s). Automated conflict resolution failed. ${exhaustedIntegrationIC.length - 1 > 0 ? `${exhaustedIntegrationIC.length - 1} other chain(s) are also exhausted. ` : ""}Resolve manually inside the fix-chain worktrees, commit, then run \`haiku_run_next\`.`,
+			pending_items: exhaustedIntegrationIC.map((e) => ({
+				feedback_id: e.feedback_id,
+				title: e.title,
+			})),
+		}
+	}
+
+	if (pendingIntegrationIC.length > 0) {
+		gitCommitState(
+			`haiku: integrate_fix_chains dispatch ${pendingIntegrationIC.length} conflict(s) at intent scope`,
+		)
+		return {
+			action: "integrate_fix_chains",
+			intent: slug,
+			studio,
+			stage: null,
+			scope: "intent",
+			max_attempts: MAX_INTEGRATOR_ATTEMPTS,
+			items: pendingIntegrationIC,
+			message: `Intent-completion fix-chain merges hit conflicts on ${pendingIntegrationIC.length} finding(s). Dispatching the integrator subagent per chain to resolve in-place.`,
 		}
 	}
 
@@ -3086,10 +3178,34 @@ export function runNext(slug: string): OrchestratorAction {
 		// ── Fix-chain worktree reconciliation ─────────────────────────────
 		// A prior `review_fix` dispatch may have allocated per-finding
 		// isolation worktrees. Before we decide what to do with the current
-		// gate, merge the ones whose findings closed and reap the ones
-		// whose findings didn't (next bolt, if any, starts fresh).
+		// gate:
+		//   - Findings that closed → merge their worktree back. If the merge
+		//     conflicts (base advanced under the chain), collect the chain
+		//     for integrator dispatch.
+		//   - Findings that didn't close → reap the worktree so the next
+		//     bolt (if any) starts fresh.
+		//
+		// If any chains need the integrator, return `integrate_fix_chains`
+		// immediately — the integrator resolves the conflict markers
+		// in-place, and the next run_next tick picks up `MERGE_HEAD` and
+		// forward-merges automatically. Merge conflicts never persist
+		// unresolved at the gate.
 		//
 		// Skip in non-git environments — no worktrees were ever created.
+		const pendingIntegration: Array<{
+			feedback_id: string
+			feedback_title: string
+			feedback_file: string
+			worktree: string
+			branch: string
+			conflict_files: string[]
+			attempt: number
+		}> = []
+		const exhaustedIntegration: Array<{
+			feedback_id: string
+			title: string
+			attempts: number
+		}> = []
 		if (isGitRepo()) {
 			const allFeedback = readFeedbackFiles(slug, currentStage)
 			for (const fb of allFeedback) {
@@ -3100,27 +3216,109 @@ export function runNext(slug: string): OrchestratorAction {
 					fb.status === "addressed" ||
 					fb.status === "rejected" ||
 					!!fb.closed_by
-				if (isClosed) {
-					const res = mergeFixChainWorktree(slug, currentStage, fb.id)
-					if (!res.success) {
-						console.error(
-							`[haiku] fix-chain merge failed for ${fb.id}: ${res.message}. Leaving worktree in place; next tick will retry.`,
-						)
-					} else {
-						emitTelemetry("haiku.fix_chain.merged", {
-							intent: slug,
-							stage: currentStage,
-							feedback_id: fb.id,
-						})
-					}
-				} else {
+				if (!isClosed) {
 					cleanupFixChainWorktree(slug, currentStage, fb.id)
 					emitTelemetry("haiku.fix_chain.cleaned", {
 						intent: slug,
 						stage: currentStage,
 						feedback_id: fb.id,
 					})
+					continue
 				}
+
+				const res = mergeFixChainWorktree(slug, currentStage, fb.id)
+				if (res.success) {
+					emitTelemetry("haiku.fix_chain.merged", {
+						intent: slug,
+						stage: currentStage,
+						feedback_id: fb.id,
+					})
+					continue
+				}
+
+				if (!res.isConflict) {
+					console.error(
+						`[haiku] fix-chain merge failed for ${fb.id}: ${res.message}. Leaving worktree in place; next tick will retry.`,
+					)
+					continue
+				}
+
+				// Conflict detected — increment integrator attempt counter
+				// on the feedback frontmatter and route to the integrator
+				// (or escalate if we've already burned the budget).
+				const fbAbsPath = join(findHaikuRoot(), fb.file)
+				const { data: fbFM } = parseFrontmatter(
+					readFileSync(fbAbsPath, "utf8"),
+				)
+				const prevAttempts = Number(
+					(fbFM as { integrator_attempts?: number })
+						.integrator_attempts ?? 0,
+				)
+				const nextAttempt = prevAttempts + 1
+				setFrontmatterField(fbAbsPath, "integrator_attempts", nextAttempt)
+				if (nextAttempt > MAX_INTEGRATOR_ATTEMPTS) {
+					exhaustedIntegration.push({
+						feedback_id: fb.id,
+						title: fb.title,
+						attempts: nextAttempt - 1,
+					})
+					emitTelemetry("haiku.integrator.exhausted", {
+						intent: slug,
+						stage: currentStage,
+						feedback_id: fb.id,
+						attempts: String(nextAttempt - 1),
+					})
+				} else {
+					pendingIntegration.push({
+						feedback_id: fb.id,
+						feedback_title: fb.title,
+						feedback_file: fb.file,
+						worktree: wtPath,
+						branch: fixChainBranchName(slug, currentStage, fb.id),
+						conflict_files: res.conflictFiles || [],
+						attempt: nextAttempt,
+					})
+					emitTelemetry("haiku.integrator.dispatched", {
+						intent: slug,
+						stage: currentStage,
+						feedback_id: fb.id,
+						attempt: String(nextAttempt),
+					})
+				}
+			}
+		}
+
+		if (exhaustedIntegration.length > 0) {
+			const target = exhaustedIntegration[0]
+			return {
+				action: "escalate",
+				intent: slug,
+				stage: currentStage,
+				reason: "integrator_cap_exceeded",
+				iteration: target.attempts,
+				max_iterations: MAX_INTEGRATOR_ATTEMPTS,
+				message:
+					`Fix-chain for ${target.feedback_id} ("${target.title}") still has unresolved merge conflicts after ${target.attempts} integrator attempt(s). Automated conflict resolution failed. ${exhaustedIntegration.length - 1 > 0 ? `${exhaustedIntegration.length - 1} other chain(s) are also exhausted. ` : ""}Resolve the conflicts manually inside the fix-chain worktrees (listed below), commit, then run \`haiku_run_next\` — the merge will retry.`,
+				pending_items: exhaustedIntegration.map((e) => ({
+					feedback_id: e.feedback_id,
+					title: e.title,
+				})),
+			}
+		}
+
+		if (pendingIntegration.length > 0) {
+			gitCommitState(
+				`haiku: integrate_fix_chains dispatch ${pendingIntegration.length} conflict(s) in ${currentStage}`,
+			)
+			return {
+				action: "integrate_fix_chains",
+				intent: slug,
+				studio,
+				stage: currentStage,
+				scope: currentStage,
+				max_attempts: MAX_INTEGRATOR_ATTEMPTS,
+				items: pendingIntegration,
+				message: `Fix-chain merges hit conflicts on ${pendingIntegration.length} finding(s) in stage '${currentStage}'. Dispatching the integrator subagent per chain to resolve in-place.`,
 			}
 		}
 
@@ -4663,6 +4861,16 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 			tell_user = "All stages are complete — the intent is done."
 			next_step = ""
 			break
+
+		case "integrate_fix_chains": {
+			const icItems =
+				(action.items as Array<{ feedback_id: string }>) || []
+			const icScope = (action.scope as string) || "intent"
+			tell_user = `${icItems.length} fix-chain merge${icItems.length === 1 ? "" : "s"} conflicted when landing on ${icScope === "intent" ? "intent main" : `stage '${icScope}'`} — dispatching the integrator to resolve.`
+			next_step =
+				"After integrators return, I'll call run_next to complete the merges."
+			break
+		}
 
 		case "changes_requested":
 			tell_user =
@@ -6745,6 +6953,94 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 				)
 			}
 			sections.push(icWaveLines.join("\n"))
+			break
+		}
+
+		case "integrate_fix_chains": {
+			const integrateStage = action.stage as string | null
+			const integrateScope = (action.scope as string) || "intent"
+			const integrateMaxAttempts =
+				(action.max_attempts as number) || MAX_INTEGRATOR_ATTEMPTS
+			const integrateItems =
+				(action.items as Array<{
+					feedback_id: string
+					feedback_title: string
+					feedback_file: string
+					worktree: string
+					branch: string
+					conflict_files: string[]
+					attempt: number
+				}>) || []
+
+			sections.push(
+				`## Merge Conflict Integration: ${integrateItems.length} chain(s)`,
+			)
+			sections.push(
+				integrateStage
+					? `One or more fix chains in stage **${integrateStage}** produced edits that conflict with the stage branch when merging back. An **integrator** subagent per chain will resolve the conflicts in-place inside that chain's worktree. After all integrators return, call \`haiku_run_next { intent: "${slug}" }\` — the FSM will commit each resolution and forward-merge into the stage branch.`
+					: `One or more intent-completion fix chains conflict with intent main. An **integrator** subagent per chain will resolve the conflicts in-place. After all return, call \`haiku_run_next { intent: "${slug}" }\` to complete the merges.`,
+			)
+			sections.push(
+				`Cap: ${integrateMaxAttempts} integrator attempts per chain. If a chain still has unresolved conflicts after the cap, it escalates to the human.`,
+			)
+
+			for (const it of integrateItems) {
+				sections.push(
+					`\n### Chain \`${it.feedback_id}\` — _${it.feedback_title}_ (attempt ${it.attempt}/${integrateMaxAttempts})\n`,
+				)
+				const promptLines: string[] = [
+					`You are the **integrator** subagent for fix-chain \`${it.feedback_id}\` (${it.feedback_title}). A prior merge attempt produced conflict markers in an isolation worktree; your job is to resolve them so the fix can land on ${integrateStage ? `the stage branch (\`haiku/${slug}/${integrateStage}\`)` : `intent main (\`haiku/${slug}/main\`)`}.`,
+					"",
+					"## Isolation worktree (REQUIRED)",
+					`Do ALL work in the dedicated worktree at:`,
+					``,
+					`    ${it.worktree}`,
+					``,
+					`This worktree is on branch \`${it.branch}\` with a merge in progress (MERGE_HEAD is set). Every git command MUST use \`git -C "${it.worktree}"\` — do NOT run bare \`git\` in the parent tree.`,
+					"",
+					"## Conflict files to resolve",
+					...it.conflict_files.map((f) => `- \`${f}\``),
+					"",
+					"## Required context",
+					`Feedback body: \`${it.feedback_file}\` (read for the intent behind the fix).`,
+					"",
+					"## Instructions",
+					"",
+					`1. For each conflict file, read its current state in the worktree — the content includes \`<<<<<<<\`, \`=======\`, \`>>>>>>>\` markers.`,
+					`2. Resolve the conflict. Preserve BOTH the base-branch advance AND the fix's intent — the fix-chain's original goal was to address feedback \`${it.feedback_id}\`, so the resolution must still close that finding. If the base-branch change already addressed the same concern in a different way, prefer the base-branch version and note it in your return summary.`,
+					`3. Write the resolved file (no conflict markers remaining).`,
+					`4. Stage the resolution: \`git -C "${it.worktree}" add <file>\` for each resolved file.`,
+					`5. **Do NOT commit.** The FSM commits the merge on the next \`haiku_run_next\` — this is intentional so merge-in-progress state stays consistent.`,
+					`6. **Do NOT run \`git merge --abort\`, \`git reset\`, \`git worktree remove\`, or \`git branch -d\`.** The FSM owns those.`,
+					`7. Return a one-line summary: \`integrator: resolved <N> file(s) — <short rationale>\`. If you can't resolve a file (ambiguous, requires decisions outside your scope), leave the markers and return \`integrator: unresolved — <reason>\` so the next attempt / human sees why.`,
+					"",
+					"## Scope (STRICT)",
+					"- No edits outside the listed conflict files unless resolution strictly requires it (e.g., a file deleted on one side).",
+					"- No new files. No package installs. No test runs.",
+					"- Your single job is to make the merge resolvable.",
+				]
+
+				sections.push(
+					`${emitSubagentDispatchBlock({
+						unit: `integrator-${it.feedback_id}`,
+						hat: "integrator",
+						bolt: it.attempt,
+						agentType: "general-purpose",
+						promptBody: promptLines.join("\n"),
+						heading: `#### Subagent: \`integrator\``,
+					})}\n`,
+				)
+			}
+
+			sections.push(
+				[
+					"### Parent Instructions (do NOT include in subagent prompts)",
+					"",
+					batchDispatchDirective(integrateItems.length, "integrators"),
+					"",
+					`After every integrator returns, call \`haiku_run_next { intent: "${slug}" }\` — the FSM commits each resolution and forward-merges. If any chain still has unresolved markers, the FSM re-dispatches (up to attempt ${integrateMaxAttempts}). If a chain exhausts its integrator budget, it escalates to the human.`,
+				].join("\n"),
+			)
 			break
 		}
 

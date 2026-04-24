@@ -1561,7 +1561,18 @@ export function mergeFixChainWorktree(
 	slug: string,
 	scope: string,
 	feedbackId: string,
-): { success: boolean; message: string } {
+): {
+	success: boolean
+	message: string
+	/** True when the merge failed specifically due to content conflicts that
+	 *  an integrator agent should resolve — distinguishes from "merge aborted
+	 *  because of a broken repo state" or similar. */
+	isConflict?: boolean
+	/** Paths (repo-relative) that have unresolved conflict markers. Populated
+	 *  only when isConflict is true. The integrator subagent reads this list
+	 *  to know which files to open. */
+	conflictFiles?: string[]
+} {
 	if (!isGitRepo()) return { success: true, message: "no worktree" }
 	const baseBranch =
 		scope === "intent"
@@ -1578,21 +1589,109 @@ export function mergeFixChainWorktree(
 		return { success: true, message: "no worktree" }
 	}
 
-	try {
-		tryRun(["git", "-C", worktreePath, "add", "-A"])
-		tryRun([
-			"git",
-			"-C",
-			worktreePath,
-			"commit",
-			"-m",
-			`haiku: complete fix-chain ${feedbackId}`,
-			"--allow-empty",
-		])
+	// If a prior tick left a merge in progress (integrator was dispatched),
+	// the current state is one of:
+	//   (a) all conflicts resolved, index updated — commit the merge, then
+	//       forward-merge into base.
+	//   (b) some conflicts still unresolved — return isConflict so the
+	//       caller re-dispatches the integrator.
+	const mergeInProgress = !!tryRun([
+		"git",
+		"-C",
+		worktreePath,
+		"rev-parse",
+		"--verify",
+		"-q",
+		"MERGE_HEAD",
+	])
+	const unresolved = tryRun([
+		"git",
+		"-C",
+		worktreePath,
+		"diff",
+		"--name-only",
+		"--diff-filter=U",
+	])
+		.split("\n")
+		.filter(Boolean)
+	if (unresolved.length > 0) {
+		return {
+			success: false,
+			isConflict: true,
+			conflictFiles: unresolved,
+			message: `${unresolved.length} file(s) with unresolved conflict markers in fix-chain ${feedbackId} — integrator work incomplete`,
+		}
+	}
 
+	try {
+		if (mergeInProgress) {
+			// (a) — integrator already resolved, just commit the merge.
+			tryRun(["git", "-C", worktreePath, "add", "-A"])
+			run([
+				"git",
+				"-C",
+				worktreePath,
+				"commit",
+				"--no-edit",
+				"-m",
+				`haiku: integrate ${scope} into fix-chain ${feedbackId}`,
+			])
+		} else {
+			// Fresh merge path: commit any pending work in the worktree,
+			// then pull the base branch in. The sync merge lands any conflict
+			// markers in the worktree — the natural place for the integrator
+			// subagent to resolve them. Done here (not in a temp tree) so
+			// that state persists for the next tick if conflicts emerge.
+			tryRun(["git", "-C", worktreePath, "add", "-A"])
+			tryRun([
+				"git",
+				"-C",
+				worktreePath,
+				"commit",
+				"-m",
+				`haiku: complete fix-chain ${feedbackId}`,
+				"--allow-empty",
+			])
+
+			try {
+				run([
+					"git",
+					"-C",
+					worktreePath,
+					"merge",
+					baseBranch,
+					"--no-edit",
+					"-m",
+					`haiku: sync ${scope} into fix-chain ${feedbackId}`,
+				])
+			} catch (mergeErr) {
+				const freshConflicts = tryRun([
+					"git",
+					"-C",
+					worktreePath,
+					"diff",
+					"--name-only",
+					"--diff-filter=U",
+				])
+					.split("\n")
+					.filter(Boolean)
+				if (freshConflicts.length > 0) {
+					return {
+						success: false,
+						isConflict: true,
+						conflictFiles: freshConflicts,
+						message: `merge conflict in ${freshConflicts.length} file(s) while pulling ${baseBranch} into fix-chain ${feedbackId}`,
+					}
+				}
+				tryRun(["git", "-C", worktreePath, "merge", "--abort"])
+				throw mergeErr
+			}
+		}
+
+		// Forward-merge the (now-reconciled) fix-chain into the base branch.
 		const onBaseBranch = getCurrentBranch() === baseBranch
 		const mergeHere = (cwd?: string) => {
-			const args = [
+			run([
 				"git",
 				...(cwd ? ["-C", cwd] : []),
 				"merge",
@@ -1600,8 +1699,7 @@ export function mergeFixChainWorktree(
 				"--no-edit",
 				"-m",
 				`haiku: merge fix-chain ${feedbackId} into ${scope}`,
-			]
-			run(args)
+			])
 		}
 		if (onBaseBranch) {
 			mergeHere()

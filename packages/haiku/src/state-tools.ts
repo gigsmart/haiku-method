@@ -2991,6 +2991,21 @@ export const FEEDBACK_STATUSES = [
 export const MAX_FIX_LOOP_BOLTS = 3
 
 /**
+ * Cap on how many times the FSM will dispatch the integrator subagent
+ * against a single fix-chain merge conflict before giving up and
+ * escalating to the human. Each attempt is:
+ *   1. merge base → fix-chain worktree produces conflict markers
+ *   2. FSM returns `integrate_fix_chains` action
+ *   3. Integrator subagent resolves markers + `git add`s the files
+ *   4. Next `haiku_run_next` retries the merge via
+ *      `mergeFixChainWorktree` which now sees `MERGE_HEAD` and commits
+ *      the resolution, then forward-merges into the base
+ * If the integrator can't resolve within this many dispatches, the
+ * conflict is beyond automated reconciliation and surfaces to the user.
+ */
+export const MAX_INTEGRATOR_ATTEMPTS = 3
+
+/**
  * Cap on concurrent subagents the parent may have in flight at any point,
  * across ALL parallel-dispatch surfaces: unit wave execution, elaborate
  * discovery fan-out, adversarial review fan-out, and the fix loops
