@@ -2,7 +2,7 @@
 title: >-
   Duplicate type definitions: FeedbackOrigin/Status/Item in state-tools and
   haiku-api without shared source
-status: pending
+status: rejected
 origin: adversarial-review
 author: architecture (from development)
 author_type: agent
@@ -41,3 +41,7 @@ This violates the single-source-of-truth principle for domain enumerations. The 
 ## Recommendation
 
 `state-tools.ts` should import the enum values from `haiku-api` (or a shared sub-module), deriving its runtime constants from the Zod schema's `.options` property. This is the direction the architecture already points — `http.ts` imports `FeedbackCreateRequestSchema` and `FeedbackUpdateRequestSchema` from `haiku-api` — but it hasn't been applied to the core enum definitions yet.
+
+---
+
+**Rejection reason:** Out of scope — duplicate type defs between state-tools.ts and haiku-api is architecture debt, not a security issue. Consolidation belongs in a dedicated architecture-refactor intent where the type migration can be done carefully with compatibility guarantees.
