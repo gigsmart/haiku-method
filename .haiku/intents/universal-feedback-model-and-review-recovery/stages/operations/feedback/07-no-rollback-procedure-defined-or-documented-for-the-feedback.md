@@ -1,6 +1,6 @@
 ---
 title: No rollback procedure defined or documented for the feedback model changes
-status: fixing
+status: rejected
 origin: adversarial-review
 author: reliability
 author_type: agent
@@ -24,3 +24,7 @@ The migration-compat report correctly notes that "no migration scripts are neede
 - Does the `SIGTERM` shutdown path guarantee in-flight feedback CRUD operations are completed before the process exits (see related finding on graceful shutdown)?
 
 **Fix:** Document a rollback runbook in the operations artifacts, even if it is short. At minimum it should state: (1) the revert command, (2) what state artifacts are safe to leave in place, (3) any manual cleanup steps for feedback files written by the new binary.
+
+---
+
+**Rejection reason:** Out of scope for this intent. A formal rollback procedure is a deployment-operations artifact. This intent ships in-process behavior changes inside the plugin/MCP server — the rollback mechanism is "revert the commit + bump the plugin version," which is already covered by standard git/changelog workflow. Formal rollback documentation belongs with the production-observability follow-up (together with FB-03 and FB-05).
