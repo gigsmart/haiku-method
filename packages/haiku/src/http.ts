@@ -884,34 +884,47 @@ async function buildApp(): Promise<FastifyInstance> {
 	// header so reviewers can grep logs for a specific click. We set it
 	// in `onRequest` — before any handler runs and before headers are
 	// flushed — so streaming responses (file serves) don't trigger
-	// ERR_HTTP_HEADERS_SENT on a late `reply.header()`.
+	// ERR_HTTP_HEADERS_SENT on a late `reply.header()`. We also stamp
+	// req.startTime here so `onResponse` can emit a latency figure.
 	instance.addHook("onRequest", async (req, reply) => {
 		if (!reply.getHeader("x-request-id")) {
 			reply.header("x-request-id", req.id)
 		}
+		;(req as unknown as { startTime: bigint }).startTime =
+			process.hrtime.bigint()
 	})
 
-	// Structured 4xx/5xx logging (FB-04). Fastify runs `logger: false`,
-	// so explicit `reply.status(4xx|5xx).send(...)` calls from handlers
-	// never reach `setErrorHandler` and would otherwise be completely
-	// silent — an error spike on the feedback CRUD / revisit routes
-	// would look identical to a healthy server from the outside. This
-	// hook emits one structured JSON line per error response to stderr
-	// so log aggregation can count, alert, and filter by
-	// `method` / `statusCode` / `url` / request ID. Logging must never
-	// throw — we swallow JSON.stringify failures defensively.
+	// Structured per-request logging (FB-01 + FB-04). Fastify runs
+	// `logger: false`, so without this hook every request would be
+	// completely invisible to operators. We emit one JSON line per
+	// response with `reqId`, `method`, `url`, `statusCode`, and
+	// `responseTimeMs` — covering the latency + traffic + errors golden
+	// signals for every feedback CRUD, revisit, review, WS, and static-
+	// asset route. Level varies by status: info for 2xx/3xx, warn for
+	// 4xx, error for 5xx. Logging must never throw — we swallow
+	// JSON.stringify failures defensively.
 	instance.addHook("onResponse", async (req, reply) => {
 		const statusCode = reply.statusCode
-		if (statusCode < 400) return
+		const start =
+			(req as unknown as { startTime?: bigint }).startTime ?? undefined
+		const responseTimeMs =
+			start !== undefined
+				? Number(process.hrtime.bigint() - start) / 1_000_000
+				: undefined
+		const level =
+			statusCode >= 500 ? "error" : statusCode >= 400 ? "warn" : "info"
 		try {
 			console.error(
 				JSON.stringify({
-					level: statusCode >= 500 ? "error" : "warn",
-					event: "http_error_response",
+					level,
+					event: "http_response",
 					reqId: req.id,
 					method: req.method,
 					url: req.url,
 					statusCode,
+					...(responseTimeMs !== undefined
+						? { responseTimeMs: Math.round(responseTimeMs * 100) / 100 }
+						: {}),
 				}),
 			)
 		} catch {

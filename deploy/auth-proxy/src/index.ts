@@ -27,6 +27,18 @@ function corsHeaders(origin: string): Record<string, string> {
 	}
 }
 
+// Upstream OAuth calls have a bounded timeout so Cloud Function invocations
+// never hang on a slow GitHub/GitLab response. 10s leaves headroom under the
+// default 60s function timeout for CORS handling and response serialization.
+const UPSTREAM_TIMEOUT_MS = 10_000
+
+function isAbortError(e: unknown): boolean {
+	return (
+		e instanceof Error &&
+		(e.name === "AbortError" || e.name === "TimeoutError")
+	)
+}
+
 export const authProxy: HttpFunction = async (req, res) => {
 	const origin = req.headers.origin || ""
 	const cors = corsHeaders(origin)
@@ -90,6 +102,7 @@ async function handleGitHub(
 					client_secret: process.env.HAIKU_GITHUB_OAUTH_CLIENT_SECRET,
 					code,
 				}),
+				signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
 			},
 		)
 
@@ -108,6 +121,13 @@ async function handleGitHub(
 
 		res.json({ access_token: data.access_token })
 	} catch (e) {
+		if (isAbortError(e)) {
+			res.status(504).json({
+				error: "upstream_timeout",
+				error_description: `GitHub OAuth endpoint did not respond within ${UPSTREAM_TIMEOUT_MS}ms`,
+			})
+			return
+		}
 		res
 			.status(500)
 			.json({ error: "server_error", error_description: (e as Error).message })
@@ -145,6 +165,7 @@ async function handleGitLab(
 				grant_type: "authorization_code",
 				redirect_uri: redirectUri,
 			}),
+			signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
 		})
 
 		const data = (await tokenRes.json()) as {
@@ -162,6 +183,13 @@ async function handleGitLab(
 
 		res.json({ access_token: data.access_token })
 	} catch (e) {
+		if (isAbortError(e)) {
+			res.status(504).json({
+				error: "upstream_timeout",
+				error_description: `GitLab OAuth endpoint did not respond within ${UPSTREAM_TIMEOUT_MS}ms`,
+			})
+			return
+		}
 		res
 			.status(500)
 			.json({ error: "server_error", error_description: (e as Error).message })
