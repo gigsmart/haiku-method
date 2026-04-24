@@ -55,9 +55,16 @@ export function StageProgressStrip({
 		<nav className="px-4 sm:px-6 py-3" aria-label="Stage progress">
 			<ol className="flex justify-center items-start gap-0">
 				{stages.map((stage, i) => {
-					const isCurrent = stage.name === currentStage
-					const isViewing = stage.name === (viewingStage ?? currentStage)
+					// "current" means the FSM is actively working this stage.
+					// Once a stage's status flips to `completed`, its checkmark
+					// wins over the diamond even if the active-stage resolver
+					// still names it (e.g. post-final-stage in intent-review
+					// phase, the last stage is both `current` by fallback and
+					// `completed` on disk — operator should see a checkmark).
+					const rawIsCurrent = stage.name === currentStage
 					const isCompleted = stage.status === "completed"
+					const isCurrent = rawIsCurrent && !isCompleted
+					const isViewing = stage.name === (viewingStage ?? currentStage)
 					const isFuture = !(isCurrent || isCompleted)
 					const hasVisits = (stage.visits ?? 0) > 0
 					// Every stage the reviewer can reach is clickable — current,
