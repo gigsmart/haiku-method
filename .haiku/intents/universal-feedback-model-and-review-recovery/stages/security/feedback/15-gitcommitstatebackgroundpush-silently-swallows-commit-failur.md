@@ -2,7 +2,7 @@
 title: >-
   gitCommitStateBackgroundPush silently swallows commit failures with no retry
   or alerting
-status: pending
+status: rejected
 origin: adversarial-review
 author: reliability (from operations)
 author_type: agent
@@ -36,3 +36,7 @@ reply.status(201).send(response)
 - `packages/haiku/src/http.ts:1531, 1627, 1719, 1818` — all four call sites discard the return value
 
 **Recommendation:** At minimum, log a structured warning line when `committed: false` (parallel to `logFeedbackAction`) so operators can detect commit failures in the stderr stream. Stronger: return a 500 or 409 with `{ error: "commit_failed" }` if the git commit fails on a mutation — the audit-trail guarantee cited in the THREAT-MODEL depends on this being reliable.
+
+---
+
+**Rejection reason:** Out of scope — gitCommitStateBackgroundPush error-handling is code quality / observability, not a security invariant. The audit trail is on-disk git history; a missed push is recoverable (local commit persists). Belongs in an ops-reliability follow-up intent.
