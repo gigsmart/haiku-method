@@ -25,6 +25,33 @@ Scope: Feedback file creation/mutation (MCP tools + HTTP API), gate-phase enforc
 - HTTP endpoints (`handleFeedbackPost`) hardcode `author: "user"` and use `user-visual` origin.
 - Test: `feedback.test.mjs` verifies `author_type: "agent"` for MCP-created items and `author_type: "human"` for HTTP-created items.
 
+#### Trust boundary: `FeedbackCreateRequestSchema.author` is a suppressed client input (intentional)
+
+**Surface:** `FeedbackCreateRequestSchema` (packages/haiku-api/src/schemas/feedback.ts:116-123) accepts an optional `author` string from clients. The handler at `packages/haiku/src/http.ts:1522-1530` **ignores** `parsed.data.author` entirely and hardcodes `author: "user"` into the call to `writeFeedbackFile`.
+
+**Trust classification:** Client-supplied `author` is **untrusted input that crosses into the server trust zone and is deliberately dropped at the boundary**. It never reaches the persisted feedback file. The field is retained in the schema as a reserved/forward-compat slot, not as an active input.
+
+**Why `author_type`, not `author`, is the security-bearing field:**
+- `author_type` ∈ `{human, agent}` is what every guard branches on: `updateFeedbackFile` / `deleteFeedbackFile` close/delete rejection for agent callers against human rows, and the gate-phase pending-feedback check. `author_type` is **server-derived from `origin` via `deriveAuthorType()`** and is never client-supplied.
+- `author` is a free-text display string used in git commit messages, audit displays, and the review UI. It has **no enforcement semantics** — no code branches on its value. Spoofing `author` cannot elevate privilege, cannot close human-authored feedback, and cannot bypass the gate. Its worst-case impact is a misleading audit-trail label (e.g., a feedback row visibly attributed to `"admin"` or `"orchestrator"` in the review UI and in the `feedback: create FB-NN in <stage>` commit message).
+
+**Intentional suppression — do NOT wire `parsed.data.author` through:** Any future change that replaces `author: "user"` with `author: parsed.data.author ?? "user"` (or similar) **reopens an author-spoofing vector for the audit-trail display surface**. A malicious or misbehaving client could then supply `author: "admin"`, `author: "orchestrator"`, `author: "feedback-assessor"` etc. to make planted feedback look like it came from a privileged actor. This will not bypass any enforcement guard (those still key off `author_type`), but it will corrupt the audit trail and can be used to socially engineer reviewers.
+
+**Required handling if the field is ever un-suppressed in the future:**
+1. Server MUST derive `author` from the authenticated session/JWT subject, not from the request body. Treat any client-supplied `author` string as an untrusted hint to be discarded OR as input to be validated against a server-known identity — never write it through verbatim.
+2. Any change to `http.ts:1522-1530` that reads `parsed.data.author` without such a check is a regression of this mitigation and MUST be flagged in code review.
+3. The `author` field semantics should be documented alongside `author_type` in whatever design note introduces the honoring-handler, so future maintainers know the difference between "display author" (untrusted, sanitized) and "security author_type" (server-derived).
+
+**Likelihood:** Low (field is inert today; requires a future wiring change)
+**Impact:** Low-Medium if un-suppressed without server-side derivation (audit-trail corruption only; does not bypass gate or close guards)
+
+**Verification evidence:**
+- `packages/haiku/src/http.ts:1522-1530` — `author: "user"` is a string literal in the call site; `parsed.data.author` is not referenced.
+- `packages/haiku-api/src/schemas/feedback.ts:116-123` — schema describes the field as "reserved for future use when the handler begins to honor it."
+- `FeedbackCreateRequestSchema` has no test coverage asserting the field round-trips, because it intentionally does not.
+
+**Status:** Mitigated by suppression. Guardrail documented for future maintainers.
+
 ---
 
 ### T — Tampering

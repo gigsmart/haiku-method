@@ -49,6 +49,8 @@ The implementation revealed three trust boundaries not fully characterized in un
 #### S2: Review SPA identity spoofing — any browser can POST feedback as "user"
 **Threat:** Since HTTP feedback endpoints use hardcoded `author: "user"` and `author_type: "human"` for the review UI context, a malicious actor who can reach the HTTP server can POST feedback that appears to be human-authored. In local mode (no tunnel), any process on the developer's machine can do this.
 
+**Scope note on `author` vs `author_type`:** The `FeedbackCreateRequestSchema` (packages/haiku-api/src/schemas/feedback.ts:116-123) exposes an optional client-supplied `author` free-text string, which the handler at `http.ts:1522-1530` intentionally **discards** and replaces with the literal `"user"`. The security-bearing field is `author_type` (server-derived from `origin`), not `author`. S2 focuses on `author_type`-bearing spoofing because it drives enforcement guards. The `author` field is covered separately in the trust-boundary discussion in unit-01 `THREAT-MODEL.md` §1/S — treat it as untrusted display-only input that is deliberately suppressed at the boundary. Any future change wiring `parsed.data.author` through without server-side derivation must be flagged as a regression of that mitigation; it would corrupt audit-trail display (git commit messages, review UI attribution) even though it would not bypass the `author_type`-gated close/delete guards.
+
 **Likelihood:** Low (local-only in default mode; attacker needs machine access)
 **Impact:** High (human-authored feedback cannot be closed by agents — creates irremovable gate blockers)
 
