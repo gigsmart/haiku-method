@@ -1,11 +1,4 @@
 {
   "stage": "operations",
-  "status": "active",
-  "phase": "elaborate",
-  "started_at": null,
-  "completed_at": null,
-  "gate_entered_at": null,
-  "gate_outcome": null,
-  "visits": 0,
-  "elaboration_turns": 1
+  "status": "pending"
 }

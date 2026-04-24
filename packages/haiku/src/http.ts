@@ -1572,6 +1572,12 @@ async function buildApp(): Promise<FastifyInstance> {
 	instance.setErrorHandler((err, req, reply) => {
 		const errCode = (err as { code?: string }).code
 		const status = (err as { statusCode?: number }).statusCode ?? 500
+		const errMessage =
+			err instanceof Error
+				? err.message
+				: typeof err === "string"
+					? err
+					: ""
 
 		// Fastify's built-in JSON parser throws a SyntaxError (wrapped
 		// with statusCode 400) when the request body is malformed JSON.
@@ -1582,13 +1588,13 @@ async function buildApp(): Promise<FastifyInstance> {
 		const looksLikeJsonParseError =
 			errCode === "FST_ERR_CTP_INVALID_JSON" ||
 			err instanceof SyntaxError ||
-			(status === 400 && /JSON|json|Unexpected token/i.test(err.message))
+			(status === 400 && /JSON|json|Unexpected token/i.test(errMessage))
 
 		if (looksLikeJsonParseError) {
 			const issues: ZodIssueWire[] = [
 				{
 					code: "invalid_json",
-					message: err.message || "Request body is not valid JSON",
+					message: errMessage || "Request body is not valid JSON",
 					path: [],
 				},
 			]
@@ -1610,7 +1616,7 @@ async function buildApp(): Promise<FastifyInstance> {
 
 		reply.status(status).send({
 			error: "internal_error",
-			message: err.message,
+			message: errMessage,
 		})
 	})
 

@@ -1554,15 +1554,27 @@ function fsmAdvanceStage(
 	// Complete current stage
 	fsmCompleteStage(slug, currentStage, "advanced")
 
-	// Update intent's active_stage to next
+	// Update intent's active_stage to next. Must happen before fsmStartStage
+	// runs its own frontmatter write so the seal covers the final value.
 	const intentFile = join(intentDir(slug), "intent.md")
 	if (existsSync(intentFile)) {
 		setFrontmatterField(intentFile, "active_stage", nextStage)
 	}
 
-	// Reseal: fsmCompleteStage sealed against active_stage=currentStage;
-	// we just rewrote active_stage, so the prior checksum is now stale and
-	// the next verifyIntentState() would false-positive as tampering.
+	// Atomic advance: immediately enter the next stage in the same tick.
+	// This merges the completed stage branch into intent main, reaps it, and
+	// creates/resets the next stage branch — all before run_next returns.
+	// Without this, the FSM leaves dirty state on the completed branch while
+	// the next tick's `ensureOnStageBranch` guard checks out intent main
+	// (ops branch doesn't exist yet → fall back to main) via an auto-commit
+	// WIP detour, stranding the advance on a branch that never gets merged.
+	// fsmStartStage is idempotent w.r.t. pos-0 state — it will overwrite
+	// whatever was there with the fresh default.
+	fsmStartStage(slug, nextStage)
+
+	// Reseal: fsmCompleteStage sealed against active_stage=currentStage,
+	// then fsmStartStage rewrote frontmatter again; the prior checksums are
+	// stale and verifyIntentState() would false-positive as tampering.
 	sealIntentState(slug)
 }
 
