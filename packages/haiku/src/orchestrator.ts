@@ -222,17 +222,29 @@ const FSM_CONTRACTS_FIX_LOOP_BLOCK = [
 ].join("\n")
 
 /**
- * Render the parent's batch-dispatch discipline for a parallel subagent wave.
+ * Render the parent's concurrency-capped dispatch discipline for a parallel
+ * subagent wave.
  *
- * Returns a short markdown block the parent must follow when spawning:
- *   - ≤ cap items → "spawn all N in parallel"
- *   - > cap items → "batch them in groups of cap, serial across batches"
+ * Two modes, chosen by the active harness's `subagents.backgroundSpawn`
+ * capability:
+ *
+ *   - **Slot pool** (backgroundSpawn=true, e.g. Claude Code): parent keeps
+ *     up to `MAX_CONCURRENT_SUBAGENTS` subagents in flight via the harness's
+ *     background-spawn primitive. Each completion notification immediately
+ *     frees a slot; the parent fires the next pending item into it. Pool
+ *     drains to 0 when the wave is exhausted.
+ *
+ *   - **Batch-serial** (backgroundSpawn=false, most other harnesses):
+ *     parent spawns N items, waits for every subagent in the batch to
+ *     return, then dispatches the next batch. Slower (fast slots sit idle
+ *     waiting for the slowest) but works on harnesses without a
+ *     completion-notification channel.
  *
  * Cap comes from `MAX_CONCURRENT_SUBAGENTS` (env-configurable via
  * `HAIKU_MAX_CONCURRENT_SUBAGENTS`, default 5). Call this everywhere the
- * parent fans out Task subagents in parallel: start_units, elaborate
- * discovery fan-out, review-agent fan-out (adversarial + pre-execute),
- * and per-wave dispatch inside the fix loops.
+ * parent fans out subagents in parallel: start_units, continue_unit,
+ * elaborate discovery fan-out, review-agent fan-out (adversarial +
+ * pre-execute + studio-level), and per-wave dispatch inside the fix loops.
  *
  * The cap is parent-side discipline — the FSM still returns the full
  * eligible set in one payload. Enforcement relies on the parent reading
@@ -242,9 +254,40 @@ function batchDispatchDirective(
 	count: number,
 	label = "subagents",
 ): string {
+	const backgroundSpawn = getCapabilities().subagents.backgroundSpawn
+
 	if (count <= MAX_CONCURRENT_SUBAGENTS) {
-		return `**Concurrency cap:** up to ${MAX_CONCURRENT_SUBAGENTS} ${label} at once (env \`HAIKU_MAX_CONCURRENT_SUBAGENTS\`). This wave has ${count} — spawn them all in a single message.`
+		if (backgroundSpawn) {
+			return `**Concurrency cap:** up to ${MAX_CONCURRENT_SUBAGENTS} concurrent background ${label} (env \`HAIKU_MAX_CONCURRENT_SUBAGENTS\`). This wave has ${count} — spawn all ${count} as background ${label} in a single turn and react to completion notifications as they arrive.`
+		}
+		return `**Concurrency cap:** up to ${MAX_CONCURRENT_SUBAGENTS} concurrent ${label} (env \`HAIKU_MAX_CONCURRENT_SUBAGENTS\`). This wave has ${count} — spawn them all in a single turn and wait for every ${label.replace(/s$/, "")} to return before proceeding.`
 	}
+
+	if (backgroundSpawn) {
+		return [
+			`**Concurrency cap:** slot pool of ${MAX_CONCURRENT_SUBAGENTS} concurrent background ${label} (env \`HAIKU_MAX_CONCURRENT_SUBAGENTS\`). This wave has ${count} items; at any moment, at most ${MAX_CONCURRENT_SUBAGENTS} are in flight. A slot frees the instant one completes — fire the next pending item into it.`,
+			"",
+			`**Dispatch protocol:**`,
+			"",
+			`1. **Seed the pool.** In one turn, spawn the first ${MAX_CONCURRENT_SUBAGENTS} items as **background** ${label} (the spawn primitive returns immediately; the subagent runs in the background and the system delivers a completion notification when it finishes). Do NOT block on any spawn.`,
+			"",
+			`2. **On each completion notification**, in the same turn:`,
+			`   - Briefly inspect the result (final-hat closure state is already persisted; deep-read not required).`,
+			`   - If items remain in the queue: spawn exactly ONE new background ${label.replace(/s$/, "")} for the next pending item. The pool stays saturated at ${MAX_CONCURRENT_SUBAGENTS}.`,
+			`   - If the queue is empty: acknowledge and wait — remaining slots are draining.`,
+			"",
+			`3. **Multiple simultaneous completions** may arrive in one turn. Fire one replacement per completion; cap stays at ${MAX_CONCURRENT_SUBAGENTS}.`,
+			"",
+			`4. **Wave exhausted:** when the pool reaches 0 AND the queue is empty, this wave is done.`,
+			"",
+			`5. **No foreground (blocking) spawns** during the pool's lifetime. A foreground spawn stalls the notification stream and breaks the pool.`,
+			"",
+			`6. **Clarification / approval-request returns:** if a ${label.replace(/s$/, "")} returns asking for approval to execute its embedded instructions rather than producing a real result, treat the slot as freed and re-queue or abandon the item per judgment — don't block the pool.`,
+			"",
+			`**Order:** process items in the declared order below so re-entries after interruption are deterministic.`,
+		].join("\n")
+	}
+
 	const batches = Math.ceil(count / MAX_CONCURRENT_SUBAGENTS)
 	const last = count - MAX_CONCURRENT_SUBAGENTS * (batches - 1)
 	const sizes =
@@ -252,12 +295,12 @@ function batchDispatchDirective(
 			? `${batches} batches of ${MAX_CONCURRENT_SUBAGENTS}`
 			: `${batches - 1} batch${batches - 1 === 1 ? "" : "es"} of ${MAX_CONCURRENT_SUBAGENTS} + 1 batch of ${last}`
 	return [
-		`**Concurrency cap:** ${MAX_CONCURRENT_SUBAGENTS} ${label} in flight at a time (env \`HAIKU_MAX_CONCURRENT_SUBAGENTS\`). This wave has ${count} — split into ${sizes}.`,
+		`**Concurrency cap:** ${MAX_CONCURRENT_SUBAGENTS} ${label} in flight at a time (env \`HAIKU_MAX_CONCURRENT_SUBAGENTS\`). This wave has ${count} — split into ${sizes}. Your harness has no background-spawn primitive, so this is batch-serial (slower than a true slot pool but equivalent correctness).`,
 		"",
 		`**Batch discipline:**`,
-		`1. Dispatch batch 1 (first ${MAX_CONCURRENT_SUBAGENTS}) in a single message with multiple tool-use blocks.`,
-		`2. Wait for **every** subagent in that batch to return.`,
-		`3. Dispatch batch 2 in the next message. Repeat until the wave is exhausted.`,
+		`1. Spawn batch 1 (first ${MAX_CONCURRENT_SUBAGENTS}) in a single turn.`,
+		`2. Wait for **every** ${label.replace(/s$/, "")} in that batch to return.`,
+		`3. Spawn batch 2 in the next turn. Repeat until the wave is exhausted.`,
 		`4. Process items in the order listed below so re-entries after interruption are deterministic.`,
 	].join("\n")
 }
@@ -5702,12 +5745,12 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 						"",
 						batchDispatchDirective(units.length, "units"),
 						"",
-						"**Within each batch, drive forward on every return — do NOT wait for the whole batch to finish before inspecting returns.** The moment ANY subagent in the current batch returns, inspect its final message:",
-						`- \`FSM Result: <path>\` → read that JSON file, then call \`haiku_run_next { intent: "${slug}" }\` (run_next is authoritative). The FSM returns every still-active unit plus newly-ready work for the NEXT batch.`,
+						"**On each completion, inspect the result before (if applicable) refilling the slot:**",
+						`- \`FSM Result: <path>\` → read that JSON file, then call \`haiku_run_next { intent: "${slug}" }\` (run_next is authoritative). The FSM returns every still-active unit plus newly-ready work; continue the pool/batch with whatever it returns.`,
 						`- Plaintext "job ends here" → another subagent will emit the structured result; do NOT dispatch yet.`,
 						`- Anything else (non-compliant) → fall back: call \`haiku_run_next { intent: "${slug}" }\`.`,
 						"",
-						"Complete the current batch before dispatching the next. Stop driving only when run_next returns `gate_review`, `escalate`, `intent_complete`, or `error`.",
+						"Stop driving only when run_next returns `gate_review`, `escalate`, `intent_complete`, or `error`.",
 					].join("\n"),
 				)
 			} else {
@@ -6005,12 +6048,12 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					"",
 					batchDispatchDirective(entries.length, "units"),
 					"",
-					"**Within each batch, drive forward on every return — do NOT wait for the whole batch to finish before inspecting returns.** The moment ANY subagent in the current batch returns, inspect its final message:",
+					"**On each completion, inspect the result before (if applicable) refilling the slot:**",
 					`- \`FSM Result: <path>\` → read that JSON file, then call \`haiku_run_next { intent: "${slug}" }\` (run_next is authoritative).`,
 					`- Plaintext "job ends here" → another subagent will emit the structured result; do NOT dispatch yet.`,
 					`- Anything else → fall back: call \`haiku_run_next { intent: "${slug}" }\`.`,
 					"",
-					"Complete the current batch before dispatching the next. Stop driving only when run_next returns `gate_review`, `escalate`, `intent_complete`, or `error`.",
+					"Stop driving only when run_next returns `gate_review`, `escalate`, `intent_complete`, or `error`.",
 				].join("\n"),
 			)
 
