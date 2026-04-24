@@ -17,8 +17,28 @@ export function resolveActiveStage(
 ): string | null {
 	const stageStates = session.stage_states ?? {}
 	const names = Object.keys(stageStates)
+	// Canonical: one of the stages has status === "active".
 	const active = names.find((s) => stageStates[s]?.status === "active")
-	return active ?? names[0] ?? null
+	if (active) return active
+	// Fallbacks, in preference order:
+	//   1. `intent.frontmatter.active_stage` — authoritative on disk,
+	//      still set after the intent moves to awaiting_completion_review
+	//      (every stage's status is "completed" by then).
+	//   2. The LAST stage in intent.stages — that's the final stage the
+	//      intent reached.
+	//   3. First stage_state key — last-resort when nothing else is
+	//      available.
+	const fm = (session.intent?.frontmatter ?? {}) as Record<string, unknown>
+	const activeFromFrontmatter = fm.active_stage
+	if (typeof activeFromFrontmatter === "string" && activeFromFrontmatter) {
+		return activeFromFrontmatter
+	}
+	const stagesList = fm.stages
+	if (Array.isArray(stagesList) && stagesList.length > 0) {
+		const last = stagesList[stagesList.length - 1]
+		if (typeof last === "string") return last
+	}
+	return names[0] ?? null
 }
 
 /**

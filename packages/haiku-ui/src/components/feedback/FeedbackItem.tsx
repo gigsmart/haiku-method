@@ -32,6 +32,7 @@ import {
 } from "react"
 import { focusRingCompactClass, touchTargetClass, useAnnounce } from "../../a11y"
 import type { FeedbackItemData } from "../../types"
+import { AttachmentLightbox } from "./AttachmentLightbox"
 import { FeedbackOriginIcon } from "./FeedbackOriginIcon"
 import { FeedbackStatusBadge } from "./FeedbackStatusBadge"
 import type { FeedbackStatus } from "./tokens"
@@ -74,9 +75,54 @@ const RESOLUTION_LABELS: Record<
  * via the same MarkdownViewer the rest of the review UI uses so code
  * blocks, lists, and links come through — not as a wall of text with
  * whitespace-pre-wrap.
+ *
+ * Click delegation: when the feedback has an attachment (wireframe
+ * screenshot + annotation overlay) the markdown body includes an
+ * `![annotation](/api/feedback-attachment/...)` block. A click on
+ * the rendered `<img>` opens the AttachmentLightbox so the reviewer
+ * can see the full-resolution artifact alongside the comment text.
  */
-function FeedbackBody({ body }: { body: string }): React.ReactElement {
-	return <MarkdownViewer id="feedback-body">{body}</MarkdownViewer>
+function FeedbackBody({
+	title,
+	body,
+}: { title: string; body: string }): React.ReactElement {
+	const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(
+		null,
+	)
+	const onBodyClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+		const target = e.target as HTMLElement
+		if (!(target instanceof HTMLImageElement)) return
+		e.preventDefault()
+		setLightbox({ src: target.src, alt: target.alt || "Attachment" })
+	}, [])
+	return (
+		<>
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: click delegation on the markdown body catches img clicks; each img already has alt text, and the lightbox trigger is accessible via the image's focusable wrapping. */}
+			<div
+				onClick={onBodyClick}
+				onKeyDown={(e) => {
+					// Enter on a focused img opens the lightbox too.
+					const target = e.target as HTMLElement
+					if (!(target instanceof HTMLImageElement)) return
+					if (e.key !== "Enter" && e.key !== " ") return
+					e.preventDefault()
+					setLightbox({ src: target.src, alt: target.alt || "Attachment" })
+				}}
+				className="feedback-body-attachment-host [&_img]:cursor-zoom-in [&_img]:transition-opacity [&_img:hover]:opacity-90"
+			>
+				<MarkdownViewer id="feedback-body">{body}</MarkdownViewer>
+			</div>
+			{lightbox && (
+				<AttachmentLightbox
+					src={lightbox.src}
+					alt={lightbox.alt}
+					title={title}
+					body={body}
+					onClose={() => setLightbox(null)}
+				/>
+			)}
+		</>
+	)
 }
 
 export interface FeedbackItemProps {
@@ -332,7 +378,7 @@ export const FeedbackItem = forwardRef<HTMLDivElement, FeedbackItemProps>(
 				{isExpanded && (
 					<div className="mt-2">
 						<div className="text-xs text-stone-700 dark:text-stone-300 feedback-markdown prose prose-stone prose-sm dark:prose-invert max-w-none">
-							<FeedbackBody body={item.body} />
+							<FeedbackBody title={item.title} body={item.body} />
 						</div>
 						{item.closed_by && (
 							<p className="text-xs text-blue-600 dark:text-blue-400 mt-1">

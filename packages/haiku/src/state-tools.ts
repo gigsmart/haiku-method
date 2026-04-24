@@ -3236,6 +3236,21 @@ export interface FeedbackItem {
 	// review sidebar; agent replies come from `feedback_answer` and from
 	// `feedback-assessor` hats recording their closure reasoning.
 	replies: FeedbackReply[]
+	// Inline-text anchor for comments attached to a span of rendered
+	// markdown. When present, the sidebar can surface a "jump to
+	// artifact" affordance that re-opens the artifact detail view and
+	// flashes the originally-commented span. `file_path` is the
+	// authoritative locator: UI parses it for routing, agent greps it
+	// for the exact line. `null` / absent for non-inline feedback
+	// (visual pins, plain chat comments, etc).
+	inline_anchor: {
+		selected_text: string
+		paragraph: number
+		location: string
+		comment_id?: string
+		file_path?: string
+		content_sha?: string
+	} | null
 }
 
 /**
@@ -3264,6 +3279,25 @@ export function writeFeedbackFile(
 		 *  UI (e.g. an artifact preview + drawn overlay). Persisted as a
 		 *  sidecar file next to the feedback .md and linked inline. */
 		attachmentDataUrl?: string | null
+		/** Inline-text anchor for comments attached to a span of rendered
+		 *  markdown. Persisted in the feedback frontmatter so the sidebar
+		 *  can re-open the underlying artifact and flash the original
+		 *  selection when the reviewer clicks the feedback card, AND so
+		 *  an agent reading the feedback can open the source file
+		 *  directly via the `filePath` field. */
+		inlineAnchor?: {
+			selectedText: string
+			paragraph: number
+			location: string
+			commentId?: string
+			/** Full relative path from repo root to the artifact file.
+			 *  Authoritative locator: UI parses it to route, agent greps
+			 *  it for the exact line. */
+			filePath?: string
+			/** Hash of the artifact's raw content when the comment was
+			 *  saved. Used to detect drift on revisit. */
+			contentSha?: string
+		} | null
 	},
 ): { feedback_id: string; file: string; num: number } {
 	const dir = feedbackDir(slug, stage)
@@ -3346,6 +3380,24 @@ export function writeFeedbackFile(
 		resolution: normalizedResolution,
 		replies: [],
 		...(attachmentBasename ? { attachment: attachmentBasename } : {}),
+		...(opts.inlineAnchor
+			? {
+					inline_anchor: {
+						selected_text: opts.inlineAnchor.selectedText,
+						paragraph: opts.inlineAnchor.paragraph,
+						location: opts.inlineAnchor.location,
+						...(opts.inlineAnchor.commentId
+							? { comment_id: opts.inlineAnchor.commentId }
+							: {}),
+						...(opts.inlineAnchor.filePath
+							? { file_path: opts.inlineAnchor.filePath }
+							: {}),
+						...(opts.inlineAnchor.contentSha
+							? { content_sha: opts.inlineAnchor.contentSha }
+							: {}),
+					},
+				}
+			: {}),
 	}
 
 	const content = matter.stringify(`\n${bodyWithAttachment}\n`, frontmatter)
@@ -3426,10 +3478,35 @@ export function readFeedbackFiles(slug: string, stage: string): FeedbackItem[] {
 					: null,
 			resolution,
 			replies,
+			inline_anchor: parseInlineAnchor(data),
 		})
 	}
 
 	return items
+}
+
+function parseInlineAnchor(data: Record<string, unknown>): FeedbackItem["inline_anchor"] {
+	const raw = data.inline_anchor
+	if (!(raw && typeof raw === "object")) return null
+	const a = raw as Record<string, unknown>
+	const selectedText = a.selected_text ?? a.selectedText
+	const paragraph = a.paragraph
+	const location = a.location
+	if (
+		typeof selectedText !== "string" ||
+		typeof paragraph !== "number" ||
+		typeof location !== "string"
+	) {
+		return null
+	}
+	return {
+		selected_text: selectedText,
+		paragraph,
+		location,
+		...(typeof a.comment_id === "string" ? { comment_id: a.comment_id } : {}),
+		...(typeof a.file_path === "string" ? { file_path: a.file_path } : {}),
+		...(typeof a.content_sha === "string" ? { content_sha: a.content_sha } : {}),
+	}
 }
 
 /**
@@ -3573,6 +3650,26 @@ export function updateFeedbackFile(
 			ok: false,
 			error:
 				"Error: agents cannot close human-authored feedback. Only the original author may set `closed_by` via the review UI.",
+		}
+	}
+
+	// FB-24: parallel guard against the `status: "closed"` bypass path. The
+	// `closed_by` check above blocks the canonical close route, but an agent
+	// could still set `status: "closed"` directly on a human item and have
+	// `countPendingFeedback` skip it at the gate. Block that too — the
+	// human-authored privilege is that ONLY a human can close the item, via
+	// any path. (`addressed` / `rejected` remain agent-accessible by design
+	// — they're downgrade paths the threat model accepts as medium residual
+	// and covers with separate gate-policy mitigations.)
+	if (
+		callerContext === "agent" &&
+		fields.status === "closed" &&
+		found.data.author_type === "human"
+	) {
+		return {
+			ok: false,
+			error:
+				"Error: agents cannot set status='closed' on human-authored feedback. Only the original author may close the item, via the review UI.",
 		}
 	}
 
@@ -3977,7 +4074,7 @@ export const stateToolDefs = [
 	{
 		name: "haiku_review",
 		description:
-			"Runs a git diff against main/upstream and returns formatted pre-delivery code review instructions with diff, stats, review guidelines, and review-agent config. Pass open_pane: true to open the always-available review pane in the browser instead.",
+			"Runs a git diff against main/upstream and returns formatted pre-delivery code review instructions with diff, stats, review guidelines, and review-agent config.",
 		inputSchema: {
 			type: "object" as const,
 			properties: {
@@ -3985,10 +4082,25 @@ export const stateToolDefs = [
 					type: "string",
 					description: "Optional: intent slug for context",
 				},
-				open_pane: {
-					type: "boolean",
+			},
+		},
+	},
+	{
+		name: "haiku_review_open",
+		description:
+			"Open an ad-hoc review pane in the browser for the active intent and BLOCK until the reviewer clicks Done or Request Changes (or the pane times out at 30min). The UI swaps Approve for Done/Close, shows an \"Ad-hoc review\" badge, and never mutates FSM state on its own. Return value is a concrete next-step instruction: on Done the tool returns \"no changes requested\"; on Request Changes it returns a nudge to call haiku_run_next so the durable feedback routes through the normal fix-loop / revisit path.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: {
+					type: "string",
 					description:
-						"If true, opens the always-available review pane in the browser showing current intent state. No other arguments needed.",
+						"Optional intent slug. Defaults to the sole active intent (errors if ambiguous).",
+				},
+				stage: {
+					type: "string",
+					description:
+						"Optional stage name to land the reviewer on. Defaults to the intent's active_stage.",
 				},
 			},
 		},
@@ -5687,13 +5799,6 @@ export function handleStateTool(
 
 		// ── Review ──
 		case "haiku_review": {
-			// open_pane mode: return instructions for the agent to open the browser
-			if (args.open_pane) {
-				return text(
-					"To open the always-available review pane, the HTTP server must be running. The server starts automatically during gate reviews. Use GET /api/review/current to fetch the current intent state as JSON, and open /review/current in a browser to view the read-only overview.\n\nThis is a read-only view — no Approve/Request Changes buttons are shown outside of a gate review.",
-				)
-			}
-
 			// Determine diff base — prefer the tracked upstream, fall back to the
 			// detected mainline (origin/HEAD-aware), then to a last-resort "main".
 			let base = getMainlineBranch()

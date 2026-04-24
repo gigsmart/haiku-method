@@ -67,6 +67,28 @@ export interface StageReviewProps {
 	 *  add comment). Parent collects them and hands them to the sidebar
 	 *  composer via `getAnnotations()`. */
 	onInlineCommentsChange?: (comments: InlineCommentEntry[]) => void
+	/** Persist an inline comment as a real feedback item. Called on
+	 *  Save inside InlineComments. When omitted, comments stay in the
+	 *  getAnnotations payload only — works for gate reviews (which
+	 *  submit a decision) but not ad-hoc panes (which don't). */
+	onSaveInline?: (entry: {
+		selectedText: string
+		comment: string
+		paragraph: number
+		location: string
+		filePath?: string
+		commentId: string
+		contentSha?: string
+	}) => Promise<void>
+	/** Anchor of a persisted inline comment to scroll to + flash once
+	 *  the detail view mounts. Set by the stage-content layer after a
+	 *  feedback-card click resolves to an `inline_anchor`. */
+	flashAnchor?: {
+		commentId?: string
+		selectedText: string
+		paragraph?: number
+	} | null
+	onFlashCommentConsumed?: () => void
 	/** Called by the artifact-annotator flow when the reviewer draws on
 	 *  a wireframe/image, writes a comment, and hits submit. Receives
 	 *  the artifact name, the comment text, and a `data:image/png;...`
@@ -144,6 +166,54 @@ function statusPillClass(status: string | undefined): string {
 	}
 }
 
+/** Project the feedback items that carry an `inline_anchor` into the
+ *  shape `<InlineComments>` needs for re-painting previously-saved
+ *  highlights. Filters out closed / rejected items — those are
+ *  resolved, no reason to clutter the artifact body. */
+function deriveExistingAnchors(
+	items: readonly FeedbackItemData[],
+): Array<{
+	commentId?: string
+	selectedText: string
+	paragraph?: number
+	contentSha?: string
+}> {
+	const out: Array<{
+		commentId?: string
+		selectedText: string
+		paragraph?: number
+		contentSha?: string
+	}> = []
+	for (const f of items) {
+		if (f.status === "closed" || f.status === "rejected") continue
+		const a = (
+			f as unknown as {
+				inline_anchor?: {
+					selected_text?: string
+					comment_id?: string
+					paragraph?: number
+					content_sha?: string
+				}
+			}
+		).inline_anchor
+		if (!a?.selected_text) continue
+		out.push({
+			selectedText: a.selected_text,
+			...(a.comment_id ? { commentId: a.comment_id } : {}),
+			...(typeof a.paragraph === "number" ? { paragraph: a.paragraph } : {}),
+			...(a.content_sha ? { contentSha: a.content_sha } : {}),
+		})
+	}
+	return out
+}
+
+function deriveExistingAnchorsForUnit(
+	_unitSlug: string,
+	items: readonly FeedbackItemData[],
+): ReturnType<typeof deriveExistingAnchors> {
+	return deriveExistingAnchors(items)
+}
+
 function feedbackBadgeColor(status: string): string {
 	switch (status) {
 		case "pending":
@@ -158,10 +228,7 @@ function feedbackBadgeColor(status: string): string {
 }
 
 function seenBorderClass(state: SeenState): string {
-	if (state === "unseen")
-		return "border-sky-300 dark:border-sky-800"
-	if (state === "changed")
-		return "border-amber-300 dark:border-amber-700"
+	if (state === "unseen") return "border-sky-300 dark:border-sky-800"
 	return "border-stone-200 dark:border-stone-700"
 }
 
@@ -171,14 +238,6 @@ function StateBadge({ state }: { state: SeenState }) {
 			<span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-bold bg-sky-500 text-white">
 				<span className="w-1.5 h-1.5 rounded-full bg-white" />
 				NEW
-			</span>
-		)
-	}
-	if (state === "changed") {
-		return (
-			<span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white">
-				<span className="w-1.5 h-1.5 rounded-full bg-white" />
-				CHANGED
 			</span>
 		)
 	}
@@ -206,6 +265,9 @@ export function StageReview({
 	detail: detailProp,
 	onDetailChange,
 	onInlineCommentsChange,
+	onSaveInline,
+	flashAnchor,
+	onFlashCommentConsumed,
 	onSubmitAnnotation,
 }: StageReviewProps): React.ReactElement {
 	// Controlled-or-uncontrolled tab: when the parent owns the tab (for
@@ -360,15 +422,26 @@ export function StageReview({
 	// stepper — detail state is stage-scoped and shouldn't bleed across.
 	// Skip on the initial mount so deep-link URLs (stage+tab+detail) land
 	// on the requested sub-view instead of being reset to overview.
+	//
+	// setDetail / setActiveTab are intentionally excluded from deps: the
+	// parent's onDetailChange callback closes over `tab` (see routed
+	// StageContent), so its identity flips every time tab changes. Listing
+	// those setters here would fire the reset on every tab change during
+	// walkthrough and yank the reviewer back to overview. Route them
+	// through refs so the effect only reacts to stageName changes.
 	const isInitialMountRef = useRef(true)
+	const setDetailRef = useRef(setDetail)
+	const setActiveTabRef = useRef(setActiveTab)
+	setDetailRef.current = setDetail
+	setActiveTabRef.current = setActiveTab
 	useEffect(() => {
 		if (isInitialMountRef.current) {
 			isInitialMountRef.current = false
 			return
 		}
-		setDetail(null)
-		setActiveTab("overview")
-	}, [stageName, setActiveTab, setDetail])
+		setDetailRef.current(null)
+		setActiveTabRef.current("overview")
+	}, [stageName])
 
 	// Unified walkthrough list — one contiguous sequence across every
 	// type in the stage. Units first, then knowledge, then outputs; the
@@ -463,6 +536,7 @@ export function StageReview({
 						currentName={detail.name}
 						seen={seen}
 						stageId={stageName}
+						intentSlug={intentSlug}
 						feedbackByUnit={feedbackByUnit}
 						walkIndex={walkIndex}
 						walkTotal={walkthroughItems.length}
@@ -472,6 +546,9 @@ export function StageReview({
 						hasWalkNext={!!walkNext}
 						onBack={closeDetail}
 						onInlineCommentsChange={onInlineCommentsChange}
+						onSaveInline={onSaveInline}
+						flashAnchor={flashAnchor ?? null}
+						onFlashCommentConsumed={onFlashCommentConsumed}
 					/>
 				) : (
 					<UnitsTab
@@ -498,6 +575,7 @@ export function StageReview({
 						currentName={detail.name}
 						seen={seen}
 						stageId={stageName}
+						intentSlug={intentSlug}
 						feedbackByName={feedbackByKnowledge}
 						walkIndex={walkIndex}
 						walkTotal={walkthroughItems.length}
@@ -507,6 +585,9 @@ export function StageReview({
 						hasWalkNext={!!walkNext}
 						onBack={closeDetail}
 						onInlineCommentsChange={onInlineCommentsChange}
+						onSaveInline={onSaveInline}
+						flashAnchor={flashAnchor ?? null}
+						onFlashCommentConsumed={onFlashCommentConsumed}
 						onSubmitAnnotation={onSubmitAnnotation}
 					/>
 				) : (
@@ -535,6 +616,7 @@ export function StageReview({
 						currentName={detail.name}
 						seen={seen}
 						stageId={stageName}
+						intentSlug={intentSlug}
 						feedbackByName={feedbackByOutput}
 						walkIndex={walkIndex}
 						walkTotal={walkthroughItems.length}
@@ -544,6 +626,9 @@ export function StageReview({
 						hasWalkNext={!!walkNext}
 						onBack={closeDetail}
 						onInlineCommentsChange={onInlineCommentsChange}
+						onSaveInline={onSaveInline}
+						flashAnchor={flashAnchor ?? null}
+						onFlashCommentConsumed={onFlashCommentConsumed}
 						onSubmitAnnotation={onSubmitAnnotation}
 					/>
 				) : (
@@ -1100,6 +1185,7 @@ function UnitDetailView({
 	currentName,
 	seen,
 	stageId,
+	intentSlug,
 	feedbackByUnit,
 	walkIndex,
 	walkTotal,
@@ -1109,11 +1195,15 @@ function UnitDetailView({
 	hasWalkNext,
 	onBack,
 	onInlineCommentsChange,
+	onSaveInline,
+	flashAnchor,
+	onFlashCommentConsumed,
 }: {
 	units: ParsedUnit[]
 	currentName: string
 	seen: ReturnType<typeof useSeenTracker>
 	stageId: string
+	intentSlug: string | null
 	feedbackByUnit: Map<string, FeedbackItemData[]>
 	walkIndex: number
 	walkTotal: number
@@ -1123,6 +1213,21 @@ function UnitDetailView({
 	hasWalkNext: boolean
 	onBack: () => void
 	onInlineCommentsChange?: (comments: InlineCommentEntry[]) => void
+	onSaveInline?: (entry: {
+		selectedText: string
+		comment: string
+		paragraph: number
+		location: string
+		filePath?: string
+		commentId: string
+		contentSha?: string
+	}) => Promise<void>
+	flashAnchor?: {
+		commentId?: string
+		selectedText: string
+		paragraph?: number
+	} | null
+	onFlashCommentConsumed?: () => void
 }) {
 	const current = units.find((u) => u.slug === currentName)
 
@@ -1219,8 +1324,21 @@ function UnitDetailView({
 						(onInlineCommentsChange ? (
 							<InlineComments
 								htmlContent={markdownToSimpleHtml(current.rawContent)}
+								rawContent={current.rawContent}
 								location={`Unit: ${current.title || current.slug}`}
+								filePath={
+									intentSlug
+										? `.haiku/intents/${intentSlug}/stages/${stageId}/units/${current.slug}.md`
+										: undefined
+								}
+								existingAnchors={deriveExistingAnchorsForUnit(
+									current.slug,
+									cardFeedback,
+								)}
 								onCommentsChange={onInlineCommentsChange}
+								onSaveInline={onSaveInline}
+								flashAnchor={flashAnchor ?? null}
+								onFlashCommentConsumed={onFlashCommentConsumed}
 							/>
 						) : (
 							<MarkdownViewer id={`unit-${current.slug}`}>
@@ -1245,6 +1363,7 @@ function ArtifactDetailView({
 	currentName,
 	seen,
 	stageId,
+	intentSlug,
 	feedbackByName,
 	walkIndex,
 	walkTotal,
@@ -1254,6 +1373,9 @@ function ArtifactDetailView({
 	hasWalkNext,
 	onBack,
 	onInlineCommentsChange,
+	onSaveInline,
+	flashAnchor,
+	onFlashCommentConsumed,
 	onSubmitAnnotation,
 }: {
 	kind: "knowledge" | "output"
@@ -1261,6 +1383,7 @@ function ArtifactDetailView({
 	currentName: string
 	seen: ReturnType<typeof useSeenTracker>
 	stageId: string
+	intentSlug: string | null
 	feedbackByName: Map<string, FeedbackItemData[]>
 	walkIndex: number
 	walkTotal: number
@@ -1269,6 +1392,21 @@ function ArtifactDetailView({
 	hasWalkPrev: boolean
 	hasWalkNext: boolean
 	onBack: () => void
+	onSaveInline?: (entry: {
+		selectedText: string
+		comment: string
+		paragraph: number
+		location: string
+		filePath?: string
+		commentId: string
+		contentSha?: string
+	}) => Promise<void>
+	flashAnchor?: {
+		commentId?: string
+		selectedText: string
+		paragraph?: number
+	} | null
+	onFlashCommentConsumed?: () => void
 	onInlineCommentsChange?: (comments: InlineCommentEntry[]) => void
 	onSubmitAnnotation?: (
 		artifactName: string,
@@ -1360,7 +1498,13 @@ function ArtifactDetailView({
 					<ArtifactBody
 						kind={kind}
 						artifact={current}
+						intentSlug={intentSlug}
+						stageId={stageId}
+						existingAnchors={deriveExistingAnchors(artifactFeedback)}
 						onInlineCommentsChange={onInlineCommentsChange}
+						onSaveInline={onSaveInline}
+						flashAnchor={flashAnchor ?? null}
+						onFlashCommentConsumed={onFlashCommentConsumed}
 						onSubmitAnnotation={onSubmitAnnotation}
 					/>
 				</div>
@@ -1551,25 +1695,71 @@ function ArtifactCard({
 function ArtifactBody({
 	kind,
 	artifact,
+	intentSlug,
+	stageId,
+	existingAnchors,
 	onInlineCommentsChange,
+	onSaveInline,
+	flashAnchor,
+	onFlashCommentConsumed,
 	onSubmitAnnotation,
 }: {
 	kind: "knowledge" | "output"
 	artifact: ArtifactViewModel
+	intentSlug: string | null
+	stageId: string
+	existingAnchors?: Array<{
+		commentId?: string
+		selectedText: string
+		paragraph?: number
+		contentSha?: string
+	}>
 	onInlineCommentsChange?: (comments: InlineCommentEntry[]) => void
+	onSaveInline?: (entry: {
+		selectedText: string
+		comment: string
+		paragraph: number
+		location: string
+		filePath?: string
+		commentId: string
+		contentSha?: string
+	}) => Promise<void>
+	flashAnchor?: {
+		commentId?: string
+		selectedText: string
+		paragraph?: number
+	} | null
+	onFlashCommentConsumed?: () => void
 	onSubmitAnnotation?: (
 		artifactName: string,
 		comment: string,
 		screenshotDataUrl: string,
 	) => Promise<void>
 }): React.ReactElement {
+	// Build the artifact's on-disk path. Stage-scoped knowledge lives
+	// under `stages/<stage>/artifacts/`, but when the same UI surface
+	// also renders intent-level knowledge we can't tell which is which
+	// from just the artifact name — leave intent-level knowledge's
+	// file_path unresolved (undefined) and let the agent fall back to
+	// `selected_text` grep if necessary.
+	const filePath = intentSlug
+		? kind === "knowledge"
+			? `.haiku/intents/${intentSlug}/stages/${stageId}/artifacts/${artifact.name}`
+			: `.haiku/intents/${intentSlug}/stages/${stageId}/outputs/${artifact.name}`
+		: undefined
 	if (artifact.mime === "markdown" || artifact.mime === "text") {
 		if (onInlineCommentsChange) {
 			return (
 				<InlineComments
 					htmlContent={markdownToSimpleHtml(artifact.body)}
+					rawContent={artifact.body}
 					location={`${kind}: ${artifact.name}`}
+					filePath={filePath}
+					existingAnchors={existingAnchors}
 					onCommentsChange={onInlineCommentsChange}
+					onSaveInline={onSaveInline}
+					flashAnchor={flashAnchor}
+					onFlashCommentConsumed={onFlashCommentConsumed}
 				/>
 			)
 		}

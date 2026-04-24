@@ -368,6 +368,7 @@ export function ReviewPage({
 				selectedText: c.selectedText,
 				comment: c.comment,
 				paragraph: c.paragraph,
+				...(c.location ? { location: c.location } : {}),
 			}))
 		}
 		return annotations
@@ -396,7 +397,7 @@ export function ReviewPage({
 		}
 	})
 
-	const sessionIdShort = sessionId ? sessionId.slice(0, 8) : ""
+	const isAdHoc = (session as { ad_hoc?: boolean }).ad_hoc === true
 
 	return (
 		<FeedbackProvider intent={intentSlug} stage={selectedStage}>
@@ -435,11 +436,14 @@ export function ReviewPage({
 								</button>
 							</>
 						)}
-						{sessionIdShort && (
+						{isAdHoc && (
 							<>
 								<span className="text-stone-300 dark:text-stone-600">·</span>
-								<span className="text-[11px] font-mono text-stone-500 dark:text-stone-500">
-									session <span>{sessionIdShort}</span>
+								<span
+									className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800"
+									title="Ad-hoc review — not a gate. Feedback routes through the normal fix-loop on the next run_next."
+								>
+									Ad-hoc review
 								</span>
 							</>
 						)}
@@ -483,6 +487,7 @@ export function ReviewPage({
 						gateBadges={gateBadges}
 						gateType={session.gate_type}
 						getAnnotations={getAnnotations}
+						adHoc={isAdHoc}
 						onFeedbackItemClick={(id) => setHighlightFeedbackId(id)}
 						onDecisionSuccess={(decision) => {
 							if (decision === "approved" || decision === "external") {
@@ -716,6 +721,7 @@ function StageScopedContent({
 			detail={stageDetail}
 			onTabChange={onStageTabChange}
 			onDetailChange={onStageDetailChange}
+			onInlineCommentsChange={onInlineCommentsChange}
 		/>
 	)
 }

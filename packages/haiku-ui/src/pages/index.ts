@@ -11,4 +11,3 @@
 
 export { DirectionPageModule as DirectionModule } from "./direction"
 export { QuestionPageModule as QuestionModule } from "./question"
-export { ReviewCurrentPageModule as ReviewCurrentModule } from "./review-current"

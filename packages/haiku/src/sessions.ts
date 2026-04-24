@@ -154,6 +154,18 @@ export interface ReviewSession {
 	review_type: "intent" | "unit"
 	target: string
 	status: "pending" | "approved" | "changes_requested" | "decided"
+	/** Ad-hoc sessions are opened on-demand via `haiku_review_open` (not a
+	 *  gate). The UI hides Approve, swaps the primary button to
+	 *  Done/Close (no feedback) or Request Changes (with feedback), and
+	 *  shows an "Ad-hoc review" badge in the header. The FSM does not
+	 *  treat an ad-hoc session's status as a gate decision — durable
+	 *  feedback left on the session routes through the usual fix-loop on
+	 *  the next `run_next`. */
+	ad_hoc?: boolean
+	/** For ad-hoc sessions: the stage the reviewer was browsing when the
+	 *  pane was opened. Used so the session-scoped URL can land on the
+	 *  right stage without guessing. */
+	stage?: string
 	decision: string
 	feedback: string
 	annotations?: ReviewAnnotations
@@ -422,7 +434,11 @@ export function updateSession(
 	// same intent can attach it as `previousReview` and render a delta. On
 	// any other terminal decision, drop any prior snapshot so we don't show
 	// a stale "previous review" banner.
-	if (updates.status === "decided") {
+	//
+	// Ad-hoc sessions skip snapshot stashing/clearing entirely — their
+	// decision is a UX signal (Done / Request Changes) not a gate
+	// outcome, so they must not disturb the next gate review's delta.
+	if (updates.status === "decided" && !session.ad_hoc) {
 		if (session.decision === "changes_requested") {
 			const intent = session.parsedIntent as { rawContent?: string } | undefined
 			const units =

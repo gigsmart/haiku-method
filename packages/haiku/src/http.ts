@@ -11,7 +11,7 @@
 // obvious case — we're only coding the project-specific bits.
 
 import { randomUUID } from "node:crypto"
-import { appendFileSync, existsSync, readdirSync, readFileSync } from "node:fs"
+import { appendFileSync, existsSync } from "node:fs"
 import { readFile, realpath } from "node:fs/promises"
 import { dirname, extname, join, resolve } from "node:path"
 import Fastify, {
@@ -20,6 +20,7 @@ import Fastify, {
 	type FastifyRequest,
 } from "fastify"
 import fastifyCors from "@fastify/cors"
+import fastifyRateLimit from "@fastify/rate-limit"
 import fastifyWebsocket from "@fastify/websocket"
 import type { WebSocket as WsWebSocket } from "ws"
 import { z, type ZodTypeAny } from "zod"
@@ -41,7 +42,6 @@ import {
 	FileServeParamsSchema,
 	QuestionAnswerRequestSchema,
 	type QuestionAnswerResponse,
-	type ReviewCurrentPayload,
 	ReviewDecisionRequestSchema,
 	type ReviewDecisionResponse,
 	RevisitRequestSchema,
@@ -72,14 +72,10 @@ import {
 	FEEDBACK_ORIGINS,
 	FEEDBACK_STATUSES,
 	type FeedbackItem,
-	findHaikuRoot,
 	gitCommitState,
 	gitCommitStateBackgroundPush,
 	intentDir,
-	parseFrontmatter,
 	readFeedbackFiles,
-	readJson,
-	stageStatePath,
 	updateFeedbackFile,
 	writeFeedbackFile,
 } from "./state-tools.js"
@@ -546,6 +542,8 @@ function respondSessionApi(reply: FastifyReply, sessionId: string): void {
 		if (session.stageArtifacts) data.stage_artifacts = session.stageArtifacts
 		if (session.outputArtifacts) data.output_artifacts = session.outputArtifacts
 		if (session.previousReview) data.previous_review = session.previousReview
+		if (session.ad_hoc) data.ad_hoc = true
+		if (session.stage) data.stage = session.stage
 	}
 	if (session.session_type === "question") {
 		data.title = session.title
@@ -565,137 +563,6 @@ function respondSessionApi(reply: FastifyReply, sessionId: string): void {
 		data.selection = session.selection
 	}
 	reply.send(data)
-}
-
-// ── Review-current aggregate ────────────────────────────────────────────
-
-function respondReviewCurrent(reply: FastifyReply): void {
-	let root: string
-	try {
-		root = findHaikuRoot()
-	} catch {
-		reply.status(404).send({ error: "No .haiku directory found" })
-		return
-	}
-
-	const intentsPath = join(root, "intents")
-	if (!existsSync(intentsPath)) {
-		reply.status(404).send({ error: "No intents found" })
-		return
-	}
-
-	const dirs = readdirSync(intentsPath, { withFileTypes: true }).filter((d) =>
-		d.isDirectory(),
-	)
-
-	let activeIntent: string | null = null
-	let intentData: Record<string, unknown> = {}
-
-	for (const d of dirs) {
-		const intentMdPath = join(intentsPath, d.name, "intent.md")
-		if (!existsSync(intentMdPath)) continue
-		const raw = readFileSync(intentMdPath, "utf8")
-		const { data } = parseFrontmatter(raw)
-		if (data.status === "active") {
-			activeIntent = d.name
-			intentData = data
-			break
-		}
-	}
-
-	if (!activeIntent) {
-		reply.status(404).send({ error: "No active intent found" })
-		return
-	}
-
-	const activeStage = (intentData.active_stage as string) || null
-	const stagesList = (intentData.stages as string[]) || []
-	const stages: Array<{
-		name: string
-		status: string
-		phase?: string
-		iteration?: number
-		iterations?: unknown[]
-		visits?: number
-	}> = []
-	for (const stageName of stagesList) {
-		try {
-			const stateFile = stageStatePath(activeIntent, stageName)
-			const stageState = readJson(stateFile)
-			const iters = Array.isArray(stageState.iterations)
-				? (stageState.iterations as unknown[])
-				: undefined
-			const iteration = iters?.length ?? ((stageState.visits as number) || 0)
-			stages.push({
-				name: stageName,
-				status: (stageState.status as string) || "pending",
-				phase: (stageState.phase as string) || undefined,
-				iteration,
-				iterations: iters,
-				visits: iteration,
-			})
-		} catch {
-			stages.push({ name: stageName, status: "pending" })
-		}
-	}
-
-	let currentPhase: string | undefined
-	if (activeStage) {
-		try {
-			const stateFile = stageStatePath(activeIntent, activeStage)
-			const stageState = readJson(stateFile)
-			currentPhase = (stageState.phase as string) || undefined
-		} catch {
-			/* */
-		}
-	}
-
-	const feedbackSummary = { pending: 0, addressed: 0, closed: 0, rejected: 0 }
-	if (activeStage) {
-		const items = readFeedbackFiles(activeIntent, activeStage)
-		for (const item of items) {
-			const s = item.status as keyof typeof feedbackSummary
-			if (s in feedbackSummary) feedbackSummary[s]++
-		}
-	}
-
-	const units: Array<{ slug: string; title: string; status: string }> = []
-	if (activeStage) {
-		try {
-			const unitsDir = join(
-				intentDir(activeIntent),
-				"stages",
-				activeStage,
-				"units",
-			)
-			if (existsSync(unitsDir)) {
-				const unitFiles = readdirSync(unitsDir)
-					.filter((f) => f.endsWith(".md"))
-					.sort()
-				for (const f of unitFiles) {
-					const raw = readFileSync(join(unitsDir, f), "utf8")
-					const { data } = parseFrontmatter(raw)
-					units.push({
-						slug: f.replace(/\.md$/, ""),
-						title: (data.title as string) || f.replace(/\.md$/, ""),
-						status: (data.status as string) || "pending",
-					})
-				}
-			}
-		} catch {
-			/* */
-		}
-	}
-
-	const payload: ReviewCurrentPayload = {
-		intent: activeIntent,
-		stage: activeStage,
-		phase: currentPhase,
-		units,
-		feedback_summary: feedbackSummary,
-		stages,
-	}
-	reply.send(payload)
 }
 
 // ── Slug sanitisation + feedback validators ─────────────────────────────
@@ -957,6 +824,30 @@ async function buildApp(): Promise<FastifyInstance> {
 		})
 	}
 
+	// FB-06: register @fastify/rate-limit in remote mode. The dependency
+	// was declared in package.json but never wired up — public-tunnel
+	// HTTP routes had no request-rate cap, leaving the single-authenticated-
+	// session JWT window open to flood attacks. 60 req/min per IP is a
+	// generous operator ceiling; a single reviewer clicking rapidly hits
+	// maybe 5-10 req/min. Env overrides: `HAIKU_HTTP_RATE_MAX` (int, >=1)
+	// and `HAIKU_HTTP_RATE_WINDOW_MS` (int, >=1000).
+	if (isRemoteReviewEnabled()) {
+		const rateMax = (() => {
+			const raw = process.env.HAIKU_HTTP_RATE_MAX
+			const n = raw ? Number.parseInt(raw, 10) : NaN
+			return Number.isFinite(n) && n >= 1 ? n : 60
+		})()
+		const rateWindow = (() => {
+			const raw = process.env.HAIKU_HTTP_RATE_WINDOW_MS
+			const n = raw ? Number.parseInt(raw, 10) : NaN
+			return Number.isFinite(n) && n >= 1000 ? n : 60_000
+		})()
+		await instance.register(fastifyRateLimit, {
+			max: rateMax,
+			timeWindow: rateWindow,
+		})
+	}
+
 	await instance.register(fastifyWebsocket, {
 		options: {
 			// Max payload per frame. The schema-level cap in haiku-api
@@ -985,10 +876,6 @@ async function buildApp(): Promise<FastifyInstance> {
 	})
 
 	// ── SPA shell routes (no auth; token lives in URL fragment) ─────────
-
-	instance.get("/review/current", async (_req, reply) => {
-		reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
-	})
 
 	instance.get<{ Params: { sessionId: string } }>(
 		"/review/:sessionId",
@@ -1257,11 +1144,6 @@ async function buildApp(): Promise<FastifyInstance> {
 		},
 	)
 
-	instance.get("/api/review/current", async (req, reply) => {
-		if (!requireTunnelAuth(req, reply, null)) return
-		respondReviewCurrent(reply)
-	})
-
 	instance.post<{ Params: { sessionId: string } }>(
 		"/api/revisit/:sessionId",
 		async (req, reply) => {
@@ -1449,6 +1331,7 @@ async function buildApp(): Promise<FastifyInstance> {
 					body: r.body,
 					created_at: r.created_at,
 				})),
+				inline_anchor: i.inline_anchor ?? null,
 			})),
 		}
 		reply.send(payload)
@@ -1519,6 +1402,7 @@ async function buildApp(): Promise<FastifyInstance> {
 				FeedbackCreateRequestSchema,
 			)
 			if (!parsed.ok) return
+			const inlineAnchorWire = parsed.data.inline_anchor
 			const result = writeFeedbackFile(intent, stage, {
 				title: parsed.data.title,
 				body: parsed.data.body,
@@ -1527,6 +1411,22 @@ async function buildApp(): Promise<FastifyInstance> {
 				source_ref: parsed.data.source_ref ?? null,
 				resolution: parsed.data.resolution ?? null,
 				attachmentDataUrl: parsed.data.attachment_data_url ?? null,
+				inlineAnchor: inlineAnchorWire
+					? {
+							selectedText: inlineAnchorWire.selected_text,
+							paragraph: inlineAnchorWire.paragraph,
+							location: inlineAnchorWire.location,
+							...(inlineAnchorWire.comment_id
+								? { commentId: inlineAnchorWire.comment_id }
+								: {}),
+							...(inlineAnchorWire.file_path
+								? { filePath: inlineAnchorWire.file_path }
+								: {}),
+							...(inlineAnchorWire.content_sha
+								? { contentSha: inlineAnchorWire.content_sha }
+								: {}),
+						}
+					: null,
 			})
 			gitCommitStateBackgroundPush(`feedback: create ${result.feedback_id} in ${stage}`)
 			const response: FeedbackCreateResponse = {
@@ -1781,7 +1681,12 @@ async function buildApp(): Promise<FastifyInstance> {
 				stage,
 				feedbackId,
 				{
-					author: parsed.data.author ?? "user",
+					// FB-01: caller-supplied `author` is ignored at the HTTP
+					// trust boundary, same as the create path at line 1522.
+					// The schema still accepts the field (back-compat); the
+					// handler hardcodes it so no caller can claim to be a
+					// specific agent/user by name.
+					author: "user",
 					author_type: "human",
 					body: parsed.data.body,
 				},
@@ -1853,17 +1758,14 @@ async function buildApp(): Promise<FastifyInstance> {
 		return "ok"
 	})
 
-	// CORS preflight catch-all (only when remote review is enabled).
-	// When @fastify/cors rejects the origin it falls through to normal
-	// routing, which 404s for OPTIONS on paths with no explicit OPTIONS
-	// handler. The prior hand-rolled server answered every OPTIONS with
-	// 204; the browser then reads CORS headers (or their absence) to
-	// decide. Restore that shape.
-	if (isRemoteReviewEnabled()) {
-		instance.options("/*", async (_req, reply) => {
-			reply.status(204).send()
-		})
-	}
+	// NOTE on OPTIONS routing: @fastify/cors (registered above) owns
+	// the global `OPTIONS *` route. For allowed origins it attaches
+	// ACAO/ACAM/ACAH/ACEH and responds 204; for disallowed origins it
+	// responds 204 WITHOUT those headers so the browser blocks the
+	// real request. We do NOT add our own `instance.options("/*")` —
+	// that would collide with cors's registration and throw
+	// `Method 'OPTIONS' already declared for route '/*'` at buildApp
+	// time. See node_modules/@fastify/cors/index.js:79.
 
 	instance.get("/", async (_req, reply) => {
 		reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
@@ -1881,6 +1783,16 @@ async function buildApp(): Promise<FastifyInstance> {
 				req.url.startsWith("/direction/"))
 		) {
 			reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
+			return
+		}
+		// OPTIONS preflight from a disallowed origin: @fastify/cors
+		// declines to handle it (calls callNotFound at index.js:82) so
+		// it lands here. Return 204 with NO ACAO/ACAM/ACAH/ACEH headers
+		// — same shape as an allowed-origin preflight, but without the
+		// grant so the browser blocks the real request. The bare 204
+		// doesn't leak route existence differently from the 404 path.
+		if (req.method === "OPTIONS") {
+			reply.status(204).send()
 			return
 		}
 		reply.status(404).send("Not Found")
@@ -1968,9 +1880,34 @@ async function buildApp(): Promise<FastifyInstance> {
 	// ── WebSocket upgrade ──────────────────────────────────────────────
 
 	instance.register(async (ws) => {
-		ws.get<{ Params: { sessionId: string } }>(
+		ws.get<{ Params: { sessionId: string }; Querystring: { t?: string } }>(
 			"/ws/session/:sessionId",
-			{ websocket: true },
+			{
+				websocket: true,
+				// Reject before the HTTP upgrade completes so tunnel-auth
+				// clients see HTTP/1.1 401 on the upgrade response — not
+				// a 101 Switching Protocols immediately followed by a
+				// close(4401). The socket-close path is still there as a
+				// defense-in-depth inside the handler.
+				preValidation: async (req, reply) => {
+					if (!isRemoteReviewEnabled()) return
+					const { sessionId } = req.params as { sessionId: string }
+					const token = (req.query as { t?: string })?.t
+					if (!token) {
+						reply
+							.status(401)
+							.send({ error: "unauthorized", reason: "missing_token" })
+						return
+					}
+					const verified = verifyTunnelJWT(token, sessionId)
+					if (!verified.ok) {
+						reply
+							.status(401)
+							.send({ error: "unauthorized", reason: verified.reason })
+						return
+					}
+				},
+			},
 			(socket, req) => {
 				const { sessionId } = req.params
 				if (isRemoteReviewEnabled()) {
@@ -2079,6 +2016,24 @@ function assertLoopbackBind(address: string): void {
 
 export async function startHttpServer(): Promise<number> {
 	if (app && actualPort !== null) return actualPort
+
+	// FB-12: when remote review is enabled AND no origins are allow-listed,
+	// every cross-origin request is rejected silently by @fastify/cors. A
+	// reviewer landing on the SPA sees no error and no CORS headers — hard
+	// to diagnose. Emit a prominent startup warning so operators notice
+	// the misconfiguration before users hit it. (The actual enforcement
+	// still happens; this is observability only.)
+	if (isRemoteReviewEnabled()) {
+		const allowed = review.allowedOrigins.filter((o) => o && o !== "*")
+		if (allowed.length === 0) {
+			console.error(
+				"WARNING: HAIKU_REMOTE_REVIEW=1 but no allowed origins configured. " +
+					"Every cross-origin request from the SPA will be rejected by CORS. " +
+					"Set `HAIKU_REVIEW_ALLOWED_ORIGINS` (comma-separated) or " +
+					"`HAIKU_REVIEW_SITE_URL` before starting.",
+			)
+		}
+	}
 
 	app = await buildApp()
 	// `HAIKU_FORCE_BIND_ADDR` is a test/dev-only override used to exercise the

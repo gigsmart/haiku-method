@@ -97,7 +97,12 @@ export const PinSchema = z
 	.describe("Screenshot pin annotation")
 export type Pin = z.infer<typeof PinSchema>
 
-/** An inline comment anchored to a span of text in a review artifact. */
+/** An inline comment anchored to a span of text in a review artifact.
+ *  `selectedText` + `location` together are enough for an agent to find
+ *  the commented span in the source file: `location` names the file
+ *  (e.g. `knowledge/DISCOVERY.md`, `stages/security/THREAT-MODEL.md`),
+ *  `selectedText` is the exact string the reviewer highlighted, and
+ *  `paragraph` disambiguates when the same text appears multiple times. */
 export const InlineCommentSchema = z
 	.object({
 		selectedText: z
@@ -111,6 +116,13 @@ export const InlineCommentSchema = z
 		paragraph: z
 			.number()
 			.describe("Zero-based paragraph index inside the reviewed artifact"),
+		location: z
+			.string()
+			.max(500)
+			.optional()
+			.describe(
+				"Artifact path (relative to intent root) the comment was made on — e.g. `knowledge/DISCOVERY.md` or `stages/security/THREAT-MODEL.md`. Omitted for unit-spec / in-session contexts where the parent has a single implicit location.",
+			),
 	})
 	.describe("Inline text-anchored comment annotation")
 export type InlineComment = z.infer<typeof InlineCommentSchema>

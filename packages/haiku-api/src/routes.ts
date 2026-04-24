@@ -45,7 +45,6 @@ import {
 } from "./schemas/review.js"
 import {
 	HeartbeatResponseSchema,
-	ReviewCurrentPayloadSchema,
 	SessionPayloadSchema,
 } from "./schemas/session.js"
 
@@ -260,18 +259,6 @@ export const routes: readonly RouteSpec[] = [
 		response: QuestionAnswerResponseSchema,
 		summary: "Submit answers for a question session.",
 		tag: "question",
-		transport: "loopback",
-	},
-
-	// Review current snapshot ────────────────────────────────────────────
-	{
-		method: "GET",
-		pathTemplate: "/api/review/current",
-		operationId: "getReviewCurrent",
-		request: null,
-		response: ReviewCurrentPayloadSchema,
-		summary: "Return the current active intent + stage status snapshot.",
-		tag: "review",
 		transport: "loopback",
 	},
 

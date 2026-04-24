@@ -59,6 +59,9 @@ import {
 } from "./sessions.js"
 import {
 	findHaikuRoot,
+	intentDir,
+	intentFromCurrentBranch,
+	listVisibleIntents,
 	parseFrontmatter,
 	readJson,
 	stageStatePath,
@@ -668,18 +671,209 @@ async function handleToolCall(
 		}
 	}
 
-	// Always-available review pane — boot HTTP server and open browser
-	if (name === "haiku_review" && (args as Record<string, unknown>)?.open_pane) {
+	// Ad-hoc review pane — create a fresh session-scoped review bound to
+	// the active intent + stage, open the browser, return the URL. Does
+	// NOT block the tool call; does NOT call run_next. The session lives
+	// until the usual TTL / presence sweep evicts it. Feedback the
+	// reviewer leaves routes through the normal feedback API; the FSM
+	// picks it up via run_next's fix-loop/revisit path.
+	if (name === "haiku_review_open") {
+		const a = (args ?? {}) as Record<string, unknown>
+		let slug = (a.intent as string) || ""
+		if (!slug) {
+			const branchMatch = intentFromCurrentBranch()
+			if (branchMatch) {
+				slug = branchMatch.slug
+			} else {
+				const root = findHaikuRoot()
+				const intentsDir = join(root, "intents")
+				const active = listVisibleIntents(intentsDir).filter(
+					(i) => (i.data.status as string) !== "completed",
+				)
+				if (active.length === 1) {
+					slug = active[0].slug
+				} else if (active.length === 0) {
+					return {
+						content: [
+							{
+								type: "text" as const,
+								text: "No active intents found. Start one with /haiku:start, or pass `intent` explicitly.",
+							},
+						],
+						isError: true,
+					}
+				} else {
+					return {
+						content: [
+							{
+								type: "text" as const,
+								text: `Multiple active intents (${active.map((i) => i.slug).join(", ")}). Pass \`intent\` explicitly, or checkout an intent branch so the tool can auto-resolve.`,
+							},
+						],
+						isError: true,
+					}
+				}
+			}
+		}
+
+		const intentDirAbs = intentDir(slug)
+		const intent = await parseIntent(intentDirAbs)
+		if (!intent) {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Could not parse intent "${slug}" — .haiku/intents/${slug}/intent.md missing or malformed.`,
+					},
+				],
+				isError: true,
+			}
+		}
+
+		const stageArg = (a.stage as string) || ""
+		const frontmatter = intent.frontmatter as unknown as Record<string, unknown>
+		const activeStage =
+			stageArg || ((frontmatter.active_stage as string | undefined) ?? "")
+
+		const units = await parseAllUnits(intentDirAbs)
+		const dag = buildDAG(units)
+		const mermaid = toMermaidDefinition(dag, units)
+		const criteriaSection = intent.sections.find(
+			(s) =>
+				s.heading?.toLowerCase().includes("completion criteria") ||
+				s.heading?.toLowerCase().includes("success criteria"),
+		)
+		const criteria = criteriaSection
+			? parseCriteria(criteriaSection.content)
+			: []
+
+		const session = createSession({
+			intent_dir: intentDirAbs,
+			intent_slug: slug,
+			review_type: "intent",
+			target: "",
+			html: "",
+		})
+		session.ad_hoc = true
+		session.stage = activeStage || undefined
+
+		Object.assign(session, {
+			parsedIntent: intent,
+			parsedUnits: units,
+			parsedCriteria: criteria,
+			parsedMermaid: mermaid,
+		})
+
+		const stageStates = await parseStageStates(intentDirAbs)
+		const knowledgeFiles = await parseKnowledgeFiles(intentDirAbs)
+		const stageArtifacts = await parseStageArtifacts(intentDirAbs)
+		const outputArtifacts = await parseOutputArtifacts(intentDirAbs)
+		for (const oa of outputArtifacts) {
+			if (oa.type === "image" && oa.relativePath) {
+				oa.relativePath = `/stage-artifacts/${session.session_id}/stages/${oa.relativePath}`
+			}
+		}
+		Object.assign(session, {
+			stageStates,
+			knowledgeFiles,
+			stageArtifacts,
+			outputArtifacts,
+		})
+
+		session.html = renderReviewPage({
+			intent,
+			units,
+			criteria,
+			reviewType: "intent",
+			target: "",
+			sessionId: session.session_id,
+			mermaid,
+			intentMockups: [],
+			unitMockups: new Map(),
+		})
+
 		const port = await startHttpServer()
-		const reviewUrl = `http://127.0.0.1:${port}/review/current`
-		launchBrowserBestEffort(reviewUrl, "Review pane")
-		return {
-			content: [
-				{
-					type: "text" as const,
-					text: `Review pane opened at ${reviewUrl}. This is a read-only overview — no Approve/Request Changes buttons are shown outside of a gate review.`,
-				},
-			],
+		const base = isRemoteReviewEnabled()
+			? buildReviewUrl(session.session_id, await openTunnel(port), "intent")
+			: `http://127.0.0.1:${port}/review/${session.session_id}`
+		const stageSuffix = activeStage ? `/stages/${activeStage}` : ""
+		const reviewUrl = `${base}${stageSuffix}`
+
+		bindSessionCancellation(session.session_id, signal)
+
+		launchBrowserBestEffort(reviewUrl, "Ad-hoc review")
+
+		// Block until the reviewer hits Done or Request Changes (or the
+		// pane times out). The UI posts a decide frame with decision set
+		// to "approved" (Done) or "changes_requested" (Request Changes),
+		// which flips session.status to "decided" and wakes
+		// waitForSession. The tool return then relays a concrete
+		// instruction to the agent so run_next / revisit is the obvious
+		// next step, not a guess.
+		try {
+			while (true) {
+				let timedOut = false
+				try {
+					await waitForSession(
+						session.session_id,
+						30 * 60 * 1000,
+						signal,
+					)
+				} catch (err) {
+					if (signal?.aborted) throw err
+					timedOut = true
+				}
+
+				const updated = getSession(session.session_id)
+				if (
+					updated &&
+					updated.session_type === "review" &&
+					updated.status === "decided"
+				) {
+					if (updated.decision === "changes_requested") {
+						return {
+							content: [
+								{
+									type: "text" as const,
+									text: `Ad-hoc review closed with Request Changes on stage "${activeStage || "(unspecified)"}". Pending feedback is already persisted on disk — call \`haiku_run_next\` to route it through the normal fix-loop / revisit path.`,
+								},
+							],
+						}
+					}
+					return {
+						content: [
+							{
+								type: "text" as const,
+								text: `Ad-hoc review closed with Done — no changes requested. No FSM action needed.`,
+							},
+						],
+					}
+				}
+
+				if (timedOut) break
+				if (hasPresenceLost(session.session_id)) {
+					console.error(
+						`[haiku] Ad-hoc review ${session.session_id} lost presence — continuing to wait (no reopen)`,
+					)
+				}
+			}
+
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Ad-hoc review pane at ${reviewUrl} timed out after 30 minutes without a Done or Request Changes click. Any feedback the reviewer typed is still persisted on disk; the next \`haiku_run_next\` will see it if present.`,
+					},
+				],
+			}
+		} finally {
+			closeSessionConnection(session.session_id, "ad-hoc review closed")
+			clearHeartbeat(session.session_id)
+			if (isRemoteReviewEnabled()) {
+				clearE2EKey(session.session_id)
+				closeTunnel()
+			}
+			deleteSession(session.session_id)
 		}
 	}
 

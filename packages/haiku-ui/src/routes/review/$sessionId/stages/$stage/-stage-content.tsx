@@ -10,7 +10,7 @@
  */
 
 import { useNavigate } from "@tanstack/react-router"
-import { useCallback } from "react"
+import { useCallback, useEffect } from "react"
 import { useFeedbackContext } from "../../../../../hooks/FeedbackContext"
 import { ArtifactsPane } from "../../../../../pages/review/ArtifactsPane"
 import type {
@@ -35,6 +35,8 @@ export function StageContent({
 		wsRef,
 		highlightFeedbackId,
 		setHighlightFeedbackId,
+		pendingFlashAnchor,
+		setPendingFlashAnchor,
 		inlineComments,
 		setInlineComments,
 		pins,
@@ -135,6 +137,145 @@ export function StageContent({
 		[hookCreateFeedback, intentSlug],
 	)
 
+	const handleSaveInline = useCallback(
+		async (entry: {
+			selectedText: string
+			comment: string
+			paragraph: number
+			location: string
+			filePath?: string
+			commentId: string
+			contentSha?: string
+		}) => {
+			if (!intentSlug) {
+				throw new Error("Cannot save inline comment without an intent slug")
+			}
+			const firstCommentLine =
+				entry.comment.trim().split("\n")[0]?.slice(0, 80) || "Inline comment"
+			const title = `${entry.location}: ${firstCommentLine}`.slice(0, 200)
+			const quotedSelection = entry.selectedText
+				.split("\n")
+				.map((line) => `> ${line}`)
+				.join("\n")
+			const body = `${quotedSelection}\n\n${entry.comment.trim() || "(no comment)"}`
+			await hookCreateFeedback({
+				title,
+				body,
+				origin: "user-chat",
+				source_ref: entry.filePath ?? entry.location,
+				inline_anchor: {
+					selected_text: entry.selectedText,
+					paragraph: entry.paragraph,
+					location: entry.location,
+					comment_id: entry.commentId,
+					...(entry.filePath ? { file_path: entry.filePath } : {}),
+					...(entry.contentSha ? { content_sha: entry.contentSha } : {}),
+				},
+			})
+		},
+		[hookCreateFeedback, intentSlug],
+	)
+
+	// When the sidebar fires a feedback click AND the clicked feedback
+	// has an `inline_anchor`, route the user to the matching artifact
+	// detail URL and stash the comment_id in context so
+	// InlineComments can scroll+flash the target span on mount.
+	//
+	// Non-inline feedback keeps going through the existing
+	// `UnitsTab`/`ArtifactsTab` highlight-request effect (which navigates
+	// via `onOpenDetail` inside the list tabs).
+	useEffect(() => {
+		if (!highlightFeedbackId) return
+		console.log(
+			"[StageContent nav] highlightFeedbackId fired",
+			highlightFeedbackId,
+		)
+		const item = stageFeedback.find(
+			(f) =>
+				(f as unknown as { feedback_id?: string }).feedback_id ===
+				highlightFeedbackId,
+		) as unknown as {
+			feedback_id?: string
+			inline_anchor?: {
+				file_path?: string
+				comment_id?: string
+				selected_text: string
+				paragraph: number
+			}
+		}
+		if (!item) {
+			console.warn(
+				"[StageContent nav] no feedback item found for id",
+				highlightFeedbackId,
+				"(total loaded:",
+				stageFeedback.length,
+				")",
+			)
+			return
+		}
+		const anchor = item.inline_anchor
+		if (!anchor) {
+			console.log(
+				"[StageContent nav] feedback has no inline_anchor — letting existing list-tab highlight effect handle it",
+			)
+			return
+		}
+		if (!anchor.file_path) {
+			console.warn(
+				"[StageContent nav] inline_anchor present but file_path missing — can't route",
+				anchor,
+			)
+			return
+		}
+		console.log("[StageContent nav] inline_anchor found", anchor)
+
+		// Parse kind + name from `.haiku/intents/<slug>/stages/<stage>/units/<name>.md`
+		// (or the `artifacts` / `outputs` variant).
+		const stageMatch = anchor.file_path.match(
+			/\/stages\/[^/]+\/(units|artifacts|outputs)\/(.+?)(?:\.md)?$/,
+		)
+		if (!stageMatch) {
+			console.warn(
+				"[StageContent nav] file_path didn't match expected stage layout",
+				anchor.file_path,
+			)
+			return
+		}
+		const folder = stageMatch[1]
+		const nameWithExt = stageMatch[2]
+		const nameNoExt = nameWithExt.replace(/\.md$/, "")
+		const kind: ReviewDetailKind =
+			folder === "units"
+				? "units"
+				: folder === "artifacts"
+					? "knowledge"
+					: "outputs"
+		const artifactParam = folder === "units" ? nameNoExt : nameWithExt
+
+		setPendingFlashAnchor({
+			selectedText: anchor.selected_text,
+			paragraph: anchor.paragraph,
+			...(anchor.comment_id ? { commentId: anchor.comment_id } : {}),
+		})
+		console.log("[StageContent nav] navigating to", {
+			sessionId,
+			stage,
+			kind,
+			name: artifactParam,
+		})
+		navigate({
+			to: "/review/$sessionId/stages/$stage/$kind/$name",
+			params: {
+				sessionId,
+				stage,
+				kind,
+				name: artifactParam,
+			},
+		})
+		setHighlightFeedbackId(null)
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [highlightFeedbackId, stageFeedback, sessionId, stage])
+
 	return (
 		<StageReview
 			session={session}
@@ -144,11 +285,14 @@ export function StageContent({
 			feedback={stageFeedback}
 			onHighlightRequestId={highlightFeedbackId}
 			onHighlightConsumed={() => setHighlightFeedbackId(null)}
+			flashAnchor={pendingFlashAnchor}
+			onFlashCommentConsumed={() => setPendingFlashAnchor(null)}
 			tab={tab}
 			onTabChange={handleTabChange}
 			detail={detail}
 			onDetailChange={handleDetailChange}
 			onInlineCommentsChange={setInlineComments}
+			onSaveInline={handleSaveInline}
 			onSubmitAnnotation={handleSubmitAnnotation}
 		/>
 	)
