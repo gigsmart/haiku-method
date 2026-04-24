@@ -20,6 +20,7 @@ import Fastify, {
 	type FastifyRequest,
 } from "fastify"
 import fastifyCors from "@fastify/cors"
+import fastifyRateLimit from "@fastify/rate-limit"
 import fastifyWebsocket from "@fastify/websocket"
 import type { WebSocket as WsWebSocket } from "ws"
 import { z, type ZodTypeAny } from "zod"
@@ -957,6 +958,30 @@ async function buildApp(): Promise<FastifyInstance> {
 		})
 	}
 
+	// FB-06: register @fastify/rate-limit in remote mode. The dependency
+	// was declared in package.json but never wired up — public-tunnel
+	// HTTP routes had no request-rate cap, leaving the single-authenticated-
+	// session JWT window open to flood attacks. 60 req/min per IP is a
+	// generous operator ceiling; a single reviewer clicking rapidly hits
+	// maybe 5-10 req/min. Env overrides: `HAIKU_HTTP_RATE_MAX` (int, >=1)
+	// and `HAIKU_HTTP_RATE_WINDOW_MS` (int, >=1000).
+	if (isRemoteReviewEnabled()) {
+		const rateMax = (() => {
+			const raw = process.env.HAIKU_HTTP_RATE_MAX
+			const n = raw ? Number.parseInt(raw, 10) : NaN
+			return Number.isFinite(n) && n >= 1 ? n : 60
+		})()
+		const rateWindow = (() => {
+			const raw = process.env.HAIKU_HTTP_RATE_WINDOW_MS
+			const n = raw ? Number.parseInt(raw, 10) : NaN
+			return Number.isFinite(n) && n >= 1000 ? n : 60_000
+		})()
+		await instance.register(fastifyRateLimit, {
+			max: rateMax,
+			timeWindow: rateWindow,
+		})
+	}
+
 	await instance.register(fastifyWebsocket, {
 		options: {
 			// Max payload per frame. The schema-level cap in haiku-api
@@ -1781,7 +1806,12 @@ async function buildApp(): Promise<FastifyInstance> {
 				stage,
 				feedbackId,
 				{
-					author: parsed.data.author ?? "user",
+					// FB-01: caller-supplied `author` is ignored at the HTTP
+					// trust boundary, same as the create path at line 1522.
+					// The schema still accepts the field (back-compat); the
+					// handler hardcodes it so no caller can claim to be a
+					// specific agent/user by name.
+					author: "user",
 					author_type: "human",
 					body: parsed.data.body,
 				},
@@ -2111,6 +2141,24 @@ function assertLoopbackBind(address: string): void {
 
 export async function startHttpServer(): Promise<number> {
 	if (app && actualPort !== null) return actualPort
+
+	// FB-12: when remote review is enabled AND no origins are allow-listed,
+	// every cross-origin request is rejected silently by @fastify/cors. A
+	// reviewer landing on the SPA sees no error and no CORS headers — hard
+	// to diagnose. Emit a prominent startup warning so operators notice
+	// the misconfiguration before users hit it. (The actual enforcement
+	// still happens; this is observability only.)
+	if (isRemoteReviewEnabled()) {
+		const allowed = review.allowedOrigins.filter((o) => o && o !== "*")
+		if (allowed.length === 0) {
+			console.error(
+				"WARNING: HAIKU_REMOTE_REVIEW=1 but no allowed origins configured. " +
+					"Every cross-origin request from the SPA will be rejected by CORS. " +
+					"Set `HAIKU_REVIEW_ALLOWED_ORIGINS` (comma-separated) or " +
+					"`HAIKU_REVIEW_SITE_URL` before starting.",
+			)
+		}
+	}
 
 	app = await buildApp()
 	// `HAIKU_FORCE_BIND_ADDR` is a test/dev-only override used to exercise the
