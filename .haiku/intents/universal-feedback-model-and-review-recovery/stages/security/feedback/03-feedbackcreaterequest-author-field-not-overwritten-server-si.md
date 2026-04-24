@@ -15,6 +15,7 @@ bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
+integrator_attempts: 1
 ---
 
 The `FeedbackCreateRequestSchema` in `packages/haiku-api/src/schemas/feedback.ts` documents the `author` field as:

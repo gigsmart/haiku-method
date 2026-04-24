@@ -15,6 +15,7 @@ bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
+integrator_attempts: 1
 ---
 
 The `/api/feedback/:intent/:stage/:feedbackId/replies` (POST) endpoint introduced in this intent is absent from both the base threat model and the expanded threat model.
