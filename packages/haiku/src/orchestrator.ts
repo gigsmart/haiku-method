@@ -23,15 +23,19 @@ import { features, resolvePluginRoot } from "./config.js"
 import { computeWaves, topologicalSort } from "./dag.js"
 import {
 	branchExists,
+	cleanupDiscoveryWorktree,
 	cleanupFixChainWorktree,
 	cleanupIntentWorktrees,
 	cleanupOrphanedStageBranches,
+	createDiscoveryWorktree,
 	createFixChainWorktree,
 	createIntentBranch,
 	createStageBranch,
 	createUnitWorktree,
 	deleteBranch,
 	deleteStageBranch,
+	discoveryBranchName,
+	discoveryWorktreePath,
 	ensureOnStageBranch,
 	finalizeIntentBranches,
 	fixChainBranchName,
@@ -39,6 +43,7 @@ import {
 	getMainlineBranch,
 	isBranchMerged,
 	isOnStageBranch,
+	mergeDiscoveryWorktree,
 	mergeFixChainWorktree,
 	mergeStageBranchForward,
 	mergeStageBranchIntoMain,
@@ -2500,6 +2505,139 @@ export function runNext(slug: string): OrchestratorAction {
 			...stageState,
 			elaboration_turns: updatedTurns,
 		})
+
+		// ── Discovery worktree reconciliation ─────────────────────────────
+		// Before emitting the elaborate action, merge any discovery worktrees
+		// allocated on a prior tick. Subagents wrote their artifacts inside
+		// those worktrees; we need to land the artifacts on the stage branch
+		// so the parent can read them for unit decomposition.
+		//
+		// Merge conflicts route to the integrator via `integrate_fix_chains`
+		// (same flow as fix-chain conflicts). The parent dispatches
+		// integrator subagents per conflicting worktree; the next run_next
+		// sees MERGE_HEAD + clean resolution and forward-merges.
+		if (isGitRepo()) {
+			const discoveryTemplates: string[] = []
+			{
+				const seen = new Set<string>()
+				for (const base of [...studioSearchPaths()].reverse()) {
+					const discoveryDir = join(
+						base,
+						studio,
+						"stages",
+						currentStage,
+						"discovery",
+					)
+					if (!existsSync(discoveryDir)) continue
+					for (const f of readdirSync(discoveryDir).filter((f) =>
+						f.endsWith(".md"),
+					)) {
+						if (seen.has(f)) continue
+						seen.add(f)
+						discoveryTemplates.push(f.replace(/\.md$/i, "").toLowerCase())
+					}
+				}
+			}
+
+			const pendingDiscoveryIntegration: Array<{
+				feedback_id: string
+				feedback_title: string
+				feedback_file: string
+				worktree: string
+				branch: string
+				conflict_files: string[]
+				attempt: number
+			}> = []
+			const exhaustedDiscoveryIntegration: Array<{
+				feedback_id: string
+				title: string
+				attempts: number
+			}> = []
+			for (const template of discoveryTemplates) {
+				const wtPath = discoveryWorktreePath(slug, currentStage, template)
+				if (!existsSync(wtPath)) continue
+				const res = mergeDiscoveryWorktree(slug, currentStage, template)
+				if (res.success) {
+					emitTelemetry("haiku.discovery.merged", {
+						intent: slug,
+						stage: currentStage,
+						template,
+					})
+					continue
+				}
+				if (!res.isConflict) {
+					console.error(
+						`[haiku] discovery merge failed for ${template}: ${res.message}. Leaving worktree; next tick will retry.`,
+					)
+					continue
+				}
+				// Track per-template integrator attempts in stage state since
+				// discovery templates don't have feedback files to annotate.
+				const attemptKey = `discovery_${template}_integrator_attempts`
+				const stateOnDisk = readJson(
+					join(iDir, "stages", currentStage, "state.json"),
+				)
+				const prevAttempts = Number(
+					(stateOnDisk as Record<string, unknown>)[attemptKey] ?? 0,
+				)
+				const nextAttempt = prevAttempts + 1
+				writeJson(join(iDir, "stages", currentStage, "state.json"), {
+					...stateOnDisk,
+					[attemptKey]: nextAttempt,
+				})
+				if (nextAttempt > MAX_INTEGRATOR_ATTEMPTS) {
+					exhaustedDiscoveryIntegration.push({
+						feedback_id: `DISC-${template}`,
+						title: `discovery artifact: ${template}`,
+						attempts: nextAttempt - 1,
+					})
+				} else {
+					pendingDiscoveryIntegration.push({
+						feedback_id: `DISC-${template}`,
+						feedback_title: `discovery artifact: ${template}`,
+						feedback_file: `(discovery template ${template})`,
+						worktree: wtPath,
+						branch: discoveryBranchName(slug, currentStage, template),
+						conflict_files: res.conflictFiles || [],
+						attempt: nextAttempt,
+					})
+				}
+			}
+
+			if (exhaustedDiscoveryIntegration.length > 0) {
+				const target = exhaustedDiscoveryIntegration[0]
+				return {
+					action: "escalate",
+					intent: slug,
+					stage: currentStage,
+					reason: "integrator_cap_exceeded",
+					iteration: target.attempts,
+					max_iterations: MAX_INTEGRATOR_ATTEMPTS,
+					message:
+						`Discovery worktree ${target.feedback_id} still has unresolved conflicts after ${target.attempts} integrator attempts. Resolve manually inside the worktree, commit, then run \`haiku_run_next\`.`,
+					pending_items: exhaustedDiscoveryIntegration.map((e) => ({
+						feedback_id: e.feedback_id,
+						title: e.title,
+					})),
+				}
+			}
+
+			if (pendingDiscoveryIntegration.length > 0) {
+				gitCommitState(
+					`haiku: integrate_fix_chains dispatch ${pendingDiscoveryIntegration.length} discovery conflict(s) in ${currentStage}`,
+				)
+				return {
+					action: "integrate_fix_chains",
+					intent: slug,
+					studio,
+					stage: currentStage,
+					scope: currentStage,
+					max_attempts: MAX_INTEGRATOR_ATTEMPTS,
+					items: pendingDiscoveryIntegration,
+					message: `Discovery worktree merges hit conflicts on ${pendingDiscoveryIntegration.length} artifact(s) in stage '${currentStage}'. Dispatching the integrator per worktree.`,
+				}
+			}
+		}
 
 		if (!hasUnits) {
 			return {
@@ -5338,11 +5476,22 @@ function buildRunInstructions(
 				}
 			}
 
-			// Discovery fan-out — one subagent per declared discovery artifact.
-			// Path-only prompts so the parent context stays light and each subagent
-			// reads its own template + intent + stage files directly.
-			const discoveryArtifacts: Array<{ name: string; templatePath: string }> =
-				[]
+			// Discovery fan-out — one subagent per declared discovery artifact,
+			// each in its own isolation worktree off the stage branch. The
+			// pattern mirrors fix-chain worktrees: subagents write in their
+			// own tree, the FSM merges back on the next `haiku_run_next`
+			// (reconciliation happens in runNext, BEFORE the elaborate
+			// action is emitted — conflicts from that merge pass surface
+			// as `integrate_fix_chains` instead of this render running).
+			//
+			// By the time render gets here, any completed discovery worktrees
+			// have already been merged. We filter out artifacts whose output
+			// files are now visible on disk, and only emit fan-out for the
+			// remaining ones (first tick, or retry after a cleanup cycle).
+			const discoveryArtifactsAll: Array<{
+				name: string
+				templatePath: string
+			}> = []
 			{
 				const seen = new Set<string>()
 				for (const base of [...studioSearchPaths()].reverse()) {
@@ -5353,13 +5502,24 @@ function buildRunInstructions(
 					)) {
 						if (seen.has(f)) continue
 						seen.add(f)
-						discoveryArtifacts.push({
+						discoveryArtifactsAll.push({
 							name: f.replace(/\.md$/i, "").toLowerCase(),
 							templatePath: join(discoveryDir, f),
 						})
 					}
 				}
 			}
+
+			// Filter out artifacts whose output files already exist on disk
+			// (produced on a prior tick, already merged). Convention: the
+			// template filename (uppercased) is the artifact's output name
+			// under `knowledge/`.
+			const knowledgeDir = join(dir, "knowledge")
+			const discoveryArtifacts = discoveryArtifactsAll.filter((a) => {
+				const candidate = join(knowledgeDir, `${a.name.toUpperCase()}.md`)
+				return !existsSync(candidate)
+			})
+
 			if (discoveryArtifacts.length > 0) {
 				const artifactNames = discoveryArtifacts
 					.map((a) => `\`${a.name}\``)
@@ -5370,17 +5530,36 @@ function buildRunInstructions(
 					join(studio, "stages", stage, "STAGE.md"),
 				)
 
-				let fanOutText = `## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${discoveryArtifacts.length} discovery artifact${plural}: ${artifactNames}.\n\n**Spawn one subagent per artifact** using the EXACT content between \`<subagent>\` tags as the prompt. Your harness maps \`<subagent>\` to whatever one-shot spawn primitive it supports. Each subagent reads its own template + intent + stage files — do NOT inline content into the parent context.\n\n**Deduplication:** Spawn exactly ONE subagent per artifact listed below. If a discovery artifact already exists on disk, skip spawning a subagent for it.\n\n${batchDispatchDirective(discoveryArtifacts.length, "discovery subagents")}\n\n`
+				let fanOutText = `## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${discoveryArtifacts.length} discovery artifact${plural}: ${artifactNames}.\n\n**Spawn one subagent per artifact** using the EXACT content between \`<subagent>\` tags as the prompt. Each subagent writes inside its own isolation worktree — the FSM merges their work back into the stage branch on the next \`haiku_run_next\`.\n\n${batchDispatchDirective(discoveryArtifacts.length, "discovery subagents")}\n\n`
 
 				for (const a of discoveryArtifacts) {
+					const wt = createDiscoveryWorktree(slug, stage, a.name)
 					const lines: string[] = [
 						`You are researching and producing the "${a.name}" discovery artifact for intent "${slug}" in stage "${stage}" of studio "${studio}".`,
 						"",
+					]
+					if (wt) {
+						lines.push(
+							"## Isolation worktree (REQUIRED)",
+							`Do ALL work for this subagent inside the dedicated worktree at:`,
+							``,
+							`    ${wt}`,
+							``,
+							`This worktree is on branch \`${discoveryBranchName(slug, stage, a.name)}\`, forked from the stage branch at dispatch time.`,
+							"",
+							`**Rules:**`,
+							`- Write the populated discovery artifact INSIDE this worktree path (under \`${wt}/.haiku/intents/${slug}/knowledge/\` per the template's \`location:\`).`,
+							`- If you commit, use \`git -C "${wt}" add -A && git -C "${wt}" commit -m "..."\`. Do NOT push.`,
+							`- Do NOT run \`git worktree remove\`, \`git branch -d\`, or \`git merge\` — the FSM owns merge-back.`,
+							"",
+						)
+					}
+					lines.push(
 						"## Required context (inlined below)",
 						"The intent goal, stage scope, and your discovery template are embedded below — no need to fan out Read tool calls for them.",
 						"",
 						inlineFile(intentPath, "Intent goal"),
-					]
+					)
 					if (stagePath) lines.push(inlineFile(stagePath, "Stage scope"))
 					lines.push(
 						inlineFile(
@@ -5395,7 +5574,7 @@ function buildRunInstructions(
 						"1. Research the problem space along the axis defined by your template.",
 						"2. Use the template's Content Guide as the document structure.",
 						"3. Meet the template's Quality Signals as your acceptance bar.",
-						"4. Write the populated document to the stage's discovery path (as defined in the template's `location:` frontmatter above). **This is your ONLY write path** — any file you write elsewhere is a scope violation.",
+						"4. Write the populated document to the stage's discovery path as defined in the template's `location:` frontmatter above — **inside your isolation worktree** when one is allocated. **This is your ONLY write path** — any file written elsewhere is a scope violation.",
 						"5. Be thorough — this artifact informs all downstream work.",
 					)
 					fanOutText += `${emitSubagentDispatchBlock({
@@ -5409,9 +5588,15 @@ function buildRunInstructions(
 				}
 
 				fanOutText +=
-					"### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn each subagent above using the EXACT content between `<subagent>` tags as the prompt. Do NOT modify, summarize, or add to these prompts — they are complete and path-based. When all subagents return, proceed to the unit-decomposition step using the produced artifacts as your inputs."
+					`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn each subagent above using the EXACT content between \`<subagent>\` tags as the prompt. When ALL subagents return, call \`haiku_run_next { intent: "${slug}" }\` — the FSM merges their isolation worktrees back into the stage branch (resolving conflicts via the integrator if needed) and then emits the unit-decomposition instructions. **Do NOT proceed to decomposition in this response** — wait for the next FSM tick so the merged knowledge artifacts are visible.`
 
 				sections.push(fanOutText)
+
+				// Early return — the rest of the elaborate response (output
+				// expectations, scope, mechanics, decomposition instructions)
+				// only makes sense once discovery has landed on the stage
+				// branch. Emit them on the next tick.
+				return sections.join("\n\n")
 			}
 
 			// Output template definitions — inform the elaboration agent what this stage must produce

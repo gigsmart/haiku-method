@@ -1488,6 +1488,236 @@ export function mergeUnitWorktree(
 }
 
 /**
+ * Absolute path to a discovery subagent's worktree —
+ * `.haiku/worktrees/{slug}/discovery-{stage}-{template}`. Each parallel
+ * discovery subagent gets its own worktree so concurrent writes don't
+ * step on each other (and so each subagent's git ops are pinned to the
+ * right branch — same branch-hygiene concern that motivated fix-chain
+ * isolation).
+ */
+export function discoveryWorktreePath(
+	slug: string,
+	stage: string,
+	template: string,
+): string {
+	return join(
+		process.cwd(),
+		".haiku",
+		"worktrees",
+		slug,
+		`discovery-${stage}-${template}`,
+	)
+}
+
+/** Branch name for a discovery subagent's isolation worktree. */
+export function discoveryBranchName(
+	slug: string,
+	stage: string,
+	template: string,
+): string {
+	return `haiku/${slug}/discovery-${stage}-${template}`
+}
+
+/**
+ * Create a discovery worktree off the stage branch. Idempotent: returns
+ * the existing path if already allocated. No-op (null) in non-git mode.
+ */
+export function createDiscoveryWorktree(
+	slug: string,
+	stage: string,
+	template: string,
+): string | null {
+	if (!isGitRepo()) return null
+	if (!stage || !template)
+		throw new Error(
+			"createDiscoveryWorktree requires `stage` and `template`",
+		)
+
+	const baseBranch = ensureStageBranch(slug, stage)
+	const discBranch = discoveryBranchName(slug, stage, template)
+	const worktreePath = discoveryWorktreePath(slug, stage, template)
+	const worktreeBase = join(process.cwd(), ".haiku", "worktrees", slug)
+
+	try {
+		if (existsSync(worktreePath)) return worktreePath
+		mkdirSync(worktreeBase, { recursive: true })
+		if (!branchExists(discBranch)) {
+			tryRun(["git", "branch", discBranch, baseBranch])
+		}
+		run(["git", "worktree", "add", worktreePath, discBranch])
+		return worktreePath
+	} catch {
+		return null
+	}
+}
+
+/**
+ * Merge a discovery worktree back into the stage branch. Same conflict-
+ * handling contract as `mergeFixChainWorktree` — on MERGE_HEAD with
+ * unresolved markers, returns `{isConflict: true, conflictFiles}` so
+ * the caller can dispatch the integrator. In practice discovery
+ * conflicts are rare because each subagent writes a different file,
+ * but we handle them the same way for consistency.
+ */
+export function mergeDiscoveryWorktree(
+	slug: string,
+	stage: string,
+	template: string,
+): {
+	success: boolean
+	message: string
+	isConflict?: boolean
+	conflictFiles?: string[]
+} {
+	if (!isGitRepo()) return { success: true, message: "no worktree" }
+	const baseBranch = ensureStageBranch(slug, stage)
+	const discBranch = discoveryBranchName(slug, stage, template)
+	const worktreePath = discoveryWorktreePath(slug, stage, template)
+
+	if (!existsSync(worktreePath)) {
+		if (branchExists(discBranch)) tryRun(["git", "branch", "-D", discBranch])
+		return { success: true, message: "no worktree" }
+	}
+
+	const mergeInProgress = !!tryRun([
+		"git",
+		"-C",
+		worktreePath,
+		"rev-parse",
+		"--verify",
+		"-q",
+		"MERGE_HEAD",
+	])
+	const unresolved = tryRun([
+		"git",
+		"-C",
+		worktreePath,
+		"diff",
+		"--name-only",
+		"--diff-filter=U",
+	])
+		.split("\n")
+		.filter(Boolean)
+	if (unresolved.length > 0) {
+		return {
+			success: false,
+			isConflict: true,
+			conflictFiles: unresolved,
+			message: `${unresolved.length} file(s) with unresolved conflict markers in discovery worktree ${template} — integrator work incomplete`,
+		}
+	}
+
+	try {
+		if (mergeInProgress) {
+			tryRun(["git", "-C", worktreePath, "add", "-A"])
+			run([
+				"git",
+				"-C",
+				worktreePath,
+				"commit",
+				"--no-edit",
+				"-m",
+				`haiku: integrate ${stage} into discovery ${template}`,
+			])
+		} else {
+			tryRun(["git", "-C", worktreePath, "add", "-A"])
+			tryRun([
+				"git",
+				"-C",
+				worktreePath,
+				"commit",
+				"-m",
+				`haiku: complete discovery ${template}`,
+				"--allow-empty",
+			])
+
+			try {
+				run([
+					"git",
+					"-C",
+					worktreePath,
+					"merge",
+					baseBranch,
+					"--no-edit",
+					"-m",
+					`haiku: sync ${stage} into discovery ${template}`,
+				])
+			} catch (mergeErr) {
+				const freshConflicts = tryRun([
+					"git",
+					"-C",
+					worktreePath,
+					"diff",
+					"--name-only",
+					"--diff-filter=U",
+				])
+					.split("\n")
+					.filter(Boolean)
+				if (freshConflicts.length > 0) {
+					return {
+						success: false,
+						isConflict: true,
+						conflictFiles: freshConflicts,
+						message: `merge conflict in ${freshConflicts.length} file(s) while pulling ${baseBranch} into discovery ${template}`,
+					}
+				}
+				tryRun(["git", "-C", worktreePath, "merge", "--abort"])
+				throw mergeErr
+			}
+		}
+
+		const onBaseBranch = getCurrentBranch() === baseBranch
+		const mergeHere = (cwd?: string) => {
+			run([
+				"git",
+				...(cwd ? ["-C", cwd] : []),
+				"merge",
+				discBranch,
+				"--no-edit",
+				"-m",
+				`haiku: merge discovery ${template} into ${stage}`,
+			])
+		}
+		if (onBaseBranch) {
+			mergeHere()
+		} else {
+			withTempWorktree(baseBranch, (tmpPath) => mergeHere(tmpPath))
+		}
+
+		tryRun(["git", "worktree", "remove", worktreePath, "--force"])
+		tryRun(["git", "branch", "-D", discBranch])
+
+		return {
+			success: true,
+			message: `merged ${discBranch} → ${baseBranch}`,
+		}
+	} catch (err) {
+		return {
+			success: false,
+			message: err instanceof Error ? err.message : String(err),
+		}
+	}
+}
+
+/** Discard a discovery worktree without merging. */
+export function cleanupDiscoveryWorktree(
+	slug: string,
+	stage: string,
+	template: string,
+): { success: boolean; message: string } {
+	if (!isGitRepo()) return { success: true, message: "no git" }
+	const discBranch = discoveryBranchName(slug, stage, template)
+	const worktreePath = discoveryWorktreePath(slug, stage, template)
+	if (existsSync(worktreePath)) {
+		tryRun(["git", "worktree", "remove", worktreePath, "--force"])
+	}
+	if (branchExists(discBranch)) {
+		tryRun(["git", "branch", "-D", discBranch])
+	}
+	return { success: true, message: `cleaned up ${discBranch}` }
+}
+
+/**
  * Create a fix-chain worktree off the stage branch (or intent main for
  * studio-level intent-completion fix loops). Idempotent: returns the
  * existing path if the worktree already exists for this chain.
