@@ -1926,6 +1926,17 @@
     fill: var(--dash);
     stroke: none;
   }
+  /* Bolt counter increment label sitting next to the back-arc */
+  .hat-arrow-wrap .bolt-tick {
+    position: absolute;
+    right: -32px;
+    top: 14px;
+    font-size: 8px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    color: var(--reject, var(--dash));
+    white-space: nowrap;
+    pointer-events: none;
+  }
 
   /* Review: parallel agents */
   .agents {
@@ -3410,7 +3421,7 @@ function renderStudio() {
             </svg>
             <div class="nested-gate">
               <div class="ng-head">
-                <span class="ng-caption" data-gate-detail="quality_gates" style="cursor:pointer; text-decoration: underline dashed rgba(0,0,0,0.35); text-underline-offset: 2px;" title="click for full details on how quality gates run inside haiku_run_next">🧪 runs <code>quality_gates</code> internally</span>
+                <span class="ng-caption clickable" data-gate-detail="quality_gates" style="cursor:pointer; text-decoration: underline dashed rgba(0,0,0,0.35); text-underline-offset: 2px;" title="click for full details on how quality gates run inside haiku_run_next">🧪 runs <code>quality_gates</code> internally</span>
                 <span class="ig-type">hard</span>
                 <span class="ig-ctx">tests · lint · typecheck</span>
               </div>
@@ -4167,7 +4178,7 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
       writes: [
         { path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`, change: "`phase: \"review\"`, then `quality_gates_run_at: <ts>` after gates run" },
       ],
-      instructions: "`haiku_run_next` flips `phase` to `review` and **runs the quality gates as part of the same call** — tests, lint, typecheck. On failure, the next call returns `fix_quality_gates` with the failure list and stays in `review`. On success, the next call returns `advance_review` to dispatch the parallel review agents.",
+      instructions: "`haiku_run_next` flips `phase` to `review` and **runs the quality gates as part of the same call** — tests, lint, typecheck. On failure, the next call returns `fix_quality_gates` with the failure list and stays in `review`. On success, the next call returns `action: \"review\"` (orchestrator.ts:1628) to dispatch the parallel review agents and advances `phase` to `gate` internally.",
     },
     "review-quality-to-agents": {
       injection: [
@@ -4175,7 +4186,7 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
         { hook: "inject-context", target: "next agent prompt prepend", what: "**on failure:** the failing unit's worktree path + structured findings. **on success:** one self-contained `<subagent tool=\"Task\">` block per review-agent — each contains the agent's full instructions, diff-obtaining commands, and scope constraints. Cross-stage agents loaded via `review-agents-include` field in STAGE.md. Parent relays each block verbatim." },
         { hook: "subagent-context", target: "each parallel review-agent subagent", what: "provides ADDITIONAL context (workflow rules, bootstrap) but the core behavioral prompt (review instructions, diff commands, scope) is already in the `<subagent>` block. Scoped to the stage's outputs only (read-only access to artifacts). A `review_elaboration` action exists for pre-gate elaboration review." },
       ],
-      action: "fix_quality_gates _or_ advance_review",
+      action: "fix_quality_gates _or_ review",
       summary: "branch on the gate outcome that just ran",
       payload: {
         on_failure: {
@@ -4188,8 +4199,10 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
           instructions_to_agent: "Fix the failures in the listed files. Stay in the review phase. When done, call `haiku_run_next` again to rerun the gates.",
         },
         on_success: {
-          action: "advance_review",
+          action: "review",
+          message: `Quality gates passed — run adversarial review agents for stage '${stage.name.toLowerCase()}'`,
           gates_passed: ["tests", "lint", "typecheck"],
+          fsm_side_effect: "phase advanced to `gate` (next haiku_run_next opens the gate)",
           dispatch_agents: stage.reviewAgents,
         },
       },
@@ -4201,7 +4214,7 @@ function payloadFor(stage, idx, mStage, key, opts = {}) {
       writes: [
         { path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`, change: "on success: `quality_gates_passed: true`. on failure: `quality_gate_failures: [...]` (cleared on next pass)" },
       ],
-      instructions: `This is the same \`haiku_run_next\` tick from above, returning AFTER gates have run. **On failure** the agent gets back \`fix_quality_gates\` with structured findings — agent fixes in place, calls \`haiku_run_next\` again, gates rerun. **On success** the agent gets back \`advance_review\` with one self-contained \`<subagent tool="Task">\` block per review-agent (${stage.reviewAgents.map(a => `\`${a}\``).join(", ")}). Each block is a complete prompt with review instructions and commands to obtain the diff — parent relays verbatim, no assembly required. Cross-stage agents are loaded via the \`review-agents-include\` field in STAGE.md. A separate \`review_elaboration\` action handles pre-gate elaboration review.`,
+      instructions: `This is the same \`haiku_run_next\` tick from above, returning AFTER gates have run. **On failure** the agent gets back \`fix_quality_gates\` with structured findings — agent fixes in place, calls \`haiku_run_next\` again, gates rerun. **On success** the agent gets back \`action: "review"\` (orchestrator.ts:1628) and the FSM has already advanced \`phase\` to \`gate\` internally; the instructions wrap one self-contained \`<subagent tool="Task">\` block per review-agent (${stage.reviewAgents.map(a => `\`${a}\``).join(", ")}). Each block is a complete prompt with review instructions and commands to obtain the diff — parent relays verbatim, no assembly required. Cross-stage agents are loaded via the \`review-agents-include\` field in STAGE.md. (Adversarial review of the elaboration specs is folded into the gate review — there's no separate \`review_elaboration\` round-trip.)`,
     },
     "review-to-gate": {
       injection: [
@@ -4942,7 +4955,7 @@ const GATE_DETAILS = {
       "`haiku_run_next` is called while the stage is in `review` phase (entered automatically when the final unit completed).",
       "Orchestrator runs `validateStageOutputs()` first (hard structural check on output artifact presence), then calls `runQualityGates(slug, stage)` at `orchestrator.ts:1606`. Each configured gate runs as a child process; exit codes are captured; failure output is parsed into structured findings.",
       "On **failure**: the same call returns `fix_quality_gates` with a `failures[]` array of `{ name, command, exit_code, output, dir }`. Phase stays `review`. Agent is instructed to fix the failures in place and call `haiku_run_next` again. The FSM never goes back to `execute` — quality gate fixes happen in the review phase.",
-      "On **success**: `phase` stays `review` but progresses past quality gates. The same call returns `advance_review` with one self-contained `<subagent tool='Task'>` block per adversarial review agent configured for the stage. The agent relays those blocks verbatim — parent doesn't assemble prompts.",
+      "On **success**: the FSM advances `phase` to `gate` internally (orchestrator.ts:1625) and the same call returns `action: \"review\"` (orchestrator.ts:1628) with one self-contained `<subagent tool='Task'>` block per adversarial review agent configured for the stage. The agent relays those blocks verbatim — parent doesn't assemble prompts. After the agents return, the next `haiku_run_next` tick lands in the `gate` phase.",
       "The loop is bounded only by the agent's judgment — there is no max_quality_fails counter. If gates keep failing, the agent eventually escalates to the user.",
     ],
     gate_contexts: [
@@ -5072,8 +5085,8 @@ const TOOL_SPECS = {
       intent: "string · the intent slug (e.g. `add-billing`)",
     },
     output: {
-      action: "string · lifecycle: `select_studio` | `start_stage` | `elaborate` | `start_unit` | `continue_unit` | `start_units` | `review` | `review_elaboration` | `gate_review` | `advance_phase` | `advance_review` | `advance_stage` | `stage_complete_discrete` | `intent_approved` | `intent_complete` | `complete` | `composite_run_stage` | `safe_intent_repair` | `fix_quality_gates` | `changes_requested` | `external_review_requested` | `awaiting_external_review` · blocked: `design_direction_required` | `blocked` | `outputs_missing` | `discovery_missing` | `elaboration_insufficient` | `spec_validation_failed` | `unresolved_dependencies` | `dag_cycle_detected` | `unit_naming_invalid` | `unit_inputs_missing` | `inputs_missing` | `gate_blocked` | `error` (the archived-intent refusal returns `action: \"error\"` with a `\"call haiku_intent_unarchive to restore it\"` hint in the message)",
-      context: "object · action-specific payload (next phase, hat, units, gate context, etc. — see the per-transition pills throughout this diagram). **Subagent-spawning actions** (`start_unit`, `continue_unit`, `start_units`, `elaborate` with discovery, `advance_review`) return self-contained `<subagent tool=\"...\" type=\"...\" model=\"...\">` prompt blocks that the parent relays verbatim — MCP constructs exact subagent prompts, no assembly required.",
+      action: "string · lifecycle: `select_studio` | `start_stage` | `elaborate` | `start_unit` | `continue_unit` | `start_units` | `review` | `gate_review` | `advance_phase` | `advance_stage` | `stage_complete_discrete` | `intent_approved` | `intent_complete` | `complete` | `composite_run_stage` | `safe_intent_repair` | `fix_quality_gates` | `changes_requested` | `external_review_requested` | `awaiting_external_review` · blocked: `design_direction_required` | `blocked` | `outputs_missing` | `discovery_missing` | `elaboration_insufficient` | `spec_validation_failed` | `unresolved_dependencies` | `dag_cycle_detected` | `unit_naming_invalid` | `unit_inputs_missing` | `inputs_missing` | `gate_blocked` | `error` (the archived-intent refusal returns `action: \"error\"` with a `\"call haiku_intent_unarchive to restore it\"` hint in the message)",
+      context: "object · action-specific payload (next phase, hat, units, gate context, etc. — see the per-transition pills throughout this diagram). **Subagent-spawning actions** (`start_unit`, `continue_unit`, `start_units`, `elaborate` with discovery, `review`) return self-contained `<subagent tool=\"...\" type=\"...\" model=\"...\">` prompt blocks that the parent relays verbatim — MCP constructs exact subagent prompts, no assembly required.",
     },
     writes: [
       "Depends on the action returned. Click any of the labeled `haiku_run_next` pills above to see the exact `state.json` / `intent.md` / unit-frontmatter mutations for that specific tick.",
