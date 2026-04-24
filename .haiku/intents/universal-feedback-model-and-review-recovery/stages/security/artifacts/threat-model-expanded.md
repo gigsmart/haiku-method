@@ -157,6 +157,44 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 
 ---
 
+#### I3: Tunnel JWT transmitted in WebSocket URL query string
+**Threat:** The review SPA WebSocket upgrade (`openWebSocket` in `packages/haiku-ui/src/api/client.ts:245-264`) attaches the tunnel-auth JWT as a URL query parameter: `${basePath}?t=${encodeURIComponent(token)}`. Browsers do not allow custom headers (e.g., `Authorization: Bearer …`) on the WebSocket handshake, so the only way to pass the tunnel JWT to a WebSocket endpoint is via the URL. This is a weaker channel than the HTTP `Authorization` header used for all other tunnel-auth routes (see S2 / E1), and introduces three distinct disclosure vectors not covered by I1 (CORS) or I2 (session UUID replay):
+
+1. **HTTP access logs.** Query string parameters are written verbatim into HTTP server access logs by default. Fastify is currently configured with `logger: false` (`packages/haiku/src/http.ts`), but any future enablement, any reverse proxy / tunnel provider (localtunnel upstream) with its own access log, or any sidecar (APM, WAF, CDN) that records full URLs will persist the JWT in plaintext in a log store. HTTP bearer headers are normally stripped or redacted by log formatters; query strings are not.
+2. **Browser history and referrer surfaces.** WebSocket URLs with `?t=<jwt>` are recorded in `window.history` and are readable by any same-origin JavaScript (including any extension the user has installed that reads `window.location`). They may also leak via DevTools network panel exports and browser sync features. Shared / screenshared screens during a live review session can leak the JWT to bystanders.
+3. **Process / OS visibility.** Query strings appear in process arguments for any command-line HTTP client invoked ad-hoc against the tunnel (curl logs, shell history), and in URL bars during screen recording.
+
+The HTTP bearer token path (Authorization header on `/api/review/*` and `/api/feedback/*`) is the secure channel. The `?t=` query string is a known weaker channel and is the result of a browser platform constraint, not a design choice.
+
+**Likelihood:** Low in default operation (local mode returns `null` token, so `?t=` is never appended; in tunnel mode the JWT-bearing URL only leaves the browser for the same tunnel host it is scoped to). Medium if Fastify `logger` is ever enabled, if the localtunnel provider is assumed to log, or if a user shares a browser session / DevTools export.
+**Impact:** High per leaked token (the JWT embeds a valid `sid` and unlocks feedback mutations as the bound human session until expiry).
+
+**Mitigations (already in place):**
+- **Short JWT TTL is the primary mitigation.** `buildReviewUrl` in `packages/haiku/src/tunnel.ts:291-308` signs tunnel JWTs with `exp = iat + 3600` (1 hour). Any JWT leaked to a log or history entry is only usable until that expiry; `verifyTunnelJWT` (`tunnel.ts:117`) rejects expired tokens with `reason: "expired"`.
+- **Tunnel URL binding.** The `tun` claim is verified against the currently-active tunnel URL; a JWT leaked from one tunnel session cannot be replayed against a later tunnel session, because each `openTunnel` rotates the ephemeral signing seed (`EPHEMERAL_SECRET` regenerates on server start).
+- **Session UUID binding.** The `sid` claim is checked against the URL path segment (`expectedSid`), so a JWT cannot be replayed against a different session on the same tunnel.
+- **Fastify access logging is currently disabled** (`logger: false`), so the default local deployment does not persist the JWT in server-side access logs.
+- **Local mode is clean.** `getAuthToken()` returns `null` outside tunnel mode; the `?t=` suffix is only appended when a JWT actually exists, so the query-string channel is not created at all during local development.
+- **No reverse proxy under our control is logging these URLs.** The only upstream in scope is localtunnel, and our integration does not enable any request log tap on it.
+
+**Mitigations considered but rejected for v1:**
+- Replacing the query-string token with a WebSocket sub-protocol header (e.g., `Sec-WebSocket-Protocol: Bearer, <jwt>`). Viable but requires a server-side `subprotocol` handshake negotiation path that does not exist yet; deferred to v2 when we revisit the tunnel-auth layer.
+- Issuing a short-lived one-time WS-specific token via an authenticated HTTP endpoint right before `new WebSocket(...)` is constructed. This would shrink the replay window to seconds. Deferred to v2.
+
+**Residual risk accepted (LOW–MEDIUM):**
+- If Fastify access logging is ever enabled, or the localtunnel provider is assumed to log, a 1-hour replay window exists for any JWT written to those logs. Remediation: keep `logger: false` for any deployment that exposes the WS route over a tunnel, or cut the TTL further for `/ws/session` traffic in v2.
+- Browser-history leakage is scoped to the user's own machine; treated as equivalent to the user's local filesystem, which is already trusted by the threat model (see I-1 Insider Threat). A JWT leaked via a screen-share is mitigated by the 1-hour TTL plus session-scoped `sid`.
+
+**Verification evidence:**
+- `packages/haiku-ui/src/api/client.ts:245-264` — `openWebSocket` suffix construction shows the `?t=` channel is only taken when `getAuthToken()` returns a token (i.e., tunnel mode only).
+- `packages/haiku/src/tunnel.ts:291-308` — JWT is signed with `exp = iat + 3600`.
+- `packages/haiku/src/tunnel.ts:117-168` — `verifyTunnelJWT` rejects expired tokens (`reason: "expired"`) and mismatched-tunnel tokens before any handler runs.
+- `packages/haiku/src/http.ts` — Fastify initialized with `logger: false`, so query strings are not persisted server-side by default.
+
+**Status:** Mitigated (TTL + tunnel binding + session binding). Residual risk accepted for v1; v2 should move WS auth off the query string.
+
+---
+
 ### D — Denial of Service (Extended)
 
 #### D1: Additive elaborate loop — visits counter grows unboundedly
@@ -306,6 +344,7 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 | Surface | Hardening Applied | Residual Risk |
 |---|---|---|
 | HTTP feedback mutations (remote mode) | JWT tunnel auth (FB-30), session header guard (FB-20), CORS origin check (FB-36) | Session UUID bookmarks (very low) |
+| WebSocket session channel (remote mode) | Tunnel JWT in `?t=` query string (browser-platform constraint); 1-hour TTL + tun/sid binding + `logger:false` (I3) | Query-string token leak via future access logs / browser history / screen-share (low–medium) |
 | `closes:` validation | feedback-assessor hat auto-injected for all units with `closes:` | Agent `addressed` status on human items allows auto-gate pass |
 | `haiku_revisit` reasons | writeFeedbackFile constrains write path; reasons always `origin: agent` | No count cap (v2 enhancement needed) |
 | WebSocket session loss | Known v1 limitation | v2: debounced persistence |
@@ -324,4 +363,5 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 | WebSocket drop before submission loses draft comments | LOW | v2: debounced persistence |
 | No visits cap | LOW | v2: max_visits threshold |
 | YAML prototype pollution in gray-matter | LOW | Pin to js-yaml >= 4.x; run npm audit in CI |
+| WebSocket JWT in query string (I3) | LOW–MEDIUM | Browser platform constraint; mitigated by 1-hour JWT TTL + tun/sid binding + Fastify `logger:false`. v2 should move WS auth to a sub-protocol header or one-time WS token. |
 | Insider threat (direct filesystem access) | ACCEPTED | Developer tool; git trail provides detection; out of scope v1 |
