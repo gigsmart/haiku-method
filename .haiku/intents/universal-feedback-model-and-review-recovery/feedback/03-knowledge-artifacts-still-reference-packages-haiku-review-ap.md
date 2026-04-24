@@ -10,7 +10,7 @@ created_at: '2026-04-24T19:30:00Z'
 visit: 0
 source_ref: null
 addressed_by: null
-bolt: 1
+bolt: 2
 ---
 
 Every shared knowledge artifact produced by inception, product, and design references the review app at `packages/haiku/review-app/src/`. Development unit-03 made a deliberate architectural decision to extract this into a standalone `packages/haiku-ui/` workspace package, which is where the actual code lives. The knowledge artifacts were never updated to reflect this.
