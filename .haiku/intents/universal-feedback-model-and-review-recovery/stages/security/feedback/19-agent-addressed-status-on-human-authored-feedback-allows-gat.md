@@ -2,7 +2,7 @@
 title: >-
   agent "addressed" status on human-authored feedback allows gate pass in
   auto-gate stages without second mitigation layer
-status: fixing
+status: closed
 origin: adversarial-review
 author: mitigation-effectiveness
 author_type: agent
@@ -10,7 +10,7 @@ created_at: '2026-04-24T14:43:25Z'
 iteration: 1
 visit: 1
 source_ref: null
-closed_by: null
+closed_by: 'fix-loop:FB-19:bolt-1'
 bolt: 1
 upstream_stage: null
 resolution: null
