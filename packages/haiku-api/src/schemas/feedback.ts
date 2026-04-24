@@ -182,13 +182,10 @@ export const FeedbackCreateRequestSchema = z
 		attachment_data_url: z
 			.string()
 			.max(FEEDBACK_ATTACHMENT_MAX_BYTES)
-			.regex(
-				/^data:image\/(png|jpeg|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/,
-				{
-					message:
-						"attachment_data_url must be a base64-encoded data URL for png/jpeg/webp/svg+xml",
-				},
-			)
+			.regex(/^data:image\/(png|jpeg|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/, {
+				message:
+					"attachment_data_url must be a base64-encoded data URL for png/jpeg/webp/svg+xml",
+			})
 			.optional(),
 	})
 	.describe("POST /api/feedback/:intent/:stage request body")

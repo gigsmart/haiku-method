@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import fs from "node:fs"
 /**
  * audit-bundle-size.mjs — compares the gzipped size of the inlined haiku-ui
  * SPA against `packages/haiku-ui/budget.json` (absolute cap) AND against
@@ -19,7 +20,6 @@
  *                       this script is the only place that writes the file.
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises"
-import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { gzipSync } from "node:zlib"
@@ -126,7 +126,9 @@ async function main() {
 
 	await mkdir(REPORTS_DIR, { recursive: true })
 	const reportPath = path.join(REPORTS_DIR, "bundle-size.json")
-	const regressionCeiling = baseline ? baseline.gzipBytes * 1.05 : gzipBytes * 1.05
+	const regressionCeiling = baseline
+		? baseline.gzipBytes * 1.05
+		: gzipBytes * 1.05
 	const capExceeded = gzipBytes > cap
 	const regressed = baseline !== null && gzipBytes > regressionCeiling
 	await writeFile(

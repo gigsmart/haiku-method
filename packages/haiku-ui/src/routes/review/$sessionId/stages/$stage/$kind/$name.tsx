@@ -19,13 +19,7 @@ function isKind(v: string): v is ReviewDetailKind {
 
 function StageDetail(): React.ReactElement {
 	const { stage, kind, name } = Route.useParams()
-	return (
-		<StageContent
-			stage={stage}
-			tab={kind}
-			detail={{ kind, name }}
-		/>
-	)
+	return <StageContent stage={stage} tab={kind} detail={{ kind, name }} />
 }
 
 export const Route = createFileRoute(

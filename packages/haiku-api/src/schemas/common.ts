@@ -108,7 +108,9 @@ export const InlineCommentSchema = z
 		selectedText: z
 			.string()
 			.max(2_000)
-			.describe("Highlighted text the comment anchors to (capped at 2,000 chars)"),
+			.describe(
+				"Highlighted text the comment anchors to (capped at 2,000 chars)",
+			),
 		comment: z
 			.string()
 			.max(10_000)
@@ -199,12 +201,12 @@ export type ValidationError = z.infer<typeof ValidationErrorSchema>
  *  permits `"loopback" | "token"` so future non-loopback routes are a
  *  one-line table edit, not a schema migration. */
 export {
-	RouteTransportSchema,
-	SessionTokenSchema,
-	TransportInvariantSchema,
 	type RouteTransport,
+	RouteTransportSchema,
 	type SessionToken,
+	SessionTokenSchema,
 	type TransportInvariant,
+	TransportInvariantSchema,
 } from "./auth.js"
 
 /** Default body-size cap for JSON request bodies (1 MiB). */

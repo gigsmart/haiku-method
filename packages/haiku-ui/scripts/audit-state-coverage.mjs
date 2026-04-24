@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import fs from "node:fs"
 /**
  * audit-state-coverage.mjs — asserts every DESIGN-BRIEF §2 component has a
  * state-matrix snapshot test, and the snapshot contains a minimum number of
@@ -37,7 +38,6 @@
  *   2 — filesystem / read error
  */
 import { readdir, readFile, stat } from "node:fs/promises"
-import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -137,7 +137,9 @@ async function main() {
 	)
 	for (const r of report) {
 		if (r.pass) {
-			console.log(`  [OK]   ${r.component} — ${r.found} cells (≥ ${r.expected})`)
+			console.log(
+				`  [OK]   ${r.component} — ${r.found} cells (≥ ${r.expected})`,
+			)
 		} else {
 			const why =
 				r.reason ||

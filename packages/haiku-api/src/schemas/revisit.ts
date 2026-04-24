@@ -54,10 +54,7 @@ export const RevisitResponseSchema = z
 			.describe(
 				"The orchestrator action name returned by the revisit (e.g. 'revisit').",
 			),
-		stage: z
-			.string()
-			.optional()
-			.describe("Stage the FSM rolled back to."),
+		stage: z.string().optional().describe("Stage the FSM rolled back to."),
 		feedback_created: z
 			.array(z.string())
 			.optional()

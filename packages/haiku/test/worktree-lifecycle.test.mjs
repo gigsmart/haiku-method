@@ -476,10 +476,7 @@ console.log("\n=== path + branch name conventions ===")
 
 await test("fixChainWorktreePath conventions", () => {
 	const p = fixChainWorktreePath("my-intent", "development", "FB-07")
-	assert.ok(
-		p.endsWith(".haiku/worktrees/my-intent/fix-development-FB-07"),
-		p,
-	)
+	assert.ok(p.endsWith(".haiku/worktrees/my-intent/fix-development-FB-07"), p)
 })
 
 await test("fixChainBranchName for stage scope", () => {
@@ -499,9 +496,7 @@ await test("fixChainBranchName for intent scope", () => {
 await test("discoveryWorktreePath conventions", () => {
 	const p = discoveryWorktreePath("my-intent", "development", "architecture")
 	assert.ok(
-		p.endsWith(
-			".haiku/worktrees/my-intent/discovery-development-architecture",
-		),
+		p.endsWith(".haiku/worktrees/my-intent/discovery-development-architecture"),
 		p,
 	)
 })

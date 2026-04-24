@@ -9,11 +9,8 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import { RereviewBanner } from "../../../../../pages/review/shared/RereviewBanner"
-import {
-	gateBadgeCopy,
-	resolveGateModes,
-} from "../../-review-helpers"
 import { useReviewContext } from "../../-context"
+import { gateBadgeCopy, resolveGateModes } from "../../-review-helpers"
 import { StageBanner } from "./-stage-banner"
 
 function StageLayout(): React.ReactElement {

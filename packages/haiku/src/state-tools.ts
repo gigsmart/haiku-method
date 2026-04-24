@@ -3334,8 +3334,7 @@ export function writeFeedbackFile(
 		)
 		if (match) {
 			const mime = match[1]
-			const ext =
-				mime === "jpeg" ? "jpg" : mime === "svg+xml" ? "svg" : mime
+			const ext = mime === "jpeg" ? "jpg" : mime === "svg+xml" ? "svg" : mime
 			attachmentBasename = `${nn}-${fileSlug}.${ext}`
 			const attachmentPath = join(dir, attachmentBasename)
 			writeFileSync(attachmentPath, Buffer.from(match[2], "base64"))
@@ -3445,11 +3444,9 @@ export function readFeedbackFiles(slug: string, stage: string): FeedbackItem[] {
 					)
 					.map((r) => ({
 						author: typeof r.author === "string" ? r.author : "unknown",
-						author_type:
-							r.author_type === "agent" ? "agent" : "human",
+						author_type: r.author_type === "agent" ? "agent" : "human",
 						body: typeof r.body === "string" ? r.body : "",
-						created_at:
-							typeof r.created_at === "string" ? r.created_at : "",
+						created_at: typeof r.created_at === "string" ? r.created_at : "",
 					}))
 			: []
 		items.push({
@@ -3484,7 +3481,9 @@ export function readFeedbackFiles(slug: string, stage: string): FeedbackItem[] {
 	return items
 }
 
-function parseInlineAnchor(data: Record<string, unknown>): FeedbackItem["inline_anchor"] {
+function parseInlineAnchor(
+	data: Record<string, unknown>,
+): FeedbackItem["inline_anchor"] {
 	const raw = data.inline_anchor
 	if (!(raw && typeof raw === "object")) return null
 	const a = raw as Record<string, unknown>
@@ -3504,7 +3503,9 @@ function parseInlineAnchor(data: Record<string, unknown>): FeedbackItem["inline_
 		location,
 		...(typeof a.comment_id === "string" ? { comment_id: a.comment_id } : {}),
 		...(typeof a.file_path === "string" ? { file_path: a.file_path } : {}),
-		...(typeof a.content_sha === "string" ? { content_sha: a.content_sha } : {}),
+		...(typeof a.content_sha === "string"
+			? { content_sha: a.content_sha }
+			: {}),
 	}
 }
 
@@ -3766,7 +3767,8 @@ export function appendFeedbackReply(
 	return {
 		ok: true,
 		reply_index: replies.length - 1,
-		status: (newData.status as string) || (found.data.status as string) || "pending",
+		status:
+			(newData.status as string) || (found.data.status as string) || "pending",
 	}
 }
 
@@ -4087,7 +4089,7 @@ export const stateToolDefs = [
 	{
 		name: "haiku_review_open",
 		description:
-			"Open an ad-hoc review pane in the browser for the active intent and BLOCK until the reviewer clicks Done or Request Changes (or the pane times out at 30min). The UI swaps Approve for Done/Close, shows an \"Ad-hoc review\" badge, and never mutates FSM state on its own. Return value is a concrete next-step instruction: on Done the tool returns \"no changes requested\"; on Request Changes it returns a nudge to call haiku_run_next so the durable feedback routes through the normal fix-loop / revisit path.",
+			'Open an ad-hoc review pane in the browser for the active intent and BLOCK until the reviewer clicks Done or Request Changes (or the pane times out at 30min). The UI swaps Approve for Done/Close, shows an "Ad-hoc review" badge, and never mutates FSM state on its own. Return value is a concrete next-step instruction: on Done the tool returns "no changes requested"; on Request Changes it returns a nudge to call haiku_run_next so the durable feedback routes through the normal fix-loop / revisit path.',
 		inputSchema: {
 			type: "object" as const,
 			properties: {
@@ -6361,9 +6363,7 @@ export function handleStateTool(
 			if (args.resolution !== undefined) {
 				const raw = args.resolution
 				updateFields.resolution =
-					typeof raw === "string" && raw.length > 0
-						? (raw as string)
-						: null
+					typeof raw === "string" && raw.length > 0 ? (raw as string) : null
 			}
 
 			// Intent-scope ("") enforces intent-main; stage-scoped enforces the stage branch.

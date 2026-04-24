@@ -56,9 +56,7 @@ describe("tunnel auth token extraction", () => {
 
 	it("withAuthQuery appends ?t= when no query, &t= when present", () => {
 		__setAuthTokenForTesting("a.b.c")
-		expect(withAuthQuery("/files/abc/x.png")).toBe(
-			"/files/abc/x.png?t=a.b.c",
-		)
+		expect(withAuthQuery("/files/abc/x.png")).toBe("/files/abc/x.png?t=a.b.c")
 		expect(withAuthQuery("/files/abc/x.png?v=1")).toBe(
 			"/files/abc/x.png?v=1&t=a.b.c",
 		)

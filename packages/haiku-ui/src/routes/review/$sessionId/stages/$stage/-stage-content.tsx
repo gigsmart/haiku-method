@@ -114,7 +114,11 @@ export function StageContent({
 	void pins
 
 	const handleSubmitAnnotation = useCallback(
-		async (artifactName: string, comment: string, screenshotDataUrl: string) => {
+		async (
+			artifactName: string,
+			comment: string,
+			screenshotDataUrl: string,
+		) => {
 			if (!intentSlug) {
 				throw new Error("Cannot submit annotation without an intent slug")
 			}
@@ -274,7 +278,15 @@ export function StageContent({
 		})
 		setHighlightFeedbackId(null)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [highlightFeedbackId, stageFeedback, sessionId, stage])
+	}, [
+		highlightFeedbackId,
+		stageFeedback,
+		sessionId,
+		stage,
+		setPendingFlashAnchor,
+		setHighlightFeedbackId,
+		navigate,
+	])
 
 	return (
 		<StageReview

@@ -23,10 +23,10 @@
 import { execFileSync } from "node:child_process"
 import {
 	existsSync,
+	writeFileSync as fsWriteFileSync,
 	mkdirSync,
 	mkdtempSync,
 	rmSync,
-	writeFileSync as fsWriteFileSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -1129,7 +1129,8 @@ function autoCommitDirtyTree(
 		if (files.length === 0) {
 			return {
 				ok: false,
-				message: "nothing to commit after git add -A (dirty-tree signal may have been spurious)",
+				message:
+					"nothing to commit after git add -A (dirty-tree signal may have been spurious)",
 			}
 		}
 		run([
@@ -1169,7 +1170,11 @@ function parseOverwrittenFiles(rawError: string): string[] {
 		}
 		if (capturing) {
 			const trimmed = line.replace(/^\t+/, "").trim()
-			if (trimmed && !trimmed.startsWith("error:") && !trimmed.startsWith("hint:")) {
+			if (
+				trimmed &&
+				!trimmed.startsWith("error:") &&
+				!trimmed.startsWith("hint:")
+			) {
 				files.push(trimmed)
 			}
 		}
@@ -1213,14 +1218,7 @@ export function writeOnIntentMain(
 			run(["git", "-C", tmpPath, "add", relPath])
 			const status = tryRun(["git", "-C", tmpPath, "status", "--porcelain"])
 			if (status.trim()) {
-				run([
-					"git",
-					"-C",
-					tmpPath,
-					"commit",
-					"-m",
-					commitMessage,
-				])
+				run(["git", "-C", tmpPath, "commit", "-m", commitMessage])
 			}
 		})
 		return { ok: true, message: `wrote ${relPath} on ${mainBranch}` }
@@ -1244,7 +1242,10 @@ export function cleanupOrphanedStageBranches(slug: string): {
 	deleted_local: string[]
 	deleted_remote: string[]
 } {
-	const result = { deleted_local: [] as string[], deleted_remote: [] as string[] }
+	const result = {
+		deleted_local: [] as string[],
+		deleted_remote: [] as string[],
+	}
 	if (!isGitRepo()) return result
 	const mainBranch = `haiku/${slug}/main`
 	if (!branchExists(mainBranch)) return result
@@ -1443,18 +1444,8 @@ export function mergeUnitWorktree(
 						"--ours",
 						unitMdRel,
 					])
-					run([
-						"git",
-						...(cwd ? ["-C", cwd] : []),
-						"add",
-						unitMdRel,
-					])
-					run([
-						"git",
-						...(cwd ? ["-C", cwd] : []),
-						"commit",
-						"--no-edit",
-					])
+					run(["git", ...(cwd ? ["-C", cwd] : []), "add", unitMdRel])
+					run(["git", ...(cwd ? ["-C", cwd] : []), "commit", "--no-edit"])
 				} else {
 					throw err
 				}
@@ -1529,9 +1520,7 @@ export function createDiscoveryWorktree(
 ): string | null {
 	if (!isGitRepo()) return null
 	if (!stage || !template)
-		throw new Error(
-			"createDiscoveryWorktree requires `stage` and `template`",
-		)
+		throw new Error("createDiscoveryWorktree requires `stage` and `template`")
 
 	const baseBranch = ensureStageBranch(slug, stage)
 	const discBranch = discoveryBranchName(slug, stage, template)
@@ -1748,9 +1737,7 @@ export function createFixChainWorktree(
 		)
 
 	const baseBranch =
-		scope === "intent"
-			? `haiku/${slug}/main`
-			: ensureStageBranch(slug, scope)
+		scope === "intent" ? `haiku/${slug}/main` : ensureStageBranch(slug, scope)
 	const fixBranch = fixChainBranchName(slug, scope, feedbackId)
 	const worktreePath = fixChainWorktreePath(slug, scope, feedbackId)
 	const worktreeBase = join(process.cwd(), ".haiku", "worktrees", slug)
@@ -1805,9 +1792,7 @@ export function mergeFixChainWorktree(
 } {
 	if (!isGitRepo()) return { success: true, message: "no worktree" }
 	const baseBranch =
-		scope === "intent"
-			? `haiku/${slug}/main`
-			: ensureStageBranch(slug, scope)
+		scope === "intent" ? `haiku/${slug}/main` : ensureStageBranch(slug, scope)
 	const fixBranch = fixChainBranchName(slug, scope, feedbackId)
 	const worktreePath = fixChainWorktreePath(slug, scope, feedbackId)
 
@@ -2146,7 +2131,10 @@ export function prepareRevisitBranch(
 	// running without real git state) should treat this as a no-op rather
 	// than a hard failure.
 	if (!branchExists(mainBranch))
-		return { success: true, message: `${mainBranch} does not exist — nothing to merge` }
+		return {
+			success: true,
+			message: `${mainBranch} does not exist — nothing to merge`,
+		}
 
 	// List conflicted files by reading git's unmerged index entries (code U*/AA/DD).
 	function listConflicts(): string[] {

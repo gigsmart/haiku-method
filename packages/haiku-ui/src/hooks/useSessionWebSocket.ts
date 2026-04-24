@@ -167,7 +167,7 @@ export function useSessionWebSocket(
 			ws.close()
 			if (wsRef.current === ws) wsRef.current = null
 		}
-	}, [sessionId, client])
+	}, [sessionId, client, options.pollIntervalMs])
 
 	return wsRef
 }

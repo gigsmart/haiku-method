@@ -38,7 +38,7 @@
  */
 
 import { spawnSync } from "node:child_process"
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -215,9 +215,7 @@ function parseCoverageYaml(text) {
 		const entryStart = line.match(/^ {2}-\s*scenario:\s*(.*)$/)
 		if (entryStart) {
 			if (!currentFeature) {
-				throw new Error(
-					`line ${lineNo + 1}: entry without active feature key`,
-				)
+				throw new Error(`line ${lineNo + 1}: entry without active feature key`)
 			}
 			currentEntry = { scenario: unquote(entryStart[1].trim()) }
 			currentListField = null
@@ -229,9 +227,7 @@ function parseCoverageYaml(text) {
 		const fieldMatch = line.match(/^ {4}([a-z_]+):\s*(.*)$/)
 		if (fieldMatch) {
 			if (!currentEntry) {
-				throw new Error(
-					`line ${lineNo + 1}: field outside of an entry`,
-				)
+				throw new Error(`line ${lineNo + 1}: field outside of an entry`)
 			}
 			const [, name, value] = fieldMatch
 			if (name === "covered_by") {
@@ -264,9 +260,7 @@ function parseCoverageYaml(text) {
 		const listItemMatch = line.match(/^ {6}-\s*(.+)$/)
 		if (listItemMatch) {
 			if (!currentEntry || currentListField !== "covered_by") {
-				throw new Error(
-					`line ${lineNo + 1}: list item outside of covered_by`,
-				)
+				throw new Error(`line ${lineNo + 1}: list item outside of covered_by`)
 			}
 			currentEntry.covered_by.push(unquote(listItemMatch[1].trim()))
 			continue
@@ -418,8 +412,7 @@ function main() {
 			}
 			const hasCovered = entry.covered_by && entry.covered_by.length > 0
 			const hasSkip =
-				typeof entry.skip_reason === "string" &&
-				entry.skip_reason.length > 0
+				typeof entry.skip_reason === "string" && entry.skip_reason.length > 0
 			if (!hasCovered && !hasSkip) {
 				console.error(
 					`ERROR ${feature}: scenario has empty covered_by and no skip_reason: "${scenario}"`,
@@ -495,15 +488,11 @@ function main() {
 		for (const testFile of [...referencedTestFiles].sort()) {
 			const testPath = join(TEST_DIR, testFile)
 			if (VERBOSE) console.log(`  running: ${testFile}`)
-			const result = spawnSync(
-				"npx",
-				["tsx", testPath],
-				{
-					cwd: join(REPO_ROOT, "packages", "haiku"),
-					stdio: VERBOSE ? "inherit" : "pipe",
-					shell: process.platform === "win32",
-				},
-			)
+			const result = spawnSync("npx", ["tsx", testPath], {
+				cwd: join(REPO_ROOT, "packages", "haiku"),
+				stdio: VERBOSE ? "inherit" : "pipe",
+				shell: process.platform === "win32",
+			})
 			if (result.status !== 0) {
 				console.error(`FAIL: ${testFile} exited with ${result.status}`)
 				if (!VERBOSE && result.stdout) {

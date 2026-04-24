@@ -80,7 +80,9 @@ export function FeedbackList({
 	// `expandedId` is retained in case a future variant wants collapsible
 	// rows again; today every row renders expanded (see below). The state
 	// is kept so the keyboard-nav hook and container wiring stay the same.
-	const [_expandedId, _setExpandedId] = useState<string | null>(initialExpandedId)
+	const [_expandedId, _setExpandedId] = useState<string | null>(
+		initialExpandedId,
+	)
 	void _expandedId
 	void _setExpandedId
 	void height

@@ -759,7 +759,11 @@ try {
 				socket.on("close", () => resolve(null))
 				setTimeout(() => resolve("timeout"), 3000)
 			})
-			assert.strictEqual(closeCode, 1009, `expected close 1009, got ${closeCode}`)
+			assert.strictEqual(
+				closeCode,
+				1009,
+				`expected close 1009, got ${closeCode}`,
+			)
 			socket.destroy()
 		})
 

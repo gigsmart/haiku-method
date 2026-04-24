@@ -319,7 +319,10 @@ export function AssessorSummaryCard({
 }
 
 function formatRanAt(date: Date): string {
-	const secondsAgo = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000))
+	const secondsAgo = Math.max(
+		0,
+		Math.round((Date.now() - date.getTime()) / 1000),
+	)
 	if (secondsAgo < 60) return `ran ${secondsAgo}s ago`
 	const minutesAgo = Math.round(secondsAgo / 60)
 	if (minutesAgo < 60) return `ran ${minutesAgo}m ago`

@@ -24,7 +24,10 @@ import { useEffect, useState } from "react"
 export const MOBILE_MEDIA_QUERY = "(max-width: 1279px)"
 
 function readInitialMatches(): boolean {
-	if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+	if (
+		typeof window === "undefined" ||
+		typeof window.matchMedia !== "function"
+	) {
 		return false
 	}
 	return window.matchMedia(MOBILE_MEDIA_QUERY).matches
@@ -34,7 +37,10 @@ export function useIsMobile(): boolean {
 	const [isMobile, setIsMobile] = useState<boolean>(readInitialMatches)
 
 	useEffect(() => {
-		if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+		if (
+			typeof window === "undefined" ||
+			typeof window.matchMedia !== "function"
+		) {
 			return
 		}
 		const mql = window.matchMedia(MOBILE_MEDIA_QUERY)
@@ -46,7 +52,10 @@ export function useIsMobile(): boolean {
 		// re-stub).
 		handler(mql)
 		if (typeof mql.addEventListener === "function") {
-			mql.addEventListener("change", handler as (e: MediaQueryListEvent) => void)
+			mql.addEventListener(
+				"change",
+				handler as (e: MediaQueryListEvent) => void,
+			)
 			return () => {
 				mql.removeEventListener(
 					"change",

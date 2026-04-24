@@ -23,7 +23,6 @@ import { features, resolvePluginRoot } from "./config.js"
 import { computeWaves, topologicalSort } from "./dag.js"
 import {
 	branchExists,
-	cleanupDiscoveryWorktree,
 	cleanupFixChainWorktree,
 	cleanupIntentWorktrees,
 	cleanupOrphanedStageBranches,
@@ -71,11 +70,11 @@ import {
 	getStageIterationCount,
 	gitCommitState,
 	incrementFeedbackBolt,
-	intentFromCurrentBranch,
-	listVisibleIntents,
 	intentDir,
+	intentFromCurrentBranch,
 	intentTitleNeedsRepair,
 	isGitRepo,
+	listVisibleIntents,
 	MAX_CONCURRENT_SUBAGENTS,
 	MAX_FIX_LOOP_BOLTS,
 	MAX_INTEGRATOR_ATTEMPTS,
@@ -261,10 +260,7 @@ const FSM_CONTRACTS_FIX_LOOP_BLOCK = [
  * eligible set in one payload. Enforcement relies on the parent reading
  * and following this instruction, same as every other spawn directive.
  */
-function batchDispatchDirective(
-	count: number,
-	label = "subagents",
-): string {
+function batchDispatchDirective(count: number, label = "subagents"): string {
 	const backgroundSpawn = getCapabilities().subagents.backgroundSpawn
 
 	if (count <= MAX_CONCURRENT_SUBAGENTS) {
@@ -397,7 +393,9 @@ function buildGuardResponse(
 			message: `Uncommitted changes on branch '${guard.branch}' block the switch to '${target}'. These changes belong on '${guard.branch}' — commit them there, then call \`haiku_run_next\` again. The FSM will retry the branch switch automatically.${filesBlock}\n\nNo human intervention needed — just:\n  1. \`git add ${files.length > 0 ? files.join(" ") : "<files listed above>"}\`\n  2. \`git commit -m "haiku: wip on ${guard.branch}"\`\n  3. Call \`haiku_run_next\` to retry.`,
 		}
 		return {
-			content: [{ type: "text" as const, text: JSON.stringify(action, null, 2) }],
+			content: [
+				{ type: "text" as const, text: JSON.stringify(action, null, 2) },
+			],
 			isError: true,
 		}
 	}
@@ -1106,12 +1104,7 @@ function writeReviewFeedbackFiles(
 				: `**Location:** paragraph ${comment.paragraph}`
 			const bodyParts = [locationLine]
 			if (quoted) {
-				bodyParts.push(
-					"",
-					"**Selected text:**",
-					"",
-					quoted,
-				)
+				bodyParts.push("", "**Selected text:**", "", quoted)
 			}
 			bodyParts.push("", "**Comment:**", "", comment.comment)
 			const body = bodyParts.join("\n")
@@ -1836,7 +1829,9 @@ function completeOrReviewIntent(
 	// work (studio review + fix loop + final gate) should always
 	// happen on intent main, so merge + reap + switch here.
 	const finalStage =
-		typeof intent.active_stage === "string" ? (intent.active_stage as string) : ""
+		typeof intent.active_stage === "string"
+			? (intent.active_stage as string)
+			: ""
 	if (finalStage) {
 		fsmFinalizeStageIntoIntentMain(slug, finalStage)
 	}
@@ -1944,12 +1939,9 @@ function runIntentCompletionReview(
 			// so it joins from process.cwd(), NOT findHaikuRoot() — findHaikuRoot
 			// already returns `<cwd>/.haiku` which would double the prefix.
 			const fbAbsPath = join(process.cwd(), fb.file)
-			const { data: fbFM } = parseFrontmatter(
-				readFileSync(fbAbsPath, "utf8"),
-			)
+			const { data: fbFM } = parseFrontmatter(readFileSync(fbAbsPath, "utf8"))
 			const prevAttempts = Number(
-				(fbFM as { integrator_attempts?: number }).integrator_attempts ??
-					0,
+				(fbFM as { integrator_attempts?: number }).integrator_attempts ?? 0,
 			)
 			const nextAttempt = prevAttempts + 1
 			setFrontmatterField(fbAbsPath, "integrator_attempts", nextAttempt)
@@ -1992,8 +1984,7 @@ function runIntentCompletionReview(
 			reason: "integrator_cap_exceeded",
 			iteration: target.attempts,
 			max_iterations: MAX_INTEGRATOR_ATTEMPTS,
-			message:
-				`Intent-scope fix-chain for ${target.feedback_id} ("${target.title}") still has unresolved merge conflicts after ${target.attempts} integrator attempt(s). Automated conflict resolution failed. ${exhaustedIntegrationIC.length - 1 > 0 ? `${exhaustedIntegrationIC.length - 1} other chain(s) are also exhausted. ` : ""}Resolve manually inside the fix-chain worktrees, commit, then run \`haiku_run_next\`.`,
+			message: `Intent-scope fix-chain for ${target.feedback_id} ("${target.title}") still has unresolved merge conflicts after ${target.attempts} integrator attempt(s). Automated conflict resolution failed. ${exhaustedIntegrationIC.length - 1 > 0 ? `${exhaustedIntegrationIC.length - 1} other chain(s) are also exhausted. ` : ""}Resolve manually inside the fix-chain worktrees, commit, then run \`haiku_run_next\`.`,
 			pending_items: exhaustedIntegrationIC.map((e) => ({
 				feedback_id: e.feedback_id,
 				title: e.title,
@@ -2113,9 +2104,7 @@ function runIntentCompletionReview(
 		// parallel chains — conflict risk is accepted, each chain's final
 		// hat validates closure independently.
 		const sortedScope = [...inScopePending].sort((a, b) => a.num - b.num)
-		const eligibleScope = sortedScope.filter(
-			(i) => i.bolt < MAX_FIX_LOOP_BOLTS,
-		)
+		const eligibleScope = sortedScope.filter((i) => i.bolt < MAX_FIX_LOOP_BOLTS)
 		const escalatedScope = sortedScope.filter(
 			(i) => i.bolt >= MAX_FIX_LOOP_BOLTS,
 		)
@@ -2727,8 +2716,7 @@ export function runNext(slug: string): OrchestratorAction {
 					reason: "integrator_cap_exceeded",
 					iteration: target.attempts,
 					max_iterations: MAX_INTEGRATOR_ATTEMPTS,
-					message:
-						`Discovery worktree ${target.feedback_id} still has unresolved conflicts after ${target.attempts} integrator attempts. Resolve manually inside the worktree, commit, then run \`haiku_run_next\`.`,
+					message: `Discovery worktree ${target.feedback_id} still has unresolved conflicts after ${target.attempts} integrator attempts. Resolve manually inside the worktree, commit, then run \`haiku_run_next\`.`,
 					pending_items: exhaustedDiscoveryIntegration.map((e) => ({
 						feedback_id: e.feedback_id,
 						title: e.title,
@@ -3582,15 +3570,12 @@ export function runNext(slug: string): OrchestratorAction {
 				// on the feedback frontmatter and route to the integrator
 				// (or escalate if we've already burned the budget).
 				// fb.file is repo-relative (e.g. `.haiku/intents/.../feedback/NN.md`)
-			// so it joins from process.cwd(), NOT findHaikuRoot() — findHaikuRoot
-			// already returns `<cwd>/.haiku` which would double the prefix.
-			const fbAbsPath = join(process.cwd(), fb.file)
-				const { data: fbFM } = parseFrontmatter(
-					readFileSync(fbAbsPath, "utf8"),
-				)
+				// so it joins from process.cwd(), NOT findHaikuRoot() — findHaikuRoot
+				// already returns `<cwd>/.haiku` which would double the prefix.
+				const fbAbsPath = join(process.cwd(), fb.file)
+				const { data: fbFM } = parseFrontmatter(readFileSync(fbAbsPath, "utf8"))
 				const prevAttempts = Number(
-					(fbFM as { integrator_attempts?: number })
-						.integrator_attempts ?? 0,
+					(fbFM as { integrator_attempts?: number }).integrator_attempts ?? 0,
 				)
 				const nextAttempt = prevAttempts + 1
 				setFrontmatterField(fbAbsPath, "integrator_attempts", nextAttempt)
@@ -3635,8 +3620,7 @@ export function runNext(slug: string): OrchestratorAction {
 				reason: "integrator_cap_exceeded",
 				iteration: target.attempts,
 				max_iterations: MAX_INTEGRATOR_ATTEMPTS,
-				message:
-					`Fix-chain for ${target.feedback_id} ("${target.title}") still has unresolved merge conflicts after ${target.attempts} integrator attempt(s). Automated conflict resolution failed. ${exhaustedIntegration.length - 1 > 0 ? `${exhaustedIntegration.length - 1} other chain(s) are also exhausted. ` : ""}Resolve the conflicts manually inside the fix-chain worktrees (listed below), commit, then run \`haiku_run_next\` — the merge will retry.`,
+				message: `Fix-chain for ${target.feedback_id} ("${target.title}") still has unresolved merge conflicts after ${target.attempts} integrator attempt(s). Automated conflict resolution failed. ${exhaustedIntegration.length - 1 > 0 ? `${exhaustedIntegration.length - 1} other chain(s) are also exhausted. ` : ""}Resolve the conflicts manually inside the fix-chain worktrees (listed below), commit, then run \`haiku_run_next\` — the merge will retry.`,
 				pending_items: exhaustedIntegration.map((e) => ({
 					feedback_id: e.feedback_id,
 					title: e.title,
@@ -3789,9 +3773,8 @@ export function runNext(slug: string): OrchestratorAction {
 					intent: slug,
 					studio,
 					stage: currentStage,
-					upstream_items: gateClassification.upstreamRewinds.map(
-						summarizeFeedback,
-					),
+					upstream_items:
+						gateClassification.upstreamRewinds.map(summarizeFeedback),
 					message: `Stage '${currentStage}' has ${gateClassification.upstreamRewinds.length} finding(s) tagged \`upstream_rewind\`. Present them to the user and ask which upstream stage to revisit (or whether to reject / accept as-is). Do NOT call \`haiku_run_next\` until the user decides.`,
 				}
 			}
@@ -3828,9 +3811,7 @@ export function runNext(slug: string): OrchestratorAction {
 				// Partition: eligible (under bolt cap) vs escalated (at/over).
 				// Deterministic ordering so re-entries are stable.
 				const sorted = [...pendingItems].sort((a, b) => a.num - b.num)
-				const eligibleItems = sorted.filter(
-					(i) => i.bolt < MAX_FIX_LOOP_BOLTS,
-				)
+				const eligibleItems = sorted.filter((i) => i.bolt < MAX_FIX_LOOP_BOLTS)
 				const escalatedItems = sorted.filter(
 					(i) => i.bolt >= MAX_FIX_LOOP_BOLTS,
 				)
@@ -3881,11 +3862,7 @@ export function runNext(slug: string): OrchestratorAction {
 					branch: string | null
 				}[] = []
 				for (const item of eligibleItems) {
-					const bumped = incrementFeedbackBolt(
-						slug,
-						currentStage,
-						item.id,
-					)
+					const bumped = incrementFeedbackBolt(slug, currentStage, item.id)
 					if (!bumped) continue
 					const wt = createFixChainWorktree(slug, currentStage, item.id)
 					dispatched.push({
@@ -3894,9 +3871,7 @@ export function runNext(slug: string): OrchestratorAction {
 						feedback_title: item.title,
 						bolt: bumped.bolt,
 						worktree: wt,
-						branch: wt
-							? fixChainBranchName(slug, currentStage, item.id)
-							: null,
+						branch: wt ? fixChainBranchName(slug, currentStage, item.id) : null,
 					})
 				}
 
@@ -4556,8 +4531,7 @@ function buildFeedbackDispatchAction(
 	stage: string,
 	classification: FeedbackClassification,
 ): OrchestratorAction {
-	const summaryOf = (it: FeedbackItem): string =>
-		`- **${it.id}** — ${it.title}`
+	const summaryOf = (it: FeedbackItem): string => `- **${it.id}** — ${it.title}`
 	const sections: string[] = []
 	if (classification.needsTriage.length > 0) {
 		// Put triage first — the agent must assign resolutions to null
@@ -5201,8 +5175,7 @@ function enrichActionWithPreview(action: OrchestratorAction): void {
 			break
 
 		case "integrate_fix_chains": {
-			const icItems =
-				(action.items as Array<{ feedback_id: string }>) || []
+			const icItems = (action.items as Array<{ feedback_id: string }>) || []
 			const icScope = (action.scope as string) || "intent"
 			tell_user = `${icItems.length} fix-chain merge${icItems.length === 1 ? "" : "s"} conflicted when landing on ${icScope === "intent" ? "intent main" : `stage '${icScope}'`} — dispatching the integrator to resolve.`
 			next_step =
@@ -5596,13 +5569,7 @@ function buildRunInstructions(
 						"",
 					]
 					for (const name of completedUnits) {
-						const unitFile = join(
-							dir,
-							"stages",
-							stage,
-							"units",
-							`${name}.md`,
-						)
+						const unitFile = join(dir, "stages", stage, "units", `${name}.md`)
 						if (!existsSync(unitFile)) {
 							completedLines.push(`- **${name}** — _(file missing)_`)
 							continue
@@ -5951,8 +5918,7 @@ function buildRunInstructions(
 					})}\n\n`
 				}
 
-				fanOutText +=
-					`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn each subagent above using the EXACT content between \`<subagent>\` tags as the prompt. When ALL subagents return, call \`haiku_run_next { intent: "${slug}" }\` — the FSM merges their isolation worktrees back into the stage branch (resolving conflicts via the integrator if needed) and then emits the unit-decomposition instructions. **Do NOT proceed to decomposition in this response** — wait for the next FSM tick so the merged knowledge artifacts are visible.`
+				fanOutText += `### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn each subagent above using the EXACT content between \`<subagent>\` tags as the prompt. When ALL subagents return, call \`haiku_run_next { intent: "${slug}" }\` — the FSM merges their isolation worktrees back into the stage branch (resolving conflicts via the integrator if needed) and then emits the unit-decomposition instructions. **Do NOT proceed to decomposition in this response** — wait for the next FSM tick so the merged knowledge artifacts are visible.`
 
 				sections.push(fanOutText)
 
@@ -7058,14 +7024,15 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 			const fixStage = action.stage as string
 			const fixHatsList = (action.fix_hats as string[]) || []
 			const fixMaxBolts = (action.max_bolts as number) || MAX_FIX_LOOP_BOLTS
-			const items = (action.items as Array<{
-				feedback_id: string
-				feedback_file: string
-				feedback_title: string
-				bolt: number
-				worktree?: string | null
-				branch?: string | null
-			}>) || []
+			const items =
+				(action.items as Array<{
+					feedback_id: string
+					feedback_file: string
+					feedback_title: string
+					bolt: number
+					worktree?: string | null
+					branch?: string | null
+				}>) || []
 			const totalPending = (action.total_pending as number) || items.length
 			const escalatedCount = (action.escalated_count as number) || 0
 			const haikuRoot = findHaikuRoot()
@@ -7336,14 +7303,15 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 		case "intent_completion_fix": {
 			const fixHatsList = (action.fix_hats as string[]) || []
 			const fixMaxBolts = (action.max_bolts as number) || MAX_FIX_LOOP_BOLTS
-			const items = (action.items as Array<{
-				feedback_id: string
-				feedback_file: string
-				feedback_title: string
-				bolt: number
-				worktree?: string | null
-				branch?: string | null
-			}>) || []
+			const items =
+				(action.items as Array<{
+					feedback_id: string
+					feedback_file: string
+					feedback_title: string
+					bolt: number
+					worktree?: string | null
+					branch?: string | null
+				}>) || []
 			const totalPending = (action.total_pending as number) || items.length
 			const escalatedCount = (action.escalated_count as number) || 0
 			const haikuRoot = findHaikuRoot()
@@ -7507,7 +7475,7 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 
 		case "integrate_fix_chains": {
 			const integrateStage = action.stage as string | null
-			const integrateScope = (action.scope as string) || "intent"
+			const _integrateScope = (action.scope as string) || "intent"
 			const integrateMaxAttempts =
 				(action.max_attempts as number) || MAX_INTEGRATOR_ATTEMPTS
 			const integrateItems =
@@ -7873,9 +7841,7 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					studio,
 					stage,
 				})
-				const preModelAttr = preReviewModel
-					? ` model="${preReviewModel}"`
-					: ""
+				const preModelAttr = preReviewModel ? ` model="${preReviewModel}"` : ""
 				sections.push(
 					`#### Subagent: \`${name}\`\n\n<subagent type="general-purpose"${preModelAttr}>\n${reviewLines.join("\n")}\n</subagent>`,
 				)
@@ -8448,12 +8414,7 @@ export async function handleOrchestratorTool(
 				const activeStage = (im.active_stage as string) || ""
 				const guard = ensureOnStageBranch(slug, activeStage || undefined)
 				if (!guard.ok) {
-					return buildGuardResponse(
-						slug,
-						activeStage,
-						guard,
-						"run_next entry",
-					)
+					return buildGuardResponse(slug, activeStage, guard, "run_next entry")
 				}
 			}
 		}
@@ -9757,7 +9718,7 @@ export async function handleOrchestratorTool(
 				"intent.md",
 			)
 			const stopgapActiveStage = existsSync(stopgapIntentFile)
-				? ((readFrontmatter(stopgapIntentFile).active_stage as string) || "")
+				? (readFrontmatter(stopgapIntentFile).active_stage as string) || ""
 				: ""
 			const stopgapStage =
 				(args.stage as string | undefined) || stopgapActiveStage
@@ -9779,7 +9740,10 @@ export async function handleOrchestratorTool(
 					),
 				)
 			}
-			const directResult = revisit(stopgapSlug, args.stage as string | undefined)
+			const directResult = revisit(
+				stopgapSlug,
+				args.stage as string | undefined,
+			)
 			return text(JSON.stringify(directResult, null, 2))
 		}
 

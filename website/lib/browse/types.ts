@@ -7,18 +7,18 @@ import matter from "gray-matter"
 
 // Re-export shared types from @haiku/shared
 export type {
-	HaikuIntent,
-	HaikuUnit,
-	HaikuStageState,
-	HaikuAsset,
-	HaikuArtifact,
-	HaikuKnowledgeFile,
-	HaikuIntentDetail,
 	CriterionItem,
+	HaikuArtifact,
+	HaikuAsset,
+	HaikuIntent,
+	HaikuIntentDetail,
+	HaikuKnowledgeFile,
+	HaikuStageState,
+	HaikuUnit,
 } from "@haiku/shared"
 
 // Re-export shared utilities from @haiku/shared
-export { formatDuration, formatDate, titleCase } from "@haiku/shared"
+export { formatDate, formatDuration, titleCase } from "@haiku/shared"
 
 // Website-specific types and utilities remain here
 

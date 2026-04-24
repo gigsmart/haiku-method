@@ -9,16 +9,22 @@
  * rejected" phrasing per DESIGN-BRIEF §2 screen-reader table.
  */
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { POLITE_REGION_ID, LiveRegionShell } from "../../../a11y"
+import feedbackFixture from "../../../../test-fixtures/review-feedback-full.json"
+import sessionFixture from "../../../../test-fixtures/review-session-full.json"
+import { LiveRegionShell, POLITE_REGION_ID } from "../../../a11y"
 import type { ApiClient } from "../../../api/client"
 import { ApiClientProvider } from "../../../api/context"
-import sessionFixture from "../../../../test-fixtures/review-session-full.json"
-import feedbackFixture from "../../../../test-fixtures/review-feedback-full.json"
-import type { ReviewPageSessionData } from "../shared/session-data"
 import type { FeedbackItemData } from "../../../types"
 import { ReviewPage } from "../ReviewPage"
+import type { ReviewPageSessionData } from "../shared/session-data"
 
 type FeedbackFixture = { items: FeedbackItemData[] }
 
@@ -85,7 +91,8 @@ describe("ReviewPage — status-change announcement", () => {
 					count: items.length,
 					items,
 				})) as unknown as ApiClient["feedback"]["list"],
-				create: (async () => ({})) as unknown as ApiClient["feedback"]["create"],
+				create:
+					(async () => ({})) as unknown as ApiClient["feedback"]["create"],
 				update: update as unknown as ApiClient["feedback"]["update"],
 				delete: (async () => ({
 					ok: true,
@@ -102,10 +109,8 @@ describe("ReviewPage — status-change announcement", () => {
 
 		render(
 			<ApiClientProvider client={client}>
-				<>
-					<ReviewPage session={session} sessionId="test-review-full" />
-					<LiveRegionShell />
-				</>
+				<ReviewPage session={session} sessionId="test-review-full" />
+				<LiveRegionShell />
 			</ApiClientProvider>,
 		)
 
@@ -116,7 +121,9 @@ describe("ReviewPage — status-change announcement", () => {
 
 		// Wait for the list to populate.
 		await waitFor(() => {
-			expect(screen.getAllByText(firstPendingItem.title).length).toBeGreaterThan(0)
+			expect(
+				screen.getAllByText(firstPendingItem.title).length,
+			).toBeGreaterThan(0)
 		})
 
 		// Click the item to expand; FeedbackItem is keyed by data-feedback-id.

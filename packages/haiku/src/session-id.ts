@@ -39,7 +39,9 @@ export function newSessionId(): string {
  */
 export function decodeSessionId(id: string): Uint8Array {
 	// UUID with dashes
-	if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+	if (
+		/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+	) {
 		return hexToBytes(id.replace(/-/g, ""))
 	}
 	// UUID hex without dashes

@@ -83,54 +83,49 @@ try {
 	const port = await startHttpServer()
 	const baseUrl = `http://127.0.0.1:${port}`
 
-	await test(
-		"after startHttpServer() returns, /health is 200 `ok` (ready)",
-		async () => {
-			assert.strictEqual(isReady(), true, "isReady() should be true post-start")
-			const res = await fetch(`${baseUrl}/health`)
-			assert.strictEqual(res.status, 200)
-			const body = await res.text()
-			assert.strictEqual(body, "ok")
-			assert.match(
-				res.headers.get("content-type") ?? "",
-				/^text\/plain/,
-				"content-type should be text/plain",
-			)
-		},
-	)
+	await test("after startHttpServer() returns, /health is 200 `ok` (ready)", async () => {
+		assert.strictEqual(isReady(), true, "isReady() should be true post-start")
+		const res = await fetch(`${baseUrl}/health`)
+		assert.strictEqual(res.status, 200)
+		const body = await res.text()
+		assert.strictEqual(body, "ok")
+		assert.match(
+			res.headers.get("content-type") ?? "",
+			/^text\/plain/,
+			"content-type should be text/plain",
+		)
+	})
 
-	await test(
-		"flipping ready to false yields 503 `starting` (liveness-vs-readiness split)",
-		async () => {
-			_resetReadyForTests()
-			assert.strictEqual(isReady(), false, "isReady() should be false after reset")
-			const res = await fetch(`${baseUrl}/health`)
-			assert.strictEqual(
-				res.status,
-				503,
-				"503 is the canonical signal that a probe should not route traffic yet",
-			)
-			const body = await res.text()
-			assert.strictEqual(body, "starting")
-			assert.match(
-				res.headers.get("content-type") ?? "",
-				/^text\/plain/,
-				"content-type should be text/plain in the unready path too",
-			)
-		},
-	)
+	await test("flipping ready to false yields 503 `starting` (liveness-vs-readiness split)", async () => {
+		_resetReadyForTests()
+		assert.strictEqual(
+			isReady(),
+			false,
+			"isReady() should be false after reset",
+		)
+		const res = await fetch(`${baseUrl}/health`)
+		assert.strictEqual(
+			res.status,
+			503,
+			"503 is the canonical signal that a probe should not route traffic yet",
+		)
+		const body = await res.text()
+		assert.strictEqual(body, "starting")
+		assert.match(
+			res.headers.get("content-type") ?? "",
+			/^text\/plain/,
+			"content-type should be text/plain in the unready path too",
+		)
+	})
 
-	await test(
-		"stopHttpServer() clears the ready flag so a subsequent start sees 503 first",
-		async () => {
-			await stopHttpServer()
-			assert.strictEqual(
-				isReady(),
-				false,
-				"readiness must not survive shutdown — the next start has its own readiness lifecycle",
-			)
-		},
-	)
+	await test("stopHttpServer() clears the ready flag so a subsequent start sees 503 first", async () => {
+		await stopHttpServer()
+		assert.strictEqual(
+			isReady(),
+			false,
+			"readiness must not survive shutdown — the next start has its own readiness lifecycle",
+		)
+	})
 } finally {
 	try {
 		await stopHttpServer()

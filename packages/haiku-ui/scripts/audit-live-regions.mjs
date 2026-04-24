@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import fs from "node:fs"
 /**
  * audit-live-regions.mjs — asserts the aria-live sequencing contract:
  *
@@ -19,7 +20,6 @@
  *   2 — filesystem / read error
  */
 import { readFile } from "node:fs/promises"
-import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 

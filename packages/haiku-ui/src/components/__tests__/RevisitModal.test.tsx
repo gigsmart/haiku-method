@@ -25,7 +25,10 @@ function makeStubClient(overrides: Partial<ApiClient> = {}): ApiClient {
 		submitAnswer: vi.fn(),
 		submitDirection: vi.fn(),
 		submitRevisit: vi.fn(
-			async (_sessionId: string, _body: RevisitRequest): Promise<RevisitResponse> => ({
+			async (
+				_sessionId: string,
+				_body: RevisitRequest,
+			): Promise<RevisitResponse> => ({
 				ok: true as const,
 				action: "revisit",
 				message: "Revisit accepted",
@@ -44,9 +47,7 @@ function makeStubClient(overrides: Partial<ApiClient> = {}): ApiClient {
 	}
 }
 
-function makeItem(
-	overrides: Partial<FeedbackItemData> = {},
-): FeedbackItemData {
+function makeItem(overrides: Partial<FeedbackItemData> = {}): FeedbackItemData {
 	return {
 		feedback_id: "FB-01",
 		title: "A pending item",

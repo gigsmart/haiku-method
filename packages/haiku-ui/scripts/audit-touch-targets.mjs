@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import fs from "node:fs"
 /**
  * audit-touch-targets.mjs — headless-browser walk of the built SPA. Every
  * interactive element (role=button, button, role=switch, [tabindex="0"],
@@ -47,7 +48,6 @@
  * Report: packages/haiku-ui/reports/touch-targets.json
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises"
-import fs from "node:fs"
 import http from "node:http"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -305,9 +305,21 @@ function reviewCurrentPayload() {
 		stage: "development",
 		phase: "execute",
 		units: [
-			{ slug: "unit-15-state-coverage-and-motion", title: "Unit 15", status: "in_progress" },
-			{ slug: "unit-20-source-doc-opacity", title: "Unit 20", status: "approved" },
-			{ slug: "unit-22-modal-dialog-semantics", title: "Unit 22", status: "planned" },
+			{
+				slug: "unit-15-state-coverage-and-motion",
+				title: "Unit 15",
+				status: "in_progress",
+			},
+			{
+				slug: "unit-20-source-doc-opacity",
+				title: "Unit 20",
+				status: "approved",
+			},
+			{
+				slug: "unit-22-modal-dialog-semantics",
+				title: "Unit 22",
+				status: "planned",
+			},
 		],
 		feedback_summary: {
 			pending: 2,
@@ -316,9 +328,27 @@ function reviewCurrentPayload() {
 			rejected: 1,
 		},
 		stages: [
-			{ name: "product", status: "approved", phase: "gate", iteration: 1, visits: 1 },
-			{ name: "architecture", status: "approved", phase: "gate", iteration: 1, visits: 1 },
-			{ name: "design", status: "approved", phase: "gate", iteration: 1, visits: 1 },
+			{
+				name: "product",
+				status: "approved",
+				phase: "gate",
+				iteration: 1,
+				visits: 1,
+			},
+			{
+				name: "architecture",
+				status: "approved",
+				phase: "gate",
+				iteration: 1,
+				visits: 1,
+			},
+			{
+				name: "design",
+				status: "approved",
+				phase: "gate",
+				iteration: 1,
+				visits: 1,
+			},
 			{
 				name: "development",
 				status: "in_progress",
@@ -379,7 +409,7 @@ async function main() {
 		process.exit(2)
 	}
 
-	const server = http.createServer((req, res) => {
+	const server = http.createServer((_req, res) => {
 		res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" })
 		res.end(html)
 	})
@@ -452,7 +482,7 @@ async function main() {
 			// history.replaceState produces rich UI. Route matches are tried
 			// in order, so keep specific paths before the catchall.
 			await context.route("**/api/feedback/**", (route) => {
-				const reqUrl = route.request().url()
+				const _reqUrl = route.request().url()
 				// GET /api/feedback/:intent/:stage — populated list
 				if (route.request().method() === "GET") {
 					return route.fulfill(jsonResponse(feedbackListPayload()))
@@ -575,7 +605,7 @@ async function main() {
 						// utility class clip themselves to 1px; they only become
 						// visible on :focus and at that point carry their own
 						// focus-visible styles. Not a touch-tappable surface.
-						if (el.classList && el.classList.contains("sr-only")) continue
+						if (el.classList?.contains("sr-only")) continue
 						// Inline-text-link exception (WCAG 2.5.8) — <a> whose
 						// parent contains flowing prose text (non-link text siblings).
 						const isLink = el.tagName.toLowerCase() === "a"
@@ -597,10 +627,7 @@ async function main() {
 							if (!prose && el.parentElement) {
 								for (const child of el.parentElement.childNodes) {
 									if (child === el) continue
-									if (
-										child.nodeType === 3 &&
-										(child.nodeValue || "").trim()
-									) {
+									if (child.nodeType === 3 && (child.nodeValue || "").trim()) {
 										prose = true
 										break
 									}
@@ -611,8 +638,7 @@ async function main() {
 						// absolutely positioned AND is ≥ 44×44, treat as effective.
 						const before = getComputedStyle(el, "::before")
 						const beforeIsExt =
-							before &&
-							before.content &&
+							before?.content &&
 							before.content !== "none" &&
 							before.position === "absolute" &&
 							(Number.parseFloat(before.width) >= MIN ||
@@ -639,9 +665,7 @@ async function main() {
 							effectiveH: Math.round(effectiveH),
 							beforeIsExt,
 							prose,
-							pass:
-								prose ||
-								(effectiveW >= MIN && effectiveH >= MIN),
+							pass: prose || (effectiveW >= MIN && effectiveH >= MIN),
 						})
 					}
 					return out
@@ -720,11 +744,7 @@ async function main() {
 		}
 	}
 
-	if (
-		failures.length > 0 ||
-		coverageCollapse ||
-		missingTestids.length > 0
-	) {
+	if (failures.length > 0 || coverageCollapse || missingTestids.length > 0) {
 		process.exit(1)
 	}
 	process.exit(0)

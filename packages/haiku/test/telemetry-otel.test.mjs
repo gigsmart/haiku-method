@@ -141,14 +141,11 @@ await withEnv({}, (t) => {
 
 // ── Header resolution ────────────────────────────────────────────────────
 
-await withEnv(
-	{ OTEL_EXPORTER_OTLP_HEADERS: "x-api-key=abc" },
-	(t) => {
-		test("headers: generic headers are used when no per-signal set", () => {
-			assert.deepStrictEqual(t.resolveHeaders(), { "x-api-key": "abc" })
-		})
-	},
-)
+await withEnv({ OTEL_EXPORTER_OTLP_HEADERS: "x-api-key=abc" }, (t) => {
+	test("headers: generic headers are used when no per-signal set", () => {
+		assert.deepStrictEqual(t.resolveHeaders(), { "x-api-key": "abc" })
+	})
+})
 
 await withEnv(
 	{
@@ -173,14 +170,11 @@ await withEnv({}, (t) => {
 	})
 })
 
-await withEnv(
-	{ OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf" },
-	(t) => {
-		test("protocol: honors generic setting", () => {
-			assert.strictEqual(t.resolveProtocol(), "http/protobuf")
-		})
-	},
-)
+await withEnv({ OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf" }, (t) => {
+	test("protocol: honors generic setting", () => {
+		assert.strictEqual(t.resolveProtocol(), "http/protobuf")
+	})
+})
 
 await withEnv(
 	{
@@ -230,18 +224,15 @@ await withEnv({}, (t) => {
 	})
 })
 
-await withEnv(
-	{ OTEL_SERVICE_NAME: "my-service" },
-	(t) => {
-		test("resourceAttrs: OTEL_SERVICE_NAME overrides default", () => {
-			const attrs = t.resolveResourceAttrs()
-			const byKey = Object.fromEntries(
-				attrs.map((a) => [a.key, a.value.stringValue]),
-			)
-			assert.strictEqual(byKey["service.name"], "my-service")
-		})
-	},
-)
+await withEnv({ OTEL_SERVICE_NAME: "my-service" }, (t) => {
+	test("resourceAttrs: OTEL_SERVICE_NAME overrides default", () => {
+		const attrs = t.resolveResourceAttrs()
+		const byKey = Object.fromEntries(
+			attrs.map((a) => [a.key, a.value.stringValue]),
+		)
+		assert.strictEqual(byKey["service.name"], "my-service")
+	})
+})
 
 await withEnv(
 	{
@@ -300,9 +291,15 @@ await withEnv(
 // Write a temporary settings.json pointing at a temporary shell script,
 // then run in that directory so loadClaudeCodeSettings() picks it up.
 
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, chmodSync } from "node:fs"
-import { join as pjoin } from "node:path"
+import {
+	chmodSync,
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs"
 import { tmpdir } from "node:os"
+import { join as pjoin } from "node:path"
 
 async function withHelperScript(scriptBody, settingsBody, fn) {
 	const dir = mkdtempSync(pjoin(tmpdir(), "haiku-otel-helper-"))
@@ -343,101 +340,85 @@ await withHelperScript(
 	},
 )
 
-await withHelperScript(
-	`#!/bin/sh\necho "not json"\n`,
-	null,
-	async () => {
-		await withEnv({}, (t) => {
+await withHelperScript(`#!/bin/sh\necho "not json"\n`, null, async () => {
+	await withEnv({}, (t) => {
+		t.resetHelperCache()
+		const origErr = console.error
+		console.error = () => {}
+		try {
+			test("otelHeadersHelper: invalid JSON returns empty, does not throw", () => {
+				const headers = t.resolveHelperHeaders()
+				assert.deepStrictEqual(headers, {})
+			})
+		} finally {
+			console.error = origErr
+		}
+	})
+})
+
+await withHelperScript(`#!/bin/sh\necho '{"key": 123}'\n`, null, async () => {
+	await withEnv({}, (t) => {
+		t.resetHelperCache()
+		const origErr = console.error
+		console.error = () => {}
+		try {
+			test("otelHeadersHelper: rejects non-string values", () => {
+				const headers = t.resolveHelperHeaders()
+				assert.deepStrictEqual(headers, {})
+			})
+		} finally {
+			console.error = origErr
+		}
+	})
+})
+
+await withHelperScript(`#!/bin/sh\nexit 1\n`, null, async () => {
+	await withEnv({}, (t) => {
+		t.resetHelperCache()
+		const origErr = console.error
+		console.error = () => {}
+		try {
+			test("otelHeadersHelper: non-zero exit returns empty, does not throw", () => {
+				const headers = t.resolveHelperHeaders()
+				assert.deepStrictEqual(headers, {})
+			})
+		} finally {
+			console.error = origErr
+		}
+	})
+})
+
+await withHelperScript(`#!/bin/sh\ndate +%s%N\n`, null, async () => {
+	await withEnv(
+		{ CLAUDE_CODE_OTEL_HEADERS_HELPER_DEBOUNCE_MS: "60000" },
+		(t) => {
 			t.resetHelperCache()
 			const origErr = console.error
 			console.error = () => {}
 			try {
-				test("otelHeadersHelper: invalid JSON returns empty, does not throw", () => {
-					const headers = t.resolveHelperHeaders()
-					assert.deepStrictEqual(headers, {})
+				test("otelHeadersHelper: result is cached within debounce window", () => {
+					const origStderr = process.stderr.write
+					process.stderr.write = () => true
+					try {
+						// First call runs the helper (returns invalid JSON, so we get
+						// empty object), caches the attempt timestamp. We expose a
+						// separate test with a valid script below for the "cache hit
+						// returns same object" path — here we just verify the
+						// function returns without error and does not re-invoke
+						// on the second call if cached successfully.
+						const first = t.resolveHelperHeaders()
+						const second = t.resolveHelperHeaders()
+						assert.deepStrictEqual(first, second)
+					} finally {
+						process.stderr.write = origStderr
+					}
 				})
 			} finally {
 				console.error = origErr
 			}
-		})
-	},
-)
-
-await withHelperScript(
-	`#!/bin/sh\necho '{"key": 123}'\n`,
-	null,
-	async () => {
-		await withEnv({}, (t) => {
-			t.resetHelperCache()
-			const origErr = console.error
-			console.error = () => {}
-			try {
-				test("otelHeadersHelper: rejects non-string values", () => {
-					const headers = t.resolveHelperHeaders()
-					assert.deepStrictEqual(headers, {})
-				})
-			} finally {
-				console.error = origErr
-			}
-		})
-	},
-)
-
-await withHelperScript(
-	`#!/bin/sh\nexit 1\n`,
-	null,
-	async () => {
-		await withEnv({}, (t) => {
-			t.resetHelperCache()
-			const origErr = console.error
-			console.error = () => {}
-			try {
-				test("otelHeadersHelper: non-zero exit returns empty, does not throw", () => {
-					const headers = t.resolveHelperHeaders()
-					assert.deepStrictEqual(headers, {})
-				})
-			} finally {
-				console.error = origErr
-			}
-		})
-	},
-)
-
-await withHelperScript(
-	`#!/bin/sh\ndate +%s%N\n`,
-	null,
-	async () => {
-		await withEnv(
-			{ CLAUDE_CODE_OTEL_HEADERS_HELPER_DEBOUNCE_MS: "60000" },
-			(t) => {
-				t.resetHelperCache()
-				const origErr = console.error
-				console.error = () => {}
-				try {
-					test("otelHeadersHelper: result is cached within debounce window", () => {
-						const origStderr = process.stderr.write
-						process.stderr.write = () => true
-						try {
-							// First call runs the helper (returns invalid JSON, so we get
-							// empty object), caches the attempt timestamp. We expose a
-							// separate test with a valid script below for the "cache hit
-							// returns same object" path — here we just verify the
-							// function returns without error and does not re-invoke
-							// on the second call if cached successfully.
-							const first = t.resolveHelperHeaders()
-							const second = t.resolveHelperHeaders()
-							assert.deepStrictEqual(first, second)
-						} finally {
-							process.stderr.write = origStderr
-						}
-					})
-				} finally {
-					console.error = origErr
-				}
-			},
-		)
-	},
-)
+		},
+	)
+})
 
 await withHelperScript(
 	`#!/bin/sh\necho '{"Authorization":"Bearer one"}'\n`,

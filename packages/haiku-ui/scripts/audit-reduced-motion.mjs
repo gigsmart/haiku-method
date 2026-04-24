@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import fs from "node:fs"
 /**
  * audit-reduced-motion.mjs — asserts the reduced-motion contract declared
  * in `stages/design/artifacts/motion-and-reduced-motion-spec.md §10`:
@@ -25,7 +26,6 @@
  *   2 — filesystem / read error
  */
 import { readFile } from "node:fs/promises"
-import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 

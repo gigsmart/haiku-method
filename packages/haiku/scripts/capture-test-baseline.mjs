@@ -136,9 +136,7 @@ function capture() {
 function diff() {
 	ensureArtifactsDir()
 	if (!existsSync(baselineFile)) {
-		console.error(
-			`No baseline at ${baselineFile} — run --mode=capture first.`,
-		)
+		console.error(`No baseline at ${baselineFile} — run --mode=capture first.`)
 		process.exit(2)
 	}
 	const baseline = JSON.parse(readFileSync(baselineFile, "utf8"))

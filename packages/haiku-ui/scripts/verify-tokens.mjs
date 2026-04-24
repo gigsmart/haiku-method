@@ -32,10 +32,7 @@ const TAILWIND_CONFIG = path.join(PACKAGE_DIR, "tailwind.config.ts")
 
 function resolveDesignTokensPath() {
 	if (process.env.HAIKU_INTENT_DIR) {
-		return path.join(
-			process.env.HAIKU_INTENT_DIR,
-			"knowledge/DESIGN-TOKENS.md",
-		)
+		return path.join(process.env.HAIKU_INTENT_DIR, "knowledge/DESIGN-TOKENS.md")
 	}
 	// Prefer the unit-worktree's own intent dir — the worktree lives under
 	// `.haiku/worktrees/<intent>/<unit>/`, and that intent's knowledge/
@@ -43,9 +40,7 @@ function resolveDesignTokensPath() {
 	// PACKAGE_DIR path) contains that intent slug as a parent directory.
 	const candidates = [PACKAGE_DIR, process.cwd()]
 	for (const startDir of candidates) {
-		const match = startDir.match(
-			/\.haiku\/worktrees\/([^/]+)\/[^/]+/,
-		)
+		const match = startDir.match(/\.haiku\/worktrees\/([^/]+)\/[^/]+/)
 		if (match) {
 			// Walk upward from the start dir to find the unit worktree root,
 			// then read its own `.haiku/intents/<intent>/knowledge/DESIGN-TOKENS.md`.

@@ -26,7 +26,12 @@ interface Props {
 	onActiveChange?: (id: string) => void
 }
 
-export function Tabs({ groupId, tabs, activeId: controlledActiveId, onActiveChange }: Props) {
+export function Tabs({
+	groupId,
+	tabs,
+	activeId: controlledActiveId,
+	onActiveChange,
+}: Props) {
 	const enabledTabs = tabs.filter((t) => !t.disabled)
 	const [activeId, setActiveId] = useState(
 		controlledActiveId ?? enabledTabs[0]?.id ?? "",
