@@ -1,6 +1,19 @@
-import type { BrowseProvider, HaikuArtifact, HaikuIntent, HaikuIntentDetail, HaikuKnowledgeFile, HaikuStageState, HaikuUnit } from "./types"
-import { normalizeIntentStatus, parseCriteria, parseFrontmatter, parseUnit, safeParseFrontmatter } from "./types"
 import { parseSettingsYaml } from "./resolve-links"
+import type {
+	BrowseProvider,
+	HaikuArtifact,
+	HaikuIntent,
+	HaikuIntentDetail,
+	HaikuKnowledgeFile,
+	HaikuStageState,
+	HaikuUnit,
+} from "./types"
+import {
+	normalizeIntentStatus,
+	parseCriteria,
+	parseFrontmatter,
+	parseUnit,
+} from "./types"
 
 // File System Access API types (not in all TS DOM libs)
 interface FSDirectoryHandle {
@@ -89,13 +102,11 @@ export class LocalProvider implements BrowseProvider {
 		for (const slug of intentDirs) {
 			const raw = await this.readFile(`.haiku/intents/${slug}/intent.md`)
 			if (!raw) continue
-			const parsed = safeParseFrontmatter(raw, {
+			const { data, content } = parseFrontmatter(raw, {
 				provider: "local",
 				path: `.haiku/intents/${slug}/intent.md`,
 				slug,
 			})
-			if (!parsed) continue
-			const { data, content } = parsed
 			const studio = (data.studio as string) || "ideation"
 			const stages = (data.stages as string[]) || []
 
@@ -105,11 +116,14 @@ export class LocalProvider implements BrowseProvider {
 				studio,
 				activeStage: (data.active_stage as string) || "",
 				mode: (data.mode as string) || "continuous",
-				createdAt: (data.created_at as string) || (data.created as string) || null,
+				createdAt:
+					(data.created_at as string) || (data.created as string) || null,
 				startedAt: (data.started_at as string) || null,
 				completedAt: (data.completed_at as string) || null,
 				studioStages: (data.stages as string[]) || [],
-				composite: (data.composite as Array<{ studio: string; stages: string[] }>) || null,
+				composite:
+					(data.composite as Array<{ studio: string; stages: string[] }>) ||
+					null,
 				...normalizeIntentStatus(
 					(data.status as string) || "active",
 					(data.completed_at as string) || null,
@@ -131,7 +145,11 @@ export class LocalProvider implements BrowseProvider {
 		const raw = await this.readFile(`.haiku/intents/${slug}/intent.md`)
 		if (!raw) return null
 
-		const { data, content } = parseFrontmatter(raw)
+		const { data, content } = parseFrontmatter(raw, {
+			provider: "local",
+			path: `.haiku/intents/${slug}/intent.md`,
+			slug,
+		})
 		const studio = (data.studio as string) || "ideation"
 		const stageNames = (data.stages as string[]) || []
 		const activeStage = (data.active_stage as string) || ""
@@ -141,18 +159,29 @@ export class LocalProvider implements BrowseProvider {
 		const stages: HaikuStageState[] = []
 
 		for (const stageName of stageNames.length > 0 ? stageNames : stageDirs) {
-			const unitFiles = await this.listFiles(`.haiku/intents/${slug}/stages/${stageName}/units`)
+			const unitFiles = await this.listFiles(
+				`.haiku/intents/${slug}/stages/${stageName}/units`,
+			)
 			const units: HaikuUnit[] = []
 
 			for (const unitFile of unitFiles) {
 				if (!unitFile.endsWith(".md")) continue
-				const unitRaw = await this.readFile(`.haiku/intents/${slug}/stages/${stageName}/units/${unitFile}`)
+				const unitPath = `.haiku/intents/${slug}/stages/${stageName}/units/${unitFile}`
+				const unitRaw = await this.readFile(unitPath)
 				if (!unitRaw) continue
-				units.push(parseUnit(unitFile, stageName, unitRaw))
+				units.push(
+					parseUnit(unitFile, stageName, unitRaw, {
+						provider: "local",
+						path: unitPath,
+						slug,
+					}),
+				)
 			}
 
 			// Read stage state.json
-			const stateRaw = await this.readFile(`.haiku/intents/${slug}/stages/${stageName}/state.json`)
+			const stateRaw = await this.readFile(
+				`.haiku/intents/${slug}/stages/${stageName}/state.json`,
+			)
 			let stagePhase = ""
 			let stageStartedAt: string | null = null
 			let stageCompletedAt: string | null = null
@@ -164,24 +193,34 @@ export class LocalProvider implements BrowseProvider {
 					stageStartedAt = stateData.started_at || null
 					stageCompletedAt = stateData.completed_at || null
 					gateOutcome = stateData.gate_outcome || null
-				} catch { /* ignore */ }
+				} catch {
+					/* ignore */
+				}
 			}
 
 			let status: "pending" | "active" | "complete" = "pending"
 			if (stageName === activeStage) status = "active"
-			else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage)) status = "complete"
+			else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage))
+				status = "complete"
 
 			// Read stage artifacts
-			const artifactFiles = await this.listFiles(`.haiku/intents/${slug}/stages/${stageName}/artifacts`)
+			const artifactFiles = await this.listFiles(
+				`.haiku/intents/${slug}/stages/${stageName}/artifacts`,
+			)
 			const stageArtifacts: HaikuArtifact[] = []
 			for (const af of artifactFiles) {
 				const lower = af.toLowerCase()
-				const artType: HaikuArtifact["type"] = lower.endsWith(".md") ? "markdown"
-					: (lower.endsWith(".html") || lower.endsWith(".htm")) ? "html"
-					: /\.(png|jpe?g|gif|svg|webp|avif|bmp|ico)$/.test(lower) ? "image"
-					: "other"
+				const artType: HaikuArtifact["type"] = lower.endsWith(".md")
+					? "markdown"
+					: lower.endsWith(".html") || lower.endsWith(".htm")
+						? "html"
+						: /\.(png|jpe?g|gif|svg|webp|avif|bmp|ico)$/.test(lower)
+							? "image"
+							: "other"
 				// For local FS, read text content (images won't work inline — would need object URLs)
-				const artContent = await this.readFile(`.haiku/intents/${slug}/stages/${stageName}/artifacts/${af}`)
+				const artContent = await this.readFile(
+					`.haiku/intents/${slug}/stages/${stageName}/artifacts/${af}`,
+				)
 				if (artContent != null) {
 					stageArtifacts.push({ name: af, content: artContent, type: artType })
 				} else {
@@ -202,20 +241,28 @@ export class LocalProvider implements BrowseProvider {
 		}
 
 		// Load knowledge files with content
-		const knowledgeFileNames = await this.listFiles(`.haiku/intents/${slug}/knowledge`)
+		const knowledgeFileNames = await this.listFiles(
+			`.haiku/intents/${slug}/knowledge`,
+		)
 		const knowledge: HaikuKnowledgeFile[] = []
 		for (const name of knowledgeFileNames) {
 			if (!name.endsWith(".md")) continue
-			const kContent = await this.readFile(`.haiku/intents/${slug}/knowledge/${name}`)
+			const kContent = await this.readFile(
+				`.haiku/intents/${slug}/knowledge/${name}`,
+			)
 			knowledge.push({ name, content: kContent || "" })
 		}
 
 		// Load operations files with content
-		const operationsFileNames = await this.listFiles(`.haiku/intents/${slug}/operations`)
+		const operationsFileNames = await this.listFiles(
+			`.haiku/intents/${slug}/operations`,
+		)
 		const operations: HaikuKnowledgeFile[] = []
 		for (const name of operationsFileNames) {
 			if (!name.endsWith(".md")) continue
-			const oContent = await this.readFile(`.haiku/intents/${slug}/operations/${name}`)
+			const oContent = await this.readFile(
+				`.haiku/intents/${slug}/operations/${name}`,
+			)
 			operations.push({ name, content: oContent || "" })
 		}
 
@@ -225,11 +272,13 @@ export class LocalProvider implements BrowseProvider {
 			studio,
 			activeStage,
 			mode: (data.mode as string) || "continuous",
-			createdAt: (data.created_at as string) || (data.created as string) || null,
+			createdAt:
+				(data.created_at as string) || (data.created as string) || null,
 			startedAt: (data.started_at as string) || null,
 			completedAt: (data.completed_at as string) || null,
 			studioStages: (data.stages as string[]) || [],
-			composite: (data.composite as Array<{ studio: string; stages: string[] }>) || null,
+			composite:
+				(data.composite as Array<{ studio: string; stages: string[] }>) || null,
 			...normalizeIntentStatus(
 				(data.status as string) || "active",
 				(data.completed_at as string) || null,

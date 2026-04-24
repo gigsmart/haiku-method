@@ -1,5 +1,6 @@
 import { fetchQuery } from "relay-runtime"
 import { createRelayEnvironment } from "./graphql/environment"
+import { parseSettingsYaml } from "./resolve-links"
 import type {
 	BrowseProvider,
 	HaikuArtifact,
@@ -9,8 +10,7 @@ import type {
 	HaikuStageState,
 	HaikuUnit,
 } from "./types"
-import { normalizeIntentStatus, parseFrontmatter, parseUnit, safeParseFrontmatter } from "./types"
-import { parseSettingsYaml } from "./resolve-links"
+import { normalizeIntentStatus, parseFrontmatter, parseUnit } from "./types"
 
 import type { operationsBatchBlobsQuery$data } from "./graphql/gitlab/__generated__/operationsBatchBlobsQuery.graphql"
 import BatchBlobsQuery from "./graphql/gitlab/__generated__/operationsBatchBlobsQuery.graphql"
@@ -53,9 +53,25 @@ export class GitLabProvider implements BrowseProvider {
 	private env: ReturnType<typeof createRelayEnvironment>
 	/** Maps slug → branch for intents discovered via branch scanning */
 	private intentBranchMap = new Map<string, string>()
-	private intentMetaMap = new Map<string, { branch?: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null }>()
+	private intentMetaMap = new Map<
+		string,
+		{
+			branch?: string
+			prUrl?: string | null
+			prStatus?: string | null
+			prNumber?: number | null
+		}
+	>()
 	/** Maps "slug/stageName" → branch/MR metadata for stage-level branches */
-	private stageBranchMap = new Map<string, { branch: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null }>()
+	private stageBranchMap = new Map<
+		string,
+		{
+			branch: string
+			prUrl?: string | null
+			prStatus?: string | null
+			prNumber?: number | null
+		}
+	>()
 	/** ETag from the last branch-change poll */
 	private lastBranchesEtag: string | null = null
 
@@ -128,7 +144,10 @@ export class GitLabProvider implements BrowseProvider {
 			project: {
 				repository: {
 					blobs: {
-						nodes: Array<{ path: string; rawTextBlob: string | null } | null> | null
+						nodes: Array<{
+							path: string
+							rawTextBlob: string | null
+						} | null> | null
 					} | null
 				} | null
 			} | null
@@ -172,15 +191,20 @@ export class GitLabProvider implements BrowseProvider {
 			.sort()
 	}
 
-
 	/** Read a file from a specific ref (bypasses this.ref). */
-	private async readFileFromRef(ref: string, path: string): Promise<string | null> {
+	private async readFileFromRef(
+		ref: string,
+		path: string,
+	): Promise<string | null> {
 		const cacheKey = `gl:${this.host}:${this.projectPath}:readFile:${ref}:${path}`
 		type ReadData = {
 			project: {
 				repository: {
 					blobs: {
-						nodes: Array<{ path: string; rawTextBlob: string | null } | null> | null
+						nodes: Array<{
+							path: string
+							rawTextBlob: string | null
+						} | null> | null
 					} | null
 				} | null
 			} | null
@@ -196,9 +220,11 @@ export class GitLabProvider implements BrowseProvider {
 	}
 
 	/** Fetch the most recent MR for a given source branch. Returns nulls on failure. */
-	private async fetchMrForBranch(
-		branchName: string,
-	): Promise<{ prUrl: string | null; prStatus: string | null; prNumber: number | null }> {
+	private async fetchMrForBranch(branchName: string): Promise<{
+		prUrl: string | null
+		prStatus: string | null
+		prNumber: number | null
+	}> {
 		try {
 			const mrRes = await this.restApi(
 				`/merge_requests?source_branch=${encodeURIComponent(branchName)}&state=all&order_by=updated_at&sort=desc&per_page=1`,
@@ -220,21 +246,25 @@ export class GitLabProvider implements BrowseProvider {
 	}
 
 	/** Parse raw intent.md text into a HaikuIntent with optional branch/MR metadata.
-	 *  Returns null if the frontmatter is malformed — the parse error is reported to Sentry
-	 *  so broken intent files surface in monitoring without breaking the whole portfolio view. */
+	 *  Malformed frontmatter is reported to Sentry and recovered to empty data so the
+	 *  broken intent still appears in the list (title falls back to slug) instead of
+	 *  silently disappearing. */
 	private parseIntentFromRaw(
 		slug: string,
 		rawText: string,
-		meta?: { branch?: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null },
-	): HaikuIntent | null {
-		const parsed = safeParseFrontmatter(rawText, {
+		meta?: {
+			branch?: string
+			prUrl?: string | null
+			prStatus?: string | null
+			prNumber?: number | null
+		},
+	): HaikuIntent {
+		const { data, content } = parseFrontmatter(rawText, {
 			provider: "gitlab",
 			path: `.haiku/intents/${slug}/intent.md`,
 			slug,
 			branch: meta?.branch,
 		})
-		if (!parsed) return null
-		const { data, content } = parsed
 		const studio = (data.studio as string) || "ideation"
 		const stages = (data.stages as string[]) || []
 
@@ -244,13 +274,13 @@ export class GitLabProvider implements BrowseProvider {
 			studio,
 			activeStage: (data.active_stage as string) || "",
 			mode: (data.mode as string) || "continuous",
-			createdAt: (data.created_at as string) || (data.created as string) || null,
+			createdAt:
+				(data.created_at as string) || (data.created as string) || null,
 			startedAt: (data.started_at as string) || null,
 			completedAt: (data.completed_at as string) || null,
 			studioStages: (data.stages as string[]) || [],
 			composite:
-				(data.composite as Array<{ studio: string; stages: string[] }>) ||
-				null,
+				(data.composite as Array<{ studio: string; stages: string[] }>) || null,
 			...normalizeIntentStatus(
 				(data.status as string) || "active",
 				(data.completed_at as string) || null,
@@ -291,41 +321,59 @@ export class GitLabProvider implements BrowseProvider {
 
 		// Step 1: List haiku/* branches via GraphQL
 		const branchesCacheKey = `gl:${this.host}:${this.projectPath}:listHaikuBranches`
-		const branchesData = await this.cachedQuery<operationsListBranchNamesQuery$data>(
-			ListBranchNamesQuery,
-			{ fullPath: this.projectPath, searchPattern: "haiku/*", offset: 0, limit: 100 },
-			branchesCacheKey,
-		)
+		const branchesData =
+			await this.cachedQuery<operationsListBranchNamesQuery$data>(
+				ListBranchNamesQuery,
+				{
+					fullPath: this.projectPath,
+					searchPattern: "haiku/*",
+					offset: 0,
+					limit: 100,
+				},
+				branchesCacheKey,
+			)
 
 		const branchNames = branchesData?.project?.repository?.branchNames ?? []
 		if (branchNames.length > 0) {
-			console.log(`[haiku-browse] Found ${branchNames.length} haiku branches:`, branchNames)
+			console.log(
+				`[haiku-browse] Found ${branchNames.length} haiku branches:`,
+				branchNames,
+			)
 		} else {
-			console.log(`[haiku-browse] No haiku branches found via branchNames query`)
+			console.log(
+				`[haiku-browse] No haiku branches found via branchNames query`,
+			)
 		}
 
 		// Capture stage-level branches (haiku/{slug}/{stageName}, where stageName != "main")
 		const stageBranchNames = branchNames.filter((name: string) => {
 			const parts = name.split("/")
-			return parts.length >= 3 && parts[0] === "haiku" && parts[parts.length - 1] !== "main"
+			return (
+				parts.length >= 3 &&
+				parts[0] === "haiku" &&
+				parts[parts.length - 1] !== "main"
+			)
 		})
 
 		// Fetch MR data for stage branches in parallel
-		const stageBranchPromises = stageBranchNames.map(async (branchName: string) => {
-			const parts = branchName.split("/")
-			const slug = parts.slice(1, -1).join("/")
-			const stageName = parts[parts.length - 1]
-			if (!slug || !stageName) return
+		const stageBranchPromises = stageBranchNames.map(
+			async (branchName: string) => {
+				const parts = branchName.split("/")
+				const slug = parts.slice(1, -1).join("/")
+				const stageName = parts[parts.length - 1]
+				if (!slug || !stageName) return
 
-			const { prUrl, prStatus, prNumber } = await this.fetchMrForBranch(branchName)
+				const { prUrl, prStatus, prNumber } =
+					await this.fetchMrForBranch(branchName)
 
-			this.stageBranchMap.set(`${slug}/${stageName}`, {
-				branch: branchName,
-				prUrl,
-				prStatus,
-				prNumber,
-			})
-		})
+				this.stageBranchMap.set(`${slug}/${stageName}`, {
+					branch: branchName,
+					prUrl,
+					prStatus,
+					prNumber,
+				})
+			},
+		)
 
 		// Filter to haiku/*/main branches and extract slugs
 		const mainBranches = branchNames.filter((name: string) => {
@@ -347,11 +395,15 @@ export class GitLabProvider implements BrowseProvider {
 			const slug = parts.slice(1, -1).join("/")
 			if (!slug) return
 
-			const rawText = await this.readFileFromRef(branchName, `.haiku/intents/${slug}/intent.md`)
+			const rawText = await this.readFileFromRef(
+				branchName,
+				`.haiku/intents/${slug}/intent.md`,
+			)
 			if (!rawText) return
 
 			// Fetch the most recent MR for this branch in ANY state (opened, merged, closed).
-			const { prUrl, prStatus, prNumber } = await this.fetchMrForBranch(branchName)
+			const { prUrl, prStatus, prNumber } =
+				await this.fetchMrForBranch(branchName)
 
 			const intent = this.parseIntentFromRaw(slug, rawText, {
 				branch: branchName,
@@ -359,10 +411,14 @@ export class GitLabProvider implements BrowseProvider {
 				prStatus,
 				prNumber,
 			})
-			if (!intent) return
 			intentsBySlug.set(slug, intent)
 			this.intentBranchMap.set(slug, branchName)
-			this.intentMetaMap.set(slug, { branch: branchName, prUrl, prStatus, prNumber })
+			this.intentMetaMap.set(slug, {
+				branch: branchName,
+				prUrl,
+				prStatus,
+				prNumber,
+			})
 		})
 
 		// Stream default-branch intents immediately so the UI renders progressively
@@ -416,11 +472,12 @@ export class GitLabProvider implements BrowseProvider {
 			const chunk = allPaths.slice(i, i + CHUNK_SIZE)
 			const blobsCacheKey = `gl:${this.host}:${this.projectPath}:listIntentsBlobs:${ref || "HEAD"}:${i}`
 			try {
-				const blobsData = await this.cachedQuery<operationsBatchBlobsQuery$data>(
-					BatchBlobsQuery,
-					{ fullPath: this.projectPath, paths: chunk, ref },
-					blobsCacheKey,
-				)
+				const blobsData =
+					await this.cachedQuery<operationsBatchBlobsQuery$data>(
+						BatchBlobsQuery,
+						{ fullPath: this.projectPath, paths: chunk, ref },
+						blobsCacheKey,
+					)
 				const blobs = blobsData?.project?.repository?.blobs?.nodes ?? []
 				for (const blob of blobs) {
 					if (blob?.rawTextBlob && blob.path) {
@@ -429,7 +486,9 @@ export class GitLabProvider implements BrowseProvider {
 				}
 			} catch {
 				for (const path of chunk) {
-					const raw = ref ? await this.readFileFromRef(ref, path) : await this.readFile(path)
+					const raw = ref
+						? await this.readFileFromRef(ref, path)
+						: await this.readFile(path)
 					if (raw) blobByPath.set(path, raw)
 				}
 			}
@@ -444,7 +503,6 @@ export class GitLabProvider implements BrowseProvider {
 			if (!rawText) continue
 
 			const intent = this.parseIntentFromRaw(slug, rawText)
-			if (!intent) continue
 			intents.push(intent)
 		}
 
@@ -477,10 +535,12 @@ export class GitLabProvider implements BrowseProvider {
 			treeCacheKey,
 		)
 
-		const allBlobs = (treeData?.project?.repository?.tree?.blobs?.nodes ?? [])
-			.filter((b): b is { name: string; path: string } => b?.path != null)
-		const allTrees = (treeData?.project?.repository?.tree?.trees?.nodes ?? [])
-			.filter((t): t is { name: string; path: string } => t?.path != null)
+		const allBlobs = (
+			treeData?.project?.repository?.tree?.blobs?.nodes ?? []
+		).filter((b): b is { name: string; path: string } => b?.path != null)
+		const allTrees = (
+			treeData?.project?.repository?.tree?.trees?.nodes ?? []
+		).filter((t): t is { name: string; path: string } => t?.path != null)
 
 		if (allBlobs.length === 0 && allTrees.length === 0) return null
 
@@ -493,11 +553,12 @@ export class GitLabProvider implements BrowseProvider {
 			const chunk = filePaths.slice(i, i + CHUNK_SIZE)
 			const blobsCacheKey = `gl:${this.host}:${this.projectPath}:intentBlobs:${slug}:${refLabel}:${i}`
 			try {
-				const blobsData = await this.cachedQuery<operationsBatchBlobsQuery$data>(
-					BatchBlobsQuery,
-					{ fullPath: this.projectPath, paths: chunk, ref },
-					blobsCacheKey,
-				)
+				const blobsData =
+					await this.cachedQuery<operationsBatchBlobsQuery$data>(
+						BatchBlobsQuery,
+						{ fullPath: this.projectPath, paths: chunk, ref },
+						blobsCacheKey,
+					)
 				for (const blob of blobsData?.project?.repository?.blobs?.nodes ?? []) {
 					if (!blob?.path) continue
 					if (blob.rawTextBlob != null) {
@@ -506,12 +567,18 @@ export class GitLabProvider implements BrowseProvider {
 						// Binary file — REST API for CORS-compatible authenticated download
 						const encodedFilePath = encodeURIComponent(blob.path)
 						const rawUrl = `https://${this.host}/api/v4/projects/${this.encodedProject}/repository/files/${encodedFilePath}/raw?ref=${encodeURIComponent(ref || "HEAD")}`
-						assets.push({ path: blob.path, name: blob.name || blob.path.split("/").pop() || "", rawUrl })
+						assets.push({
+							path: blob.path,
+							name: blob.name || blob.path.split("/").pop() || "",
+							rawUrl,
+						})
 					}
 				}
 			} catch {
 				for (const path of chunk) {
-					const raw = ref ? await this.readFileFromRef(ref, path) : await this.readFile(path)
+					const raw = ref
+						? await this.readFileFromRef(ref, path)
+						: await this.readFile(path)
 					if (raw) blobByPath.set(path, raw)
 				}
 			}
@@ -533,7 +600,9 @@ export class GitLabProvider implements BrowseProvider {
 		const stagePath = `${basePath}/stages/${stageName}`
 
 		// Check if this stage has any blobs at all
-		const hasStageContent = data.allBlobs.some((b) => b.path.startsWith(`${stagePath}/`))
+		const hasStageContent = data.allBlobs.some((b) =>
+			b.path.startsWith(`${stagePath}/`),
+		)
 		if (!hasStageContent) return null
 
 		// Parse units
@@ -545,7 +614,14 @@ export class GitLabProvider implements BrowseProvider {
 			if (fileName.includes("/") || !fileName.endsWith(".md")) continue
 			const unitRaw = data.blobByPath.get(blob.path)
 			if (!unitRaw) continue
-			units.push(parseUnit(fileName, stageName, unitRaw))
+			units.push(
+				parseUnit(fileName, stageName, unitRaw, {
+					provider: "gitlab",
+					path: blob.path,
+					slug,
+					branch: ref,
+				}),
+			)
 		}
 
 		// Parse artifacts
@@ -579,12 +655,15 @@ export class GitLabProvider implements BrowseProvider {
 				startedAt = s.started_at || null
 				completedAt = s.completed_at || null
 				gateOutcome = s.gate_outcome || null
-			} catch { /* ignore */ }
+			} catch {
+				/* ignore */
+			}
 		}
 
 		let status: "pending" | "active" | "complete" = "pending"
 		if (stageName === activeStage) status = "active"
-		else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage)) status = "complete"
+		else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage))
+			status = "complete"
 
 		return {
 			name: stageName,
@@ -666,7 +745,10 @@ export class GitLabProvider implements BrowseProvider {
 	/** Deep-link probe: discover intent branch + stage branches when maps aren't populated. */
 	private async probeIntentBranch(slug: string): Promise<string | undefined> {
 		const branchName = `haiku/${slug}/main`
-		const testRead = await this.readFileFromRef(branchName, `.haiku/intents/${slug}/intent.md`)
+		const testRead = await this.readFileFromRef(
+			branchName,
+			`.haiku/intents/${slug}/intent.md`,
+		)
 		if (!testRead) return undefined
 
 		this.intentBranchMap.set(slug, branchName)
@@ -674,11 +756,17 @@ export class GitLabProvider implements BrowseProvider {
 		// Discover stage branches and MR metadata
 		try {
 			const branchesCacheKey = `gl:${this.host}:${this.projectPath}:listHaikuBranches:${slug}`
-			const branchesData = await this.cachedQuery<operationsListBranchNamesQuery$data>(
-				ListBranchNamesQuery,
-				{ fullPath: this.projectPath, searchPattern: `haiku/${slug}/*`, offset: 0, limit: 100 },
-				branchesCacheKey,
-			)
+			const branchesData =
+				await this.cachedQuery<operationsListBranchNamesQuery$data>(
+					ListBranchNamesQuery,
+					{
+						fullPath: this.projectPath,
+						searchPattern: `haiku/${slug}/*`,
+						offset: 0,
+						limit: 100,
+					},
+					branchesCacheKey,
+				)
 
 			const branchNames = branchesData?.project?.repository?.branchNames ?? []
 
@@ -690,22 +778,34 @@ export class GitLabProvider implements BrowseProvider {
 			const stageBranchEntries = branchNames
 				.map((name: string) => {
 					const parts = name.split("/")
-					if (parts.length < 3 || parts[0] !== "haiku" || parts[parts.length - 1] === "main") return null
+					if (
+						parts.length < 3 ||
+						parts[0] !== "haiku" ||
+						parts[parts.length - 1] === "main"
+					)
+						return null
 					const stageSlug = parts.slice(1, -1).join("/")
 					if (stageSlug !== slug) return null
 					return { name, stageName: parts[parts.length - 1] }
 				})
 				.filter(Boolean) as Array<{ name: string; stageName: string }>
 
-			await Promise.all(stageBranchEntries.map(async ({ name, stageName }) => {
-				const stageMr = await this.fetchMrForBranch(name)
-				this.stageBranchMap.set(`${slug}/${stageName}`, {
-					branch: name,
-					...stageMr,
-				})
-			}))
+			await Promise.all(
+				stageBranchEntries.map(async ({ name, stageName }) => {
+					const stageMr = await this.fetchMrForBranch(name)
+					this.stageBranchMap.set(`${slug}/${stageName}`, {
+						branch: name,
+						...stageMr,
+					})
+				}),
+			)
 		} catch {
-			this.intentMetaMap.set(slug, { branch: branchName, prUrl: null, prStatus: null, prNumber: null })
+			this.intentMetaMap.set(slug, {
+				branch: branchName,
+				prUrl: null,
+				prStatus: null,
+				prNumber: null,
+			})
 		}
 
 		return branchName
@@ -736,7 +836,15 @@ export class GitLabProvider implements BrowseProvider {
 		}
 
 		// Collect stage branches for this slug
-		const stageBranches = new Map<string, { branch: string; prUrl?: string | null; prStatus?: string | null; prNumber?: number | null }>()
+		const stageBranches = new Map<
+			string,
+			{
+				branch: string
+				prUrl?: string | null
+				prStatus?: string | null
+				prNumber?: number | null
+			}
+		>()
 		for (const [key, meta] of this.stageBranchMap) {
 			if (key.startsWith(`${slug}/`)) {
 				stageBranches.set(key.slice(slug.length + 1), meta)
@@ -744,9 +852,15 @@ export class GitLabProvider implements BrowseProvider {
 		}
 
 		// Fetch all trust levels in parallel
-		const stageBranchPromises = new Map<string, Promise<GitLabIntentRefData | null>>()
+		const stageBranchPromises = new Map<
+			string,
+			Promise<GitLabIntentRefData | null>
+		>()
 		for (const [stageName, meta] of stageBranches) {
-			stageBranchPromises.set(stageName, this.fetchIntentTreeFromRef(slug, meta.branch))
+			stageBranchPromises.set(
+				stageName,
+				this.fetchIntentTreeFromRef(slug, meta.branch),
+			)
 		}
 
 		const [defaultData, intentData] = await Promise.all([
@@ -762,11 +876,17 @@ export class GitLabProvider implements BrowseProvider {
 
 		// intent.md: intent branch wins, fallback to default
 		const basePath = `.haiku/intents/${slug}`
-		const intentRaw = intentData?.blobByPath.get(`${basePath}/intent.md`)
-			?? defaultData?.blobByPath.get(`${basePath}/intent.md`)
+		const intentRaw =
+			intentData?.blobByPath.get(`${basePath}/intent.md`) ??
+			defaultData?.blobByPath.get(`${basePath}/intent.md`)
 		if (!intentRaw) return null
 
-		const { data: frontmatter, content } = parseFrontmatter(intentRaw)
+		const { data: frontmatter, content } = parseFrontmatter(intentRaw, {
+			provider: "gitlab",
+			path: `${basePath}/intent.md`,
+			slug,
+			branch: intentBranch ?? undefined,
+		})
 		const studio = (frontmatter.studio as string) || "ideation"
 		const stageNames = (frontmatter.stages as string[]) || []
 		const activeStage = (frontmatter.active_stage as string) || ""
@@ -788,39 +908,58 @@ export class GitLabProvider implements BrowseProvider {
 			// Try each trust level, highest first
 			let parsed: HaikuStageState | null = null
 
-			// Level 3: Stage branch (highest trust for its own stage)
-			if (stageBranchResult) {
+			// Level 3: Stage branch (highest trust for its own stage).
+			// stageBranchResult is only populated from stageBranchPromises, which is
+			// derived from the same stageBranches map — so if stageBranchResult is
+			// non-null, stageBranchRef is too. Guard explicitly instead of asserting
+			// so the invariant stays visible if either map source ever widens.
+			if (stageBranchResult && stageBranchRef) {
 				parsed = this.parseStageFromBlobs(
-					slug, stageName,
+					slug,
+					stageName,
 					stageBranchResult,
-					activeStage, stageNames,
-					stageBranchRef!.branch,
+					activeStage,
+					stageNames,
+					stageBranchRef.branch,
 				)
 			}
 
-			// Level 2: Intent branch
-			if (!parsed && intentData) {
+			// Level 2: Intent branch. intentBranch is non-null here because
+			// intentData being non-null implies we successfully fetched from it.
+			if (!parsed && intentData && intentBranch) {
 				parsed = this.parseStageFromBlobs(
-					slug, stageName,
+					slug,
+					stageName,
 					intentData,
-					activeStage, stageNames,
-					intentBranch!,
+					activeStage,
+					stageNames,
+					intentBranch,
 				)
 			}
 
 			// Level 1: Default branch (baseline)
 			if (!parsed && defaultData) {
 				parsed = this.parseStageFromBlobs(
-					slug, stageName,
+					slug,
+					stageName,
 					defaultData,
-					activeStage, stageNames,
+					activeStage,
+					stageNames,
 					"HEAD",
 				)
 			}
 
 			if (!parsed) {
 				// Stage declared in frontmatter but not found on any branch
-				parsed = { name: stageName, status: "pending", phase: "", startedAt: null, completedAt: null, gateOutcome: null, units: [] }
+				parsed = {
+					name: stageName,
+					status: "pending",
+					phase: "",
+					startedAt: null,
+					completedAt: null,
+					gateOutcome: null,
+					units: [],
+				}
 			}
 
 			// Attach stage branch/MR metadata
@@ -835,25 +974,40 @@ export class GitLabProvider implements BrowseProvider {
 		}
 
 		// Knowledge: merge from all levels (each can contribute)
-		let knowledge = defaultData ? this.parseKnowledgeFromBlobs(slug, defaultData) : []
+		let knowledge = defaultData
+			? this.parseKnowledgeFromBlobs(slug, defaultData)
+			: []
 		if (intentData) {
-			knowledge = this.mergeKnowledge(knowledge, this.parseKnowledgeFromBlobs(slug, intentData))
+			knowledge = this.mergeKnowledge(
+				knowledge,
+				this.parseKnowledgeFromBlobs(slug, intentData),
+			)
 		}
 		for (const [, data] of stageBranchData) {
-			if (data) knowledge = this.mergeKnowledge(knowledge, this.parseKnowledgeFromBlobs(slug, data))
+			if (data)
+				knowledge = this.mergeKnowledge(
+					knowledge,
+					this.parseKnowledgeFromBlobs(slug, data),
+				)
 		}
 
 		// Operations: intent branch wins, fallback to default (stage branches cannot touch)
 		const opsSource = intentData ?? defaultData
-		const operations = opsSource ? this.parseOperationsFromBlobs(slug, opsSource) : []
+		const operations = opsSource
+			? this.parseOperationsFromBlobs(slug, opsSource)
+			: []
 
 		// Reflection: intent branch wins (stage branches cannot touch)
-		const reflection = intentData?.blobByPath.get(`${basePath}/reflection.md`)
-			?? defaultData?.blobByPath.get(`${basePath}/reflection.md`)
-			?? null
+		const reflection =
+			intentData?.blobByPath.get(`${basePath}/reflection.md`) ??
+			defaultData?.blobByPath.get(`${basePath}/reflection.md`) ??
+			null
 
 		// Assets: merge from all levels, de-duplicating by path (higher trust wins)
-		const assetsByPath = new Map<string, { path: string; name: string; rawUrl: string }>()
+		const assetsByPath = new Map<
+			string,
+			{ path: string; name: string; rawUrl: string }
+		>()
 		for (const a of defaultData?.assets ?? []) assetsByPath.set(a.path, a)
 		for (const a of intentData?.assets ?? []) assetsByPath.set(a.path, a)
 		for (const d of stageBranchData.values()) {
@@ -867,13 +1021,18 @@ export class GitLabProvider implements BrowseProvider {
 			studio,
 			activeStage,
 			mode: (frontmatter.mode as string) || "continuous",
-			createdAt: (frontmatter.created_at as string) || (frontmatter.created as string) || null,
+			createdAt:
+				(frontmatter.created_at as string) ||
+				(frontmatter.created as string) ||
+				null,
 			startedAt: (frontmatter.started_at as string) || null,
 			completedAt: (frontmatter.completed_at as string) || null,
 			studioStages: (frontmatter.stages as string[]) || [],
 			composite:
-				(frontmatter.composite as Array<{ studio: string; stages: string[] }>)
-				|| null,
+				(frontmatter.composite as Array<{
+					studio: string
+					stages: string[]
+				}>) || null,
 			...normalizeIntentStatus(
 				(frontmatter.status as string) || "active",
 				(frontmatter.completed_at as string) || null,
@@ -895,7 +1054,9 @@ export class GitLabProvider implements BrowseProvider {
 	}
 
 	/** Single-ref fallback for explicit branch mode (no three-level merge). */
-	private async getIntentSingleRef(slug: string): Promise<HaikuIntentDetail | null> {
+	private async getIntentSingleRef(
+		slug: string,
+	): Promise<HaikuIntentDetail | null> {
 		const data = await this.fetchIntentTreeFromRef(slug, this.ref)
 		if (!data) return null
 
@@ -903,7 +1064,12 @@ export class GitLabProvider implements BrowseProvider {
 		const rawText = data.blobByPath.get(`${basePath}/intent.md`)
 		if (!rawText) return null
 
-		const { data: frontmatter, content } = parseFrontmatter(rawText)
+		const { data: frontmatter, content } = parseFrontmatter(rawText, {
+			provider: "gitlab",
+			path: `${basePath}/intent.md`,
+			slug,
+			branch: this.ref ?? undefined,
+		})
 		const studio = (frontmatter.studio as string) || "ideation"
 		const stageNames = (frontmatter.stages as string[]) || []
 		const activeStage = (frontmatter.active_stage as string) || ""
@@ -912,10 +1078,16 @@ export class GitLabProvider implements BrowseProvider {
 		const fallbackDirNames = this.deriveStageDirNames(slug, data)
 
 		const stages: HaikuStageState[] = []
-		for (const stageName of stageNames.length > 0 ? stageNames : fallbackDirNames) {
+		for (const stageName of stageNames.length > 0
+			? stageNames
+			: fallbackDirNames) {
 			const parsed = this.parseStageFromBlobs(
-				slug, stageName, data,
-				activeStage, stageNames, ref,
+				slug,
+				stageName,
+				data,
+				activeStage,
+				stageNames,
+				ref,
 			)
 			if (parsed) stages.push(parsed)
 		}
@@ -930,13 +1102,18 @@ export class GitLabProvider implements BrowseProvider {
 			studio,
 			activeStage,
 			mode: (frontmatter.mode as string) || "continuous",
-			createdAt: (frontmatter.created_at as string) || (frontmatter.created as string) || null,
+			createdAt:
+				(frontmatter.created_at as string) ||
+				(frontmatter.created as string) ||
+				null,
 			startedAt: (frontmatter.started_at as string) || null,
 			completedAt: (frontmatter.completed_at as string) || null,
 			studioStages: (frontmatter.stages as string[]) || [],
 			composite:
-				(frontmatter.composite as Array<{ studio: string; stages: string[] }>)
-				|| null,
+				(frontmatter.composite as Array<{
+					studio: string
+					stages: string[]
+				}>) || null,
 			...normalizeIntentStatus(
 				(frontmatter.status as string) || "active",
 				(frontmatter.completed_at as string) || null,

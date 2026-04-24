@@ -1748,6 +1748,60 @@ function fsmEnterIntentCompletionReview(slug: string): void {
 }
 
 /**
+ * Merge the just-completed final stage's branch into intent main, reap
+ * the stage branch (local + remote), and switch the current checkout
+ * to intent main.
+ *
+ * Mirror of the prev-stage merge+reap that `fsmStartStage` runs on
+ * every non-final stage transition. There's no next stage to trigger
+ * that merge when the final stage completes — without this, the
+ * primary worktree stays parked on the dead stage branch, intent
+ * main misses the final stage's commits, and intent-completion work
+ * (studio-level review + fix loop + final gate) runs on stale
+ * state.
+ *
+ * Best-effort: merge conflicts don't throw. The completion-review
+ * phase still opens so a human can diagnose + reconcile manually
+ * rather than blocking the intent forever on an unresolved merge.
+ */
+function fsmFinalizeStageIntoIntentMain(slug: string, stage: string): void {
+	if (!isGitRepo()) return
+	if (!stage) return
+	const stageBranch = `haiku/${slug}/${stage}`
+	const intentMain = `haiku/${slug}/main`
+
+	if (branchExists(stageBranch) && !isBranchMerged(stageBranch, intentMain)) {
+		const mergeResult = mergeStageBranchIntoMain(slug, stage)
+		if (!mergeResult.success) {
+			console.error(
+				`[fsmFinalizeStageIntoIntentMain] merge ${stageBranch}→${intentMain} failed: ${mergeResult.message}. Intent-completion review will still open; resolve the merge manually before approving the final gate.`,
+			)
+			// Intentionally don't return — still try to switch to main so
+			// at least subsequent operations run against the correct
+			// branch. If the merge half-landed, the switch itself may
+			// also fail; the caller can detect and surface.
+		}
+	}
+
+	if (branchExists(stageBranch)) {
+		deleteStageBranch(slug, stage)
+		// Best-effort remote delete — same pattern as fsmStartStage's
+		// prev-stage reap.
+		try {
+			execFileSync("git", ["push", "origin", "--delete", stageBranch], {
+				stdio: "pipe",
+			})
+		} catch {
+			/* non-fatal: offline, no push perms, or branch already gone */
+		}
+	}
+
+	// Land the primary worktree on intent main. `ensureOnStageBranch`
+	// with stage=undefined resolves the target to intent main.
+	ensureOnStageBranch(slug, undefined)
+}
+
+/**
  * Shared completion path used by every gate-pass site that used to call
  * `fsmIntentComplete` + return `intent_complete` directly. Returns the
  * correct action for the current opt-in/opt-out state:
@@ -1773,6 +1827,20 @@ function completeOrReviewIntent(
 	// if the studio-level review consistently produces fewer findings, the
 	// specs and stage-level reviews upstream have gotten sharper.
 	const reviewOnCompletion = intent.intent_completion_review !== false
+
+	// Final-stage branch cleanup: fsmAdvanceStage does this atomically
+	// mid-intent via fsmStartStage(nextStage), but when the *final*
+	// stage completes there's no nextStage to drive it — the branch
+	// sits on disk, intent main misses the final-stage commits, and
+	// our worktree stays parked on a dead branch. Intent-completion
+	// work (studio review + fix loop + final gate) should always
+	// happen on intent main, so merge + reap + switch here.
+	const finalStage =
+		typeof intent.active_stage === "string" ? (intent.active_stage as string) : ""
+	if (finalStage) {
+		fsmFinalizeStageIntoIntentMain(slug, finalStage)
+	}
+
 	if (!reviewOnCompletion) {
 		fsmIntentComplete(slug)
 		return {
