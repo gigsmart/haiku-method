@@ -594,10 +594,7 @@ ${(opts.criteria || ["- [ ] Default criteria"]).join("\n")}
 		})
 		// Drop a second intent.md alongside the first so the project has
 		// two active intents and auto-resolve can't pick a winner.
-		const secondIntent = join(
-			projDir,
-			".haiku/intents/multi-2-slug/intent.md",
-		)
+		const secondIntent = join(projDir, ".haiku/intents/multi-2-slug/intent.md")
 		mkdirSync(join(projDir, ".haiku/intents/multi-2-slug/stages"), {
 			recursive: true,
 		})

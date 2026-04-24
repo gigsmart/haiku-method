@@ -33,8 +33,8 @@ export function RereviewBanner({
 				</span>
 				<span className="text-xs text-amber-800 dark:text-amber-300">
 					You requested changes on this intent
-					{relative ? ` — ${relative}` : ""}. Edited units are flagged with
-					a <strong>Changed</strong> badge below.
+					{relative ? ` — ${relative}` : ""}. Edited units are flagged with a{" "}
+					<strong>Changed</strong> badge below.
 				</span>
 			</div>
 			{snapshot.feedback.trim() && (

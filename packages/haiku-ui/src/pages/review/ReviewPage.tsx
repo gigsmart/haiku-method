@@ -29,6 +29,7 @@ import type { InlineCommentEntry } from "../../components/InlineComments"
 import { StageProgressStrip } from "../../components/StageProgressStrip"
 import { SubmitSuccess } from "../../components/SubmitSuccess"
 import { ThemeToggle } from "../../components/ThemeToggle"
+import { FeedbackProvider } from "../../hooks/FeedbackContext"
 import { useFeedback } from "../../hooks/useFeedback"
 import type { ReviewAnnotations } from "../../types"
 import { ArtifactsPane } from "./ArtifactsPane"
@@ -38,7 +39,6 @@ import { RereviewBanner } from "./shared/RereviewBanner"
 import type { ReviewPageSessionData } from "./shared/session-data"
 import type { ReviewDetailKind, ReviewTab } from "./shared/stage-tabs"
 import { StageReview } from "./stage/StageReview"
-import { FeedbackProvider } from "../../hooks/FeedbackContext"
 import { useFeedbackSidebarController } from "./useFeedbackSidebarController"
 import { useIsMobile } from "./useIsMobile"
 
@@ -89,9 +89,7 @@ function resolveGateModes(gate: string | undefined): GateMode[] {
 	return modes.length > 0 ? modes : ["auto"]
 }
 
-function gateBadgeCopy(
-	mode: GateMode,
-): { label: string; classes: string } {
+function gateBadgeCopy(mode: GateMode): { label: string; classes: string } {
 	switch (mode) {
 		case "ask":
 			return {
@@ -173,8 +171,7 @@ function phaseBadgeCopy(
 	if (phase === "elaborate") {
 		return {
 			label: "Elaborating",
-			classes:
-				"bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
+			classes: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
 		}
 	}
 	return null
@@ -192,7 +189,9 @@ function PhaseStepper({
 	phase: string | null
 	stageStatus: string
 }): React.ReactElement {
-	const activeIndex = phase ? STAGE_PHASES.indexOf(phase as typeof STAGE_PHASES[number]) : -1
+	const activeIndex = phase
+		? STAGE_PHASES.indexOf(phase as (typeof STAGE_PHASES)[number])
+		: -1
 	const isStageComplete =
 		stageStatus === "completed" || stageStatus === "complete"
 	return (
@@ -209,11 +208,7 @@ function PhaseStepper({
 					const isDone = isStageComplete || activeIndex > i
 					const tooltip = PHASE_TOOLTIPS[p]
 					return (
-						<div
-							key={p}
-							className="flex items-center gap-1"
-							title={tooltip}
-						>
+						<div key={p} className="flex items-center gap-1" title={tooltip}>
 							<span
 								className={`inline-block w-2 h-2 rounded-full ${
 									isActive
@@ -389,9 +384,7 @@ export function ReviewPage({
 		return {
 			name,
 			status:
-				state?.status === "active"
-					? "current"
-					: (state?.status ?? "pending"),
+				state?.status === "active" ? "current" : (state?.status ?? "pending"),
 			visits: state?.visits ?? 0,
 			pendingCount: state?.pending_feedback ?? 0,
 		}
@@ -401,171 +394,167 @@ export function ReviewPage({
 
 	return (
 		<FeedbackProvider intent={intentSlug} stage={selectedStage}>
-		<div
-			data-testid="review-page-ready"
-			className="h-screen overflow-hidden flex flex-col bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100"
-		>
-			<HeaderLandmark className="shrink-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800">
-				<div className="px-4 sm:px-6 py-3 flex items-center justify-between border-b border-stone-100 dark:border-stone-800/60">
-					<div className="flex items-center gap-3 min-w-0">
-						<span className="text-base font-bold tracking-tight text-stone-900 dark:text-stone-100">
-							H·AI·K·U
-						</span>
-						<span className="text-stone-300 dark:text-stone-600">|</span>
-						<span className="text-sm font-medium text-stone-500 dark:text-stone-400">
-							Review
-						</span>
-						{studioName && (
-							<>
-								<span className="text-stone-300 dark:text-stone-600">·</span>
-								<span className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-									{studioName}
-								</span>
-							</>
-						)}
-						{session.intent?.title && (
-							<>
-								<span className="text-stone-300 dark:text-stone-600">/</span>
-								<button
-									type="button"
-									onClick={() => setViewingIntent(true)}
-									className={`text-sm font-semibold truncate rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 ${viewingIntent ? "text-teal-700 dark:text-teal-400 underline underline-offset-4" : "text-stone-800 dark:text-stone-100 hover:text-teal-700 dark:hover:text-teal-400"}`}
-									title="View intent overview"
-								>
-									{session.intent.title}
-								</button>
-							</>
-						)}
-						{isAdHoc && (
-							<>
-								<span className="text-stone-300 dark:text-stone-600">·</span>
-								<span
-									className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800"
-									title="Ad-hoc review — not a gate. Feedback routes through the normal fix-loop on the next run_next."
-								>
-									Ad-hoc review
-								</span>
-							</>
-						)}
-					</div>
-					<div className="flex items-center gap-2 shrink-0">
-						<ThemeToggle />
-					</div>
-				</div>
-				{stageProgressData.length > 0 && (
-					<StageProgressStrip
-						stages={stageProgressData}
-						currentStage={activeStage ?? ""}
-						viewingStage={
-							viewingIntent
-								? ""
-								: (selectedStage ?? activeStage ?? "")
-						}
-						onStageClick={(name) => {
-							setSelectedStage(name)
-							setViewingIntent(false)
-							// Stepper clicks land on the stage overview — clear any
-							// carry-over tab or detail so the URL matches the bare
-							// `/review/:id/stages/:stage` form.
-							setStageTab(undefined)
-							setStageDetail(null)
-						}}
-					/>
-				)}
-			</HeaderLandmark>
-
 			<div
-				data-testid="review-split"
-				className="flex-1 flex flex-col xl:flex-row overflow-hidden"
+				data-testid="review-page-ready"
+				className="h-screen overflow-hidden flex flex-col bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100"
 			>
-				{!isMobile && (
-					<FeedbackSidebar
-						stage={selectedStage ?? activeStage}
-						activeStage={activeStage}
-						sessionId={sessionId}
-						intentTitle={session.intent?.title}
-						gateBadges={gateBadges}
-						gateType={session.gate_type}
-						getAnnotations={getAnnotations}
-						adHoc={isAdHoc}
-						onFeedbackItemClick={(id) => setHighlightFeedbackId(id)}
-						onDecisionSuccess={(decision) => {
-							if (decision === "approved" || decision === "external") {
-								setSubmittedDecision(decision)
-							}
-						}}
-					/>
-				)}
-				<Main
-					ariaLabel="Review content"
-					className="flex-1 min-w-0 overflow-y-auto"
-					style={
-						{
-							// Tabs.tsx sticks its tablist at top:var(--header-height).
-							// Inside main's scroll container, that offset must match the
-							// sticky stage banner above, not the global shell header.
-							"--header-height": "5.5rem",
-						} as React.CSSProperties
-					}
-				>
-					{submittedDecision ? (
-						<div className="px-6 lg:px-10 py-10">
-							<SubmitSuccess
-								message={
-									submittedDecision === "approved"
-										? "Review approved — thanks!"
-										: "External review submitted — thanks!"
-								}
-							/>
+				<HeaderLandmark className="shrink-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800">
+					<div className="px-4 sm:px-6 py-3 flex items-center justify-between border-b border-stone-100 dark:border-stone-800/60">
+						<div className="flex items-center gap-3 min-w-0">
+							<span className="text-base font-bold tracking-tight text-stone-900 dark:text-stone-100">
+								H·AI·K·U
+							</span>
+							<span className="text-stone-300 dark:text-stone-600">|</span>
+							<span className="text-sm font-medium text-stone-500 dark:text-stone-400">
+								Review
+							</span>
+							{studioName && (
+								<>
+									<span className="text-stone-300 dark:text-stone-600">·</span>
+									<span className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+										{studioName}
+									</span>
+								</>
+							)}
+							{session.intent?.title && (
+								<>
+									<span className="text-stone-300 dark:text-stone-600">/</span>
+									<button
+										type="button"
+										onClick={() => setViewingIntent(true)}
+										className={`text-sm font-semibold truncate rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 ${viewingIntent ? "text-teal-700 dark:text-teal-400 underline underline-offset-4" : "text-stone-800 dark:text-stone-100 hover:text-teal-700 dark:hover:text-teal-400"}`}
+										title="View intent overview"
+									>
+										{session.intent.title}
+									</button>
+								</>
+							)}
+							{isAdHoc && (
+								<>
+									<span className="text-stone-300 dark:text-stone-600">·</span>
+									<span
+										className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800"
+										title="Ad-hoc review — not a gate. Feedback routes through the normal fix-loop on the next run_next."
+									>
+										Ad-hoc review
+									</span>
+								</>
+							)}
 						</div>
-					) : viewingIntent ? (
-						<IntentOverviewPane
-							session={session}
-							onBack={() => setViewingIntent(false)}
+						<div className="flex items-center gap-2 shrink-0">
+							<ThemeToggle />
+						</div>
+					</div>
+					{stageProgressData.length > 0 && (
+						<StageProgressStrip
+							stages={stageProgressData}
+							currentStage={activeStage ?? ""}
+							viewingStage={
+								viewingIntent ? "" : (selectedStage ?? activeStage ?? "")
+							}
+							onStageClick={(name) => {
+								setSelectedStage(name)
+								setViewingIntent(false)
+								// Stepper clicks land on the stage overview — clear any
+								// carry-over tab or detail so the URL matches the bare
+								// `/review/:id/stages/:stage` form.
+								setStageTab(undefined)
+								setStageDetail(null)
+							}}
 						/>
-					) : (
-						<>
-							<StageBanner
-								stageName={selectedStage ?? activeStage ?? "review"}
-								stageStatus={
-									selectedStage === activeStage
-										? "current"
-										: (stageStates[selectedStage ?? ""]?.status ?? "pending")
-								}
-								stagePhase={
-									stageStates[selectedStage ?? ""]?.phase ?? null
-								}
-								gateBadges={gateBadges}
-							/>
+					)}
+				</HeaderLandmark>
 
-							<div className="px-6 lg:px-10 pb-6">
-								{session.previous_review && (
-									<RereviewBanner snapshot={session.previous_review} />
-								)}
-								<StageScopedContent
-									session={session}
-									sessionId={sessionId}
-									stageName={selectedStage ?? activeStage}
-									intentSlug={intentSlug}
-									getAnnotations={getAnnotations}
-									wsRef={wsRef}
-									onInlineCommentsChange={setInlineComments}
-									onPinsChange={setPins}
-									highlightFeedbackId={highlightFeedbackId}
-									onHighlightConsumed={() => setHighlightFeedbackId(null)}
-									stageTab={stageTab}
-									stageDetail={stageDetail}
-									onStageTabChange={setStageTab}
-									onStageDetailChange={setStageDetail}
+				<div
+					data-testid="review-split"
+					className="flex-1 flex flex-col xl:flex-row overflow-hidden"
+				>
+					{!isMobile && (
+						<FeedbackSidebar
+							stage={selectedStage ?? activeStage}
+							activeStage={activeStage}
+							sessionId={sessionId}
+							intentTitle={session.intent?.title}
+							gateBadges={gateBadges}
+							gateType={session.gate_type}
+							getAnnotations={getAnnotations}
+							adHoc={isAdHoc}
+							onFeedbackItemClick={(id) => setHighlightFeedbackId(id)}
+							onDecisionSuccess={(decision) => {
+								if (decision === "approved" || decision === "external") {
+									setSubmittedDecision(decision)
+								}
+							}}
+						/>
+					)}
+					<Main
+						ariaLabel="Review content"
+						className="flex-1 min-w-0 overflow-y-auto"
+						style={
+							{
+								// Tabs.tsx sticks its tablist at top:var(--header-height).
+								// Inside main's scroll container, that offset must match the
+								// sticky stage banner above, not the global shell header.
+								"--header-height": "5.5rem",
+							} as React.CSSProperties
+						}
+					>
+						{submittedDecision ? (
+							<div className="px-6 lg:px-10 py-10">
+								<SubmitSuccess
+									message={
+										submittedDecision === "approved"
+											? "Review approved — thanks!"
+											: "External review submitted — thanks!"
+									}
 								/>
 							</div>
-						</>
-					)}
-				</Main>
-			</div>
+						) : viewingIntent ? (
+							<IntentOverviewPane
+								session={session}
+								onBack={() => setViewingIntent(false)}
+							/>
+						) : (
+							<>
+								<StageBanner
+									stageName={selectedStage ?? activeStage ?? "review"}
+									stageStatus={
+										selectedStage === activeStage
+											? "current"
+											: (stageStates[selectedStage ?? ""]?.status ?? "pending")
+									}
+									stagePhase={stageStates[selectedStage ?? ""]?.phase ?? null}
+									gateBadges={gateBadges}
+								/>
 
-			{isMobile && <MobileFeedbackSection />}
-		</div>
+								<div className="px-6 lg:px-10 pb-6">
+									{session.previous_review && (
+										<RereviewBanner snapshot={session.previous_review} />
+									)}
+									<StageScopedContent
+										session={session}
+										sessionId={sessionId}
+										stageName={selectedStage ?? activeStage}
+										intentSlug={intentSlug}
+										getAnnotations={getAnnotations}
+										wsRef={wsRef}
+										onInlineCommentsChange={setInlineComments}
+										onPinsChange={setPins}
+										highlightFeedbackId={highlightFeedbackId}
+										onHighlightConsumed={() => setHighlightFeedbackId(null)}
+										stageTab={stageTab}
+										stageDetail={stageDetail}
+										onStageTabChange={setStageTab}
+										onStageDetailChange={setStageDetail}
+									/>
+								</div>
+							</>
+						)}
+					</Main>
+				</div>
+
+				{isMobile && <MobileFeedbackSection />}
+			</div>
 		</FeedbackProvider>
 	)
 }
@@ -725,7 +714,6 @@ function StageScopedContent({
 		/>
 	)
 }
-
 
 /**
  * IntentOverviewPane — cross-stage intent detail view. Renders the

@@ -54,7 +54,6 @@ export function PhaseStepper({
 							 */}
 							<span
 								className="relative inline-flex items-center justify-center p-1 -m-1 group focus:outline-none"
-								tabIndex={0}
 								aria-label={tooltip}
 							>
 								<span

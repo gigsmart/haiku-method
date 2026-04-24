@@ -1,5 +1,14 @@
 import { fetchQuery } from "relay-runtime"
 import { createRelayEnvironment } from "./graphql/environment"
+import type { operationsGetIntentQuery$data } from "./graphql/github/__generated__/operationsGetIntentQuery.graphql"
+import GetIntentQuery from "./graphql/github/__generated__/operationsGetIntentQuery.graphql"
+import ListFilesQuery from "./graphql/github/__generated__/operationsListFilesQuery.graphql"
+import type { operationsListHaikuBranchesQuery$data } from "./graphql/github/__generated__/operationsListHaikuBranchesQuery.graphql"
+import ListHaikuBranchesQuery from "./graphql/github/__generated__/operationsListHaikuBranchesQuery.graphql"
+// Relay-compiled query artifacts (schema-validated, fully typed)
+import type { operationsListIntentsQuery$data } from "./graphql/github/__generated__/operationsListIntentsQuery.graphql"
+import ListIntentsQuery from "./graphql/github/__generated__/operationsListIntentsQuery.graphql"
+import ReadFileQuery from "./graphql/github/__generated__/operationsReadFileQuery.graphql"
 import { parseSettingsYaml } from "./resolve-links"
 import type {
 	BrowseProvider,
@@ -11,16 +20,6 @@ import type {
 	HaikuUnit,
 } from "./types"
 import { normalizeIntentStatus, parseFrontmatter, parseUnit } from "./types"
-
-import type { operationsGetIntentQuery$data } from "./graphql/github/__generated__/operationsGetIntentQuery.graphql"
-import GetIntentQuery from "./graphql/github/__generated__/operationsGetIntentQuery.graphql"
-import ListFilesQuery from "./graphql/github/__generated__/operationsListFilesQuery.graphql"
-import type { operationsListHaikuBranchesQuery$data } from "./graphql/github/__generated__/operationsListHaikuBranchesQuery.graphql"
-import ListHaikuBranchesQuery from "./graphql/github/__generated__/operationsListHaikuBranchesQuery.graphql"
-// Relay-compiled query artifacts (schema-validated, fully typed)
-import type { operationsListIntentsQuery$data } from "./graphql/github/__generated__/operationsListIntentsQuery.graphql"
-import ListIntentsQuery from "./graphql/github/__generated__/operationsListIntentsQuery.graphql"
-import ReadFileQuery from "./graphql/github/__generated__/operationsReadFileQuery.graphql"
 
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 const apiCache = new Map<string, { data: unknown; ts: number }>()

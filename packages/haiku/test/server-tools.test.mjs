@@ -598,7 +598,8 @@ test("review decide route uses default 1 MiB cap", () => {
 test("revisit endpoint is in the route table", () => {
 	const r = apiRoutes.find(
 		(route) =>
-			route.method === "POST" && route.pathTemplate === "/api/revisit/{sessionId}",
+			route.method === "POST" &&
+			route.pathTemplate === "/api/revisit/{sessionId}",
 	)
 	assert.ok(r, "missing revisit route")
 	assert.strictEqual(r.operationId, "postRevisit")
@@ -613,7 +614,7 @@ test("revisit endpoint is in the route table", () => {
 console.log("\n=== Server-level body cap + transport invariant ===")
 
 import { spawn } from "node:child_process"
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, chmodSync } from "node:fs"
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, dirname as pathDirname } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -626,15 +627,11 @@ async function runInChild({ env = {}, scriptBody, timeoutMs = 15000 }) {
 	const scriptPath = join(childTmp, "child.mjs")
 	writeFileSync(scriptPath, scriptBody, "utf8")
 	return await new Promise((resolve) => {
-		const child = spawn(
-			process.execPath,
-			["--import", "tsx", scriptPath],
-			{
-				cwd: haikuPkgRoot,
-				env: { ...process.env, ...env },
-				stdio: ["ignore", "pipe", "pipe"],
-			},
-		)
+		const child = spawn(process.execPath, ["--import", "tsx", scriptPath], {
+			cwd: haikuPkgRoot,
+			env: { ...process.env, ...env },
+			stdio: ["ignore", "pipe", "pipe"],
+		})
 		let stdout = ""
 		let stderr = ""
 		child.stdout.on("data", (b) => {
@@ -673,7 +670,11 @@ await startHttpServer().catch(() => {})
 		// may kill itself earlier during bind (EACCES on some systems). We
 		// accept any non-zero code; 0 means the invariant silently passed —
 		// a regression.
-		assert.notStrictEqual(res.code, 0, `expected non-zero exit, got ${res.code} / signal=${res.signal} / stderr=${res.stderr}`)
+		assert.notStrictEqual(
+			res.code,
+			0,
+			`expected non-zero exit, got ${res.code} / signal=${res.signal} / stderr=${res.stderr}`,
+		)
 	},
 )
 
@@ -696,7 +697,9 @@ asyncTest("server body > 1 MiB returns 413 at bridge level", async () => {
 		// paces its writes." ECONNRESET / UND_ERR_SOCKET is the reset path.
 		const code = e.cause?.code
 		if (code === "ECONNRESET" || code === "UND_ERR_SOCKET") return
-		throw new Error(`fetch failed: ${e.message} / cause=${e.cause?.message} code=${code}`)
+		throw new Error(
+			`fetch failed: ${e.message} / cause=${e.cause?.message} code=${code}`,
+		)
 	}
 	assert.strictEqual(res.status, 413)
 	const data = await res.json()

@@ -147,11 +147,7 @@ function luminance(hex) {
 		const s = v / 255
 		return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
 	}
-	return (
-		0.2126 * toLinear(r) +
-		0.7152 * toLinear(g) +
-		0.0722 * toLinear(b)
-	)
+	return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
 }
 
 function contrast(fg, bg) {
@@ -186,8 +182,7 @@ function pairRatio(fgToken, bgToken, underlyingBg = "#ffffff") {
 	// bg-{color}-900/30 patterns). Composite fg over bg if alpha < 1 (rare).
 	const bgFinal =
 		bg.alpha < 1 ? composite(bg.hex, underlyingBg, bg.alpha) : bg.hex
-	const fgFinal =
-		fg.alpha < 1 ? composite(fg.hex, bgFinal, fg.alpha) : fg.hex
+	const fgFinal = fg.alpha < 1 ? composite(fg.hex, bgFinal, fg.alpha) : fg.hex
 	return { ratio: contrast(fgFinal, bgFinal), fgHex: fgFinal, bgHex: bgFinal }
 }
 
@@ -204,34 +199,167 @@ function pairRatio(fgToken, bgToken, underlyingBg = "#ffffff") {
  */
 const PAIRS = [
 	// ── DESIGN-TOKENS §2.1 Feedback status (badge fg/bg) ─────────────────
-	{ group: "feedback-status", variant: "pending-light", fg: "amber-800", bg: "amber-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "feedback-status", variant: "addressed-light", fg: "blue-800", bg: "blue-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "feedback-status", variant: "closed-light", fg: "green-800", bg: "green-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "feedback-status", variant: "rejected-light", fg: "stone-600", bg: "stone-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+	{
+		group: "feedback-status",
+		variant: "pending-light",
+		fg: "amber-800",
+		bg: "amber-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "feedback-status",
+		variant: "addressed-light",
+		fg: "blue-800",
+		bg: "blue-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "feedback-status",
+		variant: "closed-light",
+		fg: "green-800",
+		bg: "green-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "feedback-status",
+		variant: "rejected-light",
+		fg: "stone-600",
+		bg: "stone-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
 	// Dark-mode — bg is a `*-900/30` composite over `stone-950`.
-	{ group: "feedback-status", variant: "pending-dark", fg: "amber-300", bg: "amber-900/30", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
-	{ group: "feedback-status", variant: "addressed-dark", fg: "blue-300", bg: "blue-900/30", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
-	{ group: "feedback-status", variant: "closed-dark", fg: "green-300", bg: "green-900/30", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
-	{ group: "feedback-status", variant: "rejected-dark", fg: "stone-300", bg: "stone-800", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
+	{
+		group: "feedback-status",
+		variant: "pending-dark",
+		fg: "amber-300",
+		bg: "amber-900/30",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
+	{
+		group: "feedback-status",
+		variant: "addressed-dark",
+		fg: "blue-300",
+		bg: "blue-900/30",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
+	{
+		group: "feedback-status",
+		variant: "closed-dark",
+		fg: "green-300",
+		bg: "green-900/30",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
+	{
+		group: "feedback-status",
+		variant: "rejected-dark",
+		fg: "stone-300",
+		bg: "stone-800",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
 
 	// ── DESIGN-TOKENS §2.2 Origin badge pairs ─────────────────────────────
-	{ group: "origin", variant: "adversarial-light", fg: "rose-700", bg: "rose-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "origin", variant: "external-light", fg: "violet-700", bg: "violet-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "origin", variant: "user-light", fg: "sky-700", bg: "sky-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "origin", variant: "agent-light", fg: "teal-700", bg: "teal-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+	{
+		group: "origin",
+		variant: "adversarial-light",
+		fg: "rose-700",
+		bg: "rose-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "origin",
+		variant: "external-light",
+		fg: "violet-700",
+		bg: "violet-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "origin",
+		variant: "user-light",
+		fg: "sky-700",
+		bg: "sky-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "origin",
+		variant: "agent-light",
+		fg: "teal-700",
+		bg: "teal-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
 
 	// ── DESIGN-TOKENS §2.3 Card body text over status-aware backgrounds ───
 	// metadata text-stone-600 on light card surfaces — must ≥ 4.5:1.
-	{ group: "card-text", variant: "pending-light", fg: "stone-600", bg: "amber-50", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "card-text", variant: "addressed-light", fg: "stone-600", bg: "blue-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "card-text", variant: "closed-light", fg: "stone-600", bg: "green-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "card-text", variant: "rejected-light", fg: "stone-600", bg: "stone-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+	{
+		group: "card-text",
+		variant: "pending-light",
+		fg: "stone-600",
+		bg: "amber-50",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "card-text",
+		variant: "addressed-light",
+		fg: "stone-600",
+		bg: "blue-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "card-text",
+		variant: "closed-light",
+		fg: "stone-600",
+		bg: "green-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "card-text",
+		variant: "rejected-light",
+		fg: "stone-600",
+		bg: "stone-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
 	// dark-mode metadata dark:text-stone-300 on dark card surfaces
-	{ group: "card-text", variant: "pending-dark", fg: "stone-300", bg: "stone-900", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
-	{ group: "card-text", variant: "addressed-dark", fg: "stone-300", bg: "stone-800", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
+	{
+		group: "card-text",
+		variant: "pending-dark",
+		fg: "stone-300",
+		bg: "stone-900",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
+	{
+		group: "card-text",
+		variant: "addressed-dark",
+		fg: "stone-300",
+		bg: "stone-800",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
 
 	// ── DESIGN-TOKENS §1.7 Disabled buttons ───────────────────────────────
-	{ group: "disabled-button", variant: "secondary-light-text", fg: "stone-600", bg: "stone-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+	{
+		group: "disabled-button",
+		variant: "secondary-light-text",
+		fg: "stone-600",
+		bg: "stone-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
 	// DESIGN-TOKENS §1.7 specifies `border-stone-400` for the secondary-disabled
 	// button's non-text contrast. WCAG math at sRGB → linear gives 2.5:1 on white
 	// and 2.3:1 on the button's own bg-stone-100 — below the 3:1 UI floor.
@@ -240,10 +368,38 @@ const PAIRS = [
 	// (likely bumping disabled borders to `stone-500`). This check is therefore
 	// scoped to the *darker* alternative (`stone-500 on white` = 4.61:1) as the
 	// floor the token system is proven to clear today. Unit-18 will revisit.
-	{ group: "disabled-button", variant: "secondary-light-border-min", fg: "stone-500", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
-	{ group: "disabled-button", variant: "secondary-dark-text", fg: "stone-300", bg: "stone-800", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
-	{ group: "disabled-button", variant: "primary-green-light", fg: "green-800", bg: "green-300", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "disabled-button", variant: "primary-amber-light", fg: "amber-900", bg: "amber-300", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+	{
+		group: "disabled-button",
+		variant: "secondary-light-border-min",
+		fg: "stone-500",
+		bg: "white",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "disabled-button",
+		variant: "secondary-dark-text",
+		fg: "stone-300",
+		bg: "stone-800",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
+	{
+		group: "disabled-button",
+		variant: "primary-green-light",
+		fg: "green-800",
+		bg: "green-300",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "disabled-button",
+		variant: "primary-amber-light",
+		fg: "amber-900",
+		bg: "amber-300",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
 
 	// ── DESIGN-TOKENS §1.8 Annotation pin marker (FB-58) ─────────────────
 	// AnnotationCanvas pin button + inner numeral. Canonical token chain is
@@ -253,26 +409,124 @@ const PAIRS = [
 	// 1.4.11 pin-on-stone-50 artifact. Regression guard — any drift back to
 	// teal-500 (or other sub-threshold fill) is caught here and by the
 	// banned-pin-teal-500-white rule in audit-config.json.
-	{ group: "annotation-pin", variant: "fill-numeral-light", fg: "white", bg: "rose-600", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "annotation-pin", variant: "pin-on-white", fg: "rose-600", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
-	{ group: "annotation-pin", variant: "pin-on-stone-50", fg: "rose-600", bg: "stone-50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+	{
+		group: "annotation-pin",
+		variant: "fill-numeral-light",
+		fg: "white",
+		bg: "rose-600",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "annotation-pin",
+		variant: "pin-on-white",
+		fg: "rose-600",
+		bg: "white",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "annotation-pin",
+		variant: "pin-on-stone-50",
+		fg: "rose-600",
+		bg: "stone-50",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+	},
 
 	// ── DESIGN-TOKENS §1 Primary-action button surfaces (FB-55) ──────────
-	{ group: "primary-button", variant: "enabled-light", fg: "white", bg: "teal-700", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "primary-button", variant: "hover-light",   fg: "white", bg: "teal-800", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "primary-button", variant: "enabled-dark",  fg: "white", bg: "teal-700", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
-	{ group: "primary-button", variant: "hover-dark",    fg: "white", bg: "teal-800", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
+	{
+		group: "primary-button",
+		variant: "enabled-light",
+		fg: "white",
+		bg: "teal-700",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "primary-button",
+		variant: "hover-light",
+		fg: "white",
+		bg: "teal-800",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "primary-button",
+		variant: "enabled-dark",
+		fg: "white",
+		bg: "teal-700",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
+	{
+		group: "primary-button",
+		variant: "hover-dark",
+		fg: "white",
+		bg: "teal-800",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
 
 	// ── DESIGN-TOKENS §2.4 Visit counter tiers ────────────────────────────
-	{ group: "visit-counter", variant: "tier1-light", fg: "stone-600", bg: "stone-200", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "visit-counter", variant: "tier2-light", fg: "amber-800", bg: "amber-200", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "visit-counter", variant: "tier3-light", fg: "red-800", bg: "red-200", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "visit-counter", variant: "tier1-dark", fg: "stone-300", bg: "stone-700", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
+	{
+		group: "visit-counter",
+		variant: "tier1-light",
+		fg: "stone-600",
+		bg: "stone-200",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "visit-counter",
+		variant: "tier2-light",
+		fg: "amber-800",
+		bg: "amber-200",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "visit-counter",
+		variant: "tier3-light",
+		fg: "red-800",
+		bg: "red-200",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "visit-counter",
+		variant: "tier1-dark",
+		fg: "stone-300",
+		bg: "stone-700",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
 
 	// ── Page body (metadata on white / stone-50 / stone-100) ──────────────
-	{ group: "page-text", variant: "meta-on-white", fg: "stone-600", bg: "white", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "page-text", variant: "meta-on-stone-50", fg: "stone-600", bg: "stone-50", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "page-text", variant: "meta-on-stone-100", fg: "stone-600", bg: "stone-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+	{
+		group: "page-text",
+		variant: "meta-on-white",
+		fg: "stone-600",
+		bg: "white",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "page-text",
+		variant: "meta-on-stone-50",
+		fg: "stone-600",
+		bg: "stone-50",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "page-text",
+		variant: "meta-on-stone-100",
+		fg: "stone-600",
+		bg: "stone-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
 
 	// ── FB-71 roster expansion — surfaces the audit previously missed ─────
 	//
@@ -287,8 +541,22 @@ const PAIRS = [
 	//
 	// Origin badges (§2.2) — dark-mode completions for origins already in light.
 	// Per feedback/tokens.ts: agent dark is `bg-teal-900/30 text-teal-400`.
-	{ group: "origin", variant: "adversarial-dark", fg: "rose-400", bg: "rose-900/30", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
-	{ group: "origin", variant: "agent-dark", fg: "teal-400", bg: "teal-900/30", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
+	{
+		group: "origin",
+		variant: "adversarial-dark",
+		fg: "rose-400",
+		bg: "rose-900/30",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
+	{
+		group: "origin",
+		variant: "agent-dark",
+		fg: "teal-400",
+		bg: "teal-900/30",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
 
 	// FAB count badge — `bg-amber-100 + text-amber-800` at `text-xs font-bold`
 	// (12px bold, treated as text-normal per WCAG "large-text" cutoff of
@@ -298,8 +566,22 @@ const PAIRS = [
 	// pair `amber-300 on amber-900/40` was always safe. Any drift back to
 	// `text-amber-700` is caught by both this pair and the banned-pattern
 	// audit (`banned-fab-badge-amber-100-amber-700` in audit-config.json).
-	{ group: "fab-count-badge", variant: "light", fg: "amber-800", bg: "amber-100", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
-	{ group: "fab-count-badge", variant: "dark", fg: "amber-300", bg: "amber-900/40", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
+	{
+		group: "fab-count-badge",
+		variant: "light",
+		fg: "amber-800",
+		bg: "amber-100",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "fab-count-badge",
+		variant: "dark",
+		fg: "amber-300",
+		bg: "amber-900/40",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
 
 	// Primary-button surface coverage — the `*-teal-*` + white pairings that
 	// are the subject of FB-55. `bg-teal-700` + white is the canonical
@@ -309,14 +591,31 @@ const PAIRS = [
 	// source so we keep the roster "pass-only" for the primary-button
 	// group. The entries below exercise every production bg-teal shade to
 	// confirm the surface meets AA.
-	{ group: "primary-button", variant: "enabled-light-bg", fg: "white", bg: "teal-700", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+	{
+		group: "primary-button",
+		variant: "enabled-light-bg",
+		fg: "white",
+		bg: "teal-700",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
 	// Focus ring — DESIGN-TOKENS §34/184 specify `focus:ring-2 ring-teal-500`
 	// with `ring-offset-2` defaulting to white in light mode. teal-500 against
 	// white is 2.49:1 — fails the 3:1 UI-nontext floor. Tracked as a design-
 	// token gap (follow-up to FB-58's focus-ring re-evaluation); the audit
 	// surfaces it as an expected fail rather than gating CI because the fix
 	// requires updating the canonical ring color across the stage.
-	{ group: "primary-button", variant: "focus-ring-on-white", fg: "teal-500", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff", expectedFail: true, expectedFailRef: "design-tokens §34 focus-ring color needs darker shade; tracked separately" },
+	{
+		group: "primary-button",
+		variant: "focus-ring-on-white",
+		fg: "teal-500",
+		bg: "white",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+		expectedFail: true,
+		expectedFailRef:
+			"design-tokens §34 focus-ring color needs darker shade; tracked separately",
+	},
 	// External-review secondary (amber-300 border token from DESIGN-TOKENS
 	// §1 for "Request Changes"-style surfaces). The border color is
 	// checked against the button's own fill (bg-amber-50), not the page
@@ -324,8 +623,25 @@ const PAIRS = [
 	// fill, so that pairing drives the contrast check. amber-300 on
 	// amber-50 is 1.39:1 — below the 3:1 UI-nontext floor. Canonical
 	// token needs bump to amber-500 (tracked outside FB-71).
-	{ group: "secondary-button", variant: "request-changes-light-border", fg: "amber-300", bg: "amber-50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff", expectedFail: true, expectedFailRef: "design-tokens request-changes border needs amber-500 or darker" },
-	{ group: "secondary-button", variant: "request-changes-light-text", fg: "amber-800", bg: "amber-50", sizeBucket: "text-normal", underlyingBg: "#ffffff" },
+	{
+		group: "secondary-button",
+		variant: "request-changes-light-border",
+		fg: "amber-300",
+		bg: "amber-50",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+		expectedFail: true,
+		expectedFailRef:
+			"design-tokens request-changes border needs amber-500 or darker",
+	},
+	{
+		group: "secondary-button",
+		variant: "request-changes-light-text",
+		fg: "amber-800",
+		bg: "amber-50",
+		sizeBucket: "text-normal",
+		underlyingBg: "#ffffff",
+	},
 
 	// Status-dot UI-nontext contrast (§1.4.11 — 3:1 floor). Dots render as
 	// a colored circle on a status-tinted card background. If the card bg
@@ -339,20 +655,104 @@ const PAIRS = [
 	// against its card surface. Dark-mode dots stayed at `*-500`/`*-400`
 	// because the composited dark card (e.g. `amber-950/20` over stone-950)
 	// resolves to near-black and the lighter dots clear 3:1 comfortably.
-	{ group: "status-dot", variant: "pending-on-card-light", fg: "amber-600", bg: "amber-50/50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
-	{ group: "status-dot", variant: "pending-on-white", fg: "amber-600", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
-	{ group: "status-dot", variant: "addressed-on-card-light", fg: "blue-600", bg: "blue-50/50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
-	{ group: "status-dot", variant: "addressed-on-white", fg: "blue-600", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
-	{ group: "status-dot", variant: "closed-on-card-light", fg: "green-600", bg: "green-50/60", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
-	{ group: "status-dot", variant: "closed-on-white", fg: "green-600", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
-	{ group: "status-dot", variant: "rejected-on-card-light", fg: "stone-600", bg: "stone-100", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
-	{ group: "status-dot", variant: "rejected-on-white", fg: "stone-600", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
+	{
+		group: "status-dot",
+		variant: "pending-on-card-light",
+		fg: "amber-600",
+		bg: "amber-50/50",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "status-dot",
+		variant: "pending-on-white",
+		fg: "amber-600",
+		bg: "white",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "status-dot",
+		variant: "addressed-on-card-light",
+		fg: "blue-600",
+		bg: "blue-50/50",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "status-dot",
+		variant: "addressed-on-white",
+		fg: "blue-600",
+		bg: "white",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "status-dot",
+		variant: "closed-on-card-light",
+		fg: "green-600",
+		bg: "green-50/60",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "status-dot",
+		variant: "closed-on-white",
+		fg: "green-600",
+		bg: "white",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "status-dot",
+		variant: "rejected-on-card-light",
+		fg: "stone-600",
+		bg: "stone-100",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "status-dot",
+		variant: "rejected-on-white",
+		fg: "stone-600",
+		bg: "white",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+	},
 
 	// Status-dot dark-mode UI-nontext (3:1 floor on the dark card surface).
-	{ group: "status-dot", variant: "pending-on-card-dark", fg: "amber-500", bg: "amber-950/20", sizeBucket: "ui-nontext", underlyingBg: TOKEN_HEX["stone-950"] },
-	{ group: "status-dot", variant: "addressed-on-card-dark", fg: "blue-500", bg: "blue-950/20", sizeBucket: "ui-nontext", underlyingBg: TOKEN_HEX["stone-950"] },
-	{ group: "status-dot", variant: "closed-on-card-dark", fg: "green-400", bg: "green-950/25", sizeBucket: "ui-nontext", underlyingBg: TOKEN_HEX["stone-950"] },
-	{ group: "status-dot", variant: "rejected-on-card-dark", fg: "stone-400", bg: "stone-800/50", sizeBucket: "ui-nontext", underlyingBg: TOKEN_HEX["stone-950"] },
+	{
+		group: "status-dot",
+		variant: "pending-on-card-dark",
+		fg: "amber-500",
+		bg: "amber-950/20",
+		sizeBucket: "ui-nontext",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
+	{
+		group: "status-dot",
+		variant: "addressed-on-card-dark",
+		fg: "blue-500",
+		bg: "blue-950/20",
+		sizeBucket: "ui-nontext",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
+	{
+		group: "status-dot",
+		variant: "closed-on-card-dark",
+		fg: "green-400",
+		bg: "green-950/25",
+		sizeBucket: "ui-nontext",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
+	{
+		group: "status-dot",
+		variant: "rejected-on-card-dark",
+		fg: "stone-400",
+		bg: "stone-800/50",
+		sizeBucket: "ui-nontext",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
 
 	// Status-border-left (3px strip to the left of each feedback card,
 	// DESIGN-TOKENS §2.3 rows 403-406). Must be 3:1 vs the card bg it's
@@ -363,9 +763,39 @@ const PAIRS = [
 	// / green-600 / stone-500) — tracked outside FB-71's scope. The ENTRIES
 	// remain in the roster as regression guards so a future change cannot
 	// silently reintroduce the gap.
-	{ group: "status-border", variant: "pending-light", fg: "amber-400", bg: "amber-50/50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff", expectedFail: true, expectedFailRef: "design-tokens §2.3 row 403 border-l-amber-400 needs amber-500" },
-	{ group: "status-border", variant: "closed-light", fg: "green-500", bg: "green-50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff", expectedFail: true, expectedFailRef: "design-tokens §2.3 row 405 border-l-green-500 needs green-600" },
-	{ group: "status-border", variant: "rejected-light", fg: "stone-400", bg: "stone-100", sizeBucket: "ui-nontext", underlyingBg: "#ffffff", expectedFail: true, expectedFailRef: "design-tokens §2.3 row 406 border-l-stone-400 needs stone-500" },
+	{
+		group: "status-border",
+		variant: "pending-light",
+		fg: "amber-400",
+		bg: "amber-50/50",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+		expectedFail: true,
+		expectedFailRef:
+			"design-tokens §2.3 row 403 border-l-amber-400 needs amber-500",
+	},
+	{
+		group: "status-border",
+		variant: "closed-light",
+		fg: "green-500",
+		bg: "green-50",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+		expectedFail: true,
+		expectedFailRef:
+			"design-tokens §2.3 row 405 border-l-green-500 needs green-600",
+	},
+	{
+		group: "status-border",
+		variant: "rejected-light",
+		fg: "stone-400",
+		bg: "stone-100",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+		expectedFail: true,
+		expectedFailRef:
+			"design-tokens §2.3 row 406 border-l-stone-400 needs stone-500",
+	},
 
 	// Rejected-badge boundary contrast — the rejected status badge
 	// (bg-stone-100 per feedbackStatusColors) overlays the rejected card
@@ -374,21 +804,76 @@ const PAIRS = [
 	// rejected badge so its outline clears the 3:1 non-text UI floor against
 	// the identical card background. Without the border both surfaces would
 	// be visually indistinguishable (1.0 delta).
-	{ group: "rejected-badge-boundary", variant: "border-on-card-light", fg: "stone-500", bg: "stone-100", sizeBucket: "ui-nontext", underlyingBg: "#ffffff" },
-	{ group: "rejected-badge-boundary", variant: "border-on-card-dark", fg: "stone-400", bg: "stone-800/50", sizeBucket: "ui-nontext", underlyingBg: TOKEN_HEX["stone-950"] },
+	{
+		group: "rejected-badge-boundary",
+		variant: "border-on-card-light",
+		fg: "stone-500",
+		bg: "stone-100",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+	},
+	{
+		group: "rejected-badge-boundary",
+		variant: "border-on-card-dark",
+		fg: "stone-400",
+		bg: "stone-800/50",
+		sizeBucket: "ui-nontext",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
 
 	// StageProgressStrip dot — `bg-teal-500 dark:bg-teal-400` on the shell
 	// header surface (stone-50 / stone-100). Must pass 3:1 UI-nontext.
 	// teal-500 vs stone-50 = 2.38:1 and vs white = 2.49:1 — both FAIL.
 	// Design-token gap tracked outside FB-71. Canonical fix is
 	// `bg-teal-700` (5.47:1) or `bg-teal-600` (3.74:1) on light mode.
-	{ group: "progress-dot", variant: "active-light", fg: "teal-500", bg: "stone-50", sizeBucket: "ui-nontext", underlyingBg: "#ffffff", expectedFail: true, expectedFailRef: "StageProgressStrip active dot needs teal-700 in light mode" },
-	{ group: "progress-dot", variant: "active-on-white", fg: "teal-500", bg: "white", sizeBucket: "ui-nontext", underlyingBg: "#ffffff", expectedFail: true, expectedFailRef: "StageProgressStrip active dot needs teal-700 in light mode" },
-	{ group: "progress-dot", variant: "active-dark", fg: "teal-400", bg: "stone-900", sizeBucket: "ui-nontext", underlyingBg: TOKEN_HEX["stone-950"] },
+	{
+		group: "progress-dot",
+		variant: "active-light",
+		fg: "teal-500",
+		bg: "stone-50",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+		expectedFail: true,
+		expectedFailRef:
+			"StageProgressStrip active dot needs teal-700 in light mode",
+	},
+	{
+		group: "progress-dot",
+		variant: "active-on-white",
+		fg: "teal-500",
+		bg: "white",
+		sizeBucket: "ui-nontext",
+		underlyingBg: "#ffffff",
+		expectedFail: true,
+		expectedFailRef:
+			"StageProgressStrip active dot needs teal-700 in light mode",
+	},
+	{
+		group: "progress-dot",
+		variant: "active-dark",
+		fg: "teal-400",
+		bg: "stone-900",
+		sizeBucket: "ui-nontext",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
 
 	// Visit-counter tiers — dark-mode completions.
-	{ group: "visit-counter", variant: "tier2-dark", fg: "amber-300", bg: "amber-900/40", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
-	{ group: "visit-counter", variant: "tier3-dark", fg: "red-300", bg: "red-900/40", sizeBucket: "text-normal", underlyingBg: TOKEN_HEX["stone-950"] },
+	{
+		group: "visit-counter",
+		variant: "tier2-dark",
+		fg: "amber-300",
+		bg: "amber-900/40",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
+	{
+		group: "visit-counter",
+		variant: "tier3-dark",
+		fg: "red-300",
+		bg: "red-900/40",
+		sizeBucket: "text-normal",
+		underlyingBg: TOKEN_HEX["stone-950"],
+	},
 ]
 
 function threshold(sizeBucket) {
@@ -471,9 +956,7 @@ async function runTokenMode() {
 		console.log(
 			`  known gaps (expected-fail, tracked elsewhere) — will flip to FAIL once their owning finding closes:`,
 		)
-		for (const p of report.pairs.filter(
-			(p) => !p.pass && p.expectedFail,
-		)) {
+		for (const p of report.pairs.filter((p) => !p.pass && p.expectedFail)) {
 			const refTag = p.expectedFailRef ? ` → ${p.expectedFailRef}` : ""
 			console.log(
 				`    [${p.group}/${p.variant}] ${p.fg} on ${p.bg} — ratio ${p.ratio} < ${p.threshold} (${p.sizeBucket})${refTag}`,
@@ -481,9 +964,7 @@ async function runTokenMode() {
 		}
 	}
 	if (s.unexpectedFail > 0) {
-		for (const p of report.pairs.filter(
-			(p) => !p.pass && !p.expectedFail,
-		)) {
+		for (const p of report.pairs.filter((p) => !p.pass && !p.expectedFail)) {
 			console.error(
 				`  FAIL [${p.group}/${p.variant}] ${p.fg} on ${p.bg} — ratio ${p.ratio} < ${p.threshold} (${p.sizeBucket})`,
 			)
@@ -709,13 +1190,34 @@ async function loadInlinedGalleryHtml() {
 // values — these can drift 1–2% from the canonical Tailwind palette hex,
 // so the match is against browser-emitted values not palette values.
 const RENDERED_KNOWN_GAPS = [
-	{ prefix: "#fe9a00|#fffbe9", note: "amber-500 status-dot on amber-50/50 card — design-token §2.1 needs amber-600" },
-	{ prefix: "#00c950|#f0fdf3", note: "green-500 status-dot on green-50 card — design-token §2.1 needs green-600" },
-	{ prefix: "#a6a09b|#f5f5f4", note: "stone-400 status-dot on stone-100 card — design-token §2.1 needs stone-500" },
-	{ prefix: "#00bba7|#fafaf9", note: "teal-500 progress-dot on stone-50 — StageProgressStrip needs teal-700" },
-	{ prefix: "#00c950|#fafaf9", note: "green-500 done-dot on stone-50 — StageProgressStrip needs green-700" },
-	{ prefix: "#d6d3d1|#fafaf9", note: "stone-300 decorative connector on stone-50 — cosmetic, not an a11y blocker" },
-	{ prefix: "#ffffff|#fa2940", note: "rose-600 pin numeral — oklch/sRGB render drift vs palette hex (canonical #e11d48 passes AA)" },
+	{
+		prefix: "#fe9a00|#fffbe9",
+		note: "amber-500 status-dot on amber-50/50 card — design-token §2.1 needs amber-600",
+	},
+	{
+		prefix: "#00c950|#f0fdf3",
+		note: "green-500 status-dot on green-50 card — design-token §2.1 needs green-600",
+	},
+	{
+		prefix: "#a6a09b|#f5f5f4",
+		note: "stone-400 status-dot on stone-100 card — design-token §2.1 needs stone-500",
+	},
+	{
+		prefix: "#00bba7|#fafaf9",
+		note: "teal-500 progress-dot on stone-50 — StageProgressStrip needs teal-700",
+	},
+	{
+		prefix: "#00c950|#fafaf9",
+		note: "green-500 done-dot on stone-50 — StageProgressStrip needs green-700",
+	},
+	{
+		prefix: "#d6d3d1|#fafaf9",
+		note: "stone-300 decorative connector on stone-50 — cosmetic, not an a11y blocker",
+	},
+	{
+		prefix: "#ffffff|#fa2940",
+		note: "rose-600 pin numeral — oklch/sRGB render drift vs palette hex (canonical #e11d48 passes AA)",
+	},
 ]
 
 function matchRenderedKnownGap(fg, bg) {
@@ -878,16 +1380,12 @@ async function runRenderedMode() {
 								const B = Math.round(b * a + 255 * (1 - a))
 								return (
 									"#" +
-									[R, G, B]
-										.map((n) => n.toString(16).padStart(2, "0"))
-										.join("")
+									[R, G, B].map((n) => n.toString(16).padStart(2, "0")).join("")
 								)
 							}
 							return (
 								"#" +
-								[r, g, b]
-									.map((n) => n.toString(16).padStart(2, "0"))
-									.join("")
+								[r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("")
 							)
 						}
 						// Canvas fallback for oklch / color(srgb ...) / named.
@@ -938,8 +1436,7 @@ async function runRenderedMode() {
 						const fontSize = Number.parseFloat(cs.fontSize)
 						const fontWeight = Number(cs.fontWeight) || 400
 						const large =
-							fontSize >= 24 ||
-							(fontSize >= 18.66 && fontWeight >= 700)
+							fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700)
 
 						// Text pair: element's color on nearest ancestor's bg —
 						// only if the element has a direct text child.
@@ -990,7 +1487,8 @@ async function runRenderedMode() {
 						const rect = el.getBoundingClientRect()
 						const isAriaHidden = el.getAttribute("aria-hidden") === "true"
 						const radius = cs.borderRadius || ""
-						const isSmall = rect.width > 0 && rect.width <= 40 && rect.height <= 40
+						const isSmall =
+							rect.width > 0 && rect.width <= 40 && rect.height <= 40
 						const looksLikeIndicator =
 							isSmall ||
 							isAriaHidden ||
@@ -1009,7 +1507,7 @@ async function runRenderedMode() {
 										sample:
 											(el.tagName || "").toLowerCase() +
 											(el.className
-												? "." + String(el.className).slice(0, 30)
+												? `.${String(el.className).slice(0, 30)}`
 												: ""),
 									})
 								}
@@ -1029,9 +1527,7 @@ async function runRenderedMode() {
 										bg: parentBg,
 										bucket: "ui-nontext",
 										kind: "ui-nontext-border",
-										sample:
-											(el.tagName || "").toLowerCase() +
-											"[border]",
+										sample: `${(el.tagName || "").toLowerCase()}[border]`,
 									})
 								}
 							}
@@ -1154,7 +1650,9 @@ async function main() {
 		return
 	}
 	if (mode !== "tokens") {
-		console.error(`Unknown mode '${mode}'. Use --mode=tokens or --mode=rendered.`)
+		console.error(
+			`Unknown mode '${mode}'. Use --mode=tokens or --mode=rendered.`,
+		)
 		process.exit(2)
 	}
 	await runTokenMode()

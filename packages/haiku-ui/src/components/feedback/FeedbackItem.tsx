@@ -30,7 +30,11 @@ import {
 	useRef,
 	useState,
 } from "react"
-import { focusRingCompactClass, touchTargetClass, useAnnounce } from "../../a11y"
+import {
+	focusRingCompactClass,
+	touchTargetClass,
+	useAnnounce,
+} from "../../a11y"
 import type { FeedbackItemData } from "../../types"
 import { AttachmentLightbox } from "./AttachmentLightbox"
 import { FeedbackOriginIcon } from "./FeedbackOriginIcon"
@@ -54,8 +58,7 @@ const RESOLUTION_LABELS: Record<
 	},
 	inline_fix: {
 		label: "Inline fix",
-		classes:
-			"bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300",
+		classes: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300",
 	},
 	stage_revisit: {
 		label: "Stage revisit",
@@ -64,8 +67,7 @@ const RESOLUTION_LABELS: Record<
 	},
 	upstream_rewind: {
 		label: "Upstream rewind",
-		classes:
-			"bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
+		classes: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
 	},
 }
 
@@ -85,7 +87,10 @@ const RESOLUTION_LABELS: Record<
 function FeedbackBody({
 	title,
 	body,
-}: { title: string; body: string }): React.ReactElement {
+}: {
+	title: string
+	body: string
+}): React.ReactElement {
 	const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(
 		null,
 	)
@@ -297,9 +302,8 @@ export const FeedbackItem = forwardRef<HTMLDivElement, FeedbackItemProps>(
 		)
 
 		const resolutionBadge = item.resolution
-			? RESOLUTION_LABELS[
-					item.resolution as keyof typeof RESOLUTION_LABELS
-				] ?? null
+			? (RESOLUTION_LABELS[item.resolution as keyof typeof RESOLUTION_LABELS] ??
+				null)
 			: null
 
 		const visitPillClass = useMemo(
@@ -517,7 +521,6 @@ export const FeedbackItem = forwardRef<HTMLDivElement, FeedbackItemProps>(
 									}}
 									placeholder="Reply…"
 									rows={2}
-									autoFocus
 									disabled={replySubmitting}
 									className="w-full text-xs p-2 rounded border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-y disabled:bg-stone-100 disabled:text-stone-500 dark:disabled:bg-stone-800 dark:disabled:text-stone-400 disabled:cursor-not-allowed"
 								/>

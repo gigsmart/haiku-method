@@ -1,38 +1,38 @@
 {
-  "name": "@haiku/haiku",
-  "version": "0.1.0",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "prebuild": "node scripts/build-css.mjs && node scripts/bundle-haiku-ui.mjs",
-    "build": "node scripts/build-mcp.mjs",
-    "postbuild": "if [ -n \"$SENTRY_AUTH_TOKEN\" ]; then sentry-cli sourcemaps upload --url ${SENTRY_URL:-https://sentry.ops.gigsmart.com} --org ${SENTRY_ORG:-gigsmart} --project haiku-mcp --release haiku-mcp@$(node -e \"process.stdout.write(require('../../plugin/.claude-plugin/plugin.json').version)\") ../../plugin/bin/haiku.map && sentry-cli sourcemaps upload --url ${SENTRY_URL:-https://sentry.ops.gigsmart.com} --org ${SENTRY_ORG:-gigsmart} --project haiku-spa --release haiku-spa@$(node -e \"process.stdout.write(require('../../plugin/.claude-plugin/plugin.json').version)\") review-app/dist/assets/; fi; rm -f ../../plugin/bin/haiku.map",
-    "typecheck": "tsc --noEmit",
-    "test": "node test/run-all.mjs",
-    "test:parse": "node test/state-tools.test.mjs",
-    "test:helpers": "npx tsx test/helpers.test.mjs",
-    "test:prompts": "npx tsx test/prompts.test.mjs",
-    "test:prompts-registered": "npx tsx test/prompts-registered.test.mjs",
-    "test:state-handlers": "npx tsx test/state-tools-handlers.test.mjs",
-    "test:orchestrator": "npx tsx test/orchestrator.test.mjs",
-    "test:server": "npx tsx test/server-tools.test.mjs"
-  },
-  "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.1.0",
-    "@haiku/shared": "file:../shared",
-    "@modelcontextprotocol/sdk": "^1.28.0",
-    "@sentry/node": "^10.47.0",
-    "gray-matter": "^4.0.3",
-    "localtunnel": "^2.0.2",
-    "marked": "^17.0.5",
-    "zod": "^3.23.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/typography": "^0.5.19",
-    "@types/node": "^22.0.0",
-    "esbuild": "^0.27.7",
-    "tailwindcss": "^3.4.19",
-    "tsx": "^4.21.0",
-    "typescript": "^5.7.0"
-  }
+	"name": "@haiku/haiku",
+	"version": "0.1.0",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"prebuild": "node scripts/build-css.mjs && node scripts/bundle-haiku-ui.mjs",
+		"build": "node scripts/build-mcp.mjs",
+		"postbuild": "if [ -n \"$SENTRY_AUTH_TOKEN\" ]; then sentry-cli sourcemaps upload --url ${SENTRY_URL:-https://sentry.ops.gigsmart.com} --org ${SENTRY_ORG:-gigsmart} --project haiku-mcp --release haiku-mcp@$(node -e \"process.stdout.write(require('../../plugin/.claude-plugin/plugin.json').version)\") ../../plugin/bin/haiku.map && sentry-cli sourcemaps upload --url ${SENTRY_URL:-https://sentry.ops.gigsmart.com} --org ${SENTRY_ORG:-gigsmart} --project haiku-spa --release haiku-spa@$(node -e \"process.stdout.write(require('../../plugin/.claude-plugin/plugin.json').version)\") review-app/dist/assets/; fi; rm -f ../../plugin/bin/haiku.map",
+		"typecheck": "tsc --noEmit",
+		"test": "node test/run-all.mjs",
+		"test:parse": "node test/state-tools.test.mjs",
+		"test:helpers": "npx tsx test/helpers.test.mjs",
+		"test:prompts": "npx tsx test/prompts.test.mjs",
+		"test:prompts-registered": "npx tsx test/prompts-registered.test.mjs",
+		"test:state-handlers": "npx tsx test/state-tools-handlers.test.mjs",
+		"test:orchestrator": "npx tsx test/orchestrator.test.mjs",
+		"test:server": "npx tsx test/server-tools.test.mjs"
+	},
+	"dependencies": {
+		"@anthropic-ai/claude-agent-sdk": "^0.1.0",
+		"@haiku/shared": "file:../shared",
+		"@modelcontextprotocol/sdk": "^1.28.0",
+		"@sentry/node": "^10.47.0",
+		"gray-matter": "^4.0.3",
+		"localtunnel": "^2.0.2",
+		"marked": "^17.0.5",
+		"zod": "^3.23.0"
+	},
+	"devDependencies": {
+		"@tailwindcss/typography": "^0.5.19",
+		"@types/node": "^22.0.0",
+		"esbuild": "^0.27.7",
+		"tailwindcss": "^3.4.19",
+		"tsx": "^4.21.0",
+		"typescript": "^5.7.0"
+	}
 }

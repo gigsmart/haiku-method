@@ -23,10 +23,13 @@
  *   - Submit failure surfaces a `role="alert"` banner — modal stays open
  */
 
-import { useEffect, useId, useRef, useState } from "react"
 import type { RevisitRequest, RevisitResponse } from "haiku-api"
-import { focusRingClass, focusRingVariantClasses } from "../a11y/focus"
-import { useFocusTrap } from "../a11y/focus"
+import { useEffect, useId, useRef, useState } from "react"
+import {
+	focusRingClass,
+	focusRingVariantClasses,
+	useFocusTrap,
+} from "../a11y/focus"
 import { touchTargetClass } from "../a11y/touch-target"
 import { type ApiClient, defaultApiClient } from "../api/client"
 import type { FeedbackItemData } from "../types"
@@ -202,21 +205,17 @@ export function RevisitModal({
 
 				<div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
 					<p id={descId} className="text-xs text-stone-600 dark:text-stone-300">
-						The agent will triage each item and pick a resolution path —
-						reply, inline fix, stage revisit, or upstream rewind. Items you
-						routed explicitly will keep your choice.
+						The agent will triage each item and pick a resolution path — reply,
+						inline fix, stage revisit, or upstream rewind. Items you routed
+						explicitly will keep your choice.
 					</p>
 
 					{items.length === 0 ? (
 						<p className="text-xs italic text-stone-500 dark:text-stone-400">
-							No pending feedback on this stage. Add a comment first, then
-							Send.
+							No pending feedback on this stage. Add a comment first, then Send.
 						</p>
 					) : (
-						<ul
-							aria-label="Pending feedback items"
-							className="space-y-2"
-						>
+						<ul aria-label="Pending feedback items" className="space-y-2">
 							{items.map((it) => (
 								<li
 									key={it.id}

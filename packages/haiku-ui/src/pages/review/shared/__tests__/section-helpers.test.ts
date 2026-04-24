@@ -12,7 +12,8 @@ import { _markdownHtmlCache, markdownToSimpleHtml } from "../section-helpers"
  */
 describe("markdownToSimpleHtml sanitization", () => {
 	it("strips <script> tags embedded in markdown", () => {
-		const md = 'Some text\n\n<script>window.__pwned = true;</script>\n\nmore text'
+		const md =
+			"Some text\n\n<script>window.__pwned = true;</script>\n\nmore text"
 		const html = markdownToSimpleHtml(md)
 		expect(html).not.toContain("<script")
 		expect(html).not.toContain("__pwned")
@@ -39,7 +40,8 @@ describe("markdownToSimpleHtml sanitization", () => {
 	})
 
 	it("preserves ordinary markup (headings, lists, code)", () => {
-		const md = "# Heading\n\n- item 1\n- item 2\n\n`inline code`\n\n```\nblock\n```"
+		const md =
+			"# Heading\n\n- item 1\n- item 2\n\n`inline code`\n\n```\nblock\n```"
 		const html = markdownToSimpleHtml(md)
 		expect(html).toContain("<h1")
 		expect(html).toContain("<ul")

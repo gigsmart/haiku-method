@@ -26,8 +26,8 @@
 
 import type { ReviewAnnotations } from "haiku-api"
 import { useCallback, useState } from "react"
-import { Aside } from "../../a11y"
 import {
+	Aside,
 	focusRingClass,
 	focusRingVariantClasses,
 	touchTargetClass,
@@ -160,9 +160,7 @@ export function FeedbackSidebar({
 			setComposerResolution(null)
 			announce(
 				"polite",
-				composerResolution === "question"
-					? "Question added"
-					: "Comment added",
+				composerResolution === "question" ? "Question added" : "Comment added",
 			)
 		} catch (err) {
 			announce(
@@ -194,7 +192,14 @@ export function FeedbackSidebar({
 				setSubmitting(null)
 			}
 		},
-		[announce, client, composerText, getAnnotations, sessionId, onDecisionSuccess],
+		[
+			announce,
+			client,
+			composerText,
+			getAnnotations,
+			sessionId,
+			onDecisionSuccess,
+		],
 	)
 
 	const handleBodyClick = useCallback(
@@ -217,7 +222,7 @@ export function FeedbackSidebar({
 				? `${pendingCount} pending item${pendingCount === 1 ? "" : "s"} already persisted. Request Changes closes this pane; the next run_next routes each item through the normal fix-loop.`
 				: "Ad-hoc review — no gate to advance. Done closes the pane without touching the FSM."
 		: mode === "add"
-			? "Adds a pending feedback item. Use the Route dropdown to steer the agent, or leave it on \"Let agent decide\" and the triage pass will classify."
+			? 'Adds a pending feedback item. Use the Route dropdown to steer the agent, or leave it on "Let agent decide" and the triage pass will classify.'
 			: mode === "request"
 				? `Hands ${pendingCount} item${pendingCount === 1 ? "" : "s"} to the agent on ${stage ?? "(stage)"}. Each routes per its resolution: reply, inline fix, stage revisit, or upstream rewind.`
 				: mode === "approve"
@@ -285,10 +290,7 @@ export function FeedbackSidebar({
 
 			{/* Feedback list — scrollable; delegated click surfaces item id */}
 			{/* biome-ignore lint/a11y/noStaticElementInteractions: delegated click is the idiomatic way to bridge list-item clicks to the parent highlight controller without wrapping every item. Keyboard nav already lives on FeedbackItem's disclosure button. */}
-			<div
-				className="flex flex-col flex-1 min-h-0"
-				onClick={handleBodyClick}
-			>
+			<div className="flex flex-col flex-1 min-h-0" onClick={handleBodyClick}>
 				<FeedbackPanelBody
 					items={items}
 					loading={loading}
@@ -350,9 +352,7 @@ export function FeedbackSidebar({
 					>
 						<option value="">Let agent decide</option>
 						<option value="question">Question · wants a reply</option>
-						<option value="inline_fix">
-							Inline fix · one-bolt patch
-						</option>
+						<option value="inline_fix">Inline fix · one-bolt patch</option>
 						<option value="stage_revisit">
 							Stage revisit · re-run the stage
 						</option>
@@ -398,9 +398,7 @@ export function FeedbackSidebar({
 							className={`${touchTargetClass} ${focusRingClass} ${focusRingVariantClasses.requestChanges} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md bg-amber-600 hover:bg-amber-700 px-3 py-2 text-xs font-semibold text-white transition-colors`}
 							title="Ad-hoc review: pending feedback is already persisted. Clicking this closes the pane and signals the MCP call to return; the next run_next routes each item through the normal fix-loop."
 						>
-							{submitting
-								? "Submitting…"
-								: `Request Changes (${pendingCount})`}
+							{submitting ? "Submitting…" : `Request Changes (${pendingCount})`}
 						</button>
 					)}
 					{mode === "approve" && !adHoc && (

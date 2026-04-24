@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * audit-scenario-coverage.mjs — mechanical coverage gate (FB-59 fix).
  *
@@ -72,10 +73,10 @@
  *   - Cucumber step definitions. Project uses vitest + node:test only.
  */
 
-import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs"
+import { execSync } from "node:child_process"
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { execSync } from "node:child_process"
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(SCRIPT_DIR, "..", "..", "..")
@@ -316,7 +317,10 @@ function unquote(s) {
  * @param {string} s
  */
 function normalize(s) {
-	return s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()
+	return s
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, " ")
+		.trim()
 }
 
 /**
@@ -347,7 +351,10 @@ function collectBackendTestsFromBaseline() {
  */
 function collectBackendTestsFromDisk() {
 	const files = walkTestFiles(BACKEND_TEST_DIR)
-	const apiFiles = [...walkTestFiles(API_SRC_DIR), ...walkTestFiles(API_TESTS_DIR)]
+	const apiFiles = [
+		...walkTestFiles(API_SRC_DIR),
+		...walkTestFiles(API_TESTS_DIR),
+	]
 	const out = []
 	for (const f of [...files, ...apiFiles]) {
 		try {
@@ -414,9 +421,10 @@ function walkTestFiles(dir) {
  */
 function extractTestNames(filePath) {
 	const text = readFileSync(filePath, "utf8")
-	const re = /\b(?:it|test|describe)(?:\.(?:skip|only|todo)|\.each\s*\([\s\S]*?\))?\s*\(\s*(['"`])((?:\\.|(?!\1)[\s\S])*?)\1/g
+	const re =
+		/\b(?:it|test|describe)(?:\.(?:skip|only|todo)|\.each\s*\([\s\S]*?\))?\s*\(\s*(['"`])((?:\\.|(?!\1)[\s\S])*?)\1/g
 	const out = []
-	const rel = filePath.replace(REPO_ROOT + "/", "")
+	const rel = filePath.replace(`${REPO_ROOT}/`, "")
 	let m
 	while ((m = re.exec(text))) {
 		let raw = m[2]
@@ -536,7 +544,9 @@ function main() {
 	const started = Date.now()
 
 	if (!existsSync(FEATURE_DIR)) {
-		console.error(`audit-scenario-coverage · feature dir missing: ${FEATURE_DIR}`)
+		console.error(
+			`audit-scenario-coverage · feature dir missing: ${FEATURE_DIR}`,
+		)
 		process.exit(2)
 	}
 
@@ -613,8 +623,7 @@ function main() {
 			const yamlEntry = yamlByScenario.get(s.title)
 			if (yamlEntry) {
 				const hasCovered =
-					Array.isArray(yamlEntry.covered_by) &&
-					yamlEntry.covered_by.length > 0
+					Array.isArray(yamlEntry.covered_by) && yamlEntry.covered_by.length > 0
 				const hasSkip =
 					typeof yamlEntry.skip_reason === "string" &&
 					yamlEntry.skip_reason.trim().length > 0
@@ -705,7 +714,7 @@ function main() {
 		),
 	}
 
-	writeFileSync(COVERAGE_OUT, JSON.stringify(report, null, 2) + "\n")
+	writeFileSync(COVERAGE_OUT, `${JSON.stringify(report, null, 2)}\n`)
 
 	const elapsed = Date.now() - started
 
@@ -728,7 +737,7 @@ function main() {
 		}
 		console.error("")
 		console.error(
-			`Resolution: add a test whose name bidirectionally-substring-matches the scenario title, add a covered_by entry in backend-feature-coverage.yaml, or add an alias entry in ${ALIASES_PATH.replace(REPO_ROOT + "/", "")}.`,
+			`Resolution: add a test whose name bidirectionally-substring-matches the scenario title, add a covered_by entry in backend-feature-coverage.yaml, or add an alias entry in ${ALIASES_PATH.replace(`${REPO_ROOT}/`, "")}.`,
 		)
 		process.exit(1)
 	}

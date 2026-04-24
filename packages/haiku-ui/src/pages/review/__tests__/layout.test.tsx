@@ -14,14 +14,14 @@
 
 import { cleanup, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
+import feedbackFixture from "../../../../test-fixtures/review-feedback-full.json"
+import sessionFixture from "../../../../test-fixtures/review-session-full.json"
 import { LiveRegionShell } from "../../../a11y"
 import type { ApiClient } from "../../../api/client"
 import { ApiClientProvider } from "../../../api/context"
-import sessionFixture from "../../../../test-fixtures/review-session-full.json"
-import feedbackFixture from "../../../../test-fixtures/review-feedback-full.json"
-import type { ReviewPageSessionData } from "../shared/session-data"
 import type { FeedbackItemData } from "../../../types"
 import { ReviewPage } from "../ReviewPage"
+import type { ReviewPageSessionData } from "../shared/session-data"
 
 type FeedbackFixture = { items: FeedbackItemData[] }
 
@@ -105,10 +105,8 @@ async function mount(isMobile: boolean): Promise<void> {
 	const client = buildMockClient(items)
 	render(
 		<ApiClientProvider client={client}>
-			<>
-				<ReviewPage session={session} sessionId="test-review-full" />
-				<LiveRegionShell />
-			</>
+			<ReviewPage session={session} sessionId="test-review-full" />
+			<LiveRegionShell />
 		</ApiClientProvider>,
 	)
 	await waitFor(() => {

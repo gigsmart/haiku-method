@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import fs from "node:fs"
 /**
  * audit-keyboard-shortcuts.mjs — reconciles the canonical HTML map at
  * `.haiku/intents/.../stages/design/artifacts/keyboard-shortcut-map.html` with
@@ -18,19 +19,13 @@
  *   2 — filesystem error / registry parse error
  */
 import { readFile } from "node:fs/promises"
-import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 const PACKAGE_DIR = path.resolve(SCRIPT_DIR, "..")
 const REPO_ROOT = path.resolve(PACKAGE_DIR, "../..")
-const REGISTRY_TS = path.join(
-	PACKAGE_DIR,
-	"src",
-	"a11y",
-	"keyboard.ts",
-)
+const REGISTRY_TS = path.join(PACKAGE_DIR, "src", "a11y", "keyboard.ts")
 const REPORTS_DIR = path.join(PACKAGE_DIR, "reports")
 
 // Resolve the HTML via glob-walk inside the intent directory so the audit

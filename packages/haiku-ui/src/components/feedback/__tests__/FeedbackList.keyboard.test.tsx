@@ -32,7 +32,9 @@ describe("FeedbackList — keyboard navigation", () => {
 	// virtualization is off, which is jsdom-expensive. 30 items + 29
 	// ArrowDown cycles exercises the same hook bookkeeping as 100 did
 	// without pushing jsdom past the 15-second timeout.
-	it("ArrowDown from index 0 → N-1 lands on the correct item at each step", { timeout: 15000 }, async () => {
+	it("ArrowDown from index 0 → N-1 lands on the correct item at each step", {
+		timeout: 15000,
+	}, async () => {
 		const items = mockItems(30)
 		const { container } = render(<FeedbackList items={items} />)
 		const listContainer = container.querySelector(

@@ -15,11 +15,11 @@
  *                  annotation state (pins + inline comments).
  */
 
+import { createContext, useContext } from "react"
 import type { AnnotationPin } from "../../../components/AnnotationCanvas"
 import type { InlineCommentEntry } from "../../../components/InlineComments"
 import type { ReviewPageSessionData } from "../../../pages/review/shared/session-data"
 import type { ReviewAnnotations } from "../../../types"
-import { createContext, useContext } from "react"
 
 export interface ReviewRouteContextValue {
 	session: ReviewPageSessionData

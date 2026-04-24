@@ -186,7 +186,8 @@ export function ReviewSidebar({
 			const annotations = getAnnotations()
 			await client.submitDecision(sessionId, {
 				decision: "external_review",
-				feedback: "Submitted for external review. Run /haiku:pickup after approval.",
+				feedback:
+					"Submitted for external review. Run /haiku:pickup after approval.",
 				annotations,
 			})
 			onClearDraft()

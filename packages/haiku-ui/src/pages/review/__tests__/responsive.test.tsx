@@ -13,14 +13,14 @@
 
 import { cleanup, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { ApiClientProvider } from "../../../api/context"
+import feedbackFixture from "../../../../test-fixtures/review-feedback-full.json"
+import sessionFixture from "../../../../test-fixtures/review-session-full.json"
 import { LiveRegionShell } from "../../../a11y"
 import type { ApiClient } from "../../../api/client"
-import sessionFixture from "../../../../test-fixtures/review-session-full.json"
-import feedbackFixture from "../../../../test-fixtures/review-feedback-full.json"
+import { ApiClientProvider } from "../../../api/context"
+import type { FeedbackItemData } from "../../../types"
 import { ReviewPage } from "../ReviewPage"
 import type { ReviewPageSessionData } from "../shared/session-data"
-import type { FeedbackItemData } from "../../../types"
 
 type FeedbackFixture = { items: FeedbackItemData[] }
 
@@ -114,10 +114,8 @@ describe("ReviewPage — responsive parity", () => {
 		stubFetch()
 		render(
 			<ApiClientProvider client={client}>
-				<>
-					<ReviewPage session={session} sessionId="test-review-full" />
-					<LiveRegionShell />
-				</>
+				<ReviewPage session={session} sessionId="test-review-full" />
+				<LiveRegionShell />
 			</ApiClientProvider>,
 		)
 		// Wait for the feedback list to populate — look for the first

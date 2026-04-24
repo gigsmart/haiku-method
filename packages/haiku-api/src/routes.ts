@@ -36,13 +36,13 @@ import {
 	QuestionAnswerResponseSchema,
 } from "./schemas/question.js"
 import {
-	RevisitRequestSchema,
-	RevisitResponseSchema,
-} from "./schemas/revisit.js"
-import {
 	ReviewDecisionRequestSchema,
 	ReviewDecisionResponseSchema,
 } from "./schemas/review.js"
+import {
+	RevisitRequestSchema,
+	RevisitResponseSchema,
+} from "./schemas/revisit.js"
 import {
 	HeartbeatResponseSchema,
 	SessionPayloadSchema,

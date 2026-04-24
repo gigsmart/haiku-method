@@ -134,7 +134,7 @@ export function InlineComments({
 	// persisted inline feedback card.
 	const flashRangeRef = useRef<Range | null>(null)
 
-	const [comments, setComments] = useState<InlineCommentEntry[]>([])
+	const [_comments, setComments] = useState<InlineCommentEntry[]>([])
 	const [popoverPos, setPopoverPos] = useState<{ x: number; y: number } | null>(
 		null,
 	)
@@ -225,7 +225,7 @@ export function InlineComments({
 	// produce a fresh array identity but the SAME anchors don't trigger
 	// a clear → rebuild cycle (the brief empty-paint between them looks
 	// like the highlight "disappearing" a few seconds after it lands).
-	const anchorsKey = useMemo(
+	const _anchorsKey = useMemo(
 		() =>
 			JSON.stringify(
 				(existingAnchors ?? []).map((a) => [
@@ -267,7 +267,7 @@ export function InlineComments({
 		}
 		redrawHighlights()
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [anchorsKey, htmlContent, currentContentSha, redrawHighlights])
+	}, [currentContentSha, redrawHighlights, existingAnchors])
 
 	function evaluateSelection(): void {
 		// If there's already a pending selection under review, don't
@@ -327,7 +327,7 @@ export function InlineComments({
 		document.addEventListener("mouseup", handleUp)
 		return () => document.removeEventListener("mouseup", handleUp)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [])
+	}, [evaluateSelection])
 
 	function handleShowCommentInput() {
 		setPopoverMode("editing")
@@ -471,7 +471,7 @@ export function InlineComments({
 		}, 1800)
 		return () => clearTimeout(timer)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [flashAnchor])
+	}, [flashAnchor, redrawHighlights, onFlashCommentConsumed])
 
 	return (
 		<div ref={containerRef} className="relative">

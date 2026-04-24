@@ -14,23 +14,20 @@ import { randomUUID } from "node:crypto"
 import { appendFileSync, existsSync } from "node:fs"
 import { readFile, realpath } from "node:fs/promises"
 import { dirname, extname, join, resolve } from "node:path"
+import fastifyCors from "@fastify/cors"
+import fastifyRateLimit from "@fastify/rate-limit"
+import fastifyWebsocket from "@fastify/websocket"
 import Fastify, {
 	type FastifyInstance,
 	type FastifyReply,
 	type FastifyRequest,
 } from "fastify"
-import fastifyCors from "@fastify/cors"
-import fastifyRateLimit from "@fastify/rate-limit"
-import fastifyWebsocket from "@fastify/websocket"
-import type { WebSocket as WsWebSocket } from "ws"
-import { z, type ZodTypeAny } from "zod"
 import {
 	DEFAULT_BODY_MAX_BYTES,
 	DirectionSelectRequestSchema,
 	type DirectionSelectResponse,
 	FEEDBACK_BODY_MAX_BYTES,
 	FEEDBACK_CREATE_MAX_BYTES,
-
 	FeedbackCreateRequestSchema,
 	type FeedbackCreateResponse,
 	type FeedbackDeleteResponse,
@@ -51,6 +48,8 @@ import {
 	type WsServerMessage,
 	type ZodIssueWire,
 } from "haiku-api"
+import type { WebSocket as WsWebSocket } from "ws"
+import type { ZodTypeAny, z } from "zod"
 import { review } from "./config.js"
 import { HAIKU_UI_HTML } from "./haiku-ui-html.js"
 import { handleOrchestratorTool } from "./orchestrator.js"
@@ -69,18 +68,20 @@ import {
 import {
 	appendFeedbackReply,
 	deleteFeedbackFile,
-	FEEDBACK_ORIGINS,
 	FEEDBACK_STATUSES,
 	type FeedbackItem,
-	gitCommitState,
 	gitCommitStateBackgroundPush,
 	intentDir,
 	readFeedbackFiles,
 	updateFeedbackFile,
 	writeFeedbackFile,
 } from "./state-tools.js"
-import { e2eEncrypt, isE2EActive, isRemoteReviewEnabled } from "./tunnel.js"
-import { verifyTunnelJWT } from "./tunnel.js"
+import {
+	e2eEncrypt,
+	isE2EActive,
+	isRemoteReviewEnabled,
+	verifyTunnelJWT,
+} from "./tunnel.js"
 
 // ── MIME and well-known constants ────────────────────────────────────────
 
@@ -104,7 +105,10 @@ const SESSION_CANCEL_LOG_PATH = "/tmp/haiku-session-cancel.log"
 
 function logClose(msg: string): void {
 	try {
-		appendFileSync(SESSION_CANCEL_LOG_PATH, `${new Date().toISOString()} ${msg}\n`)
+		appendFileSync(
+			SESSION_CANCEL_LOG_PATH,
+			`${new Date().toISOString()} ${msg}\n`,
+		)
 	} catch {
 		/* */
 	}
@@ -467,7 +471,11 @@ async function e2eOnSend(
 	payload: unknown,
 ): Promise<unknown> {
 	if (reply.statusCode >= 400) return payload
-	if (reply.statusCode === 204 || reply.statusCode === 205 || reply.statusCode === 304) {
+	if (
+		reply.statusCode === 204 ||
+		reply.statusCode === 205 ||
+		reply.statusCode === 304
+	) {
 		return payload
 	}
 	const sessionId = extractSessionIdFromPath(req.url.split("?")[0])
@@ -863,9 +871,7 @@ async function buildApp(): Promise<FastifyInstance> {
 	// the payload is a Buffer/string by the time we see it. Short-
 	// circuits when no session match or E2E isn't active.
 	instance.addHook("onSend", async (req, reply, payload) => {
-		const sessionId = extractSessionIdFromPath(
-			(req.url ?? "/").split("?")[0],
-		)
+		const sessionId = extractSessionIdFromPath((req.url ?? "/").split("?")[0])
 		if (!sessionId || !isE2EActive(sessionId)) return payload
 		if (reply.statusCode >= 400) return payload
 		try {
@@ -924,7 +930,11 @@ async function buildApp(): Promise<FastifyInstance> {
 			reply.status(404).send("Session not found")
 			return
 		}
-		const parsed = parseBodyWithSchema(reply, req.body, ReviewDecisionRequestSchema)
+		const parsed = parseBodyWithSchema(
+			reply,
+			req.body,
+			ReviewDecisionRequestSchema,
+		)
 		if (!parsed.ok) return
 		const decision =
 			parsed.data.decision === "approved" ? "approved" : "changes_requested"
@@ -949,7 +959,11 @@ async function buildApp(): Promise<FastifyInstance> {
 			reply.status(404).send("Session not found")
 			return
 		}
-		const parsed = parseBodyWithSchema(reply, req.body, QuestionAnswerRequestSchema)
+		const parsed = parseBodyWithSchema(
+			reply,
+			req.body,
+			QuestionAnswerRequestSchema,
+		)
 		if (!parsed.ok) return
 		updateQuestionSession(req.params.sessionId, {
 			status: "answered",
@@ -976,7 +990,11 @@ async function buildApp(): Promise<FastifyInstance> {
 				.send({ error: "Direction already selected for this session" })
 			return
 		}
-		const parsed = parseBodyWithSchema(reply, req.body, DirectionSelectRequestSchema)
+		const parsed = parseBodyWithSchema(
+			reply,
+			req.body,
+			DirectionSelectRequestSchema,
+		)
 		if (!parsed.ok) return
 		updateDesignDirectionSession(req.params.sessionId, {
 			status: "answered",
@@ -1044,7 +1062,11 @@ async function buildApp(): Promise<FastifyInstance> {
 				reply.status(404).send("Session not found")
 				return
 			}
-			return serveUnderRoot(reply, join(session.intent_dir, "mockups"), filePath)
+			return serveUnderRoot(
+				reply,
+				join(session.intent_dir, "mockups"),
+				filePath,
+			)
 		},
 	)
 
@@ -1271,12 +1293,10 @@ async function buildApp(): Promise<FastifyInstance> {
 		if (!requireTunnelAuth(req, reply, null)) return
 		const { intent, stage } = req.params
 		if (!(isValidSlug(intent) && isValidSlug(stage))) {
-			reply
-				.status(400)
-				.send({
-					error:
-						"Invalid slug — must not contain path separators or traversal sequences",
-				})
+			reply.status(400).send({
+				error:
+					"Invalid slug — must not contain path separators or traversal sequences",
+			})
 			return
 		}
 		if (!validateIntent(intent)) {
@@ -1311,8 +1331,7 @@ async function buildApp(): Promise<FastifyInstance> {
 				title: i.title,
 				body: i.body,
 				status: i.status as FeedbackListResponse["items"][number]["status"],
-				origin:
-					i.origin as FeedbackListResponse["items"][number]["origin"],
+				origin: i.origin as FeedbackListResponse["items"][number]["origin"],
 				author: i.author,
 				author_type:
 					i.author_type as FeedbackListResponse["items"][number]["author_type"],
@@ -1321,10 +1340,9 @@ async function buildApp(): Promise<FastifyInstance> {
 				visit: i.visit,
 				source_ref: i.source_ref ?? null,
 				closed_by: i.closed_by ?? null,
-				resolution:
-					i.resolution as
-						| FeedbackListResponse["items"][number]["resolution"]
-						| null,
+				resolution: i.resolution as
+					| FeedbackListResponse["items"][number]["resolution"]
+					| null,
 				replies: i.replies.map((r) => ({
 					author: r.author,
 					author_type: r.author_type,
@@ -1360,12 +1378,7 @@ async function buildApp(): Promise<FastifyInstance> {
 				reply.status(400).send({ error: "invalid_filename" })
 				return
 			}
-			const feedbackRoot = join(
-				intentDir(intent),
-				"stages",
-				stage,
-				"feedback",
-			)
+			const feedbackRoot = join(intentDir(intent), "stages", stage, "feedback")
 			await serveUnderRoot(reply, feedbackRoot, filename)
 		},
 	)
@@ -1428,7 +1441,9 @@ async function buildApp(): Promise<FastifyInstance> {
 						}
 					: null,
 			})
-			gitCommitStateBackgroundPush(`feedback: create ${result.feedback_id} in ${stage}`)
+			gitCommitStateBackgroundPush(
+				`feedback: create ${result.feedback_id} in ${stage}`,
+			)
 			const response: FeedbackCreateResponse = {
 				feedback_id: result.feedback_id,
 				file: result.file,
@@ -1456,11 +1471,7 @@ async function buildApp(): Promise<FastifyInstance> {
 			if (!requireTunnelAuth(req, reply, null)) return
 			const { intent, stage, feedbackId } = req.params
 			if (
-				!(
-					isValidSlug(intent) &&
-					isValidSlug(stage) &&
-					isValidSlug(feedbackId)
-				)
+				!(isValidSlug(intent) && isValidSlug(stage) && isValidSlug(feedbackId))
 			) {
 				reply.status(400).send({
 					error:
@@ -1505,11 +1516,9 @@ async function buildApp(): Promise<FastifyInstance> {
 						feedbackId,
 						detail: "not_found",
 					})
-					reply
-						.status(404)
-						.send({
-							error: `Feedback '${feedbackId}' not found in stage '${stage}'`,
-						})
+					reply.status(404).send({
+						error: `Feedback '${feedbackId}' not found in stage '${stage}'`,
+					})
 					return
 				}
 				logFeedbackAction({
@@ -1549,11 +1558,7 @@ async function buildApp(): Promise<FastifyInstance> {
 		if (!requireTunnelAuth(req, reply, null)) return
 		const { intent, stage, feedbackId } = req.params
 		if (
-			!(
-				isValidSlug(intent) &&
-				isValidSlug(stage) &&
-				isValidSlug(feedbackId)
-			)
+			!(isValidSlug(intent) && isValidSlug(stage) && isValidSlug(feedbackId))
 		) {
 			reply.status(400).send({
 				error:
@@ -1582,11 +1587,9 @@ async function buildApp(): Promise<FastifyInstance> {
 					feedbackId,
 					detail: "not_found",
 				})
-				reply
-					.status(404)
-					.send({
-						error: `Feedback '${feedbackId}' not found in stage '${stage}'`,
-					})
+				reply.status(404).send({
+					error: `Feedback '${feedbackId}' not found in stage '${stage}'`,
+				})
 				return
 			}
 			if (result.error.includes("cannot delete")) {
@@ -1649,11 +1652,7 @@ async function buildApp(): Promise<FastifyInstance> {
 			if (!requireTunnelAuth(req, reply, null)) return
 			const { intent, stage, feedbackId } = req.params
 			if (
-				!(
-					isValidSlug(intent) &&
-					isValidSlug(stage) &&
-					isValidSlug(feedbackId)
-				)
+				!(isValidSlug(intent) && isValidSlug(stage) && isValidSlug(feedbackId))
 			) {
 				reply.status(400).send({
 					error:
@@ -1808,11 +1807,7 @@ async function buildApp(): Promise<FastifyInstance> {
 		const errCode = (err as { code?: string }).code
 		const status = (err as { statusCode?: number }).statusCode ?? 500
 		const errMessage =
-			err instanceof Error
-				? err.message
-				: typeof err === "string"
-					? err
-					: ""
+			err instanceof Error ? err.message : typeof err === "string" ? err : ""
 
 		// FB-04: log the underlying error detail at the point we know it.
 		// The `onResponse` hook also logs the eventual 4xx/5xx line, but
@@ -1863,8 +1858,7 @@ async function buildApp(): Promise<FastifyInstance> {
 		if (status === 413) {
 			const path = (req.url ?? "/").split("?")[0]
 			const cap =
-				req.method === "POST" &&
-				/^\/api\/feedback\/[^/]+\/[^/]+\/?$/.test(path)
+				req.method === "POST" && /^\/api\/feedback\/[^/]+\/[^/]+\/?$/.test(path)
 					? FEEDBACK_CREATE_MAX_BYTES
 					: DEFAULT_BODY_MAX_BYTES
 			reply.status(413).send({ error: "payload_too_large", max_bytes: cap })

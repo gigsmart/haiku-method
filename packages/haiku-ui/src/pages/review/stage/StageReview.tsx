@@ -21,20 +21,20 @@
  */
 
 import { MarkdownViewer } from "@haiku/shared"
-import { markdownToSimpleHtml } from "../shared/section-helpers"
 import DOMPurify from "dompurify"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArtifactAnnotator } from "../../../components/ArtifactAnnotator"
 import { Card, SectionHeading } from "../../../components/Card"
 import {
-	InlineComments,
 	type InlineCommentEntry,
+	InlineComments,
 } from "../../../components/InlineComments"
 import { type TabDef, Tabs } from "../../../components/Tabs"
 import type { ParsedUnit } from "../../../parsed"
-import type { ReviewDetailKind, ReviewTab } from "../shared/stage-tabs"
 import type { FeedbackItemData } from "../../../types"
+import { markdownToSimpleHtml } from "../shared/section-helpers"
 import type { ReviewPageSessionData } from "../shared/session-data"
+import type { ReviewDetailKind, ReviewTab } from "../shared/stage-tabs"
 import {
 	type ArtifactKind,
 	type SeenState,
@@ -170,9 +170,7 @@ function statusPillClass(status: string | undefined): string {
  *  shape `<InlineComments>` needs for re-painting previously-saved
  *  highlights. Filters out closed / rejected items — those are
  *  resolved, no reason to clutter the artifact body. */
-function deriveExistingAnchors(
-	items: readonly FeedbackItemData[],
-): Array<{
+function deriveExistingAnchors(items: readonly FeedbackItemData[]): Array<{
 	commentId?: string
 	selectedText: string
 	paragraph?: number
@@ -329,44 +327,47 @@ export function StageReview({
 	}))
 
 	// Pre-compute feedback → target maps (keyed by unit slug / knowledge name / output name)
-	const { feedbackByUnit, feedbackByKnowledge, feedbackByOutput } = useMemo(() => {
-		const byUnit = new Map<string, FeedbackItemData[]>()
-		const byKnowledge = new Map<string, FeedbackItemData[]>()
-		const byOutput = new Map<string, FeedbackItemData[]>()
-		for (const f of feedback) {
-			const target = (f as unknown as {
-				target?: {
-					kind?: string
-					unitName?: string
-					knowledgeName?: string
-					outputName?: string
+	const { feedbackByUnit, feedbackByKnowledge, feedbackByOutput } =
+		useMemo(() => {
+			const byUnit = new Map<string, FeedbackItemData[]>()
+			const byKnowledge = new Map<string, FeedbackItemData[]>()
+			const byOutput = new Map<string, FeedbackItemData[]>()
+			for (const f of feedback) {
+				const target = (
+					f as unknown as {
+						target?: {
+							kind?: string
+							unitName?: string
+							knowledgeName?: string
+							outputName?: string
+						}
+					}
+				).target
+				if (!target) continue
+				let bucket: Map<string, FeedbackItemData[]> | null = null
+				let key: string | undefined
+				if (target.kind === "unit" && target.unitName) {
+					bucket = byUnit
+					key = target.unitName
+				} else if (target.kind === "knowledge" && target.knowledgeName) {
+					bucket = byKnowledge
+					key = target.knowledgeName
+				} else if (target.kind === "output" && target.outputName) {
+					bucket = byOutput
+					key = target.outputName
 				}
-			}).target
-			if (!target) continue
-			let bucket: Map<string, FeedbackItemData[]> | null = null
-			let key: string | undefined
-			if (target.kind === "unit" && target.unitName) {
-				bucket = byUnit
-				key = target.unitName
-			} else if (target.kind === "knowledge" && target.knowledgeName) {
-				bucket = byKnowledge
-				key = target.knowledgeName
-			} else if (target.kind === "output" && target.outputName) {
-				bucket = byOutput
-				key = target.outputName
+				if (bucket && key) {
+					const list = bucket.get(key) ?? []
+					list.push(f)
+					bucket.set(key, list)
+				}
 			}
-			if (bucket && key) {
-				const list = bucket.get(key) ?? []
-				list.push(f)
-				bucket.set(key, list)
+			return {
+				feedbackByUnit: byUnit,
+				feedbackByKnowledge: byKnowledge,
+				feedbackByOutput: byOutput,
 			}
-		}
-		return {
-			feedbackByUnit: byUnit,
-			feedbackByKnowledge: byKnowledge,
-			feedbackByOutput: byOutput,
-		}
-	}, [feedback])
+		}, [feedback])
 
 	const stageSummary = resolveStageSummary(session, stageName)
 	const seen = useSeenTracker(seenScopeId)
@@ -441,7 +442,7 @@ export function StageReview({
 		}
 		setDetailRef.current(null)
 		setActiveTabRef.current("overview")
-	}, [stageName])
+	}, [])
 
 	// Unified walkthrough list — one contiguous sequence across every
 	// type in the stage. Units first, then knowledge, then outputs; the
@@ -713,8 +714,7 @@ function OverviewTab({
 					</span>
 				</p>
 				<p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
-					{stageSummary ??
-						`No summary available for the ${stageName} stage.`}
+					{stageSummary ?? `No summary available for the ${stageName} stage.`}
 				</p>
 			</Card>
 
@@ -796,9 +796,7 @@ function OverviewTab({
 							{outputs.length > 5 && (
 								<button
 									type="button"
-									onClick={() =>
-										onNavigate("outputs", outputs[5]?.name ?? "")
-									}
+									onClick={() => onNavigate("outputs", outputs[5]?.name ?? "")}
 									className="block w-full text-xs text-center text-teal-600 dark:text-teal-400 hover:underline mt-2"
 								>
 									+ {outputs.length - 5} more
@@ -875,9 +873,8 @@ function UnitsTab({
 	useEffect(() => {
 		if (!highlightRequestId) return
 		const target = feedback.find((f) => f.feedback_id === highlightRequestId)
-		const unitName = (
-			target as unknown as { target?: { unitName?: string } }
-		)?.target?.unitName
+		const unitName = (target as unknown as { target?: { unitName?: string } })
+			?.target?.unitName
 		if (!unitName) return
 		onOpenDetail(unitName)
 		onHighlightConsumed?.()
@@ -944,9 +941,7 @@ function UnitCard({
 		: ""
 	const description =
 		fm.description ??
-		(unit.sections[0]?.content
-			? unit.sections[0].content.split("\n")[0]
-			: "")
+		(unit.sections[0]?.content ? unit.sections[0].content.split("\n")[0] : "")
 
 	return (
 		<button
@@ -1537,9 +1532,8 @@ function ArtifactsTab({
 	useEffect(() => {
 		if (!highlightRequestId) return
 		const target = feedback.find((f) => f.feedback_id === highlightRequestId)
-		const targetKind = (
-			target as unknown as { target?: { kind?: string } }
-		)?.target?.kind
+		const targetKind = (target as unknown as { target?: { kind?: string } })
+			?.target?.kind
 		if (targetKind !== kind) return
 		const name = (
 			target as unknown as {
@@ -1976,7 +1970,11 @@ function resolveStageSummary(
 function inferKind(filename: string): string {
 	const lower = filename.toLowerCase()
 	if (lower.endsWith(".svg")) return "diagram"
-	if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg"))
+	if (
+		lower.endsWith(".png") ||
+		lower.endsWith(".jpg") ||
+		lower.endsWith(".jpeg")
+	)
 		return "image"
 	if (lower.endsWith(".html")) return "wireframe"
 	if (lower.endsWith(".pdf")) return "artifact"
@@ -1994,7 +1992,11 @@ function inferMime(filename: string): string {
 	if (lower.endsWith(".md")) return "markdown"
 	if (lower.endsWith(".svg")) return "svg"
 	if (lower.endsWith(".html")) return "html"
-	if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg"))
+	if (
+		lower.endsWith(".png") ||
+		lower.endsWith(".jpg") ||
+		lower.endsWith(".jpeg")
+	)
 		return "image"
 	if (lower.endsWith(".pdf")) return "pdf"
 	return "text"
@@ -2008,7 +2010,10 @@ function firstLine(content: string): string {
 			const t = l.trim()
 			return t && !t.startsWith("---")
 		}) ?? ""
-	return line.replace(/^#+\s*/, "").trim().slice(0, 200)
+	return line
+		.replace(/^#+\s*/, "")
+		.trim()
+		.slice(0, 200)
 }
 
 /**

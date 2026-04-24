@@ -59,7 +59,10 @@
 				"stage": "development",
 				"discipline": "frontend",
 				"status": "in_progress",
-				"depends_on": ["unit-06-shell-and-routing", "unit-08-feedback-components"]
+				"depends_on": [
+					"unit-06-shell-and-routing",
+					"unit-08-feedback-components"
+				]
 			},
 			"sections": [
 				{
@@ -90,11 +93,31 @@
 		}
 	],
 	"criteria": [
-		{ "id": "AC-05.1", "description": "Feedback records have canonical status set", "complete": true },
-		{ "id": "AC-05.2", "description": "Revisit recovery preserves feedback context", "complete": true },
-		{ "id": "AC-05.3", "description": "Desktop + mobile review UX renders identical data", "complete": false },
-		{ "id": "AC-05.4", "description": "Status change announcements fire via polite live region", "complete": false },
-		{ "id": "AC-05.5", "description": "Feedback items sorted deterministically within groups", "complete": true }
+		{
+			"id": "AC-05.1",
+			"description": "Feedback records have canonical status set",
+			"complete": true
+		},
+		{
+			"id": "AC-05.2",
+			"description": "Revisit recovery preserves feedback context",
+			"complete": true
+		},
+		{
+			"id": "AC-05.3",
+			"description": "Desktop + mobile review UX renders identical data",
+			"complete": false
+		},
+		{
+			"id": "AC-05.4",
+			"description": "Status change announcements fire via polite live region",
+			"complete": false
+		},
+		{
+			"id": "AC-05.5",
+			"description": "Feedback items sorted deterministically within groups",
+			"complete": true
+		}
 	],
 	"mermaid": "",
 	"intent_mockups": [],

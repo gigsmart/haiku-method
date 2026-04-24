@@ -54,7 +54,9 @@
 					"id": "banned-fab-badge-amber-100-amber-700",
 					"description": "FAB count badge `bg-amber-100 text-amber-700` = 3.68:1 — AA FAIL for 12px bold text per DESIGN-TOKENS §1.1a. Canonical pair is `bg-amber-100 text-amber-800` (6.37:1 AA pass). Scoped narrowly to FeedbackFloatingButton.tsx per FB-70 — the pair is legal elsewhere (e.g. button hover-bg surfaces on white). Matches the token pair in either order.",
 					"pattern": "bg-amber-100\\b[^\"'`]*\\btext-amber-700\\b|text-amber-700\\b[^\"'`]*\\bbg-amber-100\\b",
-					"scope": ["packages/haiku-ui/src/components/feedback/FeedbackFloatingButton.tsx"],
+					"scope": [
+						"packages/haiku-ui/src/components/feedback/FeedbackFloatingButton.tsx"
+					],
 					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
 				},
 				{
@@ -147,9 +149,7 @@
 					"id": "banned-pin-tabindex-negative",
 					"description": "tabindex=\"-1\" banned on AnnotationCanvas pin markers — unit-13 regression guard for the 'pin-markers-at-tabindex-negative-one' class of bug. Pin <button>s MUST carry tabindex=\"0\". Scope retargeted to runtime canvas after FB-11 cutover deleted the orphaned pages/review/AnnotationCanvas.tsx.",
 					"pattern": "tabindex=[\"']-1[\"']",
-					"scope": [
-						"packages/haiku-ui/src/components/AnnotationCanvas.tsx"
-					],
+					"scope": ["packages/haiku-ui/src/components/AnnotationCanvas.tsx"],
 					"exclude": ["**/__tests__/**", "**/__snapshots__/**"]
 				},
 				{

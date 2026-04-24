@@ -22,26 +22,26 @@
  *   - `./stages/$stage/$kind/$name.tsx`           — artifact detail
  */
 
-import type { ReviewSessionPayload } from "haiku-api"
 import {
 	createFileRoute,
 	Outlet,
 	useNavigate,
 	useRouterState,
 } from "@tanstack/react-router"
+import type { ReviewSessionPayload } from "haiku-api"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Header as HeaderLandmark, Main } from "../../../a11y"
 import { useApiClient } from "../../../api/context"
 import type { AnnotationPin } from "../../../components/AnnotationCanvas"
+import {
+	FeedbackFloatingButton,
+	FeedbackSheet,
+} from "../../../components/feedback"
 import type { InlineCommentEntry } from "../../../components/InlineComments"
 import { SessionEndedOverlay } from "../../../components/SessionEndedOverlay"
 import { StageProgressStrip } from "../../../components/StageProgressStrip"
 import { SubmitSuccess } from "../../../components/SubmitSuccess"
 import { ThemeToggle } from "../../../components/ThemeToggle"
-import {
-	FeedbackFloatingButton,
-	FeedbackSheet,
-} from "../../../components/feedback"
 import { FeedbackProvider } from "../../../hooks/FeedbackContext"
 import { useSession, useSessionWebSocket } from "../../../hooks/useSession"
 import { FeedbackPanelBody } from "../../../pages/review/FeedbackPanelBody"
@@ -51,12 +51,12 @@ import { useFeedbackSidebarController } from "../../../pages/review/useFeedbackS
 import { useIsMobile } from "../../../pages/review/useIsMobile"
 import { usePageTitle } from "../../../shell/PageTitleContext"
 import type { ReviewAnnotations } from "../../../types"
+import { type ReviewRouteContextValue, ReviewRouteProvider } from "./-context"
 import {
 	gateBadgeCopy,
 	resolveActiveStage,
 	resolveGateModes,
 } from "./-review-helpers"
-import { ReviewRouteProvider, type ReviewRouteContextValue } from "./-context"
 
 function asReviewPageSession(
 	session: ReviewSessionPayload,
@@ -290,9 +290,7 @@ function ReviewLayoutLoaded({
 		return {
 			name,
 			status:
-				state?.status === "active"
-					? "current"
-					: (state?.status ?? "pending"),
+				state?.status === "active" ? "current" : (state?.status ?? "pending"),
 			visits: state?.visits ?? 0,
 			pendingCount: state?.pending_feedback ?? 0,
 		}
@@ -332,128 +330,134 @@ function ReviewLayoutLoaded({
 
 	return (
 		<ReviewRouteProvider value={contextValue}>
-		<FeedbackProvider intent={intentSlug} stage={selectedStage}>
-			<div
-				data-testid="review-page-ready"
-				className="h-screen overflow-hidden flex flex-col bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100"
-			>
-				<HeaderLandmark className="shrink-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800">
-					<div className="px-4 sm:px-6 py-3 flex items-center justify-between border-b border-stone-100 dark:border-stone-800/60">
-						<div className="flex items-center gap-3 min-w-0">
-							<span className="text-base font-bold tracking-tight text-stone-900 dark:text-stone-100">
-								H·AI·K·U
-							</span>
-							<span className="text-stone-300 dark:text-stone-600">|</span>
-							<span className="text-sm font-medium text-stone-500 dark:text-stone-400">
-								Review
-							</span>
-							{studioName && (
-								<>
-									<span className="text-stone-300 dark:text-stone-600">·</span>
-									<span className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-										{studioName}
-									</span>
-								</>
-							)}
-							{session.intent?.title && (
-								<>
-									<span className="text-stone-300 dark:text-stone-600">/</span>
-									<button
-										type="button"
-										onClick={() =>
-											navigate({
-												to: "/review/$sessionId/intent",
-												params: { sessionId },
-											})
-										}
-										className={`text-sm font-semibold truncate rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 ${viewingIntent ? "text-teal-700 dark:text-teal-400 underline underline-offset-4" : "text-stone-800 dark:text-stone-100 hover:text-teal-700 dark:hover:text-teal-400"}`}
-										title="View intent overview"
-									>
-										{session.intent.title}
-									</button>
-								</>
-							)}
-							{isAdHoc && (
-								<>
-									<span className="text-stone-300 dark:text-stone-600">·</span>
-									<span
-										className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800"
-										title="Ad-hoc review — not a gate. Feedback routes through the normal fix-loop on the next run_next."
-									>
-										Ad-hoc review
-									</span>
-								</>
-							)}
-						</div>
-						<div className="flex items-center gap-2 shrink-0">
-							<ThemeToggle />
-						</div>
-					</div>
-					{stageProgressData.length > 0 && (
-						<StageProgressStrip
-							stages={stageProgressData}
-							currentStage={activeStage ?? ""}
-							viewingStage={viewingIntent ? "" : (selectedStage ?? "")}
-							onStageClick={(name) =>
-								navigate({
-									to: "/review/$sessionId/stages/$stage",
-									params: { sessionId, stage: name },
-								})
-							}
-						/>
-					)}
-				</HeaderLandmark>
-
+			<FeedbackProvider intent={intentSlug} stage={selectedStage}>
 				<div
-					data-testid="review-split"
-					className="flex-1 flex flex-col xl:flex-row overflow-hidden"
+					data-testid="review-page-ready"
+					className="h-screen overflow-hidden flex flex-col bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100"
 				>
-					{!isMobile && (
-						<FeedbackSidebar
-							stage={selectedStage}
-							activeStage={activeStage}
-							sessionId={sessionId}
-							intentTitle={session.intent?.title}
-							gateBadges={gateBadges}
-							gateType={session.gate_type}
-							getAnnotations={getAnnotations}
-							adHoc={isAdHoc}
-							onFeedbackItemClick={(id) => setHighlightFeedbackId(id)}
-							onDecisionSuccess={(decision) => {
-								if (decision === "approved" || decision === "external") {
-									setSubmittedDecision(decision)
-								}
-							}}
-						/>
-					)}
-					<Main
-						ariaLabel="Review content"
-						className="flex-1 min-w-0 overflow-y-auto"
-						style={
-							{
-								"--header-height": "5.5rem",
-							} as React.CSSProperties
-						}
-					>
-						{submittedDecision ? (
-							<div className="px-6 lg:px-10 py-10">
-								<SubmitSuccess
-									message={
-										submittedDecision === "approved"
-											? "Review approved — thanks!"
-											: "External review submitted — thanks!"
-									}
-								/>
+					<HeaderLandmark className="shrink-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800">
+						<div className="px-4 sm:px-6 py-3 flex items-center justify-between border-b border-stone-100 dark:border-stone-800/60">
+							<div className="flex items-center gap-3 min-w-0">
+								<span className="text-base font-bold tracking-tight text-stone-900 dark:text-stone-100">
+									H·AI·K·U
+								</span>
+								<span className="text-stone-300 dark:text-stone-600">|</span>
+								<span className="text-sm font-medium text-stone-500 dark:text-stone-400">
+									Review
+								</span>
+								{studioName && (
+									<>
+										<span className="text-stone-300 dark:text-stone-600">
+											·
+										</span>
+										<span className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+											{studioName}
+										</span>
+									</>
+								)}
+								{session.intent?.title && (
+									<>
+										<span className="text-stone-300 dark:text-stone-600">
+											/
+										</span>
+										<button
+											type="button"
+											onClick={() =>
+												navigate({
+													to: "/review/$sessionId/intent",
+													params: { sessionId },
+												})
+											}
+											className={`text-sm font-semibold truncate rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 ${viewingIntent ? "text-teal-700 dark:text-teal-400 underline underline-offset-4" : "text-stone-800 dark:text-stone-100 hover:text-teal-700 dark:hover:text-teal-400"}`}
+											title="View intent overview"
+										>
+											{session.intent.title}
+										</button>
+									</>
+								)}
+								{isAdHoc && (
+									<>
+										<span className="text-stone-300 dark:text-stone-600">
+											·
+										</span>
+										<span
+											className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800"
+											title="Ad-hoc review — not a gate. Feedback routes through the normal fix-loop on the next run_next."
+										>
+											Ad-hoc review
+										</span>
+									</>
+								)}
 							</div>
-						) : (
-							<Outlet />
+							<div className="flex items-center gap-2 shrink-0">
+								<ThemeToggle />
+							</div>
+						</div>
+						{stageProgressData.length > 0 && (
+							<StageProgressStrip
+								stages={stageProgressData}
+								currentStage={activeStage ?? ""}
+								viewingStage={viewingIntent ? "" : (selectedStage ?? "")}
+								onStageClick={(name) =>
+									navigate({
+										to: "/review/$sessionId/stages/$stage",
+										params: { sessionId, stage: name },
+									})
+								}
+							/>
 						)}
-					</Main>
-				</div>
+					</HeaderLandmark>
 
-				{isMobile && <MobileFeedbackSection />}
-			</div>
-		</FeedbackProvider>
+					<div
+						data-testid="review-split"
+						className="flex-1 flex flex-col xl:flex-row overflow-hidden"
+					>
+						{!isMobile && (
+							<FeedbackSidebar
+								stage={selectedStage}
+								activeStage={activeStage}
+								sessionId={sessionId}
+								intentTitle={session.intent?.title}
+								gateBadges={gateBadges}
+								gateType={session.gate_type}
+								getAnnotations={getAnnotations}
+								adHoc={isAdHoc}
+								onFeedbackItemClick={(id) => setHighlightFeedbackId(id)}
+								onDecisionSuccess={(decision) => {
+									if (decision === "approved" || decision === "external") {
+										setSubmittedDecision(decision)
+									}
+								}}
+							/>
+						)}
+						<Main
+							ariaLabel="Review content"
+							className="flex-1 min-w-0 overflow-y-auto"
+							style={
+								{
+									"--header-height": "5.5rem",
+								} as React.CSSProperties
+							}
+						>
+							{submittedDecision ? (
+								<div className="px-6 lg:px-10 py-10">
+									<SubmitSuccess
+										message={
+											submittedDecision === "approved"
+												? "Review approved — thanks!"
+												: "External review submitted — thanks!"
+										}
+									/>
+								</div>
+							) : (
+								<Outlet />
+							)}
+						</Main>
+					</div>
+
+					{isMobile && <MobileFeedbackSection />}
+				</div>
+			</FeedbackProvider>
 		</ReviewRouteProvider>
 	)
 }

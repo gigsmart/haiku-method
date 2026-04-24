@@ -34,8 +34,7 @@ const UPSTREAM_TIMEOUT_MS = 10_000
 
 function isAbortError(e: unknown): boolean {
 	return (
-		e instanceof Error &&
-		(e.name === "AbortError" || e.name === "TimeoutError")
+		e instanceof Error && (e.name === "AbortError" || e.name === "TimeoutError")
 	)
 }
 

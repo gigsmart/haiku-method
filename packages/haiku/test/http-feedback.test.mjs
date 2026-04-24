@@ -568,14 +568,11 @@ async function run() {
 		const huge = "x".repeat(9 * 1024 * 1024)
 		let res
 		try {
-			res = await fetch(
-				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ title: "big", body: huge }),
-				},
-			)
+			res = await fetch(`${baseUrl}/api/feedback/${intentSlug}/${stageName}`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ title: "big", body: huge }),
+			})
 		} catch (e) {
 			// Fastify sends the 413 and closes while the client is still
 			// writing the 9 MiB body, which some HTTP clients surface as

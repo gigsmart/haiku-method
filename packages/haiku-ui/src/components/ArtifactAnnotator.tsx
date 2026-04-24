@@ -195,8 +195,8 @@ export function ArtifactAnnotator({
 					className="flex items-center justify-between gap-2 flex-wrap text-xs px-3 py-2 rounded-md border border-teal-300 dark:border-teal-700 bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-200"
 				>
 					<span>
-						<span className="font-semibold">Annotation mode.</span> Drag to
-						draw on the preview, then add a comment.
+						<span className="font-semibold">Annotation mode.</span> Drag to draw
+						on the preview, then add a comment.
 					</span>
 					{hasAnnotation && (
 						<button
@@ -221,7 +221,9 @@ export function ArtifactAnnotator({
 					onPointerMove={annotating ? extendStroke : undefined}
 					onPointerUp={annotating ? finishStroke : undefined}
 					onPointerCancel={annotating ? finishStroke : undefined}
-					aria-label={annotating ? "Draw annotations on this artifact" : undefined}
+					aria-label={
+						annotating ? "Draw annotations on this artifact" : undefined
+					}
 					aria-hidden={annotating ? undefined : "true"}
 				>
 					<title>Annotation overlay</title>
@@ -251,7 +253,9 @@ export function ArtifactAnnotator({
 					type="button"
 					onClick={() => setAnnotating((on) => !on)}
 					aria-pressed={annotating}
-					aria-label={annotating ? "Exit annotation mode" : "Enter annotation mode"}
+					aria-label={
+						annotating ? "Exit annotation mode" : "Enter annotation mode"
+					}
 					className={`fixed bottom-4 right-4 z-40 inline-flex items-center justify-center rounded-full shadow-lg w-12 h-12 border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 ${
 						annotating
 							? "bg-teal-700 hover:bg-teal-800 border-teal-800 text-white"
@@ -305,7 +309,6 @@ export function ArtifactAnnotator({
 							}}
 							rows={3}
 							placeholder="What's wrong / what should change here?"
-							autoFocus
 							className="w-full text-sm p-2 rounded border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:outline-none resize-y"
 						/>
 						{error && (
@@ -487,10 +490,7 @@ async function captureViaDisplayMedia(args: {
 			const scaleY = video.videoHeight / viewportH
 			const cropX = Math.max(0, args.rect.left * scaleX)
 			const cropY = Math.max(0, args.rect.top * scaleY)
-			const cropW = Math.min(
-				video.videoWidth - cropX,
-				args.rect.width * scaleX,
-			)
+			const cropW = Math.min(video.videoWidth - cropX, args.rect.width * scaleX)
 			const cropH = Math.min(
 				video.videoHeight - cropY,
 				args.rect.height * scaleY,

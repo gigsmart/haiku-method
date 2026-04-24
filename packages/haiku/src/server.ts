@@ -218,8 +218,7 @@ function launchBrowserBestEffort(url: string, label: string): void {
 		`[haiku] ${label} ready → ${url}\n` +
 			`         Share this URL with the reviewer if the browser didn't auto-open.`,
 	)
-	const cmd =
-		process.platform === "darwin" ? ["open", url] : ["xdg-open", url]
+	const cmd = process.platform === "darwin" ? ["open", url] : ["xdg-open", url]
 	try {
 		const child = spawn(cmd[0], cmd.slice(1), {
 			stdio: "ignore",
@@ -814,11 +813,7 @@ async function handleToolCall(
 			while (true) {
 				let timedOut = false
 				try {
-					await waitForSession(
-						session.session_id,
-						30 * 60 * 1000,
-						signal,
-					)
+					await waitForSession(session.session_id, 30 * 60 * 1000, signal)
 				} catch (err) {
 					if (signal?.aborted) throw err
 					timedOut = true

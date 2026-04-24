@@ -547,9 +547,20 @@ try {
 				"hats: [builder, feedback-assessor]\nfix_hats: [builder, feedback-assessor]",
 			),
 		)
-		mkdirSync(join(projDir, ".haiku", "studios", "test-studio", "stages", "plan", "hats"), {
-			recursive: true,
-		})
+		mkdirSync(
+			join(
+				projDir,
+				".haiku",
+				"studios",
+				"test-studio",
+				"stages",
+				"plan",
+				"hats",
+			),
+			{
+				recursive: true,
+			},
+		)
 		writeFileSync(
 			join(
 				projDir,
@@ -1328,164 +1339,148 @@ Plan from upstream stage is wrong.`,
 
 	console.log("\n=== haiku_revisit: resolution-aware routing ===")
 
-	await test(
-		"no reasons + pending feedback with mixed resolutions routes through revisit()",
-		async () => {
-			const { projDir, intentDirPath, slug } = createProject(
-				"revisit-route-mixed",
-				{ active_stage: "plan" },
-			)
-			createStageState(intentDirPath, "plan", { phase: "execute" })
-			process.chdir(projDir)
-			// One explicit stage_revisit item → forces the safe-default path.
-			writeFeedbackFile(slug, "plan", {
-				title: "Full rework needed",
-				body: "The elaboration missed a requirement.",
-				origin: "user-chat",
-				author: "user",
-				resolution: "stage_revisit",
-			})
-			// One question — by itself would dispatch, but the stage_revisit
-			// item above makes this a rollback path.
-			writeFeedbackFile(slug, "plan", {
-				title: "Why did you pick this pattern?",
-				body: "Just curious.",
-				origin: "user-question",
-				author: "user",
-				resolution: "question",
-			})
+	await test("no reasons + pending feedback with mixed resolutions routes through revisit()", async () => {
+		const { projDir, intentDirPath, slug } = createProject(
+			"revisit-route-mixed",
+			{ active_stage: "plan" },
+		)
+		createStageState(intentDirPath, "plan", { phase: "execute" })
+		process.chdir(projDir)
+		// One explicit stage_revisit item → forces the safe-default path.
+		writeFeedbackFile(slug, "plan", {
+			title: "Full rework needed",
+			body: "The elaboration missed a requirement.",
+			origin: "user-chat",
+			author: "user",
+			resolution: "stage_revisit",
+		})
+		// One question — by itself would dispatch, but the stage_revisit
+		// item above makes this a rollback path.
+		writeFeedbackFile(slug, "plan", {
+			title: "Why did you pick this pattern?",
+			body: "Just curious.",
+			origin: "user-question",
+			author: "user",
+			resolution: "question",
+		})
 
-			const result = await handleOrchestratorTool("haiku_revisit", {
-				intent: slug,
-			})
-			assert.ok(
-				!result.isError,
-				`Expected success, got: ${result.content[0].text}`,
-			)
-			const parsed = JSON.parse(result.content[0].text)
-			// Any stage_revisit (or null) pending item makes the revisit
-			// action fall through to the normal rollback path.
-			assert.ok(
-				parsed.action === "revisit" ||
-					parsed.action === "revisited" ||
-					parsed.action === "error",
-				`Expected revisit/revisited/error, got ${parsed.action}`,
-			)
-			// Not a feedback_dispatch — the safe default wins when any
-			// item wants a stage revisit.
-			assert.notStrictEqual(parsed.action, "feedback_dispatch")
-		},
-	)
+		const result = await handleOrchestratorTool("haiku_revisit", {
+			intent: slug,
+		})
+		assert.ok(
+			!result.isError,
+			`Expected success, got: ${result.content[0].text}`,
+		)
+		const parsed = JSON.parse(result.content[0].text)
+		// Any stage_revisit (or null) pending item makes the revisit
+		// action fall through to the normal rollback path.
+		assert.ok(
+			parsed.action === "revisit" ||
+				parsed.action === "revisited" ||
+				parsed.action === "error",
+			`Expected revisit/revisited/error, got ${parsed.action}`,
+		)
+		// Not a feedback_dispatch — the safe default wins when any
+		// item wants a stage revisit.
+		assert.notStrictEqual(parsed.action, "feedback_dispatch")
+	})
 
-	await test(
-		"no reasons + pending feedback all non-revisit resolutions returns feedback_dispatch",
-		async () => {
-			const { projDir, intentDirPath, slug } = createProject(
-				"revisit-route-dispatch",
-				{ active_stage: "plan" },
-			)
-			createStageState(intentDirPath, "plan", { phase: "execute" })
-			process.chdir(projDir)
-			writeFeedbackFile(slug, "plan", {
-				title: "Why this pattern?",
-				body: "Asking for context.",
-				origin: "user-question",
-				author: "user",
-				resolution: "question",
-			})
-			writeFeedbackFile(slug, "plan", {
-				title: "Rename helper",
-				body: "Rename utils/foo to utils/bar.",
-				origin: "user-chat",
-				author: "user",
-				resolution: "inline_fix",
-			})
-			writeFeedbackFile(slug, "plan", {
-				title: "Upstream contract wrong",
-				body: "The prior stage's schema doesn't match.",
-				origin: "user-chat",
-				author: "user",
-				resolution: "upstream_rewind",
-			})
+	await test("no reasons + pending feedback all non-revisit resolutions returns feedback_dispatch", async () => {
+		const { projDir, intentDirPath, slug } = createProject(
+			"revisit-route-dispatch",
+			{ active_stage: "plan" },
+		)
+		createStageState(intentDirPath, "plan", { phase: "execute" })
+		process.chdir(projDir)
+		writeFeedbackFile(slug, "plan", {
+			title: "Why this pattern?",
+			body: "Asking for context.",
+			origin: "user-question",
+			author: "user",
+			resolution: "question",
+		})
+		writeFeedbackFile(slug, "plan", {
+			title: "Rename helper",
+			body: "Rename utils/foo to utils/bar.",
+			origin: "user-chat",
+			author: "user",
+			resolution: "inline_fix",
+		})
+		writeFeedbackFile(slug, "plan", {
+			title: "Upstream contract wrong",
+			body: "The prior stage's schema doesn't match.",
+			origin: "user-chat",
+			author: "user",
+			resolution: "upstream_rewind",
+		})
 
-			const result = await handleOrchestratorTool("haiku_revisit", {
-				intent: slug,
-			})
-			assert.ok(
-				!result.isError,
-				`Expected success, got: ${result.content[0].text}`,
-			)
-			const parsed = JSON.parse(result.content[0].text)
-			assert.strictEqual(parsed.action, "feedback_dispatch")
-			assert.strictEqual(parsed.counts.questions, 1)
-			assert.strictEqual(parsed.counts.inline_fixes, 1)
-			assert.strictEqual(parsed.counts.upstream_rewinds, 1)
-			assert.ok(parsed.message.includes("Reply to questions"))
-			assert.ok(parsed.message.includes("Inline fixes"))
-			assert.ok(parsed.message.includes("Upstream rewinds"))
-			// Stage state must be untouched — the dispatch path doesn't roll
-			// back.
-			const state = readJson(
-				join(intentDirPath, "stages", "plan", "state.json"),
-			)
-			assert.strictEqual(state.phase, "execute")
-		},
-	)
+		const result = await handleOrchestratorTool("haiku_revisit", {
+			intent: slug,
+		})
+		assert.ok(
+			!result.isError,
+			`Expected success, got: ${result.content[0].text}`,
+		)
+		const parsed = JSON.parse(result.content[0].text)
+		assert.strictEqual(parsed.action, "feedback_dispatch")
+		assert.strictEqual(parsed.counts.questions, 1)
+		assert.strictEqual(parsed.counts.inline_fixes, 1)
+		assert.strictEqual(parsed.counts.upstream_rewinds, 1)
+		assert.ok(parsed.message.includes("Reply to questions"))
+		assert.ok(parsed.message.includes("Inline fixes"))
+		assert.ok(parsed.message.includes("Upstream rewinds"))
+		// Stage state must be untouched — the dispatch path doesn't roll
+		// back.
+		const state = readJson(join(intentDirPath, "stages", "plan", "state.json"))
+		assert.strictEqual(state.phase, "execute")
+	})
 
-	await test(
-		"no reasons + no pending feedback still returns revisit_needs_reasons stopgap",
-		async () => {
-			const { projDir, intentDirPath, slug } = createProject(
-				"revisit-no-feedback-stopgap",
-				{ active_stage: "plan" },
-			)
-			createStageState(intentDirPath, "plan", { phase: "execute" })
-			process.chdir(projDir)
+	await test("no reasons + no pending feedback still returns revisit_needs_reasons stopgap", async () => {
+		const { projDir, intentDirPath, slug } = createProject(
+			"revisit-no-feedback-stopgap",
+			{ active_stage: "plan" },
+		)
+		createStageState(intentDirPath, "plan", { phase: "execute" })
+		process.chdir(projDir)
 
-			const result = await handleOrchestratorTool("haiku_revisit", {
-				intent: slug,
-			})
-			const parsed = JSON.parse(result.content[0].text)
-			assert.strictEqual(parsed.action, "revisit_needs_reasons")
-		},
-	)
+		const result = await handleOrchestratorTool("haiku_revisit", {
+			intent: slug,
+		})
+		const parsed = JSON.parse(result.content[0].text)
+		assert.strictEqual(parsed.action, "revisit_needs_reasons")
+	})
 
-	await test(
-		"no reasons + pending feedback with null resolution routes to feedback_dispatch (needsTriage)",
-		async () => {
-			const { projDir, intentDirPath, slug } = createProject(
-				"revisit-null-resolution",
-				{ active_stage: "plan" },
-			)
-			createStageState(intentDirPath, "plan", { phase: "execute" })
-			process.chdir(projDir)
-			// No resolution → agent triages during dispatch. Silent
-			// defaulting to stage_revisit was the rollback footgun; now
-			// null items go into the needs_triage bucket.
-			writeFeedbackFile(slug, "plan", {
-				title: "Untagged comment",
-				body: "I didn't pick a resolution.",
-				origin: "user-chat",
-				author: "user",
-			})
+	await test("no reasons + pending feedback with null resolution routes to feedback_dispatch (needsTriage)", async () => {
+		const { projDir, intentDirPath, slug } = createProject(
+			"revisit-null-resolution",
+			{ active_stage: "plan" },
+		)
+		createStageState(intentDirPath, "plan", { phase: "execute" })
+		process.chdir(projDir)
+		// No resolution → agent triages during dispatch. Silent
+		// defaulting to stage_revisit was the rollback footgun; now
+		// null items go into the needs_triage bucket.
+		writeFeedbackFile(slug, "plan", {
+			title: "Untagged comment",
+			body: "I didn't pick a resolution.",
+			origin: "user-chat",
+			author: "user",
+		})
 
-			const result = await handleOrchestratorTool("haiku_revisit", {
-				intent: slug,
-			})
-			const parsed = JSON.parse(result.content[0].text)
-			assert.strictEqual(parsed.action, "feedback_dispatch")
-			assert.strictEqual(parsed.counts.needs_triage, 1)
-			assert.strictEqual(parsed.counts.questions, 0)
-			assert.strictEqual(parsed.counts.inline_fixes, 0)
-			assert.strictEqual(parsed.counts.upstream_rewinds, 0)
-			assert.ok(parsed.message.includes("Triage"))
-			// Stage state must be untouched — dispatch path doesn't roll.
-			const state = readJson(
-				join(intentDirPath, "stages", "plan", "state.json"),
-			)
-			assert.strictEqual(state.phase, "execute")
-		},
-	)
+		const result = await handleOrchestratorTool("haiku_revisit", {
+			intent: slug,
+		})
+		const parsed = JSON.parse(result.content[0].text)
+		assert.strictEqual(parsed.action, "feedback_dispatch")
+		assert.strictEqual(parsed.counts.needs_triage, 1)
+		assert.strictEqual(parsed.counts.questions, 0)
+		assert.strictEqual(parsed.counts.inline_fixes, 0)
+		assert.strictEqual(parsed.counts.upstream_rewinds, 0)
+		assert.ok(parsed.message.includes("Triage"))
+		// Stage state must be untouched — dispatch path doesn't roll.
+		const state = readJson(join(intentDirPath, "stages", "plan", "state.json"))
+		assert.strictEqual(state.phase, "execute")
+	})
 
 	// ── Cleanup ───────────────────────────────────────────────────────────────
 

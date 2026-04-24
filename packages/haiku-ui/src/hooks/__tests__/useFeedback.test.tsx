@@ -15,20 +15,18 @@
  *  4. A failed updateFeedback (non-2xx) does NOT mutate items.
  */
 
-import type { ReactNode } from "react"
 import { act, renderHook, waitFor } from "@testing-library/react"
+import type { ReactNode } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { ApiClientProvider } from "../../api/context"
 import type { ApiClient } from "../../api/client"
+import { ApiClientProvider } from "../../api/context"
 import type { FeedbackItemData } from "../../types"
 import { useFeedback } from "../useFeedback"
 
 const INTENT = "demo-intent"
 const STAGE = "development"
 
-function makeItem(
-	overrides: Partial<FeedbackItemData> = {},
-): FeedbackItemData {
+function makeItem(overrides: Partial<FeedbackItemData> = {}): FeedbackItemData {
 	return {
 		feedback_id: "FB-1",
 		title: "Example finding",
@@ -45,7 +43,10 @@ function makeItem(
 	}
 }
 
-function jsonResponse(body: unknown, init: { ok?: boolean; status?: number } = {}): Response {
+function jsonResponse(
+	body: unknown,
+	init: { ok?: boolean; status?: number } = {},
+): Response {
 	const ok = init.ok ?? true
 	const status = init.status ?? (ok ? 200 : 500)
 	return {
@@ -73,9 +74,7 @@ function stubClient(): ApiClient {
 		const res = await fetch(url, init)
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}))
-			throw new Error(
-				(err as { error?: string }).error || `HTTP ${res.status}`,
-			)
+			throw new Error((err as { error?: string }).error || `HTTP ${res.status}`)
 		}
 		return res.json()
 	}
@@ -126,7 +125,9 @@ type FetchCall = {
 	method: string
 }
 
-function recordCalls(impl: (url: string, init: RequestInit) => Promise<Response>) {
+function recordCalls(
+	impl: (url: string, init: RequestInit) => Promise<Response>,
+) {
 	const calls: FetchCall[] = []
 	const fn = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
 		const u = typeof url === "string" ? url : url.toString()

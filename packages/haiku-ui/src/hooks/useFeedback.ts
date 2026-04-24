@@ -117,9 +117,7 @@ export function useFeedback(intent: string | null, stage: string | null) {
 		) => {
 			if (!(intent && stage)) return null
 			// Snapshot the pre-change item so we can roll back on failure.
-			const before = itemsRef.current.find(
-				(i) => i.feedback_id === feedbackId,
-			)
+			const before = itemsRef.current.find((i) => i.feedback_id === feedbackId)
 			// Optimistic splice — apply the change locally *before* the
 			// network round trip so the UI feels instant. Server confirms
 			// asynchronously; on failure we restore `before`.
@@ -140,7 +138,12 @@ export function useFeedback(intent: string | null, stage: string | null) {
 			)
 			markBusy(feedbackId)
 			try {
-				return await apiClient.feedback.update(intent, stage, feedbackId, fields)
+				return await apiClient.feedback.update(
+					intent,
+					stage,
+					feedbackId,
+					fields,
+				)
 			} catch (err) {
 				if (before) {
 					setItems((prev) =>
@@ -160,9 +163,7 @@ export function useFeedback(intent: string | null, stage: string | null) {
 	const deleteFeedback = useCallback(
 		async (feedbackId: string) => {
 			if (!(intent && stage)) return null
-			const before = itemsRef.current.find(
-				(i) => i.feedback_id === feedbackId,
-			)
+			const before = itemsRef.current.find((i) => i.feedback_id === feedbackId)
 			const beforeIndex = itemsRef.current.findIndex(
 				(i) => i.feedback_id === feedbackId,
 			)

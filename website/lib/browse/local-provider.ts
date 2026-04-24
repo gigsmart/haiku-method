@@ -8,12 +8,7 @@ import type {
 	HaikuStageState,
 	HaikuUnit,
 } from "./types"
-import {
-	normalizeIntentStatus,
-	parseCriteria,
-	parseFrontmatter,
-	parseUnit,
-} from "./types"
+import { normalizeIntentStatus, parseFrontmatter, parseUnit } from "./types"
 
 // File System Access API types (not in all TS DOM libs)
 interface FSDirectoryHandle {
@@ -25,7 +20,6 @@ interface FSDirectoryHandle {
 export class LocalProvider implements BrowseProvider {
 	readonly name = "Local Directory"
 	private root: FSDirectoryHandle
-	private haikuDir: FSDirectoryHandle | null = null
 
 	constructor(root: FileSystemDirectoryHandle) {
 		this.root = root as unknown as FSDirectoryHandle

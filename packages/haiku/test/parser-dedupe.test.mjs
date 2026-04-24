@@ -1,13 +1,14 @@
 #!/usr/bin/env npx tsx
+
 // Test suite for parser.ts duplicate-YAML-key recovery.
 // Run: npx tsx test/parser-dedupe.test.mjs
 
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
-import { tmpdir } from "node:os"
 import assert from "node:assert"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 
-import { parseIntent, parseUnit, parseDiscovery } from "../src/parser.ts"
+import { parseDiscovery, parseIntent, parseUnit } from "../src/parser.ts"
 
 let passed = 0
 let failed = 0

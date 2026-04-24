@@ -22,7 +22,7 @@ import {
 	writeFileSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
-import { dirname, join } from "node:path"
+import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 // If we weren't invoked with the feature flag on, re-exec ourselves so
@@ -80,7 +80,9 @@ const intentSlug = "strict-auth-intent"
 const intentDirPath = join(haikuRoot, "intents", intentSlug)
 const stageName = "development"
 
-mkdirSync(join(intentDirPath, "stages", stageName, "units"), { recursive: true })
+mkdirSync(join(intentDirPath, "stages", stageName, "units"), {
+	recursive: true,
+})
 
 writeFileSync(
 	join(intentDirPath, "intent.md"),
@@ -185,175 +187,157 @@ async function run() {
 	const jwtToken = mintJWT(session.session_id)
 	const authz = { Authorization: `Bearer ${jwtToken}` }
 
-	await test(
-		"POST with no auth at all returns 401 (tunnel gate: missing_token)",
-		async () => {
-			const res = await fetch(
-				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ title: "unauth", body: "x" }),
-				},
-			)
-			assert.strictEqual(res.status, 401)
-			const data = await res.json()
-			assert.strictEqual(data.error, "unauthorized")
-			assert.strictEqual(data.reason, "missing_token")
-		},
-	)
+	await test("POST with no auth at all returns 401 (tunnel gate: missing_token)", async () => {
+		const res = await fetch(
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ title: "unauth", body: "x" }),
+			},
+		)
+		assert.strictEqual(res.status, 401)
+		const data = await res.json()
+		assert.strictEqual(data.error, "unauthorized")
+		assert.strictEqual(data.reason, "missing_token")
+	})
 
-	await test(
-		"POST with valid JWT proceeds (201) — JWT is the only auth required",
-		async () => {
-			const res = await fetch(
-				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
-				{
-					method: "POST",
-					headers: { "Content-Type": "application/json", ...authz },
-					body: JSON.stringify({ title: "authed", body: "x" }),
-				},
-			)
-			assert.strictEqual(
-				res.status,
-				201,
-				`expected 201 with valid JWT, got ${res.status}`,
-			)
-		},
-	)
+	await test("POST with valid JWT proceeds (201) — JWT is the only auth required", async () => {
+		const res = await fetch(
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json", ...authz },
+				body: JSON.stringify({ title: "authed", body: "x" }),
+			},
+		)
+		assert.strictEqual(
+			res.status,
+			201,
+			`expected 201 with valid JWT, got ${res.status}`,
+		)
+	})
 
-	await test(
-		"PUT with valid JWT proceeds (200)",
-		async () => {
-			const res = await fetch(
-				`${baseUrl}/api/feedback/${intentSlug}/${stageName}/${seeded.feedback_id}`,
-				{
-					method: "PUT",
-					headers: { "Content-Type": "application/json", ...authz },
-					body: JSON.stringify({ status: "addressed" }),
-				},
-			)
-			assert.strictEqual(
-				res.status,
-				200,
-				`expected 200 with valid JWT, got ${res.status}`,
-			)
-		},
-	)
+	await test("PUT with valid JWT proceeds (200)", async () => {
+		const res = await fetch(
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/${seeded.feedback_id}`,
+			{
+				method: "PUT",
+				headers: { "Content-Type": "application/json", ...authz },
+				body: JSON.stringify({ status: "addressed" }),
+			},
+		)
+		assert.strictEqual(
+			res.status,
+			200,
+			`expected 200 with valid JWT, got ${res.status}`,
+		)
+	})
 
 	// JWT-claim session binding: the session embedded in the JWT must
 	// match the intent in the URL. A JWT bound to one intent's session
 	// cannot mutate a different intent's feedback even though the token
 	// is cryptographically valid. This is the real auth invariant — the
 	// prior `X-Haiku-Session-Id` header check was superseded.
-	await test(
-		"JWT for session bound to a DIFFERENT intent returns 403 forbidden_cross_session",
-		async () => {
-			// Create a session bound to a different intent slug, mint a JWT
-			// for it, then try to POST feedback against our intent.
-			const otherIntent = "strict-auth-other-intent"
-			const otherIntentDir = join(haikuRoot, "intents", otherIntent)
-			mkdirSync(join(otherIntentDir, "stages", stageName, "units"), {
-				recursive: true,
-			})
-			writeFileSync(
-				join(otherIntentDir, "intent.md"),
-				`---\ntitle: Other\nstudio: software\nmode: continuous\nactive_stage: ${stageName}\nstatus: active\nstages:\n  - ${stageName}\n---\n\nOther intent.\n`,
-			)
-			writeFileSync(
-				join(otherIntentDir, "stages", stageName, "state.json"),
-				JSON.stringify(
-					{
-						stage: stageName,
-						status: "active",
-						phase: "execute",
-						started_at: "2026-04-21T18:05:00Z",
-						completed_at: null,
-						gate_entered_at: null,
-						gate_outcome: null,
-						visits: 0,
-					},
-					null,
-					2,
-				),
-			)
-			const otherSession = createSession({
-				intent_slug: otherIntent,
-				intent_dir: otherIntentDir,
-				review_type: "intent",
-				target: "review",
-			})
-			const otherJwt = mintJWT(otherSession.session_id)
-
-			// Use otherIntent's JWT against OUR intent's feedback endpoint.
-			const res = await fetch(
-				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
+	await test("JWT for session bound to a DIFFERENT intent returns 403 forbidden_cross_session", async () => {
+		// Create a session bound to a different intent slug, mint a JWT
+		// for it, then try to POST feedback against our intent.
+		const otherIntent = "strict-auth-other-intent"
+		const otherIntentDir = join(haikuRoot, "intents", otherIntent)
+		mkdirSync(join(otherIntentDir, "stages", stageName, "units"), {
+			recursive: true,
+		})
+		writeFileSync(
+			join(otherIntentDir, "intent.md"),
+			`---\ntitle: Other\nstudio: software\nmode: continuous\nactive_stage: ${stageName}\nstatus: active\nstages:\n  - ${stageName}\n---\n\nOther intent.\n`,
+		)
+		writeFileSync(
+			join(otherIntentDir, "stages", stageName, "state.json"),
+			JSON.stringify(
 				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${otherJwt}`,
-					},
-					body: JSON.stringify({ title: "cross-intent", body: "x" }),
+					stage: stageName,
+					status: "active",
+					phase: "execute",
+					started_at: "2026-04-21T18:05:00Z",
+					completed_at: null,
+					gate_entered_at: null,
+					gate_outcome: null,
+					visits: 0,
 				},
-			)
-			assert.strictEqual(
-				res.status,
-				403,
-				`expected 403 cross-intent, got ${res.status}`,
-			)
-			const data = await res.json()
-			assert.strictEqual(data.error, "forbidden_cross_session")
-			assert.strictEqual(data.reason, "intent_mismatch")
-		},
-	)
+				null,
+				2,
+			),
+		)
+		const otherSession = createSession({
+			intent_slug: otherIntent,
+			intent_dir: otherIntentDir,
+			review_type: "intent",
+			target: "review",
+		})
+		const otherJwt = mintJWT(otherSession.session_id)
 
-	await test(
-		"JWT with unknown session id returns 403 forbidden_cross_session",
-		async () => {
-			// Mint a JWT referencing a session id that was never created.
-			const bogusJwt = mintJWT("sess-does-not-exist")
-			const res = await fetch(
-				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${bogusJwt}`,
-					},
-					body: JSON.stringify({ title: "bogus", body: "x" }),
+		// Use otherIntent's JWT against OUR intent's feedback endpoint.
+		const res = await fetch(
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${otherJwt}`,
 				},
-			)
-			assert.strictEqual(res.status, 403)
-			const data = await res.json()
-			assert.strictEqual(data.error, "forbidden_cross_session")
-			assert.strictEqual(data.reason, "unknown_session")
-		},
-	)
+				body: JSON.stringify({ title: "cross-intent", body: "x" }),
+			},
+		)
+		assert.strictEqual(
+			res.status,
+			403,
+			`expected 403 cross-intent, got ${res.status}`,
+		)
+		const data = await res.json()
+		assert.strictEqual(data.error, "forbidden_cross_session")
+		assert.strictEqual(data.reason, "intent_mismatch")
+	})
 
-	await test(
-		"CORS preflight advertises Authorization in Allow-Headers",
-		async () => {
-			const res = await fetch(
-				`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
-				{
-					method: "OPTIONS",
-					headers: {
-						Origin: ALLOWED_ORIGIN,
-						"Access-Control-Request-Method": "POST",
-					},
+	await test("JWT with unknown session id returns 403 forbidden_cross_session", async () => {
+		// Mint a JWT referencing a session id that was never created.
+		const bogusJwt = mintJWT("sess-does-not-exist")
+		const res = await fetch(
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${bogusJwt}`,
 				},
-			)
-			assert.strictEqual(res.status, 204)
-			const allow = res.headers.get("access-control-allow-headers") ?? ""
-			// Authorization is the tunnel-auth bearer header — the only
-			// header the SPA now attaches on every tunnel-reachable call.
-			assert.ok(
-				/authorization/i.test(allow),
-				`Access-Control-Allow-Headers missing Authorization — got "${allow}"`,
-			)
-		},
-	)
+				body: JSON.stringify({ title: "bogus", body: "x" }),
+			},
+		)
+		assert.strictEqual(res.status, 403)
+		const data = await res.json()
+		assert.strictEqual(data.error, "forbidden_cross_session")
+		assert.strictEqual(data.reason, "unknown_session")
+	})
+
+	await test("CORS preflight advertises Authorization in Allow-Headers", async () => {
+		const res = await fetch(
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}`,
+			{
+				method: "OPTIONS",
+				headers: {
+					Origin: ALLOWED_ORIGIN,
+					"Access-Control-Request-Method": "POST",
+				},
+			},
+		)
+		assert.strictEqual(res.status, 204)
+		const allow = res.headers.get("access-control-allow-headers") ?? ""
+		// Authorization is the tunnel-auth bearer header — the only
+		// header the SPA now attaches on every tunnel-reachable call.
+		assert.ok(
+			/authorization/i.test(allow),
+			`Access-Control-Allow-Headers missing Authorization — got "${allow}"`,
+		)
+	})
 
 	console.log(`\n${passed} passed, ${failed} failed\n`)
 }
@@ -366,7 +350,9 @@ try {
 	await run()
 } catch (err) {
 	hardFailure = err
-	console.error(`\n✗ run() crashed before completing tests: ${err instanceof Error ? err.message : err}`)
+	console.error(
+		`\n✗ run() crashed before completing tests: ${err instanceof Error ? err.message : err}`,
+	)
 	if (err instanceof Error && err.stack) console.error(err.stack)
 } finally {
 	__setActiveTunnelForTesting(null)

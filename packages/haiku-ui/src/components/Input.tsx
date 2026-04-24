@@ -1,4 +1,4 @@
-import { type InputHTMLAttributes, forwardRef } from "react"
+import { forwardRef, type InputHTMLAttributes } from "react"
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 	invalid?: boolean
