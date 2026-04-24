@@ -1,6 +1,6 @@
 ---
 title: No dashboards or runbooks exist for the new feedback lifecycle operations
-status: pending
+status: fixing
 origin: adversarial-review
 author: observability
 author_type: agent
@@ -9,7 +9,7 @@ iteration: 1
 visit: 1
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 resolution: null
 replies: []

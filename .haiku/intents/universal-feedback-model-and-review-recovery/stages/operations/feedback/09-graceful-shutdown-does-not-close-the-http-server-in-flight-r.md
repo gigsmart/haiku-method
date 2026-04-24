@@ -2,7 +2,7 @@
 title: >-
   Graceful shutdown does not close the HTTP server — in-flight requests are
   dropped
-status: pending
+status: fixing
 origin: adversarial-review
 author: reliability
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
