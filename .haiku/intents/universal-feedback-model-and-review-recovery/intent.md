@@ -2,7 +2,7 @@
 title: Universal feedback model and review recovery
 studio: software
 mode: continuous
-status: active
+status: completed
 created_at: '2026-04-15'
 stages:
   - inception
@@ -17,6 +17,7 @@ phase: awaiting_completion_review
 completion_review_entered_at: '2026-04-24T19:20:32Z'
 completion_review_dispatched: true
 completion_review_dispatched_at: '2026-04-24T19:20:36Z'
+completed_at: '2026-04-24T20:34:52Z'
 ---
 
 # Universal feedback model and review recovery
