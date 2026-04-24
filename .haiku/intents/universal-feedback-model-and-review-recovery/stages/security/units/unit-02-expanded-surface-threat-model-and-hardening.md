@@ -27,9 +27,9 @@ inputs:
 model: sonnet
 status: active
 bolt: 1
-hat: blue-team
+hat: security-reviewer
 started_at: '2026-04-24T13:59:29Z'
-hat_started_at: '2026-04-24T14:09:31Z'
+hat_started_at: '2026-04-24T14:21:05Z'
 iterations:
   - hat: threat-modeler
     started_at: '2026-04-24T13:59:29Z'
@@ -41,6 +41,10 @@ iterations:
     result: advance
   - hat: blue-team
     started_at: '2026-04-24T14:09:31Z'
+    completed_at: '2026-04-24T14:21:05Z'
+    result: advance
+  - hat: security-reviewer
+    started_at: '2026-04-24T14:21:05Z'
     completed_at: null
     result: null
 outputs:
