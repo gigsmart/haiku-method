@@ -10,6 +10,7 @@
 // Fastify + @fastify/cors + @fastify/websocket already handle the
 // obvious case — we're only coding the project-specific bits.
 
+import { randomUUID } from "node:crypto"
 import { appendFileSync, existsSync, readdirSync, readFileSync } from "node:fs"
 import { readFile, realpath } from "node:fs/promises"
 import { dirname, extname, join, resolve } from "node:path"
@@ -733,9 +734,25 @@ function handleWebSocketMessage(sessionId: string, raw: string): void {
 
 let app: FastifyInstance | null = null
 let actualPort: number | null = null
+// Readiness flag — flipped to `true` only after buildApp() and post-listen
+// initialization complete inside startHttpServer(). The `/health` route uses
+// this to split liveness (process is up) from readiness (process can serve
+// traffic). Tunnel probes and load balancers should gate on HTTP 200 vs 503.
+let ready = false
 
 export function getActualPort(): number | null {
 	return actualPort
+}
+
+export function isReady(): boolean {
+	return ready
+}
+
+// Test hook — reset readiness state so in-process tests that rebuild the
+// app can exercise the 503-then-200 transition without spawning a new
+// process. Not exported from the package entry point.
+export function _resetReadyForTests(): void {
+	ready = false
 }
 
 function resolveAllowedCorsOrigin(origin: string | undefined): string | null {
@@ -1534,8 +1551,18 @@ async function buildApp(): Promise<FastifyInstance> {
 
 	// ── Health + SPA catch-all ─────────────────────────────────────────
 
+	// Split liveness from readiness. Until startHttpServer() finishes
+	// listen() AND post-listen initialization, `ready === false` and the
+	// endpoint returns HTTP 503 `"starting"`. Once ready, it returns 200
+	// `"ok"`. The tunnel integration and any load balancer in front of
+	// this process treat non-200 as "don't route traffic yet", which
+	// matches the standard readiness-vs-liveness split.
 	instance.get("/health", async (_req, reply) => {
-		reply.send("ok")
+		if (!ready) {
+			reply.status(503).type("text/plain; charset=utf-8").send("starting")
+			return
+		}
+		reply.type("text/plain; charset=utf-8").send("ok")
 	})
 
 	// CORS preflight catch-all (only when remote review is enabled).
@@ -1721,4 +1748,30 @@ export async function startHttpServer(): Promise<number> {
 		`Review HTTP server listening on http://127.0.0.1:${actualPort}`,
 	)
 	return actualPort as number
+}
+
+// Graceful shutdown for the Fastify HTTP+WebSocket server. Drains
+// in-flight requests, sends a clean close frame to any open WebSocket
+// clients (via `closeSessionConnection`), then closes the underlying
+// `http.Server`. Safe to call when the server was never started — this
+// is a no-op in that case. Idempotent.
+export async function stopHttpServer(): Promise<void> {
+	if (!app) return
+	try {
+		// Proactively close any still-open WS sessions with a clean frame
+		// so clients see `1001 Going Away` instead of a TCP RST. Fastify's
+		// `close()` would otherwise rip the underlying sockets out from
+		// under them.
+		for (const sessionId of Array.from(wsConnections.keys())) {
+			try {
+				closeSessionConnection(sessionId, "shutdown")
+			} catch {
+				// Best-effort — keep shutting down regardless.
+			}
+		}
+		await app.close()
+	} finally {
+		app = null
+		actualPort = null
+	}
 }
