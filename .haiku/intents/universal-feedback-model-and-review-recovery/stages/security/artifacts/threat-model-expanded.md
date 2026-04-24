@@ -186,20 +186,38 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 ### E — Elevation of Privilege (Extended)
 
 #### E1: Tunnel JWT forgery
-**Threat:** If the signing algorithm is weak or the key is predictable, an attacker could forge a JWT and bypass the tunnel auth gate.
+**Threat:** If the signing algorithm is weak, the key is predictable, or the verifier is vulnerable to algorithm confusion (`alg: none`, RS256→HS256 key substitution, etc.), an attacker could forge a JWT and bypass the tunnel auth gate.
 
 **Likelihood:** Low
 **Impact:** High
 
+**Trust boundary:** Public internet (tunnel origin) → HTTP server. All tokens on the wire are untrusted inputs; they become trusted only after `verifyTunnelJWT` accepts them. The verifier is the sole gate between an anonymous external caller and every authenticated route.
+
 **Mitigation:**
-- JWT key derived from active tunnel URL using a secret seed regenerated each server start.
-- Standard JWT claims: `tun`, `sid`, `typ`, `iat`, `exp`. Expired JWTs are rejected.
-- `verifyTunnelJWT` runs before any request handler — not bypassable by routing tricks.
+- **Signing algorithm is fixed, not caller-controlled.** `verifyTunnelJWT` (`tunnel.ts:117-172`) always recomputes the expected signature with `createHmac("sha256", EPHEMERAL_SECRET)`. It does not dispatch on the header's `alg` field. This structurally defeats the classic `alg: none` bypass: a token claiming `alg: "none"` with an empty signature fails because the verifier still performs HMAC-SHA256 and compares bytes via `timingSafeEqual`. Likewise, RS256→HS256 key confusion is not reachable — there is no public-key path; HMAC is the only code path.
+- **Signing key is a process-lifetime ephemeral secret, not URL-derived.** `EPHEMERAL_SECRET = randomBytes(32)` at `tunnel.ts:11` — 256 bits of CSPRNG entropy generated once per MCP process start. The key is not exported, not persisted, not derivable from any observable value (including the tunnel URL). A server restart rotates the key, invalidating every outstanding token.
+- **Tunnel binding is at claim level, not key level.** The JWT payload carries `tun: <active tunnel URL>` and `verifyTunnelJWT` rejects with `tunnel_mismatch` if the claim does not equal the current `getTunnelUrl()`. This binds every token to a specific localtunnel session — a token minted for a prior tunnel URL is useless after reconnect.
+- **Session binding (`sid` claim).** When `expectedSid` is provided, the token's `sid` must equal it, preventing replay of session A's token against session B's route.
+- **Expiration.** `exp` is required and in the past rejects as `expired`. No `nbf`/`iat` skew window.
+- **Constant-time comparison.** Signature comparison uses `timingSafeEqual` with pre-check of buffer length equality to avoid a length-oracle side channel.
+- **Placement.** `verifyTunnelJWT` runs before any request handler — not bypassable by routing tricks or handler ordering.
+
+**Residual gap (defense-in-depth, FB-18):** The decoded header is extracted (`const [header, body, sig] = parts`) but its contents are never inspected. Today this is structurally safe because the verifier never reads `header.alg` to select an algorithm — HMAC-SHA256 is hardcoded. However, a future refactor that introduces algorithm negotiation (e.g., supporting EdDSA or key rotation via `kid`) could reintroduce the classic algorithm-confusion pathway unless the verifier explicitly asserts `header.alg === "HS256"` and `header.typ === "JWT"` first. Recommended defense-in-depth hardening (surfaced as a development-stage finding, not a threat-model-level unmitigated risk):
+1. Decode the header JSON explicitly.
+2. Reject with `malformed` unless `header.typ === "JWT"` AND `header.alg === "HS256"`.
+3. Perform the HMAC compare only after header assertion passes.
+
+This is a belt-and-suspenders measure — no known forgery path exists today, but the assertion documents the algorithm contract in-code and traps regressions.
 
 **Verification evidence:**
 - `tunnel-auth.test.mjs` — expired JWT rejection, mismatched tunnel URL rejection, valid JWT acceptance.
+- `tunnel.ts:11` — ephemeral secret generation (256 bits CSPRNG, per-process).
+- `tunnel.ts:71-77` — `signJWT` emits `alg: "HS256"`, `typ: "JWT"` header.
+- `tunnel.ts:117-172` — `verifyTunnelJWT` uses fixed-algorithm HMAC, constant-time compare, exp check, tunnel binding, sid binding.
 
-**Status:** Mitigated. Residual risk is standard library cryptographic soundness.
+**Status:** Mitigated. Primary controls: fixed-algorithm HMAC (no dispatch on `alg`), ephemeral 256-bit key, tunnel+session claim binding, constant-time compare, short TTL. Defense-in-depth hardening (explicit header.alg/typ assertion) recommended to `development` stage to close the FB-18 finding and document the algorithm contract in-code.
+
+**Corrigendum:** An earlier draft of this section stated "JWT key derived from active tunnel URL using a secret seed regenerated each server start." That description is inaccurate. The key is a process-lifetime random 256-bit value; tunnel binding is done at the claim layer (`payload.tun`), not at the key-derivation layer. The corrected text above reflects the actual implementation in `tunnel.ts:11` and `tunnel.ts:162-165`.
 
 ---
 
@@ -310,7 +328,7 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 | `haiku_revisit` reasons | writeFeedbackFile constrains write path; reasons always `origin: agent` | No count cap (v2 enhancement needed) |
 | WebSocket session loss | Known v1 limitation | v2: debounced persistence |
 | Visits counter | Present and visible | v2: max_visits threshold |
-| JWT forgery | Standard JWT with tunnel URL + session binding | Standard library risk |
+| JWT forgery | Fixed-algorithm HMAC-SHA256 (no `alg`-dispatch), 256-bit ephemeral random key (per-process), tunnel+sid claim binding, constant-time compare, exp check | Header `alg`/`typ` not explicitly asserted — belt-and-suspenders hardening recommended (FB-18 → development) |
 | Insider threat | Git audit trail; branch protection recommended | Out of scope for v1 |
 | Supply chain | No new dependencies; pin gray-matter; run npm audit | Ongoing dependency management |
 
@@ -321,6 +339,7 @@ This is surfaced as a development-stage feedback item. The security control (JWT
 | Risk | Severity | Rationale |
 |---|---|---|
 | `addressed` status on human-authored feedback allows gate pass without explicit close | MEDIUM | Human gate (`ask`/`external`) is the verification backstop. Auto-gate stages with human feedback are lower-trust by design. |
+| JWT header `alg`/`typ` not explicitly asserted (FB-18) | LOW | Structurally safe today because verifier never dispatches on `alg` (HMAC-SHA256 is hardcoded). Hardening recommendation routed to `development` — add explicit `header.alg === "HS256"` and `header.typ === "JWT"` asserts to trap future regressions. |
 | WebSocket drop before submission loses draft comments | LOW | v2: debounced persistence |
 | No visits cap | LOW | v2: max_visits threshold |
 | YAML prototype pollution in gray-matter | LOW | Pin to js-yaml >= 4.x; run npm audit in CI |
