@@ -613,6 +613,7 @@ function isValidSlug(value: string): boolean {
 	} catch {
 		return false
 	}
+	if (decoded.includes("\x00")) return false
 	return !/[/\\]|\.\./.test(decoded)
 }
 
