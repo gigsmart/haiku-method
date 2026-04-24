@@ -2,8 +2,28 @@
 
 STRIDE analysis of the feedback model's attack surface, plus OWASP Top 10 verification.
 
-Date: 2026-04-15 (reply endpoint cross-reference added 2026-04-24)
-Scope: Feedback file creation/mutation (MCP tools + HTTP API), gate-phase enforcement, review-UI pipeline, external-PR detection.
+Date: 2026-04-15 (last updated 2026-04-24 to incorporate FB-06 — HTTP rate-limit gap — and FB-07 — reply endpoint cross-reference)
+Scope: Feedback file creation/mutation (MCP tools + HTTP API), gate-phase enforcement, review-UI pipeline, external-PR detection, tunnel-mode HTTP surface.
+
+---
+
+## 0. Entry-Point Inventory
+
+The feedback model introduces or touches the following HTTP entry points. Each one is an untrusted-input boundary where caller-supplied parameters cross into filesystem / state operations. Validation chains are enumerated per endpoint so the defense-in-depth layer covering each surface is explicit.
+
+| # | Endpoint | Method | Caller-supplied params | Validation chain | Filesystem reach |
+|---|---|---|---|---|---|
+| E1 | `/api/feedback/:intent/:stage` | POST | `intent`, `stage` (URL); JSON body validated by `FeedbackCreateSchema` | `requireTunnelAuth` → `isValidSlug(intent)` → `isValidSlug(stage)` → `validateIntent(intent)` → Zod body schema → `writeFeedbackFile` (which calls `slugifyTitle` for filenames and joins under `intentDir`) | Writes `.haiku/intents/{intent}/stages/{stage}/feedback/FB-NN-*.md` (+ optional attachment PNG) |
+| E2 | `/api/feedback/:intent/:stage/:id` | PUT | `intent`, `stage`, `id` (URL); JSON body validated by `FeedbackUpdateSchema` | `requireTunnelAuth` → `verifyFeedbackMutationAuth` (JWT sid-binding) → `isValidSlug(intent/stage/id)` → `updateFeedbackFile` (`callerContext: "human"`) | Mutates frontmatter on existing feedback file |
+| E3 | `/api/feedback/:intent/:stage/:id` | DELETE | `intent`, `stage`, `id` (URL) | `requireTunnelAuth` → `verifyFeedbackMutationAuth` → `isValidSlug(intent/stage/id)` → `deleteFeedbackFile` (`callerContext: "human"`) | Deletes feedback file |
+| E4 | `/api/feedback-attachment/:intent/:stage/:filename` | GET | `intent`, `stage`, `filename` (URL) | `requireTunnelAuth` → `isValidSlug(intent)` → `isValidSlug(stage)` → filename regex `^[A-Za-z0-9._-]+\.(png\|jpg\|jpeg\|webp\|svg)$` → `serveUnderRoot(reply, feedbackRoot, filename)` (realpath escape check) | Reads `.haiku/intents/{intent}/stages/{stage}/feedback/{filename}` as `image/*` body |
+| M1 | MCP tool `haiku_feedback` / `haiku_feedback_update` / `haiku_feedback_delete` / `haiku_feedback_reject` | MCP | `intent`, `stage`, `feedback_id`, body fields | `validateSlugArgs` (covers `intent`, `slug`, `stage`, `unit`, `feedback_id`) → `writeFeedbackFile` / `updateFeedbackFile` / `deleteFeedbackFile` (`callerContext: "agent"`) | Same feedback directory; author-type guards prevent agent-close of human items |
+
+**Notes on the attachment endpoint (E4):**
+
+- The validation chain for E4 is **different** from E1/E2/E3. E4 does NOT route through `validateSlugArgs` (which is MCP-only) and the `filename` parameter does NOT use `isValidSlug` (because attachment filenames legitimately contain `.` for the extension, which `isValidSlug` rejects). Instead, E4 pairs a **whitelist-regex** (restricts to allowed image extensions and the `[A-Za-z0-9._-]` charset — no `/`, `\`, or `..` substrings) with **`serveUnderRoot`**, which resolves the final path via `realpath` and verifies it stays within `feedbackRoot`. Either layer alone would be insufficient; together they are defense-in-depth (see §3a).
+- The regex **does** allow filenames like `foo.bar.png` (dots in the stem), and it would also match `..png` if preceded by a non-dot character. Neither is a traversal vector because the filename is joined under `feedbackRoot` with `path.join`, and `serveUnderRoot` rejects any resolved path whose `realpath` escapes `feedbackRoot`. The regex is there to reject obvious separators and force a known image extension; the realpath escape check is the authoritative traversal guard.
+- E4 is read-only and serves locally-generated attachments created by `writeFeedbackFile`. It does not accept uploads. No agent-authored or HTTP-authored request can cause arbitrary files to land under `feedbackRoot` — only `writeFeedbackFile` writes there, and it controls the basename.
 
 **Reply endpoint (HTTP-only):** `POST /api/feedback/:intent/:stage/:feedbackId/replies` introduced during implementation is analyzed in `artifacts/threat-model-expanded.md` (§ Trust Boundaries + S3 + E3). The base threat model below covers feedback CRUD; the reply endpoint is asymmetric (HTTP-only, no MCP equivalent) and is characterized separately to avoid conflating CRUD and thread-append surfaces.
 
@@ -13,19 +33,49 @@ Scope: Feedback file creation/mutation (MCP tools + HTTP API), gate-phase enforc
 
 ### S — Spoofing
 
-**Threat:** An agent impersonates a human author to create feedback that cannot be agent-rejected or agent-closed, effectively creating irremovable gate blockers.
+**Threat:** An agent impersonates a human author to create feedback that cannot be agent-rejected or agent-closed, effectively creating irremovable gate blockers. **Secondary vector:** an HTTP caller (or any loopback caller in local mode) forges the `author` label on a feedback **reply** to impersonate a specific actor (e.g., `"orchestrator"`, `"security-agent"`, or another user), exploiting the trust-boundary gap between the create path (which hardcodes `author: "user"`) and the reply path (which accepts a client-supplied value).
 
-**Likelihood:** Low
+**Likelihood:** Low (local) / Medium (remote tunnel — authenticated but still trust-asymmetric with the create path)
 **Impact:** High
 
 **Mitigation:** `author_type` is derived server-side from `origin` via `deriveAuthorType()` (state-tools.ts:2002). The caller cannot supply `author_type` directly. Human origins (`user-visual`, `user-chat`, `external-pr`, `external-mr`) are only reachable through the HTTP API or orchestrator-internal paths — never through MCP tool handlers. MCP tool handlers always produce `agent` author_type because their origin values resolve to `agent` through the same derivation function.
+
+**Required mitigation (FB-01 — not yet implemented):** The feedback-reply endpoint in `packages/haiku/src/http.ts` must hardcode `author: "user"` in the same way the feedback-create endpoint does, rather than accepting `parsed.data.author ?? "user"`. Until this is fixed, the `author` field on replies is attacker-controlled within the HTTP trust boundary, and the `FeedbackReplyCreateRequestSchema` contract ("when omitted the server stamps 'user' or the agent name from session context") is not enforced. The fix brings the reply path into parity with the create path at http.ts:1526, eliminating the inconsistent trust boundary.
 
 **Verification evidence:**
 - `deriveAuthorType()` is the sole determinant — no tool handler accepts `author_type` as an input parameter.
 - `HUMAN_ORIGINS` set is hardcoded (state-tools.ts:1994).
 - `handleStateTool("haiku_feedback", ...)` never passes caller-supplied `author_type` to `writeFeedbackFile`.
-- HTTP endpoints (`handleFeedbackPost`) hardcode `author: "user"` and use `user-visual` origin.
-- Test: `feedback.test.mjs` verifies `author_type: "agent"` for MCP-created items and `author_type: "human"` for HTTP-created items.
+- HTTP feedback-create endpoint (`handleFeedbackPost`, http.ts:1526) hardcodes `author: "user"` and uses `user-visual` origin — **correct pattern**.
+- HTTP feedback-reply endpoint (http.ts:1784) currently takes `author` from the request body (`parsed.data.author ?? "user"`) — **tracked as FB-01, required fix: hardcode `author: "user"` to match create path**.
+- Test: `feedback.test.mjs` verifies `author_type: "agent"` for MCP-created items and `author_type: "human"` for HTTP-created items. A regression test must be added asserting that a reply POST with a client-supplied `author` value is ignored and `"user"` is written.
+
+#### Trust boundary: `FeedbackCreateRequestSchema.author` is a suppressed client input (intentional)
+
+**Surface:** `FeedbackCreateRequestSchema` (packages/haiku-api/src/schemas/feedback.ts:116-123) accepts an optional `author` string from clients. The handler at `packages/haiku/src/http.ts:1522-1530` **ignores** `parsed.data.author` entirely and hardcodes `author: "user"` into the call to `writeFeedbackFile`.
+
+**Trust classification:** Client-supplied `author` is **untrusted input that crosses into the server trust zone and is deliberately dropped at the boundary**. It never reaches the persisted feedback file. The field is retained in the schema as a reserved/forward-compat slot, not as an active input.
+
+**Why `author_type`, not `author`, is the security-bearing field:**
+- `author_type` ∈ `{human, agent}` is what every guard branches on: `updateFeedbackFile` / `deleteFeedbackFile` close/delete rejection for agent callers against human rows, and the gate-phase pending-feedback check. `author_type` is **server-derived from `origin` via `deriveAuthorType()`** and is never client-supplied.
+- `author` is a free-text display string used in git commit messages, audit displays, and the review UI. It has **no enforcement semantics** — no code branches on its value. Spoofing `author` cannot elevate privilege, cannot close human-authored feedback, and cannot bypass the gate. Its worst-case impact is a misleading audit-trail label (e.g., a feedback row visibly attributed to `"admin"` or `"orchestrator"` in the review UI and in the `feedback: create FB-NN in <stage>` commit message).
+
+**Intentional suppression — do NOT wire `parsed.data.author` through:** Any future change that replaces `author: "user"` with `author: parsed.data.author ?? "user"` (or similar) **reopens an author-spoofing vector for the audit-trail display surface**. A malicious or misbehaving client could then supply `author: "admin"`, `author: "orchestrator"`, `author: "feedback-assessor"` etc. to make planted feedback look like it came from a privileged actor. This will not bypass any enforcement guard (those still key off `author_type`), but it will corrupt the audit trail and can be used to socially engineer reviewers.
+
+**Required handling if the field is ever un-suppressed in the future:**
+1. Server MUST derive `author` from the authenticated session/JWT subject, not from the request body. Treat any client-supplied `author` string as an untrusted hint to be discarded OR as input to be validated against a server-known identity — never write it through verbatim.
+2. Any change to `http.ts:1522-1530` that reads `parsed.data.author` without such a check is a regression of this mitigation and MUST be flagged in code review.
+3. The `author` field semantics should be documented alongside `author_type` in whatever design note introduces the honoring-handler, so future maintainers know the difference between "display author" (untrusted, sanitized) and "security author_type" (server-derived).
+
+**Likelihood:** Low (field is inert today; requires a future wiring change)
+**Impact:** Low-Medium if un-suppressed without server-side derivation (audit-trail corruption only; does not bypass gate or close guards)
+
+**Verification evidence:**
+- `packages/haiku/src/http.ts:1522-1530` — `author: "user"` is a string literal in the call site; `parsed.data.author` is not referenced.
+- `packages/haiku-api/src/schemas/feedback.ts:116-123` — schema describes the field as "reserved for future use when the handler begins to honor it."
+- `FeedbackCreateRequestSchema` has no test coverage asserting the field round-trips, because it intentionally does not.
+
+**Status:** Mitigated by suppression. Guardrail documented for future maintainers.
 
 ---
 
@@ -88,19 +138,32 @@ Scope: Feedback file creation/mutation (MCP tools + HTTP API), gate-phase enforc
 
 ### D — Denial of Service
 
-**Threat:** Feedback creation is abused to fill disk space by creating thousands of feedback files, or to stall the gate indefinitely by creating pending items faster than they can be addressed.
+**Threat 1 (local abuse):** Feedback creation is abused to fill disk space by creating thousands of feedback files, or to stall the gate indefinitely by creating pending items faster than they can be addressed.
 
 **Likelihood:** Low
 **Impact:** Low
 
 **Mitigation:**
-1. Feedback creation is a local MCP tool — the blast radius is the developer's own machine. There is no remote unauthenticated creation path (HTTP requires an active review session).
-2. Feedback files are small markdown documents (typically < 1KB). Even 10,000 files would consume < 10MB.
-3. The `nextFeedbackNumber` function uses a sequential NN prefix, so creation cost is O(n) for reading the directory listing. At scale (>1000 files per stage), this could slow down, but this is a self-inflicted local concern.
-4. For gate stalling: the `visits` counter provides a mechanism for future escalation thresholds (e.g., "if visits > 3, escalate to human").
+1. Feedback files are small markdown documents (typically < 1KB). Even 10,000 files would consume < 10MB.
+2. The `nextFeedbackNumber` function uses a sequential NN prefix, so creation cost is O(n) for reading the directory listing. At scale (>1000 files per stage), this could slow down, but this is a self-inflicted local concern.
+3. For gate stalling: the `visits` counter provides a mechanism for future escalation thresholds (e.g., "if visits > 3, escalate to human").
+
+**Threat 2 (tunnel-mode HTTP flood):** When remote review is enabled (`HAIKU_REMOTE_REVIEW=1`), the HTTP review server is exposed through a tunnel (localtunnel / equivalent). An attacker or misbehaving client that discovers the tunnel URL can flood the feedback-mutation endpoints (`POST/PUT/DELETE /api/sessions/:sid/intents/:intent/stages/:stage/feedback[...]`) and the session/review-decision endpoints. Each feedback mutation hits synchronous filesystem I/O in `writeFeedbackFile`/`updateFeedbackFile`/`deleteFeedbackFile`, each followed by `gitCommitState()` which invokes `execFileSync("git", ["commit", ...])`. A sustained flood saturates both the Node.js event loop (synchronous fs + child_process) and the git subprocess queue, degrading or stalling the review server for the legitimate reviewer.
+
+**Likelihood:** Medium (tunnel URLs are guessable/leakable; any client that obtains one reaches the mutation endpoints without further challenge beyond the session cookie)
+**Impact:** High (review-server unavailability blocks gate progression for the intent; repeated git invocations can also interleave with the developer's own commits and cause lock contention)
+
+**Mitigation — current state (GAPS):**
+1. **Partial only — WebSocket frames:** `allowWsFrame` (http.ts:187–199) implements a hand-rolled sliding-window limiter for inbound WebSocket frames per session. This covers WS-channel abuse but does **not** cover any HTTP route.
+2. **HAIKU_MAX_CONNECTIONS:** caps concurrent sockets — bounds resource exhaustion at the connection layer but does nothing against high-rate request cycling over a small connection pool.
+3. **No HTTP-route rate limiting:** `@fastify/rate-limit` is declared in `packages/haiku/package.json` (`^10.3.0`) but is **never imported or registered** in `packages/haiku/src/http.ts`. The declared dependency misrepresents the operational posture — it implies rate limiting is active when it is not. Tracked as finding **FB-06**.
+
+**Required mitigation (to be implemented in development stage):**
+Either (a) register `@fastify/rate-limit` and apply per-route caps sized to expected reviewer traffic — mutation routes (POST/PUT/DELETE feedback, POST revisit, POST review decision) should be tightly capped (e.g., 60/min/IP); read routes (GET session, GET feedback list) can be looser (e.g., 200/min/IP) — **or** (b) remove the unused dependency and explicitly document that the system relies on `HAIKU_MAX_CONNECTIONS` plus per-session WS frame limiting for DoS resistance, accepting the HTTP-flood exposure as an unmitigated risk in tunnel mode. Option (a) is strongly preferred — the dependency is already declared and the attack surface is real whenever `HAIKU_REMOTE_REVIEW=1`.
 
 **Verification evidence:**
-- No unauthenticated remote feedback creation path exists.
+- `grep -n "rate-limit\|rateLimit\|fastifyRateLimit" packages/haiku/src/http.ts` returns only WS-frame code paths and code comments. No `import fastifyRateLimit from "@fastify/rate-limit"` and no `instance.register(fastifyRateLimit, ...)` exists.
+- `packages/haiku/package.json:24` declares `"@fastify/rate-limit": "^10.3.0"` — dependency present but inert.
 - `nextFeedbackNumber` reads `readdirSync` — bounded by local filesystem performance.
 
 ---
@@ -166,18 +229,26 @@ No encryption at rest for feedback files — they are local project files with t
 
 ### A05: Security Misconfiguration
 
-**Status:** Mitigated.
+**Status:** Partially mitigated — one open gap (FB-06).
 
 - CORS headers are only applied when `isRemoteReviewEnabled()` returns true (opt-in via environment variable).
 - When CORS is active, `Access-Control-Allow-Origin: *` is used because the tunnel URL is dynamic and unpredictable. The E2E encryption layer mitigates the open-origin risk.
 - No default credentials exist — the system is session-based with UUID session IDs generated at runtime.
 - No unnecessary endpoints are exposed — feedback CRUD is registered alongside existing review endpoints with the same access model.
 
+**Open gap (FB-06):** `@fastify/rate-limit` is declared as a production dependency in `packages/haiku/package.json` but is never imported or registered in `packages/haiku/src/http.ts`. This is a misconfiguration in the literal OWASP-A05 sense — a security-relevant component is shipped but not wired up, creating a false impression of defense-in-depth while leaving HTTP routes unprotected against request flooding. See STRIDE section D (Threat 2) for the attack vector and required mitigation.
+
 ### A06: Vulnerable and Outdated Components
 
-**Status:** N/A.
+**Status:** Partially mitigated — inventory needs correction (FB-06).
 
-The feedback model introduces no new npm dependencies. All functionality is implemented using Node.js built-in modules (`fs`, `path`) and existing project dependencies (`gray-matter` for frontmatter parsing, `zod` for schema validation). No new attack surface from third-party code.
+**Correction:** A previous revision of this section claimed "no new npm dependencies". That is inaccurate. `packages/haiku/package.json` declares `@fastify/rate-limit: ^10.3.0` as a production dependency introduced alongside the feedback/review-server work. All other feedback-model code paths rely on Node.js built-in modules (`fs`, `path`) and pre-existing dependencies (`gray-matter` for frontmatter parsing, `zod` for schema validation, `fastify` for the HTTP server).
+
+**Current risk:**
+- `@fastify/rate-limit` is declared but not loaded at runtime — so its CVE-exposure in this build is zero, but the package is still pinned and will be installed on `npm install`. Supply-chain considerations (typosquatting, compromised registry publishes of the upstream package) apply regardless of whether it is `register()`-ed. The caret range (`^10.3.0`) allows automatic upgrade within the 10.x major.
+- Recommendation: either (a) tighten to an exact version + integrity pin once it is actually registered, or (b) remove the declaration entirely if option (b) of the FB-06 mitigation is chosen. Shipping an unused dependency is a supply-chain smell — every installed package is a potential attack surface, registered or not.
+
+**Followup:** resolving FB-06 (STRIDE-D Threat 2) also resolves this inventory gap. Whichever direction that fix takes (register vs. remove), this section must be updated to match the final state of `package.json`.
 
 ### A07: Identification and Authentication Failures
 
@@ -214,9 +285,11 @@ The feedback system makes no outbound HTTP requests. All operations are local fi
 
 ## 3. Defense-in-Depth Measures
 
-### 3a. `validateSlugArgs` hardening
+### 3a. `validateSlugArgs` hardening (MCP layer)
 
 `feedback_id` has been added to the checked keys array in `validateSlugArgs()` (state-tools.ts). This ensures that any MCP tool receiving a `feedback_id` argument will reject path traversal attempts (`../`, `/`, `\`) before any filesystem access occurs.
+
+**Scope note:** `validateSlugArgs` runs only inside `handleStateTool` — it does **not** cover HTTP entry points. HTTP entry points are covered by `isValidSlug()` (E1–E3) and by the dedicated regex + `serveUnderRoot` chain on the attachment endpoint (E4). See §3b for the full dual-layer picture.
 
 **Verification:** Three new tests in `state-tools-handlers.test.mjs`:
 1. `haiku_feedback_update` rejects `feedback_id` with `../../../etc/passwd`
@@ -227,9 +300,17 @@ The feedback system makes no outbound HTTP requests. All operations are local fi
 
 Feedback identifiers are validated at two independent layers:
 1. **MCP layer:** `validateSlugArgs` in `handleStateTool` (covers all MCP tool invocations).
-2. **HTTP layer:** `isValidSlug()` in each HTTP handler (`handleFeedbackPut`, `handleFeedbackDelete`).
+2. **HTTP layer:** `isValidSlug()` in each feedback CRUD handler (E1 POST, E2 PUT, E3 DELETE).
 
 Neither layer trusts the other. Both reject independently.
+
+**Attachment endpoint (E4) is a separate case.** The `filename` parameter of `/api/feedback-attachment/:intent/:stage/:filename` is not a slug in the `isValidSlug` sense (it must contain a `.ext` suffix). It is instead validated by:
+1. A whitelist regex `^[A-Za-z0-9._-]+\.(png|jpg|jpeg|webp|svg)$` — which structurally excludes `/`, `\`, and any non-image extension. This rejects the common `..%2F`, `foo/bar`, and `foo\bar` traversal shapes at the HTTP layer.
+2. `serveUnderRoot(reply, feedbackRoot, filename)` — which joins `filename` under `feedbackRoot`, calls `fs.realpath` on the result, and verifies the resolved path still starts with `feedbackRoot`. This catches any residual edge case (e.g. symlinks, case-folded filesystems) that the regex alone would miss.
+
+The `intent` and `stage` params on E4 still go through `isValidSlug` just like E1–E3, so cross-stage or cross-intent traversal via those segments is blocked by the same rule as the other endpoints.
+
+**Why the regex alone is not considered sufficient:** The regex permits filenames with multiple dots in the stem (e.g. `foo.bar.png`). In a vanilla filesystem this is harmless, but `realpath` is the authoritative check because it normalizes away any exotic case and fails closed if resolution escapes `feedbackRoot`. The regex exists to cheaply reject malformed input; the realpath check is the security boundary.
 
 ### 3c. Immutable derivation
 
@@ -238,3 +319,18 @@ Neither layer trusts the other. Both reject independently.
 ### 3d. Structural gate enforcement
 
 The pending-feedback gate check is implemented at the FSM level in `orchestrator.ts`, not as a prompt instruction. The agent cannot be prompt-injected into skipping the check because the check happens in compiled TypeScript code before any agent instructions are generated.
+
+### 3e. HTTP-route rate limiting (REQUIRED — FB-06, currently missing)
+
+**Trust boundary:** tunnel-exposed HTTP surface when `HAIKU_REMOTE_REVIEW=1`. Incoming data becomes untrusted the moment it arrives at the tunnel endpoint; rate limiting is the layer that caps how fast untrusted clients can drive the synchronous fs + git write amplifier inside `writeFeedbackFile`.
+
+**Required implementation (development stage):**
+1. Import and register `@fastify/rate-limit` in `packages/haiku/src/http.ts` — gated on `isRemoteReviewEnabled()` so the limiter only activates in tunnel mode (local-only runs don't need it and shouldn't pay the overhead).
+2. Apply differentiated per-route caps:
+   - Feedback mutation endpoints (POST/PUT/DELETE on `/api/sessions/:sid/intents/:intent/stages/:stage/feedback[...]`): ~60 req/min per IP.
+   - Review-decision and revisit endpoints (POST `/api/sessions/:sid/intents/:intent/review-decision`, POST revisit): ~30 req/min per IP.
+   - Session + read endpoints (GET session, GET feedback list, GET intent state): ~200 req/min per IP.
+3. On limit exceeded, return `429 Too Many Requests` with `Retry-After` header; the review UI already knows how to surface transient errors via its error-state rendering.
+4. Alternative path (explicitly accept the risk): if registering the limiter is not viable, remove `@fastify/rate-limit` from `package.json` and document in this section that tunnel-mode DoS resistance relies solely on `HAIKU_MAX_CONNECTIONS` + per-session WS frame limiting. This is a weaker posture but at least removes the misleading declared-but-inert dependency.
+
+**Non-goal:** This limiter does not replace WS-frame rate limiting (`allowWsFrame`) — both layers coexist. HTTP-route limiting covers the REST mutation surface; WS-frame limiting covers the push-channel surface. Neither subsumes the other.

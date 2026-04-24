@@ -88,6 +88,8 @@ export type TunnelJWTPayload = {
 export type TunnelVerifyReason =
 	| "malformed"
 	| "bad_signature"
+	| "bad_alg"
+	| "bad_typ"
 	| "expired"
 	| "tunnel_mismatch"
 	| "sid_mismatch"
@@ -122,6 +124,29 @@ export function verifyTunnelJWT(
 	if (parts.length !== 3) return { ok: false, reason: "malformed" }
 	const [header, body, sig] = parts
 	if (!header || !body || !sig) return { ok: false, reason: "malformed" }
+
+	// FB-18: explicit header `alg` + `typ` validation as defense-in-depth
+	// against `alg: none` / algorithm-confusion attempts. The HMAC path
+	// below is the primary enforcement — it always uses SHA-256 with the
+	// ephemeral secret, so a forged `alg: none` header won't produce a
+	// signature the verify step accepts. But rejecting the bad header up
+	// front surfaces the attack in logs and guards against any future
+	// refactor that might start trusting the declared algorithm.
+	try {
+		const headerJson = Buffer.from(header, "base64url").toString("utf-8")
+		const parsed = JSON.parse(headerJson) as {
+			alg?: unknown
+			typ?: unknown
+		}
+		if (parsed.alg !== "HS256") {
+			return { ok: false, reason: "bad_alg" }
+		}
+		if (parsed.typ !== undefined && parsed.typ !== "JWT") {
+			return { ok: false, reason: "bad_typ" }
+		}
+	} catch {
+		return { ok: false, reason: "malformed" }
+	}
 
 	const expected = createHmac("sha256", EPHEMERAL_SECRET)
 		.update(`${header}.${body}`)
