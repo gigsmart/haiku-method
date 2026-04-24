@@ -2,7 +2,7 @@
 title: >-
   @fastify/rate-limit dependency declared but never registered — HTTP routes
   have no rate limiting
-status: pending
+status: fixing
 origin: adversarial-review
 author: reliability (from operations)
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 resolution: null
 replies: []

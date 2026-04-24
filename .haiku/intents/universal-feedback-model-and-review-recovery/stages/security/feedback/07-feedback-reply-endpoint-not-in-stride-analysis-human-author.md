@@ -2,7 +2,7 @@
 title: >-
   Feedback reply endpoint not in STRIDE analysis — human author_type hardcoded
   without documentation
-status: pending
+status: fixing
 origin: adversarial-review
 author: threat-coverage
 author_type: agent
@@ -11,7 +11,7 @@ iteration: 1
 visit: 1
 source_ref: null
 closed_by: null
-bolt: 0
+bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
