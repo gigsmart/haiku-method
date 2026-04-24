@@ -15,6 +15,7 @@ bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
+integrator_attempts: 1
 ---
 
 In `packages/haiku-ui/src/api/client.ts` lines 251-261, the tunnel-auth JWT is attached to the WebSocket URL as a query parameter `?t=<jwt>`:
