@@ -365,7 +365,8 @@ export const routes: readonly RouteSpec[] = [
 		operationId: "getHealth",
 		request: null,
 		response: null,
-		summary: "Plain-text keepalive check used by the tunnel.",
+		summary:
+			"Readiness probe used by the tunnel and any load balancer. Returns 200 `ok` once the server has finished listening and post-listen initialization; returns 503 `starting` before that.",
 		tag: "health",
 		transport: "loopback",
 	},
