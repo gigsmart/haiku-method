@@ -368,6 +368,7 @@ export function ReviewPage({
 				selectedText: c.selectedText,
 				comment: c.comment,
 				paragraph: c.paragraph,
+				...(c.location ? { location: c.location } : {}),
 			}))
 		}
 		return annotations

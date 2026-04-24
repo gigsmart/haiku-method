@@ -1060,6 +1060,7 @@ function writeReviewFeedbackFiles(
 					selectedText: string
 					comment: string
 					paragraph: number
+					location?: string
 				}>
 				screenshot?: string
 		  }
@@ -1082,7 +1083,11 @@ function writeReviewFeedbackFiles(
 		}
 	}
 
-	// Walk inline comments — each becomes a feedback file
+	// Walk inline comments — each becomes a feedback file. The feedback
+	// body carries BOTH the reviewer's comment AND the exact selected
+	// text, formatted as a blockquote so the agent sees what was
+	// highlighted alongside the critique. Location (file path) goes
+	// into source_ref so consumers can jump straight to the file.
 	if (annotations?.comments) {
 		for (const comment of annotations.comments) {
 			if (!comment.comment) continue
@@ -1090,12 +1095,35 @@ function writeReviewFeedbackFiles(
 				comment.comment.length > 120
 					? `${comment.comment.slice(0, 117)}...`
 					: comment.comment
+			const quoted = comment.selectedText
+				? comment.selectedText
+						.split("\n")
+						.map((l) => `> ${l}`)
+						.join("\n")
+				: ""
+			const locationLine = comment.location
+				? `**Location:** \`${comment.location}\` (paragraph ${comment.paragraph})`
+				: `**Location:** paragraph ${comment.paragraph}`
+			const bodyParts = [locationLine]
+			if (quoted) {
+				bodyParts.push(
+					"",
+					"**Selected text:**",
+					"",
+					quoted,
+				)
+			}
+			bodyParts.push("", "**Comment:**", "", comment.comment)
+			const body = bodyParts.join("\n")
+			const srcRefBase = comment.location
+				? `${comment.location}:paragraph=${comment.paragraph}`
+				: `paragraph:${comment.paragraph}`
 			const result = writeFeedbackFile(slug, stage, {
 				title,
-				body: comment.comment,
+				body,
 				origin: "user-visual",
 				author: "user",
-				source_ref: `paragraph:${comment.paragraph}`,
+				source_ref: srcRefBase,
 			})
 			createdIds.push(result.feedback_id)
 		}

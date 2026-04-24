@@ -114,10 +114,26 @@ describe("schemas/common.ts — InlineCommentSchema", () => {
 			paragraph: 2,
 		})
 	})
+	test("parses valid with location", () => {
+		assertValid(InlineCommentSchema, {
+			selectedText: "the quick brown",
+			comment: "why?",
+			paragraph: 2,
+			location: "knowledge/DISCOVERY.md",
+		})
+	})
 	test("rejects invalid", () => {
 		assertInvalid(InlineCommentSchema, {
 			selectedText: "x",
 			paragraph: 2,
+		})
+	})
+	test("rejects location > 500 chars", () => {
+		assertInvalid(InlineCommentSchema, {
+			selectedText: "x",
+			comment: "c",
+			paragraph: 0,
+			location: "a".repeat(501),
 		})
 	})
 })
