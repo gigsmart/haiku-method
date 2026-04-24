@@ -2,7 +2,7 @@
 title: >-
   CORS wildcard fallback active when HAIKU_REMOTE_REVIEW=1 but no allowedOrigins
   configured
-status: pending
+status: closed
 origin: adversarial-review
 author: security (from development)
 author_type: agent
@@ -10,8 +10,8 @@ created_at: '2026-04-24T14:42:16Z'
 iteration: 1
 visit: 1
 source_ref: null
-closed_by: null
-bolt: 0
+closed_by: 'inline:security-fb-12-manual'
+bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
