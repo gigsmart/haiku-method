@@ -11,7 +11,7 @@ source_ref: null
 closed_by: null
 bolt: 3
 upstream_stage: null
-resolution: null
+resolution: inline_fix
 replies: []
 ---
 
