@@ -1448,7 +1448,16 @@ function runQualityGates(slug: string, stage: string): QualityGateResult[] {
 		return true
 	})
 
-	// Execute each gate (matches hook: 30s timeout, 500-char output truncation)
+	// Execute each gate. Timeout is 120s by default — monorepo test suites
+	// regularly push past 30s (e.g. `npm test --workspaces` on this repo
+	// clocks ~40s real time). Override with `HAIKU_QUALITY_GATE_TIMEOUT_MS`
+	// for environments that need longer runs. 500-char output truncation
+	// keeps failure payloads scoped to what the agent needs to see.
+	const gateTimeoutMs = (() => {
+		const raw = process.env.HAIKU_QUALITY_GATE_TIMEOUT_MS
+		const parsed = raw ? Number.parseInt(raw, 10) : NaN
+		return Number.isFinite(parsed) && parsed > 0 ? parsed : 120_000
+	})()
 	const failures: QualityGateResult[] = []
 	for (let i = 0; i < uniqueGates.length; i++) {
 		const gate = uniqueGates[i]
@@ -1460,7 +1469,7 @@ function runQualityGates(slug: string, stage: string): QualityGateResult[] {
 			output = execSync(gate.command, {
 				cwd,
 				encoding: "utf8",
-				timeout: 30_000,
+				timeout: gateTimeoutMs,
 				stdio: ["pipe", "pipe", "pipe"],
 			})
 		} catch (err: unknown) {
@@ -1468,9 +1477,15 @@ function runQualityGates(slug: string, stage: string): QualityGateResult[] {
 				status?: number
 				stdout?: string
 				stderr?: string
+				signal?: string
 			}
 			exitCode = execErr.status ?? 1
-			output = ((execErr.stdout ?? "") + (execErr.stderr ?? "")).slice(0, 500)
+			const timedOut = execErr.signal === "SIGTERM"
+			const rawOut = (execErr.stdout ?? "") + (execErr.stderr ?? "")
+			const prefix = timedOut
+				? `[timeout after ${gateTimeoutMs}ms — command killed with SIGTERM]\n`
+				: ""
+			output = (prefix + rawOut).slice(0, 500)
 		}
 
 		if (exitCode !== 0) {
