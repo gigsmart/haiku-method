@@ -2990,6 +2990,33 @@ export const FEEDBACK_STATUSES = [
  */
 export const MAX_FIX_LOOP_BOLTS = 3
 
+/**
+ * Cap on concurrent subagents the parent may have in flight at any point,
+ * across ALL parallel-dispatch surfaces: unit wave execution, elaborate
+ * discovery fan-out, adversarial review fan-out, and the fix loops
+ * (stage-level `review_fix` and studio-level `intent_completion_fix`).
+ *
+ * The Task-tool primitive the parent uses to spawn subagents is batch-
+ * synchronous: it fires N in one message and waits for all N to return
+ * before the next batch. There is no true slot pool — "free a slot
+ * mid-batch and fire another" is not expressible. The practical
+ * implementation is batch-serial: the parent takes the full wave of
+ * eligible items, splits it into batches of `MAX_CONCURRENT_SUBAGENTS`,
+ * and runs each batch to completion before starting the next. Wave
+ * boundaries (e.g. ops-engineer across all findings → feedback-assessor
+ * across all findings) are still honored — all of a hat's batches finish
+ * before the next hat starts.
+ *
+ * Override with env var `HAIKU_MAX_CONCURRENT_SUBAGENTS`. Invalid values
+ * (non-numeric, <= 0) fall back to the default. No upper bound enforced —
+ * large numbers effectively disable batching.
+ */
+export const MAX_CONCURRENT_SUBAGENTS = (() => {
+	const raw = process.env.HAIKU_MAX_CONCURRENT_SUBAGENTS
+	const parsed = raw ? Number.parseInt(raw, 10) : NaN
+	return Number.isFinite(parsed) && parsed > 0 ? parsed : 5
+})()
+
 export type FeedbackStatus = (typeof FEEDBACK_STATUSES)[number]
 
 /** Origins that imply a human author. */

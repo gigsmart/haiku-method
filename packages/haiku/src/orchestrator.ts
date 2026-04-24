@@ -66,6 +66,7 @@ import {
 	intentDir,
 	intentTitleNeedsRepair,
 	isGitRepo,
+	MAX_CONCURRENT_SUBAGENTS,
 	MAX_FIX_LOOP_BOLTS,
 	MAX_STAGE_ITERATIONS,
 	parseFrontmatter,
@@ -219,6 +220,47 @@ const FSM_CONTRACTS_FIX_LOOP_BLOCK = [
 	'- If a fix hat discovers the finding is actually invalid or already addressed, call `haiku_feedback_reject { reason: "<concrete reason>" }` instead of editing artifacts. A stale finding should be rejected, not silently dropped.',
 	"- Parallel chains may edit the same artifact concurrently. Each final hat validates closure independently — a chain whose fix was clobbered by another chain will leave its finding open, and the next bolt will retry. Budget is spent, not lost.",
 ].join("\n")
+
+/**
+ * Render the parent's batch-dispatch discipline for a parallel subagent wave.
+ *
+ * Returns a short markdown block the parent must follow when spawning:
+ *   - ≤ cap items → "spawn all N in parallel"
+ *   - > cap items → "batch them in groups of cap, serial across batches"
+ *
+ * Cap comes from `MAX_CONCURRENT_SUBAGENTS` (env-configurable via
+ * `HAIKU_MAX_CONCURRENT_SUBAGENTS`, default 5). Call this everywhere the
+ * parent fans out Task subagents in parallel: start_units, elaborate
+ * discovery fan-out, review-agent fan-out (adversarial + pre-execute),
+ * and per-wave dispatch inside the fix loops.
+ *
+ * The cap is parent-side discipline — the FSM still returns the full
+ * eligible set in one payload. Enforcement relies on the parent reading
+ * and following this instruction, same as every other spawn directive.
+ */
+function batchDispatchDirective(
+	count: number,
+	label = "subagents",
+): string {
+	if (count <= MAX_CONCURRENT_SUBAGENTS) {
+		return `**Concurrency cap:** up to ${MAX_CONCURRENT_SUBAGENTS} ${label} at once (env \`HAIKU_MAX_CONCURRENT_SUBAGENTS\`). This wave has ${count} — spawn them all in a single message.`
+	}
+	const batches = Math.ceil(count / MAX_CONCURRENT_SUBAGENTS)
+	const last = count - MAX_CONCURRENT_SUBAGENTS * (batches - 1)
+	const sizes =
+		last === MAX_CONCURRENT_SUBAGENTS
+			? `${batches} batches of ${MAX_CONCURRENT_SUBAGENTS}`
+			: `${batches - 1} batch${batches - 1 === 1 ? "" : "es"} of ${MAX_CONCURRENT_SUBAGENTS} + 1 batch of ${last}`
+	return [
+		`**Concurrency cap:** ${MAX_CONCURRENT_SUBAGENTS} ${label} in flight at a time (env \`HAIKU_MAX_CONCURRENT_SUBAGENTS\`). This wave has ${count} — split into ${sizes}.`,
+		"",
+		`**Batch discipline:**`,
+		`1. Dispatch batch 1 (first ${MAX_CONCURRENT_SUBAGENTS}) in a single message with multiple tool-use blocks.`,
+		`2. Wait for **every** subagent in that batch to return.`,
+		`3. Dispatch batch 2 in the next message. Repeat until the wave is exhausted.`,
+		`4. Process items in the order listed below so re-entries after interruption are deterministic.`,
+	].join("\n")
+}
 
 /**
  * Compact feedback summary for orchestrator action responses.
@@ -4969,7 +5011,7 @@ function buildRunInstructions(
 					join(studio, "stages", stage, "STAGE.md"),
 				)
 
-				let fanOutText = `## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${discoveryArtifacts.length} discovery artifact${plural}: ${artifactNames}.\n\n**Spawn one subagent per artifact** using the EXACT content between \`<subagent>\` tags as the prompt. Spawn ALL of them in parallel (single response). Your harness maps \`<subagent>\` to whatever one-shot spawn primitive it supports. Each subagent reads its own template + intent + stage files — do NOT inline content into the parent context.\n\n**Deduplication:** Spawn exactly ONE subagent per artifact listed below. If a discovery artifact already exists on disk, skip spawning a subagent for it.\n\n`
+				let fanOutText = `## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${discoveryArtifacts.length} discovery artifact${plural}: ${artifactNames}.\n\n**Spawn one subagent per artifact** using the EXACT content between \`<subagent>\` tags as the prompt. Your harness maps \`<subagent>\` to whatever one-shot spawn primitive it supports. Each subagent reads its own template + intent + stage files — do NOT inline content into the parent context.\n\n**Deduplication:** Spawn exactly ONE subagent per artifact listed below. If a discovery artifact already exists on disk, skip spawning a subagent for it.\n\n${batchDispatchDirective(discoveryArtifacts.length, "discovery subagents")}\n\n`
 
 				for (const a of discoveryArtifacts) {
 					const lines: string[] = [
@@ -5647,7 +5689,26 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 
 				// Parent instructions
 				sections.push(
-					`### Parent Instructions (do NOT include in subagent prompts)\n\n**IMMEDIATELY** spawn ALL subagents above **in parallel, in a single response**. For each \`<subagent>\` block, map attributes to Task-tool parameters:\n\n- \`type="..."\` → \`subagent_type\`\n- \`model="..."\` → \`model\` (OMIT when absent; do NOT supply a default)\n- \`prompt_file="..."\` → prompt body is literally \`"Read <path> and execute its instructions exactly."\`\n\nDo NOT add text beyond that prompt body. The FSM owns the authoritative prompt at \`prompt_file\`; do not paraphrase. Per-unit \`model\` attributes reflect the cascade the FSM resolved (unit > hat > stage > studio) — dropping them wastes the selection.\n\n**Drive forward on every return — do NOT wait for the whole batch.** The moment ANY subagent returns, inspect its final message:\n- \`FSM Result: <path>\` → read that JSON file, then call \`haiku_run_next { intent: "${slug}" }\` (run_next is authoritative). The FSM will include every still-active unit plus the newly-ready work.\n- Plaintext "job ends here" → another subagent will emit the structured result; do NOT dispatch yet.\n- Anything else (non-compliant) → fall back: call \`haiku_run_next { intent: "${slug}" }\`.\n\nWaiting for the whole batch strands other units. Stop driving only when run_next returns \`gate_review\`, \`escalate\`, \`intent_complete\`, or \`error\`.`,
+					[
+						"### Parent Instructions (do NOT include in subagent prompts)",
+						"",
+						"For each `<subagent>` block, map attributes to Task-tool parameters:",
+						"",
+						`- \`type="..."\` → \`subagent_type\``,
+						`- \`model="..."\` → \`model\` (OMIT when absent; do NOT supply a default)`,
+						`- \`prompt_file="..."\` → prompt body is literally \`"Read <path> and execute its instructions exactly."\``,
+						"",
+						"Do NOT add text beyond that prompt body. The FSM owns the authoritative prompt at `prompt_file`; do not paraphrase. Per-unit `model` attributes reflect the cascade the FSM resolved (unit > hat > stage > studio) — dropping them wastes the selection.",
+						"",
+						batchDispatchDirective(units.length, "units"),
+						"",
+						"**Within each batch, drive forward on every return — do NOT wait for the whole batch to finish before inspecting returns.** The moment ANY subagent in the current batch returns, inspect its final message:",
+						`- \`FSM Result: <path>\` → read that JSON file, then call \`haiku_run_next { intent: "${slug}" }\` (run_next is authoritative). The FSM returns every still-active unit plus newly-ready work for the NEXT batch.`,
+						`- Plaintext "job ends here" → another subagent will emit the structured result; do NOT dispatch yet.`,
+						`- Anything else (non-compliant) → fall back: call \`haiku_run_next { intent: "${slug}" }\`.`,
+						"",
+						"Complete the current batch before dispatching the next. Stop driving only when run_next returns `gate_review`, `escalate`, `intent_complete`, or `error`.",
+					].join("\n"),
 				)
 			} else {
 				// ── Subagentless harness: sequential execution in current context ──
@@ -5931,7 +5992,26 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 			}
 
 			sections.push(
-				`### Parent Instructions (do NOT include in subagent prompts)\n\n**IMMEDIATELY** spawn ALL subagents above **in parallel, in a single response**. For each \`<subagent>\` block, map attributes to Task-tool parameters:\n\n- \`type="..."\` → \`subagent_type\`\n- \`model="..."\` → \`model\` (OMIT when absent; do NOT supply a default)\n- \`prompt_file="..."\` → prompt body is literally \`"Read <path> and execute its instructions exactly."\`\n\nThe FSM owns the authoritative prompt at \`prompt_file\`; do not paraphrase. Per-unit \`model\` attributes reflect the cascade the FSM resolved — dropping them defeats the selection.\n\n**Drive forward on every return — do NOT wait for the whole batch.** The moment ANY subagent returns, inspect its final message:\n- \`FSM Result: <path>\` → read that JSON file, then call \`haiku_run_next { intent: "${slug}" }\` (run_next is authoritative).\n- Plaintext "job ends here" → another subagent will emit the structured result; do NOT dispatch yet.\n- Anything else → fall back: call \`haiku_run_next { intent: "${slug}" }\`.\n\nStop driving only when run_next returns \`gate_review\`, \`escalate\`, \`intent_complete\`, or \`error\`.`,
+				[
+					"### Parent Instructions (do NOT include in subagent prompts)",
+					"",
+					"For each `<subagent>` block, map attributes to Task-tool parameters:",
+					"",
+					`- \`type="..."\` → \`subagent_type\``,
+					`- \`model="..."\` → \`model\` (OMIT when absent; do NOT supply a default)`,
+					`- \`prompt_file="..."\` → prompt body is literally \`"Read <path> and execute its instructions exactly."\``,
+					"",
+					"The FSM owns the authoritative prompt at `prompt_file`; do not paraphrase. Per-unit `model` attributes reflect the cascade the FSM resolved — dropping them defeats the selection.",
+					"",
+					batchDispatchDirective(entries.length, "units"),
+					"",
+					"**Within each batch, drive forward on every return — do NOT wait for the whole batch to finish before inspecting returns.** The moment ANY subagent in the current batch returns, inspect its final message:",
+					`- \`FSM Result: <path>\` → read that JSON file, then call \`haiku_run_next { intent: "${slug}" }\` (run_next is authoritative).`,
+					`- Plaintext "job ends here" → another subagent will emit the structured result; do NOT dispatch yet.`,
+					`- Anything else → fall back: call \`haiku_run_next { intent: "${slug}" }\`.`,
+					"",
+					"Complete the current batch before dispatching the next. Stop driving only when run_next returns `gate_review`, `escalate`, `intent_complete`, or `error`.",
+				].join("\n"),
 			)
 
 			// Suppress unused-var warning for hats (kept in payload for forward-compat)
@@ -6050,7 +6130,18 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 			}
 
 			sections.push(
-				`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn review subagents in parallel using the \`prompt_file\` attribute — pass \`"Read <prompt_file> and execute its instructions exactly."\` as the spawn prompt. They persist findings directly via haiku_feedback. After all complete, call \`haiku_run_next { intent: "${slug}" }\`.`,
+				[
+					"### Parent Instructions (do NOT include in subagent prompts)",
+					"",
+					`Spawn review subagents using the \`prompt_file\` attribute — pass \`"Read <prompt_file> and execute its instructions exactly."\` as the spawn prompt. They persist findings directly via haiku_feedback.`,
+					"",
+					batchDispatchDirective(
+						Object.keys(agentPaths).length,
+						"review agents",
+					),
+					"",
+					`After all review agents complete, call \`haiku_run_next { intent: "${slug}" }\`.`,
+				].join("\n"),
 			)
 			break
 		}
@@ -6218,11 +6309,9 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 			const waveLines: string[] = [
 				"### Parent Instructions (do NOT include in subagent prompts)",
 				"",
-				`**Dispatch by wave.** The hat sequence is \`${fixHatsList.join(" → ")}\`. For each hat in the sequence:`,
+				`**Dispatch by wave.** The hat sequence is \`${fixHatsList.join(" → ")}\`. For each hat in the sequence, run the full fan-out of ${items.length} fix chain(s) under the concurrency cap, then advance to the next hat.`,
 				"",
-				`1. Spawn **one subagent per finding** for that hat, **all in parallel** (a single assistant message with multiple Agent tool_use blocks).`,
-				`2. Wait for every subagent in the wave to return before starting the next wave.`,
-				`3. Proceed to the next hat in the sequence.`,
+				batchDispatchDirective(items.length, "fix chains"),
 				"",
 				`After the FINAL wave (\`${fixHatsList[fixHatsList.length - 1]}\`) completes for all findings, call \`haiku_run_next { intent: "${slug}" }\` — the FSM decides what happens next (advance, loop the still-open findings, or escalate).`,
 			]
@@ -6294,7 +6383,15 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 			}
 
 			sections.push(
-				`### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn review subagents in parallel using the \`prompt_file\` attribute. They persist findings directly via \`haiku_feedback\` at intent scope. After every agent returns, call \`haiku_run_next { intent: "${slug}" }\`.`,
+				[
+					"### Parent Instructions (do NOT include in subagent prompts)",
+					"",
+					"Spawn review subagents using the `prompt_file` attribute. They persist findings directly via `haiku_feedback` at intent scope.",
+					"",
+					batchDispatchDirective(agents.length, "studio-level review agents"),
+					"",
+					`After every agent returns, call \`haiku_run_next { intent: "${slug}" }\`.`,
+				].join("\n"),
 			)
 			break
 		}
@@ -6426,11 +6523,9 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 			const icWaveLines: string[] = [
 				"### Parent Instructions (do NOT include in subagent prompts)",
 				"",
-				`**Dispatch by wave.** The hat sequence is \`${fixHatsList.join(" → ")}\`. For each hat in the sequence:`,
+				`**Dispatch by wave.** The hat sequence is \`${fixHatsList.join(" → ")}\`. For each hat in the sequence, run the full fan-out of ${items.length} fix chain(s) under the concurrency cap, then advance to the next hat.`,
 				"",
-				`1. Spawn **one subagent per finding** for that hat, **all in parallel** (a single assistant message with multiple Agent tool_use blocks).`,
-				`2. Wait for every subagent in the wave to return before starting the next wave.`,
-				`3. Proceed to the next hat in the sequence.`,
+				batchDispatchDirective(items.length, "fix chains"),
 				"",
 				`After the FINAL wave completes for all findings, call \`haiku_run_next { intent: "${slug}" }\` — the FSM decides: advance to gate, loop still-open findings, or escalate.`,
 			]
@@ -6723,7 +6818,18 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 			}
 
 			sections.push(
-				`### Parent Instructions\n\nSpawn all review subagents in parallel. Each returns inline findings as markdown — collect them all. If any reviewer returned findings (anything other than \`No findings.\`), aggregate them by unit file, EDIT the relevant unit.md files directly to address each finding, commit, then call \`haiku_run_next { intent: "${slug}" }\` to re-enter review. If every reviewer returned \`No findings.\`, call \`haiku_run_next { intent: "${slug}" }\` to open the user-facing gate. NO feedback files are created at pre-execute — there is nothing built to critique against.`,
+				[
+					"### Parent Instructions",
+					"",
+					"Each reviewer returns inline findings as markdown — collect them all.",
+					"",
+					batchDispatchDirective(
+						Object.keys(agentPaths).length,
+						"review agents",
+					),
+					"",
+					`If any reviewer returned findings (anything other than \`No findings.\`), aggregate them by unit file, EDIT the relevant unit.md files directly to address each finding, commit, then call \`haiku_run_next { intent: "${slug}" }\` to re-enter review. If every reviewer returned \`No findings.\`, call \`haiku_run_next { intent: "${slug}" }\` to open the user-facing gate. NO feedback files are created at pre-execute — there is nothing built to critique against.`,
+				].join("\n"),
 			)
 			break
 		}
