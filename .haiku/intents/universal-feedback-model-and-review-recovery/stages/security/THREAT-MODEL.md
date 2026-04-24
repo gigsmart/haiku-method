@@ -2,7 +2,7 @@
 
 STRIDE analysis of the feedback model's attack surface, plus OWASP Top 10 verification.
 
-Date: 2026-04-15 (last updated 2026-04-24 to incorporate FB-06 — HTTP rate-limit gap)
+Date: 2026-04-15 (last updated 2026-04-24 to incorporate FB-06 — HTTP rate-limit gap — and FB-07 — reply endpoint cross-reference)
 Scope: Feedback file creation/mutation (MCP tools + HTTP API), gate-phase enforcement, review-UI pipeline, external-PR detection, tunnel-mode HTTP surface.
 
 ---
@@ -24,6 +24,8 @@ The feedback model introduces or touches the following HTTP entry points. Each o
 - The validation chain for E4 is **different** from E1/E2/E3. E4 does NOT route through `validateSlugArgs` (which is MCP-only) and the `filename` parameter does NOT use `isValidSlug` (because attachment filenames legitimately contain `.` for the extension, which `isValidSlug` rejects). Instead, E4 pairs a **whitelist-regex** (restricts to allowed image extensions and the `[A-Za-z0-9._-]` charset — no `/`, `\`, or `..` substrings) with **`serveUnderRoot`**, which resolves the final path via `realpath` and verifies it stays within `feedbackRoot`. Either layer alone would be insufficient; together they are defense-in-depth (see §3a).
 - The regex **does** allow filenames like `foo.bar.png` (dots in the stem), and it would also match `..png` if preceded by a non-dot character. Neither is a traversal vector because the filename is joined under `feedbackRoot` with `path.join`, and `serveUnderRoot` rejects any resolved path whose `realpath` escapes `feedbackRoot`. The regex is there to reject obvious separators and force a known image extension; the realpath escape check is the authoritative traversal guard.
 - E4 is read-only and serves locally-generated attachments created by `writeFeedbackFile`. It does not accept uploads. No agent-authored or HTTP-authored request can cause arbitrary files to land under `feedbackRoot` — only `writeFeedbackFile` writes there, and it controls the basename.
+
+**Reply endpoint (HTTP-only):** `POST /api/feedback/:intent/:stage/:feedbackId/replies` introduced during implementation is analyzed in `artifacts/threat-model-expanded.md` (§ Trust Boundaries + S3 + E3). The base threat model below covers feedback CRUD; the reply endpoint is asymmetric (HTTP-only, no MCP equivalent) and is characterized separately to avoid conflating CRUD and thread-append surfaces.
 
 ---
 
@@ -215,21 +217,34 @@ No layer restricts request **rate** or aggregate **count** per session/IP.
 
 **Threat:** An agent bypasses author-type guards to close human-authored feedback, effectively self-approving its own work. Or an agent accesses tools restricted to the HTTP boundary (human context).
 
+**Trust boundary:** The MCP tool boundary is the critical trust edge. On the MCP side, `callerContext === "agent"`; on the HTTP side, `callerContext === "human"`. Every write path that mutates human-authored feedback state MUST enforce this boundary. There are **two independent paths to "closed" state** that both must be guarded:
+
+1. `closed_by` being set to a non-empty string (the usual audit path).
+2. `status` being set directly to `"closed"` (a state transition that bypasses the audit field).
+
+Either path, left unguarded, lets an agent self-approve work by closing a human finding, which silently unblocks the review gate (`countPendingFeedback` only counts items with `status !== "closed"`).
+
 **Likelihood:** Low
 **Impact:** High
 
 **Mitigation:**
 1. MCP/HTTP boundary separation: MCP tools pass `callerContext: "agent"` to update/delete helpers. HTTP handlers pass `callerContext: "human"`. These are hardcoded in the respective call sites, not derived from user input.
-2. `updateFeedbackFile` (state-tools.ts:2243-2252) explicitly checks: if `callerContext === "agent"` and `found.data.author_type === "human"` and new status is `closed`, the operation is rejected with an error.
-3. `deleteFeedbackFile` (state-tools.ts:2297-2306) rejects agent deletion of human-authored items entirely.
-4. `validateSlugArgs` now checks `feedback_id` in addition to `intent`, `slug`, `stage`, and `unit` — preventing path traversal to access feedback files outside the intended scope.
+2. `updateFeedbackFile` (state-tools.ts:3473-3487) rejects `callerContext === "agent"` setting `closed_by` on a human-authored item.
+3. **Required parallel guard (FB-24):** `updateFeedbackFile` MUST also reject `callerContext === "agent"` setting `status: "closed"` on a human-authored item. Without this guard, an agent calling `haiku_feedback_update` with `{ feedback_id, status: "closed" }` (and no `closed_by`) reaches the "Apply updates" block unimpeded and the gate unblocks. The `haiku_feedback_update` tool schema lists `closed` as a valid status value with no restriction note, so agents have no prompt-level indication that the transition is forbidden on human items — the enforcement MUST be structural, not documentary.
+4. `deleteFeedbackFile` rejects agent deletion of human-authored items entirely.
+5. `validateSlugArgs` checks `feedback_id` in addition to `intent`, `slug`, `stage`, and `unit` — preventing path traversal to access feedback files outside the intended scope.
 
 **Known gap (see threat-model-expanded.md E2):** The `closed` guard above protects the literal `closed` label, but not the *gate-clearing semantics*. An agent can set `status: addressed` on human-authored feedback; `countPendingFeedback` treats `addressed` as resolved, so in `auto`-gate stages a single agent call clears the gate without any human sign-off. The expanded threat model's E2 section defines the required defense-in-depth stack (M1 human-author-aware pending count; M2 stage-config enforcement; M3 explicit audit trail) that the development and testing stages MUST implement.
 
 **Verification evidence:**
-- `feedback.test.mjs` has explicit tests: "MCP update rejects agent closing human-authored feedback", "MCP delete rejects agent deleting human-authored feedback".
+- `feedback.test.mjs` has explicit tests: "MCP update rejects agent closing human-authored feedback" (via `closed_by`), "MCP delete rejects agent deleting human-authored feedback".
+- **Required new test (FB-24):** "MCP update rejects agent setting status=closed on human-authored feedback" — exercises the second path to the closed state.
 - `state-tools-handlers.test.mjs` verifies `feedback_id` path traversal rejection (3 tests: `../` sequences, forward slashes, backslashes).
 - Pending (required by E2-M1): `countPendingFeedback` refuses to clear gate on agent-driven `addressed` transition of human-authored items.
+
+**Invariant statement (must hold under all mutation paths):**
+
+> For any feedback item `F` where `F.author_type === "human"`, no MCP-initiated write (`callerContext === "agent"`) may transition `F.status` to `"closed"`, by any field or combination of fields. Closure of human-authored items is reachable only via the HTTP review UI where `callerContext === "human"`.
 
 ---
 
@@ -237,13 +252,14 @@ No layer restricts request **rate** or aggregate **count** per session/IP.
 
 ### A01: Broken Access Control
 
-**Status:** Mitigated and tested.
+**Status:** Partially mitigated — one gap identified (FB-24), fix required before close.
 
-- Author-type guards enforce MCP (agent) vs HTTP (human) boundary. Agents cannot close or delete human-authored feedback.
+- Author-type guards enforce MCP (agent) vs HTTP (human) boundary. Agents cannot delete human-authored feedback, and agents cannot set `closed_by` on human-authored feedback.
+- **Known gap (FB-24, open):** `updateFeedbackFile` guards the `closed_by` path but does not guard the `status: "closed"` path. An agent calling `haiku_feedback_update` with `{ feedback_id, status: "closed" }` (no `closed_by`) currently bypasses the intended invariant and closes a human-authored item, which silently unblocks the review gate. This MUST be fixed before this threat model can be marked fully mitigated — the "agents cannot close human-authored feedback" invariant is the load-bearing access-control guarantee for the feedback-driven gate, and a partial enforcement is equivalent to no enforcement from an attacker's perspective.
 - MCP agent-only tools (`haiku_feedback_update`, `haiku_feedback_delete`, `haiku_feedback_reject`) are only reachable through the MCP server's tool dispatch — never exposed on HTTP.
 - HTTP endpoints validate slug parameters with `isValidSlug()` before any filesystem access.
 
-**Tests:** `feedback.test.mjs` — agent-close-human rejection, agent-delete-human rejection. `http-feedback.test.mjs` — slug validation on all CRUD endpoints.
+**Tests:** `feedback.test.mjs` — agent-close-via-closed_by rejection, agent-delete-human rejection. **Missing (FB-24):** agent-close-via-status=closed rejection. `http-feedback.test.mjs` — slug validation on all CRUD endpoints.
 
 ### A02: Cryptographic Failures
 
@@ -380,3 +396,27 @@ The pending-feedback gate check is implemented at the FSM level in `orchestrator
 4. Alternative path (explicitly accept the risk): if registering the limiter is not viable, remove `@fastify/rate-limit` from `package.json` and document in this section that tunnel-mode DoS resistance relies solely on `HAIKU_MAX_CONNECTIONS` + per-session WS frame limiting. This is a weaker posture but at least removes the misleading declared-but-inert dependency.
 
 **Non-goal:** This limiter does not replace WS-frame rate limiting (`allowWsFrame`) — both layers coexist. HTTP-route limiting covers the REST mutation surface; WS-frame limiting covers the push-channel surface. Neither subsumes the other.
+
+### 3f. Complete-closure guard (FB-24, required)
+
+The "agents cannot close human-authored feedback" invariant requires guarding **every transition path to `status === "closed"`**, not just the one that passes through `closed_by`. `updateFeedbackFile` currently enforces only the `closed_by` path. A parallel guard is required immediately above the "Apply updates" block in `state-tools.ts`:
+
+```ts
+if (
+  callerContext === "agent" &&
+  fields.status === "closed" &&
+  found.data.author_type === "human"
+) {
+  return {
+    ok: false,
+    error:
+      "Error: agents cannot set status=closed on human-authored feedback. Only the original author may close it via the review UI.",
+  }
+}
+```
+
+This guard MUST run before the status-enum validation is consumed to apply the transition, and it MUST reject regardless of whether `closed_by` is also present. Paired with the existing `closed_by` guard, the two together are necessary and sufficient to enforce the invariant: every path that writes `status = "closed"` on a human-authored item from an agent context returns an error and performs no mutation.
+
+**Test coverage requirement:** One new test in `feedback.test.mjs`:
+
+> `"MCP update rejects agent setting status=closed on human-authored feedback"` — create a human-authored feedback item via the HTTP path (so `author_type` derives to `"human"`), then call `haiku_feedback_update` with `{ feedback_id, status: "closed" }` from the MCP context, assert the call returns `ok: false` with the expected error, and assert the on-disk file still has `status !== "closed"`.

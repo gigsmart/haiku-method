@@ -72,6 +72,7 @@ Feedback attack-surface entry points with their validation chains are now enumer
 | **T3: SVG attachment XSS in review SPA origin** | **Medium** | **High** | **OPEN — required mitigations specified (sanitize OR force-download + nosniff + CSP); fix owned by development stage** |
 | R1: WebSocket drop loses draft review comments | Medium | Low | Open v1 risk — accepted; v2 debounced persistence |
 | I1: CORS wildcard leaks review content | Low | Medium | Mitigated — FB-36 origin-checked CORS |
+| I1a: Empty `allowedOrigins`+empty `siteUrl` under remote review silently blocks all origins | Medium (config) | Low-Medium | Open — FB-12; blue-team fix-hat to add startup warning |
 | I2: Session UUID in URL replay | Very Low | Low | Accepted — 30-min TTL, in-memory only |
 | D1: Visits counter grows unboundedly | Low | Medium | Accepted — no hard cap; v2 threshold recommended |
 | D2: Large reasons array creates filesystem load | Very Low | Low | Accepted — local tool; no count cap |
@@ -83,6 +84,7 @@ Feedback attack-surface entry points with their validation chains are now enumer
 | Risk | Severity | Notes |
 |---|---|---|
 | Agent marking human-authored feedback as "addressed" allows gate pass without human explicit close | MEDIUM | Human gate (ask/external) is the verification backstop. Auto-gate stages processing human feedback are lower-trust. |
+| CORS allow-list collapses to empty/unmatched origin under `HAIKU_REMOTE_REVIEW=1` with empty `siteUrl` (FB-12 / I1a) | LOW | Fail-closed — not an info-disclosure vector. Mitigation: startup warning naming `HAIKU_REVIEW_ALLOWED_ORIGINS` and `HAIKU_REVIEW_SITE_URL`. Scoped to blue-team fix-hat bolt 2. |
 | WebSocket draft loss before submission | LOW | v2: debounced persistence |
 | No visits cap | LOW | v2: max_visits threshold |
 | gray-matter YAML parsing (prototype pollution) | LOW | `gray-matter@4.0.3` (direct pin verified in `packages/haiku/package.json` and `website/package.json`) pulls transitive `js-yaml@3.14.2` — latest 3.x. gray-matter 4.x has not migrated to js-yaml 4.x; no upgrade path exists until a hypothetical gray-matter 5.x. `npm audit` in CI is **NOT yet wired** (`.github/workflows/ci.yml` has only `lint` + `test` jobs); tracked as open follow-up — see `threat-model-expanded.md` SC-1 mitigation #3. |

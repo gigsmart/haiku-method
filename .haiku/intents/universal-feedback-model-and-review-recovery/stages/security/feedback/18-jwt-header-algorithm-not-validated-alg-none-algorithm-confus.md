@@ -15,7 +15,7 @@ bolt: 1
 upstream_stage: null
 resolution: null
 replies: []
-integrator_attempts: 1
+integrator_attempts: 2
 ---
 
 **Threat:** The `verifyTunnelJWT` function in `packages/haiku/src/tunnel.ts` implements a hand-rolled JWT verification. The header (`alg`, `typ`) is decoded from the token but **never validated**. The verification logic recomputes an HMAC-SHA256 signature and compares it via `timingSafeEqual`, which is correct — but only if the attacker cannot influence which algorithm is used.
