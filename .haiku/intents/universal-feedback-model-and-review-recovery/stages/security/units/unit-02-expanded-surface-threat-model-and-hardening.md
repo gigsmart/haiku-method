@@ -16,6 +16,7 @@ bolt: 1
 hat: threat-modeler
 started_at: '2026-04-24T00:00:00Z'
 outputs:
+  - stages/security/THREAT-MODEL-EXPANDED.md
   - stages/security/artifacts/threat-model-expanded.md
   - stages/security/artifacts/assessments.md
 ---
