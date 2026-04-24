@@ -119,15 +119,16 @@ Subagents run as Claude Code `Task` tool invocations. They receive context via t
 
 **Implementation:** Update the review subagent `<subagent>` block template (~line 3132) to instruct each subagent to call `haiku_feedback({intent, stage, title, body, origin: "adversarial-review", author: agentName})` for every finding. The subagent returns only a summary count ("logged N findings via haiku_feedback"). The parent agent's instructions simplify to: "spawn review subagents, wait for completion, then call haiku_run_next — the structural gate handles the rest."
 
-#### Review App Architecture (`packages/haiku/review-app/`)
+#### Review App Architecture (`packages/haiku-ui/`)
 
-The review app is a React SPA served by the HTTP server (`http.ts`). Key components:
+The review app is a React SPA served by the HTTP server (`http.ts`), implemented as the standalone `packages/haiku-ui/` workspace package. Key components:
 
-- **ReviewPage.tsx** — Main review view with tabs (Overview, Units, Knowledge, Outputs, Domain Model)
-- **ReviewSidebar.tsx** — Decision buttons (Approve, Request Changes, Submit for External Review) and comment management
-- **InlineComments.tsx** — Text selection → comment creation on rendered markdown
-- **AnnotationCanvas.tsx** — Pin annotation on images
-- **useSession.ts** — Session fetching and decision submission (WebSocket with HTTP fallback)
+- **`src/components/ReviewPage.tsx`** — Main review view with tabs (Overview, Units, Knowledge, Outputs, Domain Model)
+- **`src/components/ReviewSidebar.tsx`** — Decision buttons (Approve, Request Changes, Submit for External Review) and comment management
+- **`src/components/InlineComments.tsx`** — Text selection → comment creation on rendered markdown
+- **`src/components/AnnotationCanvas.tsx`** — Pin annotation on images
+- **`src/hooks/useSession.ts`** — Session fetching and decision submission (WebSocket with HTTP fallback)
+- **`src/hooks/useFeedback.ts`** — Dedicated feedback CRUD hook (standalone file, not merged into useSession)
 
 **Current flow for comments:**
 1. User selects text or drops pins in the review UI
@@ -296,7 +297,8 @@ Reading feedback files on every `haiku_run_next` call adds filesystem I/O. For a
 | `packages/haiku/src/sessions.ts` | Session model — review sessions with feedback/annotations |
 | `packages/haiku/src/http.ts` | HTTP server routes — `handleDecidePost` (120-180), session API |
 | `packages/haiku/src/hooks/subagent-context.ts` | Subagent context generation — Task subagents inherit MCP tool access from parent |
-| `packages/haiku/review-app/src/components/ReviewPage.tsx` | Review UI main view — needs feedback panel |
-| `packages/haiku/review-app/src/components/ReviewSidebar.tsx` | Decision buttons and comment management — needs feedback-file integration |
-| `packages/haiku/review-app/src/components/InlineComments.tsx` | Inline comment creation — output needs to flow to feedback files |
-| `packages/haiku/review-app/src/hooks/useSession.ts` | Session hooks and decision submission — needs CRUD endpoint integration |
+| `packages/haiku-ui/src/components/ReviewPage.tsx` | Review UI main view — needs feedback panel |
+| `packages/haiku-ui/src/components/ReviewSidebar.tsx` | Decision buttons and comment management — needs feedback-file integration |
+| `packages/haiku-ui/src/components/InlineComments.tsx` | Inline comment creation — output needs to flow to feedback files |
+| `packages/haiku-ui/src/hooks/useFeedback.ts` | Dedicated feedback CRUD hook — fetches and mutates feedback items via CRUD endpoints |
+| `packages/haiku-ui/src/hooks/useSession.ts` | Session hooks and decision submission — no feedback changes (CRUD handled by useFeedback) |

@@ -24,14 +24,15 @@ Quick-reference for implementors. Cross-reference DATA-CONTRACTS.md for field-le
 | `utils.ts` | Shared utilities including `findUnitFiles` (lines 150-165). **New:** `readStageStatuses(intentDir)` helper. | Group 9 |
 | `subagent-context.ts` | Context generation for Task subagents. No changes -- subagents already inherit MCP tools from parent. | -- |
 
-### Review App (under `packages/haiku/review-app/src/`)
+### Review App (under `packages/haiku-ui/src/`)
 
 | File | Responsibility | Changes Required |
 |---|---|---|
 | `components/ReviewPage.tsx` | Main review view with tabs. **New:** feedback panel/tab. | Group 12 |
 | `components/ReviewSidebar.tsx` | Decision buttons, comment management. **Change:** "Request Changes" writes individual feedback files via CRUD API instead of serializing to a string. | Group 12 |
-| `hooks/useSession.ts` | Session fetching/submission. **New:** `useFeedback` hook + CRUD helpers. | Group 12 |
-| `types.ts` | Type definitions. **New:** `FeedbackItem` interface. | Group 12 |
+| `hooks/useFeedback.ts` | Dedicated hook for feedback CRUD operations + helpers. Implemented as a standalone file rather than augmenting `useSession.ts`. | Group 12 |
+| `hooks/useSession.ts` | Session fetching/submission. No structural changes — feedback operations are in the dedicated `useFeedback.ts` hook. | Group 12 |
+| `types.ts` | Re-exports types from `haiku-api`. `FeedbackItem` is defined in `haiku-api`, not locally. | Group 12 |
 
 ### Plugin assets
 

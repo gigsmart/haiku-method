@@ -607,7 +607,7 @@ All three buttons inherit the standard focus ring (`ring-2 ring-teal-500 ring-of
 
 ## 3. Token Mapping: Server-Rendered vs SPA
 
-The two rendering paths (React SPA in `review-app/` and SSR templates in `src/templates/`) use different base palettes. When adding feedback tokens to the SSR path, translate accordingly:
+The two rendering paths (React SPA in `packages/haiku-ui/src/` and SSR templates in `packages/haiku/src/templates/`) use different base palettes. When adding feedback tokens to the SSR path, translate accordingly:
 
 | SPA Token | SSR Equivalent |
 |---|---|

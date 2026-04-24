@@ -228,12 +228,13 @@
 
 | File | Change |
 |---|---|
-| `packages/haiku/review-app/src/components/ReviewPage.tsx` | Add a "Feedback" tab (or panel) that fetches and displays existing feedback items for the current stage via `GET /api/feedback/{intent}/{stage}`. Show each item's title, status badge, origin, author, and body. |
-| `packages/haiku/review-app/src/components/ReviewSidebar.tsx` | On "Request Changes" submission (~line 69+): instead of serializing all comments into a single `feedback` string, call `POST /api/feedback/{intent}/{stage}` for each comment/annotation to create individual feedback files. Then submit the decision with a reference to the created feedback IDs. |
-| `packages/haiku/review-app/src/hooks/useSession.ts` | Add `useFeedback(intent, stage)` hook that fetches feedback items from the CRUD API. Add CRUD helper functions: `createFeedback()`, `updateFeedback()`, `deleteFeedback()`. |
-| `packages/haiku/review-app/src/types.ts` | Add `FeedbackItem` type interface matching the feedback file schema (id, title, body, status, origin, author, author_type, created_at, visit, source_ref, addressed_by). |
-| `packages/haiku/review-app/src/components/ReviewSidebar.tsx` | Add feedback status indicators for revisit cycles: show which prior feedback items are pending vs. addressed vs. closed. |
-| `packages/haiku/review-app/src/components/InlineComments.tsx` | No structural changes needed — output already flows to the sidebar. The sidebar's submission flow changes (above) handle the feedback file creation. |
+| `packages/haiku-ui/src/components/ReviewPage.tsx` | Add a "Feedback" tab (or panel) that fetches and displays existing feedback items for the current stage via `GET /api/feedback/{intent}/{stage}`. Show each item's title, status badge, origin, author, and body. |
+| `packages/haiku-ui/src/components/ReviewSidebar.tsx` | On "Request Changes" submission (~line 69+): instead of serializing all comments into a single `feedback` string, call `POST /api/feedback/{intent}/{stage}` for each comment/annotation to create individual feedback files. Then submit the decision with a reference to the created feedback IDs. |
+| `packages/haiku-ui/src/hooks/useFeedback.ts` | Dedicated `useFeedback(intent, stage)` hook that fetches feedback items from the CRUD API. Contains CRUD helper functions: `createFeedback()`, `updateFeedback()`, `deleteFeedback()`. Implemented as a standalone file, NOT merged into `useSession.ts`. |
+| `packages/haiku-ui/src/hooks/useSession.ts` | Session fetching/submission. No changes for feedback — the dedicated `useFeedback.ts` hook handles all feedback CRUD. |
+| `packages/haiku-ui/src/types.ts` | Re-exports from `haiku-api`. `FeedbackItem` is defined in `packages/haiku-api`, not locally in this file. |
+| `packages/haiku-ui/src/components/ReviewSidebar.tsx` | Add feedback status indicators for revisit cycles: show which prior feedback items are pending vs. addressed vs. closed. |
+| `packages/haiku-ui/src/components/InlineComments.tsx` | No structural changes needed — output already flows to the sidebar. The sidebar's submission flow changes (above) handle the feedback file creation. |
 
 ### Test Approach
 
@@ -316,10 +317,11 @@ Group 13 (prototype) ── after Groups 5, 7, 8 are finalized
 | `packages/haiku/src/http.ts` | 11 | CRUD REST endpoints for feedback files |
 | `packages/haiku/src/hooks/enforce-iteration.ts` | 9 | Fix completion check to use per-stage status |
 | `packages/haiku/src/hooks/utils.ts` | 9 | Add `readStageStatuses()` helper |
-| `packages/haiku/review-app/src/components/ReviewPage.tsx` | 12 | Feedback panel/tab |
-| `packages/haiku/review-app/src/components/ReviewSidebar.tsx` | 12 | Individual feedback file creation on "Request Changes", status indicators |
-| `packages/haiku/review-app/src/hooks/useSession.ts` | 12 | `useFeedback` hook + CRUD helpers |
-| `packages/haiku/review-app/src/types.ts` | 12 | `FeedbackItem` type |
+| `packages/haiku-ui/src/components/ReviewPage.tsx` | 12 | Feedback panel/tab |
+| `packages/haiku-ui/src/components/ReviewSidebar.tsx` | 12 | Individual feedback file creation on "Request Changes", status indicators |
+| `packages/haiku-ui/src/hooks/useFeedback.ts` | 12 | Dedicated `useFeedback` hook + CRUD helpers (standalone file, not merged into useSession) |
+| `packages/haiku-ui/src/hooks/useSession.ts` | 12 | Session fetching/submission — no feedback changes |
+| `packages/haiku-ui/src/types.ts` | 12 | Re-exports from haiku-api; `FeedbackItem` defined in haiku-api |
 | `plugin/skills/report/SKILL.md` | 4 | Update tool name reference `haiku_feedback` → `haiku_report` |
 | `plugin/bin/haiku` | 4 | Update tool name reference if present |
 | `website/public/prototype-stage-flow.html` | 13 | Feedback check visualization, tool specs, state schema, additive elaborate |
