@@ -11,13 +11,14 @@ inputs:
   - knowledge/DATA-CONTRACTS.md
   - knowledge/ARCHITECTURE.md
   - stages/security/THREAT-MODEL.md
-status: active
+status: completed
 bolt: 1
 hat: threat-modeler
 started_at: '2026-04-24T00:00:00Z'
 outputs:
   - stages/security/artifacts/threat-model-expanded.md
   - stages/security/artifacts/assessments.md
+completed_at: '2026-04-24T14:23:53Z'
 ---
 
 # Expanded Surface Threat Model and Hardening
