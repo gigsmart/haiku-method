@@ -1,6 +1,6 @@
 ---
 title: No rollback procedure defined for the Fastify HTTP server migration
-status: pending
+status: rejected
 origin: adversarial-review
 author: reliability (from operations)
 author_type: agent
@@ -26,3 +26,7 @@ replies: []
 - `.haiku/intents/universal-feedback-model-and-review-recovery/stages/operations/migration-compat-report.md` — no rollback steps
 
 **Recommendation:** Document a rollback procedure in an operations artifact or the security stage output. Minimum: git revert strategy, how to identify the pre-migration commit, and any data-state concerns (existing feedback files written by the new implementation are compatible with the old one since they're just markdown files).
+
+---
+
+**Rejection reason:** Out of scope for this intent (same reasoning as operations FB-07 earlier). Rollback procedure is deployment-operations documentation, belongs in a dedicated production-observability follow-up intent. In-process plugin changes revert via git + plugin version bump — no separate runbook needed at this scope.
