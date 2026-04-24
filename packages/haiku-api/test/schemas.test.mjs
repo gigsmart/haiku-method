@@ -266,6 +266,28 @@ describe("schemas/direction.ts — DirectionSelectRequestSchema", () => {
 			parameters: { density: "three" },
 		})
 	})
+	test("rejects archetype longer than 64 chars", () => {
+		assertInvalid(DirectionSelectRequestSchema, {
+			archetype: "x".repeat(65),
+			parameters: { density: 3 },
+		})
+	})
+	test("rejects parameters with more than 50 entries", () => {
+		const parameters = {}
+		for (let i = 0; i < 51; i += 1) {
+			parameters[`p${i}`] = i
+		}
+		assertInvalid(DirectionSelectRequestSchema, {
+			archetype: "minimalist",
+			parameters,
+		})
+	})
+	test("rejects parameter keys longer than 100 chars", () => {
+		assertInvalid(DirectionSelectRequestSchema, {
+			archetype: "minimalist",
+			parameters: { ["k".repeat(101)]: 1 },
+		})
+	})
 })
 
 describe("schemas/direction.ts — DirectionSelectResponseSchema", () => {

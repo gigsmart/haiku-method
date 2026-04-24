@@ -15,11 +15,15 @@ export const DirectionSelectRequestSchema = z
 	.object({
 		archetype: z
 			.string()
+			.max(64)
 			.describe(
 				"Archetype name selected by the user from the design-direction set",
 			),
 		parameters: z
-			.record(z.number())
+			.record(z.string().max(100), z.number())
+			.refine((record) => Object.keys(record).length <= 50, {
+				message: "parameters must have at most 50 entries",
+			})
 			.describe("Parameter map (slider values keyed by parameter name)"),
 	})
 	.describe("POST /direction/:sessionId/select request body")
