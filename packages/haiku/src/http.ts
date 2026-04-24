@@ -115,6 +115,49 @@ function logClose(msg: string): void {
 	process.stderr.write(`[haiku-mcp] ${msg}\n`)
 }
 
+// ── Structured action logging (feedback CRUD + revisit) ─────────────────
+//
+// Fastify runs with `logger: false`, so we emit a single JSON line per
+// feedback mutation / revisit to stderr. Every log line includes the
+// request's `reqId` (same value returned in the `X-Request-Id` response
+// header) plus the domain keys that let a human correlate
+// "why did FB-03 get created twice?" across the stream:
+//
+//   { ts, reqId, action, intent, stage, feedbackId?, status, detail? }
+//
+// `status` is the HTTP status code we're about to send. `detail` is an
+// optional one-line hint (e.g. error message or created feedback id).
+//
+// This does NOT replace full request logging (FB-01 tracks that) — it's
+// the minimum correlation surface the reviewer asked for in FB-02.
+interface FeedbackActionLogFields {
+	reqId: string
+	action: string
+	status: number
+	intent?: string | null
+	stage?: string | null
+	feedbackId?: string | null
+	detail?: string | null
+}
+
+function logFeedbackAction(fields: FeedbackActionLogFields): void {
+	try {
+		const line = {
+			ts: new Date().toISOString(),
+			reqId: fields.reqId,
+			action: fields.action,
+			status: fields.status,
+			...(fields.intent ? { intent: fields.intent } : {}),
+			...(fields.stage ? { stage: fields.stage } : {}),
+			...(fields.feedbackId ? { feedbackId: fields.feedbackId } : {}),
+			...(fields.detail ? { detail: fields.detail } : {}),
+		}
+		process.stderr.write(`[haiku-mcp][feedback] ${JSON.stringify(line)}\n`)
+	} catch {
+		/* never let logging break a request */
+	}
+}
+
 // ── WebSocket registry ───────────────────────────────────────────────────
 //
 // @fastify/websocket hands us a `WsWebSocket` which wraps `ws`'s
@@ -154,6 +197,49 @@ function allowWsFrame(socket: WsWebSocket): boolean {
 	wsRateState.set(socket, recent)
 	return true
 }
+
+// ── Resource limits (connections, WS sessions) ────────────────────────────
+//
+// FB-08: the review HTTP server is a local developer service but nothing
+// stops a misbehaving client (or a compromised tunnel) from opening an
+// unbounded number of sockets / WebSocket sessions. Each feedback CRUD route
+// does synchronous filesystem I/O, so an unbounded connection flood will
+// saturate the Node event loop and exhaust file descriptors. We apply two
+// caps:
+//
+//   • HAIKU_MAX_CONNECTIONS — applied to `app.server.maxConnections` after
+//     listen completes. Node will refuse further sockets once the cap is hit.
+//     Default 256 is well above any real review workflow (one SPA per
+//     session) while remaining far below the default FD rlimit (~1024 on
+//     macOS, 65536 on Linux).
+//   • HAIKU_MAX_WS_SESSIONS — cap on the total number of concurrent
+//     WebSocket sessions tracked in `wsConnections`. Excess sessions are
+//     closed immediately with RFC 6455 code 1013 (try again later). Default
+//     128 — again well above realistic concurrent review usage.
+//
+// Both env vars accept any integer and are clamped to a minimum of 1 so the
+// limits can never be disabled through environment config. Non-numeric or
+// non-positive values fall back to the default. For memory headroom, pair
+// these with `NODE_OPTIONS=--max-old-space-size=<MB>` at the process
+// manager level (documented in the operations runbook).
+
+const MAX_CONNECTIONS_DEFAULT = 256
+const MAX_CONNECTIONS = ((): number => {
+	const raw = process.env.HAIKU_MAX_CONNECTIONS
+	if (raw === undefined) return MAX_CONNECTIONS_DEFAULT
+	const parsed = Number.parseInt(raw, 10)
+	if (!Number.isFinite(parsed) || parsed <= 0) return MAX_CONNECTIONS_DEFAULT
+	return Math.max(parsed, 1)
+})()
+
+const MAX_WS_SESSIONS_DEFAULT = 128
+const MAX_WS_SESSIONS = ((): number => {
+	const raw = process.env.HAIKU_MAX_WS_SESSIONS
+	if (raw === undefined) return MAX_WS_SESSIONS_DEFAULT
+	const parsed = Number.parseInt(raw, 10)
+	if (!Number.isFinite(parsed) || parsed <= 0) return MAX_WS_SESSIONS_DEFAULT
+	return Math.max(parsed, 1)
+})()
 
 /** Send a JSON text frame to the SPA for a given session. */
 export function sendToWebSocket(sessionId: string, data: unknown): void {
@@ -806,6 +892,34 @@ async function buildApp(): Promise<FastifyInstance> {
 		return payload
 	})
 
+	// Structured 4xx/5xx logging (FB-04). Fastify runs `logger: false`,
+	// so explicit `reply.status(4xx|5xx).send(...)` calls from handlers
+	// never reach `setErrorHandler` and would otherwise be completely
+	// silent — an error spike on the feedback CRUD / revisit routes
+	// would look identical to a healthy server from the outside. This
+	// hook emits one structured JSON line per error response to stderr
+	// so log aggregation can count, alert, and filter by
+	// `method` / `statusCode` / `url` / request ID. Logging must never
+	// throw — we swallow JSON.stringify failures defensively.
+	instance.addHook("onResponse", async (req, reply) => {
+		const statusCode = reply.statusCode
+		if (statusCode < 400) return
+		try {
+			console.error(
+				JSON.stringify({
+					level: statusCode >= 500 ? "error" : "warn",
+					event: "http_error_response",
+					reqId: req.id,
+					method: req.method,
+					url: req.url,
+					statusCode,
+				}),
+			)
+		} catch {
+			// Logging must never throw.
+		}
+	})
+
 	// CORS — only emit headers when remote review is enabled.
 	if (isRemoteReviewEnabled()) {
 		await instance.register(fastifyCors, {
@@ -1142,10 +1256,22 @@ async function buildApp(): Promise<FastifyInstance> {
 			if (!requireTunnelAuth(req, reply, req.params.sessionId)) return
 			const session = getSession(req.params.sessionId)
 			if (!session || session.session_type !== "review") {
+				logFeedbackAction({
+					reqId: req.id,
+					action: "revisit",
+					status: 404,
+					detail: `session=${req.params.sessionId} not_found_or_wrong_type`,
+				})
 				reply.status(404).send("Session not found")
 				return
 			}
 			if (!session.intent_slug) {
+				logFeedbackAction({
+					reqId: req.id,
+					action: "revisit",
+					status: 409,
+					detail: `session=${req.params.sessionId} no_intent_context`,
+				})
 				reply.status(409).send({ error: "Session has no intent context" })
 				return
 			}
@@ -1164,6 +1290,14 @@ async function buildApp(): Promise<FastifyInstance> {
 				.map((c) => (c as { text: string }).text)
 				.join("\n")
 			if (toolResult.isError) {
+				logFeedbackAction({
+					reqId: req.id,
+					action: "revisit",
+					status: 409,
+					intent: session.intent_slug,
+					stage: parsed.data.stage ?? null,
+					detail: `revisit_failed: ${text.slice(0, 200)}`,
+				})
 				reply.status(409).send({ error: "revisit_failed", detail: text })
 				return
 			}
@@ -1219,6 +1353,18 @@ async function buildApp(): Promise<FastifyInstance> {
 				feedback_created: feedbackCreated,
 				message,
 			}
+			logFeedbackAction({
+				reqId: req.id,
+				action: "revisit",
+				status: 200,
+				intent: session.intent_slug,
+				stage: stage ?? null,
+				detail: `revisit_action=${action}${
+					feedbackCreated && feedbackCreated.length > 0
+						? ` feedback_created=${feedbackCreated.join(",")}`
+						: ""
+				}`,
+			})
 			reply.send(response)
 		},
 	)
@@ -1377,6 +1523,14 @@ async function buildApp(): Promise<FastifyInstance> {
 				status: "pending",
 				message: `Feedback ${result.feedback_id} created.`,
 			}
+			logFeedbackAction({
+				reqId: req.id,
+				action: "feedback.create",
+				status: 201,
+				intent,
+				stage,
+				feedbackId: result.feedback_id,
+			})
 			reply.status(201).send(response)
 		},
 	)
@@ -1430,6 +1584,15 @@ async function buildApp(): Promise<FastifyInstance> {
 			)
 			if (!result.ok) {
 				if (result.error.includes("not found")) {
+					logFeedbackAction({
+						reqId: req.id,
+						action: "feedback.update",
+						status: 404,
+						intent,
+						stage,
+						feedbackId,
+						detail: "not_found",
+					})
 					reply
 						.status(404)
 						.send({
@@ -1437,6 +1600,15 @@ async function buildApp(): Promise<FastifyInstance> {
 						})
 					return
 				}
+				logFeedbackAction({
+					reqId: req.id,
+					action: "feedback.update",
+					status: 400,
+					intent,
+					stage,
+					feedbackId,
+					detail: result.error,
+				})
 				reply.status(400).send({ error: result.error })
 				return
 			}
@@ -1446,6 +1618,15 @@ async function buildApp(): Promise<FastifyInstance> {
 				updated_fields: result.updated_fields,
 				message: `Feedback ${feedbackId} updated.`,
 			}
+			logFeedbackAction({
+				reqId: req.id,
+				action: "feedback.update",
+				status: 200,
+				intent,
+				stage,
+				feedbackId,
+				detail: result.updated_fields.join(","),
+			})
 			reply.send(response)
 		},
 	)
@@ -1480,6 +1661,15 @@ async function buildApp(): Promise<FastifyInstance> {
 		const result = deleteFeedbackFile(intent, stage, feedbackId, "human")
 		if (!result.ok) {
 			if (result.error.includes("not found")) {
+				logFeedbackAction({
+					reqId: req.id,
+					action: "feedback.delete",
+					status: 404,
+					intent,
+					stage,
+					feedbackId,
+					detail: "not_found",
+				})
 				reply
 					.status(404)
 					.send({
@@ -1488,11 +1678,29 @@ async function buildApp(): Promise<FastifyInstance> {
 				return
 			}
 			if (result.error.includes("cannot delete")) {
+				logFeedbackAction({
+					reqId: req.id,
+					action: "feedback.delete",
+					status: 409,
+					intent,
+					stage,
+					feedbackId,
+					detail: "cannot_delete",
+				})
 				reply
 					.status(409)
 					.send({ error: result.error.replace(/^Error:\s*/, "") })
 				return
 			}
+			logFeedbackAction({
+				reqId: req.id,
+				action: "feedback.delete",
+				status: 400,
+				intent,
+				stage,
+				feedbackId,
+				detail: result.error,
+			})
 			reply.status(400).send({ error: result.error })
 			return
 		}
@@ -1502,6 +1710,14 @@ async function buildApp(): Promise<FastifyInstance> {
 			deleted: true,
 			message: `Feedback ${feedbackId} deleted.`,
 		}
+		logFeedbackAction({
+			reqId: req.id,
+			action: "feedback.delete",
+			status: 200,
+			intent,
+			stage,
+			feedbackId,
+		})
 		reply.send(response)
 	})
 
@@ -1561,11 +1777,29 @@ async function buildApp(): Promise<FastifyInstance> {
 			)
 			if (!result.ok) {
 				if (result.error.includes("not found")) {
+					logFeedbackAction({
+						reqId: req.id,
+						action: "feedback.reply",
+						status: 404,
+						intent,
+						stage,
+						feedbackId,
+						detail: "not_found",
+					})
 					reply.status(404).send({
 						error: `Feedback '${feedbackId}' not found in stage '${stage}'`,
 					})
 					return
 				}
+				logFeedbackAction({
+					reqId: req.id,
+					action: "feedback.reply",
+					status: 400,
+					intent,
+					stage,
+					feedbackId,
+					detail: result.error,
+				})
 				reply.status(400).send({ error: result.error })
 				return
 			}
@@ -1578,6 +1812,15 @@ async function buildApp(): Promise<FastifyInstance> {
 				status: result.status as FeedbackReplyCreateResponse["status"],
 				message: `Reply added to ${feedbackId}.`,
 			}
+			logFeedbackAction({
+				reqId: req.id,
+				action: "feedback.reply",
+				status: 201,
+				intent,
+				stage,
+				feedbackId,
+				detail: `reply_index=${result.reply_index}`,
+			})
 			reply.status(201).send(response)
 		},
 	)
@@ -1592,10 +1835,10 @@ async function buildApp(): Promise<FastifyInstance> {
 	// matches the standard readiness-vs-liveness split.
 	instance.get("/health", async (_req, reply) => {
 		if (!ready) {
-			reply.status(503).type("text/plain; charset=utf-8").send("starting")
-			return
+			reply.status(503)
+			return "starting"
 		}
-		reply.type("text/plain; charset=utf-8").send("ok")
+		return "ok"
 	})
 
 	// CORS preflight catch-all (only when remote review is enabled).
@@ -1646,6 +1889,28 @@ async function buildApp(): Promise<FastifyInstance> {
 				: typeof err === "string"
 					? err
 					: ""
+
+		// FB-04: log the underlying error detail at the point we know it.
+		// The `onResponse` hook also logs the eventual 4xx/5xx line, but
+		// that hook only sees the status — not the exception class or
+		// message. Emit a separate event here so operators can trace 500s
+		// back to the original throw without needing a stack trace.
+		try {
+			console.error(
+				JSON.stringify({
+					level: status >= 500 ? "error" : "warn",
+					event: "http_error_thrown",
+					reqId: req.id,
+					method: req.method,
+					url: req.url,
+					statusCode: status,
+					error: errMessage,
+					code: errCode,
+				}),
+			)
+		} catch {
+			// Logging must never throw.
+		}
 
 		// Fastify's built-in JSON parser throws a SyntaxError (wrapped
 		// with statusCode 400) when the request body is malformed JSON.
@@ -1713,6 +1978,22 @@ async function buildApp(): Promise<FastifyInstance> {
 					socket.close(4404, "session not found")
 					return
 				}
+				// FB-08: cap concurrent WS sessions. If we're re-registering
+				// the same sessionId (reconnect) don't count it against the
+				// cap — the existing entry is overwritten atomically below.
+				if (
+					!wsConnections.has(sessionId) &&
+					wsConnections.size >= MAX_WS_SESSIONS
+				) {
+					logClose(
+						`upgrade REJECT session=${sessionId} reason=ws_session_cap size=${wsConnections.size} cap=${MAX_WS_SESSIONS}`,
+					)
+					// RFC 6455 code 1013 — "Try Again Later": the server is
+					// temporarily unable to accept the connection. Clients
+					// should back off.
+					socket.close(1013, "session cap reached")
+					return
+				}
 				wsConnections.set(sessionId, socket)
 				logClose(`upgrade ACCEPT session=${sessionId}`)
 				socket.on("message", (raw: Buffer | ArrayBuffer | Buffer[]) => {
@@ -1746,8 +2027,34 @@ async function buildApp(): Promise<FastifyInstance> {
 
 // ── Lifecycle ──────────────────────────────────────────────────────────
 
+/**
+ * Enforces the v1 transport invariant that the review HTTP server binds only
+ * to loopback. If the bind target is non-loopback, the process exits(1).
+ *
+ * `HAIKU_TRANSPORT_ASSERT=0` is a **test-only escape hatch** for exercising
+ * bind failure paths from unit tests. It is ONLY honored when `NODE_ENV=test`
+ * — in production, CI, or any other context, setting it has NO effect and the
+ * fatal exit still fires. This closes the attacker-influenced-env vector
+ * described in FB-12 (ops): even if an attacker can inject env vars, they
+ * cannot silently disable the loopback invariant unless they also set
+ * `NODE_ENV=test`, which is not a production configuration.
+ *
+ * `HAIKU_FORCE_BIND_ADDR` is similarly a **test/dev-only** knob for exercising
+ * the non-loopback path. When it is set to anything other than the default, a
+ * prominent warning is logged (see startHttpServer) so operators can spot
+ * accidental or malicious overrides in their logs immediately.
+ */
 function assertLoopbackBind(address: string): void {
-	if (process.env.HAIKU_TRANSPORT_ASSERT === "0") return
+	if (
+		process.env.HAIKU_TRANSPORT_ASSERT === "0" &&
+		process.env.NODE_ENV === "test"
+	) {
+		console.error(
+			"WARNING: HAIKU_TRANSPORT_ASSERT=0 bypass active (NODE_ENV=test). " +
+				"This is a test-only escape hatch; ignored outside NODE_ENV=test.",
+		)
+		return
+	}
 	const loopback = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"])
 	if (!loopback.has(address)) {
 		console.error(
@@ -1764,6 +2071,12 @@ export async function startHttpServer(): Promise<number> {
 	app = await buildApp()
 	const bindAddr = process.env.HAIKU_FORCE_BIND_ADDR || "127.0.0.1"
 	const address = await app.listen({ host: bindAddr, port: 0 })
+	// FB-08: cap concurrent TCP connections on the underlying http.Server.
+	// Node enforces this at the listener — the (MAX_CONNECTIONS + 1)th
+	// socket is closed without reaching Fastify. Combined with the WS
+	// session cap and per-socket WS rate limit, this bounds the resource
+	// footprint of the review HTTP server.
+	app.server.maxConnections = MAX_CONNECTIONS
 	// Parse the returned listen URL to extract port / address.
 	const urlMatch = address.match(/^https?:\/\/(\[?[^\]]*\]?|[^:]+):(\d+)/)
 	if (urlMatch) {
@@ -1778,7 +2091,8 @@ export async function startHttpServer(): Promise<number> {
 		}
 	}
 	console.error(
-		`Review HTTP server listening on http://127.0.0.1:${actualPort}`,
+		`Review HTTP server listening on http://127.0.0.1:${actualPort} ` +
+			`(maxConnections=${MAX_CONNECTIONS}, maxWsSessions=${MAX_WS_SESSIONS})`,
 	)
 	// Post-listen initialization has completed. Flip the readiness flag
 	// so `/health` transitions from 503 `"starting"` to 200 `"ok"`. Any
@@ -1811,5 +2125,8 @@ export async function stopHttpServer(): Promise<void> {
 	} finally {
 		app = null
 		actualPort = null
+		// Server is no longer accepting traffic — clear the readiness
+		// flag so a subsequent start sees 503 until it finishes listening.
+		ready = false
 	}
 }
