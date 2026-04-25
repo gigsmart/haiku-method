@@ -8,7 +8,7 @@ studio: hwdev
 
 **Produces:** Firmware source, build artifacts, flashing instructions, and (where applicable) bootloader/update mechanisms.
 
-**Reads:** Functional requirements, schematic (for peripheral addresses and pin assignments), safety analysis.
+**Reads:** Functional requirements, [tscircuit](https://tscircuit.com) schematic source (`.tsx` — for peripheral addresses, pin assignments, and net names), safety analysis.
 
 **Anti-patterns (RFC 2119):**
 - The agent **MUST NOT** exceed the memory or flash budget — there is no runtime to grow into

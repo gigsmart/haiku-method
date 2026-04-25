@@ -133,7 +133,7 @@ Every studio has three kinds of identifier — a canonical `name` (shown in brow
 | Persistence | git |
 | Delivery | storefront submission (platform cert) |
 
-**Hardware Development** (`hwdev`) covers hardware products — electronics, firmware, manufacturing. Unlike software, hardware has physical constraints, safety regulations, and a one-shot manufacturing gate. Requirements captures compliance upfront because it cannot be retrofitted.
+**Hardware Development** (`hwdev`) covers hardware products — electronics, firmware, manufacturing. Unlike software, hardware has physical constraints, safety regulations, and a one-shot manufacturing gate. Requirements captures compliance upfront because it cannot be retrofitted. The design stage uses [tscircuit](https://tscircuit.com) as the EDA platform, so schematics and PCB layouts are authored as TypeScript/React code and reviewable in a pull request rather than locked inside a proprietary EDA binary.
 
 | Property | Value |
 |---|---|
