@@ -26,6 +26,9 @@ npm-debug.log*
 .env.local
 .env.*.local
 
+# Local Files
+*.local.*
+
 # Secrets / credentials
 .secrets/
 *.json.key
