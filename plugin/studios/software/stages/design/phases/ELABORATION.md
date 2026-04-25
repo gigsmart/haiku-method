@@ -22,19 +22,32 @@ During elaboration, the agent **MUST** create **multiple low-fidelity wireframe 
 
 ## Criteria Guidance
 
+Every acceptance criterion **MUST** be paired with a verifiable condition. Design criteria are verified by **visual approval** — a reviewer inspects the deliverable against the criterion, not by command-exit-code. The FSM still rejects prose-only criteria; the condition can be a structural check (counting screen variants, asserting tokens-only colors via grep) or a reviewer-applied condition stated precisely enough that two reviewers would reach the same verdict.
+
+### Good criteria — concrete and verifiable
+
 When generating criteria for this stage, focus on verifiable design deliverables:
 
 - Screen layouts defined for all breakpoints (mobile 375px / tablet 768px / desktop 1280px)
 - All interactive states specified (default, hover, focus, active, disabled, error)
-- Color usage references only design system tokens — no raw hex values
+- Color usage references only design system tokens — no raw hex values (verifiable by grep for `#[0-9a-fA-F]{3,6}` outside token files)
 - Touch targets meet 44px minimum on mobile breakpoints
 - Empty states, loading states, and error states designed
-- Contrast ratios meet WCAG AA (4.5:1 body text, 3:1 large text)
+- Contrast ratios meet WCAG AA (4.5:1 body text, 3:1 large text) — verifiable by automated contrast checker
 - Focus order documented for keyboard navigation
 - Component hierarchy documented (which design system components to use/extend)
 - Interaction specs complete for all user actions (tap, swipe, scroll, transition)
 
-Design criteria are verified by **visual approval** — a reviewer inspects the deliverable against the criteria, not automated tests.
+### Bad criteria — vague (no clear condition)
 
-Bad criteria: "Design looks good", "It's responsive", "Accessible"
+- "Design looks good" — what does good mean?
+- "It's responsive" — at which breakpoints? With what behavior?
+- "Accessible" — to which standard? WCAG A, AA, AAA?
 
+### Bad criteria — specific but unverifiable
+
+- "Design is intuitive" — needs a usability test pass against a stated success-rate threshold
+- "Visual hierarchy is clear" — needs a structural rule (e.g. heading scale, contrast progression) the reviewer can apply consistently
+- "Brand feels right" — needs a brand-guideline document to compare against, not a subjective vibe check
+
+If a criterion can't be expressed as a structural check or a precisely-stated reviewer condition, it's a spec gap — surface it via `ask_user_visual_question`, do not paper over with prose.
