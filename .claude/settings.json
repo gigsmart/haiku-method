@@ -11,7 +11,7 @@
     "haiku": {
       "source": {
         "source": "directory",
-        "path": "/Volumes/dev/src/github.com/gigsmart/haiku-method/.claude/worktrees/delegated-swimming-honey"
+        "path": "."
       }
     }
   },
