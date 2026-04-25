@@ -1,10 +1,10 @@
-import { getAllStudios, getStudioBySlug } from "@/lib/studios"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import ReactMarkdown from "react-markdown"
 import rehypeSlug from "rehype-slug"
 import remarkGfm from "remark-gfm"
+import { getAllStudios, getStudioBySlug } from "@/lib/studios"
 
 interface Props {
 	params: Promise<{ slug: string; stage: string }>
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const { slug, stage: stageName } = await params
 	const studio = getStudioBySlug(slug)
 	const stage = studio?.stageDefinitions.find((s) => s.name === stageName)
-	if (!studio || !stage) return { title: "Not Found" }
+	if (!(studio && stage)) return { title: "Not Found" }
 	return {
 		title: `${titleCase(stage.name)} - ${titleCase(studio.name)} Studio - H\u00b7AI\u00b7K\u00b7U`,
 		description: stage.description,
@@ -40,11 +40,28 @@ function titleCase(s: string): string {
 }
 
 const reviewBadge: Record<string, { label: string; color: string }> = {
-	auto: { label: "Auto", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-	ask: { label: "Ask", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
-	external: { label: "External", color: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" },
-	"external, ask": { label: "External / Ask", color: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" },
-	await: { label: "Await", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+	auto: {
+		label: "Auto",
+		color:
+			"bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+	},
+	ask: {
+		label: "Ask",
+		color:
+			"bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+	},
+	external: {
+		label: "External",
+		color: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
+	},
+	"external, ask": {
+		label: "External / Ask",
+		color: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
+	},
+	await: {
+		label: "Await",
+		color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+	},
 }
 
 export default async function StageDetailPage({ params }: Props) {
@@ -52,27 +69,41 @@ export default async function StageDetailPage({ params }: Props) {
 	const studio = getStudioBySlug(slug)
 	if (!studio) notFound()
 
-	const stageIndex = studio.stageDefinitions.findIndex((s) => s.name === stageName)
+	const stageIndex = studio.stageDefinitions.findIndex(
+		(s) => s.name === stageName,
+	)
 	const stage = studio.stageDefinitions[stageIndex]
 	if (!stage) notFound()
 
-	const prevStage = stageIndex > 0 ? studio.stageDefinitions[stageIndex - 1] : null
-	const nextStage = stageIndex < studio.stageDefinitions.length - 1 ? studio.stageDefinitions[stageIndex + 1] : null
+	const prevStage =
+		stageIndex > 0 ? studio.stageDefinitions[stageIndex - 1] : null
+	const nextStage =
+		stageIndex < studio.stageDefinitions.length - 1
+			? studio.stageDefinitions[stageIndex + 1]
+			: null
 	const badge = reviewBadge[stage.review] || reviewBadge.ask
 
 	return (
 		<div className="mx-auto max-w-4xl px-4 py-8 lg:py-12">
 			{/* Breadcrumb */}
 			<nav className="mb-6 text-sm text-stone-500 dark:text-stone-400">
-				<Link href="/studios/" className="hover:text-stone-900 dark:hover:text-white">
+				<Link
+					href="/studios/"
+					className="hover:text-stone-900 dark:hover:text-white"
+				>
 					Studios
 				</Link>
 				<span className="mx-2">/</span>
-				<Link href={`/studios/${slug}/`} className="hover:text-stone-900 dark:hover:text-white">
+				<Link
+					href={`/studios/${slug}/`}
+					className="hover:text-stone-900 dark:hover:text-white"
+				>
 					{titleCase(studio.name)}
 				</Link>
 				<span className="mx-2">/</span>
-				<span className="text-stone-900 dark:text-white">{titleCase(stage.name)}</span>
+				<span className="text-stone-900 dark:text-white">
+					{titleCase(stage.name)}
+				</span>
 			</nav>
 
 			{/* Header */}
@@ -81,7 +112,9 @@ export default async function StageDetailPage({ params }: Props) {
 					<h1 className="text-4xl font-bold tracking-tight">
 						{titleCase(stage.name)}
 					</h1>
-					<span className={`rounded px-2.5 py-1 text-xs font-medium ${badge.color}`}>
+					<span
+						className={`rounded px-2.5 py-1 text-xs font-medium ${badge.color}`}
+					>
 						{badge.label} review
 					</span>
 				</div>
@@ -96,7 +129,9 @@ export default async function StageDetailPage({ params }: Props) {
 					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">
 						Hats
 					</div>
-					<div className="mt-1 text-2xl font-bold">{stage.hatDefinitions.length}</div>
+					<div className="mt-1 text-2xl font-bold">
+						{stage.hatDefinitions.length}
+					</div>
 				</div>
 				<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
 					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">
@@ -106,7 +141,13 @@ export default async function StageDetailPage({ params }: Props) {
 						{stage.reviewAgentDefinitions.length}
 						{stage.reviewAgentsInclude.length > 0 && (
 							<span className="text-sm font-normal text-stone-400">
-								{" "}+{stage.reviewAgentsInclude.reduce((acc: number, i: { agents: string[] }) => acc + i.agents.length, 0)}
+								{" "}
+								+
+								{stage.reviewAgentsInclude.reduce(
+									(acc: number, i: { agents: string[] }) =>
+										acc + i.agents.length,
+									0,
+								)}
 							</span>
 						)}
 					</div>
@@ -115,7 +156,9 @@ export default async function StageDetailPage({ params }: Props) {
 					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">
 						Review
 					</div>
-					<div className="mt-1 text-lg font-semibold">{titleCase(stage.review)}</div>
+					<div className="mt-1 text-lg font-semibold">
+						{titleCase(stage.review)}
+					</div>
 				</div>
 				<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
 					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">
@@ -147,10 +190,23 @@ export default async function StageDetailPage({ params }: Props) {
 								>
 									{titleCase(inp.stage)}
 								</Link>
-								<svg className="h-4 w-4 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+								<svg
+									className="h-4 w-4 text-stone-300"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									aria-hidden="true"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M14 5l7 7m0 0l-7 7m7-7H3"
+									/>
 								</svg>
-								<span className="text-sm text-stone-600 dark:text-stone-400">{inp.output}</span>
+								<span className="text-sm text-stone-600 dark:text-stone-400">
+									{inp.output}
+								</span>
 							</div>
 						))}
 					</div>
@@ -181,7 +237,10 @@ export default async function StageDetailPage({ params }: Props) {
 							</div>
 							<div className="px-6 py-4">
 								<div className="prose prose-sm prose-gray dark:prose-invert max-w-none">
-									<ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug]}>
+									<ReactMarkdown
+										remarkPlugins={[remarkGfm]}
+										rehypePlugins={[rehypeSlug]}
+									>
 										{hat.content}
 									</ReactMarkdown>
 								</div>
@@ -192,7 +251,8 @@ export default async function StageDetailPage({ params }: Props) {
 			</section>
 
 			{/* Review Agents */}
-			{(stage.reviewAgentDefinitions.length > 0 || stage.reviewAgentsInclude.length > 0) && (
+			{(stage.reviewAgentDefinitions.length > 0 ||
+				stage.reviewAgentsInclude.length > 0) && (
 				<section className="mb-10">
 					<h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-stone-400">
 						Review Agents
@@ -211,7 +271,10 @@ export default async function StageDetailPage({ params }: Props) {
 								</div>
 								<div className="px-6 py-4">
 									<div className="prose prose-sm prose-gray dark:prose-invert max-w-none">
-										<ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug]}>
+										<ReactMarkdown
+											remarkPlugins={[remarkGfm]}
+											rehypePlugins={[rehypeSlug]}
+										>
 											{agent.content}
 										</ReactMarkdown>
 									</div>
@@ -231,8 +294,12 @@ export default async function StageDetailPage({ params }: Props) {
 												href={`/studios/${slug}/stages/${inc.stage}/#agent-${agentName}`}
 												className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm hover:border-teal-300 dark:border-stone-700 dark:hover:border-teal-700"
 											>
-												<span className="font-medium">{titleCase(agentName)}</span>
-												<span className="ml-1 text-stone-400">from {titleCase(inc.stage)}</span>
+												<span className="font-medium">
+													{titleCase(agentName)}
+												</span>
+												<span className="ml-1 text-stone-400">
+													from {titleCase(inc.stage)}
+												</span>
 											</Link>
 										)),
 									)}
@@ -247,7 +314,10 @@ export default async function StageDetailPage({ params }: Props) {
 			{stage.content && (
 				<section className="mb-10">
 					<div className="prose prose-gray dark:prose-invert max-w-none">
-						<ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug]}>
+						<ReactMarkdown
+							remarkPlugins={[remarkGfm]}
+							rehypePlugins={[rehypeSlug]}
+						>
 							{stage.content}
 						</ReactMarkdown>
 					</div>

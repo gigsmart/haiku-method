@@ -15,7 +15,8 @@ export function Tollbooth() {
 				&#x1F6A7; Quality Checkpoint &#x1F6A7;
 			</div>
 			<p className="mb-4 text-xs text-stone-500 dark:text-stone-400">
-				Enforced by <code className="text-amber-500">quality-gate.sh</code> on every Stop — the agent cannot bypass these.
+				Enforced by <code className="text-amber-500">quality-gate.sh</code> on
+				every Stop — the agent cannot bypass these.
 			</p>
 
 			{/* Pass lanes — gate names come from quality_gates: frontmatter, these are illustrative examples */}
@@ -53,12 +54,7 @@ export function Tollbooth() {
 					variant="fail"
 				/>
 				<TollLane icon="&#x274C;" label="build" desc="Errors!" variant="fail" />
-				<TollLane
-					icon="&#x274C;"
-					label="lint"
-					desc="Issues!"
-					variant="fail"
-				/>
+				<TollLane icon="&#x274C;" label="lint" desc="Issues!" variant="fail" />
 			</div>
 
 			<div className="mt-4 flex items-center justify-center gap-3 border-t border-stone-200 pt-5 font-semibold text-rose-500 dark:border-stone-700">
@@ -73,7 +69,12 @@ function TollLane({
 	label,
 	desc,
 	variant,
-}: { icon: string; label: string; desc: string; variant: "pass" | "fail" }) {
+}: {
+	icon: string
+	label: string
+	desc: string
+	variant: "pass" | "fail"
+}) {
 	const styles = {
 		pass: "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800",
 		fail: "bg-rose-50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800",
@@ -126,13 +127,20 @@ function GateCard({
 	title,
 	desc,
 	quote,
-}: { num: number; title: string; desc: string; quote: string }) {
+}: {
+	num: number
+	title: string
+	desc: string
+	quote: string
+}) {
 	return (
 		<div className="rounded-lg border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
 			<h4 className="mb-1.5 text-sm font-bold text-cyan-400">
 				{num}. {title}
 			</h4>
-			<p className="mb-1.5 text-xs text-stone-500 dark:text-stone-400">{desc}</p>
+			<p className="mb-1.5 text-xs text-stone-500 dark:text-stone-400">
+				{desc}
+			</p>
 			<p className="text-xs italic text-stone-400 dark:text-stone-500">
 				&ldquo;{quote}&rdquo;
 			</p>
@@ -162,7 +170,8 @@ export function QualityGateLifecycle() {
 						Phase 1
 					</span>
 					<span className="text-sm font-bold text-violet-600 dark:text-violet-300">
-						Auto-Detected During <code className="font-mono">/haiku:elaborate</code>
+						Auto-Detected During{" "}
+						<code className="font-mono">/haiku:elaborate</code>
 					</span>
 				</div>
 				<p className="mb-3 text-xs text-stone-500 dark:text-stone-400">
@@ -182,10 +191,26 @@ export function QualityGateLifecycle() {
 							gates: "bun test (overrides npm)",
 							variant: "amber",
 						},
-						{ file: "go.mod", gates: "go test ./..., go vet ./...", variant: "cyan" },
-						{ file: "pyproject.toml", gates: "pytest, mypy .", variant: "blue" },
-						{ file: "Cargo.toml", gates: "cargo test, cargo clippy", variant: "orange" },
-						{ file: "Makefile", gates: "make test (if target exists)", variant: "gray" },
+						{
+							file: "go.mod",
+							gates: "go test ./..., go vet ./...",
+							variant: "cyan",
+						},
+						{
+							file: "pyproject.toml",
+							gates: "pytest, mypy .",
+							variant: "blue",
+						},
+						{
+							file: "Cargo.toml",
+							gates: "cargo test, cargo clippy",
+							variant: "orange",
+						},
+						{
+							file: "Makefile",
+							gates: "make test (if target exists)",
+							variant: "gray",
+						},
 					].map((row) => (
 						<div
 							key={row.file}
@@ -203,7 +228,9 @@ export function QualityGateLifecycle() {
 			</div>
 
 			{/* Arrow */}
-			<div className="flex justify-center text-stone-300 dark:text-stone-700 text-xl">↓</div>
+			<div className="flex justify-center text-stone-300 dark:text-stone-700 text-xl">
+				↓
+			</div>
 
 			{/* Phase 2: Written to Frontmatter */}
 			<div className="rounded-xl border border-cyan-200 bg-cyan-50/40 p-5 dark:border-cyan-800 dark:bg-cyan-950/10">
@@ -216,7 +243,10 @@ export function QualityGateLifecycle() {
 					</span>
 				</div>
 				<p className="mb-3 text-xs text-stone-500 dark:text-stone-400">
-					Confirmed gates are saved to <code className="text-amber-500">intent.md</code>. Builders can add unit-specific gates during construction — but never remove existing ones (the ratchet rule).
+					Confirmed gates are saved to{" "}
+					<code className="text-amber-500">intent.md</code>. Builders can add
+					unit-specific gates during construction — but never remove existing
+					ones (the ratchet rule).
 				</p>
 				<div className="grid gap-3 sm:grid-cols-2">
 					<div>
@@ -224,7 +254,7 @@ export function QualityGateLifecycle() {
 							intent.md (intent-level defaults)
 						</div>
 						<pre className="overflow-x-auto rounded-lg bg-stone-900 p-3 text-[0.65rem] leading-relaxed text-green-400">
-{`---
+							{`---
 title: Add auth middleware
 quality_gates:
   - name: tests
@@ -241,7 +271,7 @@ quality_gates:
 							unit-01-auth-middleware.md (unit additions)
 						</div>
 						<pre className="overflow-x-auto rounded-lg bg-stone-900 p-3 text-[0.65rem] leading-relaxed text-green-400">
-{`---
+							{`---
 title: Implement JWT validation
 quality_gates:
   - name: auth-integration
@@ -249,14 +279,17 @@ quality_gates:
 ---`}
 						</pre>
 						<p className="mt-2 text-[0.65rem] text-stone-400 dark:text-stone-500">
-							Intent gates + unit gates are merged additively. All run on every Stop during this unit.
+							Intent gates + unit gates are merged additively. All run on every
+							Stop during this unit.
 						</p>
 					</div>
 				</div>
 			</div>
 
 			{/* Arrow */}
-			<div className="flex justify-center text-stone-300 dark:text-stone-700 text-xl">↓</div>
+			<div className="flex justify-center text-stone-300 dark:text-stone-700 text-xl">
+				↓
+			</div>
 
 			{/* Phase 3: Enforcement */}
 			<div className="rounded-xl border border-rose-200 bg-rose-50/40 p-5 dark:border-rose-800 dark:bg-rose-950/10">
@@ -270,14 +303,21 @@ quality_gates:
 				</div>
 				<p className="mb-3 text-xs text-stone-500 dark:text-stone-400">
 					Whenever a Builder, Implementer, or Refactorer tries to stop,{" "}
-					<code className="text-amber-500">quality-gate.sh</code> fires synchronously.
-					It reads <code className="text-amber-500">quality_gates:</code> from intent
-					and unit frontmatter, runs each command, and blocks the stop if any fail.
+					<code className="text-amber-500">quality-gate.sh</code> fires
+					synchronously. It reads{" "}
+					<code className="text-amber-500">quality_gates:</code> from intent and
+					unit frontmatter, runs each command, and blocks the stop if any fail.
 				</p>
 				<div className="rounded-lg bg-stone-900 p-4 font-mono text-[0.65rem] leading-relaxed">
-					<div className="mb-2 text-stone-500"># Agent tries to stop after a coding session</div>
-					<div className="text-stone-300">quality-gate.sh fires (synchronous Stop hook)</div>
-					<div className="mt-2 text-stone-500">&nbsp;&nbsp;# Reads intent.md + unit frontmatter gates</div>
+					<div className="mb-2 text-stone-500">
+						# Agent tries to stop after a coding session
+					</div>
+					<div className="text-stone-300">
+						quality-gate.sh fires (synchronous Stop hook)
+					</div>
+					<div className="mt-2 text-stone-500">
+						&nbsp;&nbsp;# Reads intent.md + unit frontmatter gates
+					</div>
 					<div className="mt-1">
 						<span className="text-stone-400">&nbsp;&nbsp;Running: </span>
 						<span className="text-amber-400">npm test</span>
@@ -290,9 +330,14 @@ quality_gates:
 					</div>
 					<div className="mt-3 rounded border border-rose-800 bg-rose-950/40 px-3 py-2">
 						<span className="text-rose-400 font-bold">BLOCKED</span>
-						<span className="text-stone-400"> — agent cannot stop. Must fix type errors first.</span>
+						<span className="text-stone-400">
+							{" "}
+							— agent cannot stop. Must fix type errors first.
+						</span>
 					</div>
-					<div className="mt-3 text-stone-500"># After fixing type errors and retrying:</div>
+					<div className="mt-3 text-stone-500">
+						# After fixing type errors and retrying:
+					</div>
 					<div className="mt-1">
 						<span className="text-stone-400">&nbsp;&nbsp;Running: </span>
 						<span className="text-amber-400">npm test</span>
@@ -305,12 +350,16 @@ quality_gates:
 					</div>
 					<div className="mt-3 rounded border border-green-800 bg-green-950/40 px-3 py-2">
 						<span className="text-green-400 font-bold">ALLOWED</span>
-						<span className="text-stone-400"> — all gates pass. Agent stops cleanly.</span>
+						<span className="text-stone-400">
+							{" "}
+							— all gates pass. Agent stops cleanly.
+						</span>
 					</div>
 				</div>
 				<p className="mt-3 text-[0.65rem] text-stone-400 dark:text-stone-500">
-					Planner, Reviewer, and Designer hats skip gate enforcement — they&apos;re not writing code.
-					Only building hats (Builder, Implementer, Refactorer) are enforced.
+					Planner, Reviewer, and Designer hats skip gate enforcement —
+					they&apos;re not writing code. Only building hats (Builder,
+					Implementer, Refactorer) are enforced.
 				</p>
 			</div>
 		</motion.div>

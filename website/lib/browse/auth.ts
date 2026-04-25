@@ -4,7 +4,8 @@
 // Callback URL pattern: /auth/{provider}/callback/
 
 const STORAGE_PREFIX = "haiku-browse:"
-const AUTH_PROXY_URL = process.env.NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL || "https://auth.haikumethod.ai"
+const AUTH_PROXY_URL =
+	process.env.NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL || "https://auth.haikumethod.ai"
 
 export interface AuthConfig {
 	provider: "github" | "gitlab"
@@ -13,8 +14,10 @@ export interface AuthConfig {
 }
 
 // Per-provider OAuth client IDs — set via env vars
-const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_HAIKU_GITHUB_OAUTH_CLIENT_ID || ""
-const GITLAB_CLIENT_ID = process.env.NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID || ""
+const GITHUB_CLIENT_ID =
+	process.env.NEXT_PUBLIC_HAIKU_GITHUB_OAUTH_CLIENT_ID || ""
+const GITLAB_CLIENT_ID =
+	process.env.NEXT_PUBLIC_HAIKU_GITLAB_OAUTH_CLIENT_ID || ""
 
 export function getAuthConfig(host: string): AuthConfig | null {
 	if (host === "github.com") {
@@ -92,9 +95,11 @@ export async function handleOAuthCallback(provider: string): Promise<{
 	error?: string
 }> {
 	const savedState = sessionStorage.getItem(`${STORAGE_PREFIX}oauth-state`)
-	const returnPath = sessionStorage.getItem(`${STORAGE_PREFIX}oauth-return`) || "/browse/"
+	const returnPath =
+		sessionStorage.getItem(`${STORAGE_PREFIX}oauth-return`) || "/browse/"
 	const host = sessionStorage.getItem(`${STORAGE_PREFIX}oauth-host`) || ""
-	const savedProvider = sessionStorage.getItem(`${STORAGE_PREFIX}oauth-provider`) || ""
+	const savedProvider =
+		sessionStorage.getItem(`${STORAGE_PREFIX}oauth-provider`) || ""
 
 	// Clean up session storage
 	sessionStorage.removeItem(`${STORAGE_PREFIX}oauth-state`)
@@ -104,7 +109,12 @@ export async function handleOAuthCallback(provider: string): Promise<{
 
 	// Verify provider matches
 	if (provider !== savedProvider) {
-		return { success: false, host, returnPath, error: `Provider mismatch: expected ${savedProvider}, got ${provider}` }
+		return {
+			success: false,
+			host,
+			returnPath,
+			error: `Provider mismatch: expected ${savedProvider}, got ${provider}`,
+		}
 	}
 
 	// Extract authorization code from query params
@@ -113,12 +123,20 @@ export async function handleOAuthCallback(provider: string): Promise<{
 	const state = urlParams.get("state")
 
 	if (!code) {
-		const error = urlParams.get("error_description") || urlParams.get("error") || "No authorization code"
+		const error =
+			urlParams.get("error_description") ||
+			urlParams.get("error") ||
+			"No authorization code"
 		return { success: false, host, returnPath, error }
 	}
 
 	if (state !== savedState) {
-		return { success: false, host, returnPath, error: "State mismatch — possible CSRF attack" }
+		return {
+			success: false,
+			host,
+			returnPath,
+			error: "State mismatch — possible CSRF attack",
+		}
 	}
 
 	// Exchange the code for a token via the auth proxy
@@ -132,7 +150,12 @@ export async function handleOAuthCallback(provider: string): Promise<{
 
 		if (!res.ok) {
 			const text = await res.text()
-			return { success: false, host, returnPath, error: `Token exchange failed: ${text}` }
+			return {
+				success: false,
+				host,
+				returnPath,
+				error: `Token exchange failed: ${text}`,
+			}
 		}
 
 		const data = await res.json()
@@ -141,12 +164,18 @@ export async function handleOAuthCallback(provider: string): Promise<{
 			return { success: true, host, returnPath }
 		}
 
-		return { success: false, host, returnPath, error: data.error_description || "Unknown error" }
+		return {
+			success: false,
+			host,
+			returnPath,
+			error: data.error_description || "Unknown error",
+		}
 	} catch (e) {
 		const msg = (e as Error).message
-		const hint = msg === "Failed to fetch"
-			? `Token exchange failed: Could not reach the auth proxy at ${AUTH_PROXY_URL}. The service may not be deployed or CORS may be blocking the request.`
-			: `Token exchange failed: ${msg}`
+		const hint =
+			msg === "Failed to fetch"
+				? `Token exchange failed: Could not reach the auth proxy at ${AUTH_PROXY_URL}. The service may not be deployed or CORS may be blocking the request.`
+				: `Token exchange failed: ${msg}`
 		return { success: false, host, returnPath, error: hint }
 	}
 }

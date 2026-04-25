@@ -1,6 +1,5 @@
 "use client"
 
-import { GITHUB_REPO } from "@/lib/constants"
 import {
 	createContext,
 	type ReactNode,
@@ -8,6 +7,7 @@ import {
 	useContext,
 	useState,
 } from "react"
+import { GITHUB_REPO } from "@/lib/constants"
 
 /**
  * Strip YAML frontmatter from markdown content

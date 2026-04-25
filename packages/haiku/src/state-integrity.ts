@@ -13,7 +13,7 @@
 // agent has no reason to know about or replicate correctly.
 
 import { createHash } from "node:crypto"
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { INTENT_FIELDS, STAGE_FIELDS, UNIT_FIELDS } from "./fsm-fields.js"
 import { getCapabilities } from "./harness.js"

@@ -62,7 +62,10 @@ export function getBlogPostBySlug(slug: string): BlogPost | null {
 	const tags = Array.isArray(tagsRaw)
 		? tagsRaw.map((t) => String(t))
 		: typeof tagsRaw === "string"
-			? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean)
+			? tagsRaw
+					.split(",")
+					.map((t) => t.trim())
+					.filter(Boolean)
 			: undefined
 
 	const post: BlogPost = {

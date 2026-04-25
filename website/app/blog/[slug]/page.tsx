@@ -1,15 +1,15 @@
-import { ArticleJsonLd, BreadcrumbJsonLd } from "@/app/components"
-import { mdxComponents } from "@/app/components/mdx-components"
-import { getAllBlogPosts, getBlogPostBySlug } from "@/lib/blog"
-import { SITE_URL } from "@/lib/constants"
 import type { Metadata } from "next"
-import { compileMDX } from "next-mdx-remote/rsc"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { compileMDX } from "next-mdx-remote/rsc"
 import ReactMarkdown from "react-markdown"
 import rehypeHighlight from "rehype-highlight"
 import rehypeSlug from "rehype-slug"
 import remarkGfm from "remark-gfm"
+import { ArticleJsonLd, BreadcrumbJsonLd } from "@/app/components"
+import { mdxComponents } from "@/app/components/mdx-components"
+import { getAllBlogPosts, getBlogPostBySlug } from "@/lib/blog"
+import { SITE_URL } from "@/lib/constants"
 
 interface Props {
 	params: Promise<{ slug: string }>

@@ -1,0 +1,17 @@
+related:
+  - product-strategy
+  - marketing
+  - finance
+turns:
+  - role: user
+    text: "Board wants a platform-vs-point-solution answer on our AI roadmap."
+  - role: agent
+    text: "What's the current revenue split between the point products?"
+  - role: user
+    text: "70% on two flagship products, 30% on six smaller ones."
+  - role: agent
+    text: "Timeline — board decision this quarter, or longer?"
+  - role: user
+    text: "Next board meeting. 6 weeks out."
+  - role: agent
+    text: "Got it — I'll frame platform vs. portfolio tradeoffs against that revenue concentration."

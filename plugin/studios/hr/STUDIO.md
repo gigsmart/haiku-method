@@ -3,6 +3,7 @@ name: hr
 description: Human resources lifecycle for hiring, onboarding, and talent management
 stages: [requisition, sourcing, screening, interview, offer]
 category: back-office
+default_model: sonnet
 ---
 
 # HR Studio

@@ -1,65 +1,722 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "legal",
-  studio: "legal",
-  stages: ["intake", "research", "draft", "review", "execute"],
-  completionText: "All 5 stages passed. saas-enterprise-license-agreement delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1200, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Draft a SaaS enterprise license agreement for our platform"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: saas-enterprise-license-agreement..."}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: legal. 5 stages: intake → research → draft → review → execute"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"intake"}, {"type":"msg","role":"agent","label":"agent","text":"Entering intake stage. Hat: paralegal.\nWhat type of enterprise customer is this for? And which jurisdictions?"}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/intake/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Fortune 500 financial services company. US-based but they operate in EU too. Need GDPR compliance baked in. Delaware governing law."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Got it. Multi-jurisdiction with financial services regulatory overlay. Let me map the requirements."}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/intake/units/unit-01-requirements.md"}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/intake/units/unit-02-risk-assessment.md"}, {"type":"card","stage":"intake","name":"requirements","status":"in-progress"}, {"type":"card","stage":"intake","name":"risk-assessment","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: risk-assessor. Risk assessment complete. Key risks identified:\n  High: Data processing obligations under GDPR Art. 28\n  High: Financial services data residency requirements\n  Medium: Liability caps for regulated industry\n  Medium: SOC 2 / ISO 27001 compliance attestation requirements\n  Low: Force majeure scope"}, {"type":"updateCard","stage":"intake","name":"requirements","status":"completed"}, {"type":"updateCard","stage":"intake","name":"risk-assessment","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Legal brief complete. Parties identified, governing law mapped (Delaware + GDPR overlay), all 5 risks categorized with mitigation strategies."}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/knowledge/LEGAL-BRIEF.md"}, {"type":"updateCard","stage":"intake","name":"risk-assessment","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intake complete. Review gate: auto. All criteria met — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"research"}, {"type":"msg","role":"agent","label":"agent","text":"Entering research stage. Hat: researcher.\nLoading intake outputs..."}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/research/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → intake/legal-brief (knowledge/LEGAL-BRIEF.md)"}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/research/units/unit-01-precedent-research.md"}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/research/units/unit-02-regulatory-review.md"}, {"type":"card","stage":"research","name":"precedent-research","status":"in-progress"}, {"type":"card","stage":"research","name":"regulatory-review","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"45"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Precedent research found 4 relevant cases:\n  1. SaaS liability cap precedent (Delaware Chancery 2024)\n  2. GDPR processor obligations enforcement (EU CJEU 2025)\n  3. Financial data residency ruling (NYDFS guidance 2025)\n  4. Force majeure in cloud services (9th Circuit 2024)\nEach analyzed for applicability to our matter."}, {"type":"updateCard","stage":"research","name":"precedent-research","status":"completed"}, {"type":"updateCard","stage":"research","name":"regulatory-review","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: analyst. Regulatory landscape mapped:\n  • GDPR Articles 28, 32, 33 (processor obligations)\n  • NYDFS 23 NYCRR 500 (cybersecurity requirements)\n  • SOX implications for financial data handling\nAll requirements mapped to specific contract provisions needed."}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/knowledge/RESEARCH-MEMO.md"}, {"type":"updateCard","stage":"research","name":"regulatory-review","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Research complete. Review gate: auto. Sources verified — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"draft"}, {"type":"msg","role":"agent","label":"agent","text":"Entering draft stage. Hat: drafter.\nLoading upstream outputs..."}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/draft/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → research/research-memo (knowledge/RESEARCH-MEMO.md), intake/legal-brief (knowledge/LEGAL-BRIEF.md)"}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/draft/units/unit-01-contract-draft.md"}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/draft/units/unit-02-dpa-annex.md"}, {"type":"card","stage":"draft","name":"contract-draft","status":"in-progress"}, {"type":"card","stage":"draft","name":"dpa-annex","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"60"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Initial draft complete. Key terms for your review:\n  • Liability cap: 12 months of fees (standard for enterprise SaaS)\n  • SLA: 99.9% uptime with service credits\n  • Data processing: Full GDPR DPA as Annex B\n  • Indemnification: Mutual with carve-outs for IP and data breach\n  • Term: 3 years with auto-renewal\n\nAnything you want to adjust?"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"Liability cap should be 24 months for data breaches specifically. Keep 12 months for everything else. Also add a data residency clause — US and EU only, no third-country transfers without consent."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Updated. Tiered liability cap: 24 months for data breach, 12 months general. Data residency clause added with explicit third-country transfer prohibition. Each protective clause maps to an identified risk from intake."}, {"type":"updateCard","stage":"draft","name":"contract-draft","status":"completed"}, {"type":"updateCard","stage":"draft","name":"dpa-annex","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: editor. DPA annex complete with GDPR Article 28 standard clauses, sub-processor list, and data breach notification within 48 hours. All defined terms consistent throughout. Cross-references verified."}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/draft/artifacts/enterprise-license-agreement-v1.md"}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/draft/artifacts/dpa-annex-b.md"}, {"type":"updateCard","stage":"draft","name":"dpa-annex","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Draft stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Draft looks solid. Send it to compliance."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to review stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"review"}, {"type":"msg","role":"agent","label":"agent","text":"Entering review stage. Hat: reviewer.\nLoading draft and research..."}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/review/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → draft/draft-document (stages/draft/artifacts/), research/research-memo (knowledge/RESEARCH-MEMO.md), intake/legal-brief (knowledge/LEGAL-BRIEF.md)"}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/review/units/unit-01-legal-review.md"}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/review/units/unit-02-compliance-check.md"}, {"type":"card","stage":"review","name":"legal-review","status":"in-progress"}, {"type":"card","stage":"review","name":"compliance-check","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"50"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: compliance-officer. Review findings:\n  Critical: None\n  Important: 2 items\n    1. Sub-processor notification period should be 30 days (currently 14)\n    2. Audit rights clause needs annual frequency cap\n  Advisory: 1 item\n    1. Consider adding AI-specific data processing terms\n\nCompliance check: GDPR mapped ✓, NYDFS mapped ✓, SOX provisions ✓"}, {"type":"updateCard","stage":"review","name":"legal-review","status":"completed"}, {"type":"updateCard","stage":"review","name":"compliance-check","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Both important items remediated in draft. AI data processing addendum included as advisory enhancement. Residual risk: low across all categories."}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/knowledge/REVIEW-FINDINGS.md"}, {"type":"updateCard","stage":"review","name":"compliance-check","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Review stage complete. Review gate: external."}, {"type":"msg","role":"agent","label":"agent","text":"Sharing review findings for General Counsel approval..."}] },
-    { delay: 1000, actions: [{"type":"showReview","title":"Review","intent":"saas-enterprise-license-agreement","criteria":["All critical issues resolved (none found)","Important findings remediated in draft","GDPR compliance verified across all provisions","NYDFS cybersecurity requirements addressed","Residual risk documented and accepted"],"gateType":"external"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2400, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"General Counsel approved. Advancing to execution."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"execute"}, {"type":"msg","role":"agent","label":"agent","text":"Entering execute stage. Hat: closer.\nLoading review findings and final draft..."}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/execute/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → review/review-findings (knowledge/REVIEW-FINDINGS.md), draft/draft-document (stages/draft/artifacts/)"}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/execute/units/unit-01-finalization.md"}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/execute/units/unit-02-signature-coordination.md"}, {"type":"card","stage":"execute","name":"finalization","status":"in-progress"}, {"type":"card","stage":"execute","name":"signatures","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Final document incorporates all review findings. Change log documents each modification from v1 to final. All conditions precedent satisfied."}, {"type":"updateCard","stage":"execute","name":"finalization","status":"completed"}, {"type":"updateCard","stage":"execute","name":"signatures","status":"in-progress"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"agent","label":"agent","text":"Hat: administrator. Signature coordination:\n  1. Our CEO (internal) — DocuSign envelope prepared\n  2. Their General Counsel (counterparty) — awaiting signature\n\nThis is an await gate — pausing for external signatures."}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Execute stage: await gate active. Waiting for counterparty signature..."}] },
-    { delay: 2000, actions: [{"type":"msg","role":"system","label":"system","text":"Signature received from counterparty. Both parties have executed."}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Document fully executed. Filed with complete audit trail including all draft versions and review comments."}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/execute/artifacts/executed-agreement-final.pdf"}, {"type":"file","path":".haiku/intents/saas-enterprise-license-agreement/stages/execute/artifacts/dpa-annex-b-executed.pdf"}, {"type":"updateCard","stage":"execute","name":"signatures","status":"completed"}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for saas-enterprise-license-agreement.\n\nDelivered:\n  • Legal brief with multi-jurisdiction risk assessment (GDPR + NYDFS + SOX)\n  • Research memo with 4 relevant precedents and regulatory mapping\n  • Enterprise license agreement with tiered liability caps and data residency clause\n  • GDPR DPA annex with sub-processor controls and 48hr breach notification\n  • Compliance review with all findings remediated\n  • Fully executed agreement with audit trail\n\nIntent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "legal",
+	studio: "legal",
+	stages: ["intake", "research", "draft", "review", "execute"],
+	completionText:
+		"All 5 stages passed. saas-enterprise-license-agreement delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1200, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Draft a SaaS enterprise license agreement for our platform",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: saas-enterprise-license-agreement...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: legal. 5 stages: intake → research → draft → review → execute",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "intake" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering intake stage. Hat: paralegal.\nWhat type of enterprise customer is this for? And which jurisdictions?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/intake/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Fortune 500 financial services company. US-based but they operate in EU too. Need GDPR compliance baked in. Delaware governing law.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Got it. Multi-jurisdiction with financial services regulatory overlay. Let me map the requirements.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/intake/units/unit-01-requirements.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/intake/units/unit-02-risk-assessment.md",
+				},
+				{
+					type: "card",
+					stage: "intake",
+					name: "requirements",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "intake", name: "risk-assessment", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: risk-assessor. Risk assessment complete. Key risks identified:\n  High: Data processing obligations under GDPR Art. 28\n  High: Financial services data residency requirements\n  Medium: Liability caps for regulated industry\n  Medium: SOC 2 / ISO 27001 compliance attestation requirements\n  Low: Force majeure scope",
+				},
+				{
+					type: "updateCard",
+					stage: "intake",
+					name: "requirements",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "intake",
+					name: "risk-assessment",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Legal brief complete. Parties identified, governing law mapped (Delaware + GDPR overlay), all 5 risks categorized with mitigation strategies.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/knowledge/LEGAL-BRIEF.md",
+				},
+				{
+					type: "updateCard",
+					stage: "intake",
+					name: "risk-assessment",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intake complete. Review gate: auto. All criteria met — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "research" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering research stage. Hat: researcher.\nLoading intake outputs...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/research/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → intake/legal-brief (knowledge/LEGAL-BRIEF.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/research/units/unit-01-precedent-research.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/research/units/unit-02-regulatory-review.md",
+				},
+				{
+					type: "card",
+					stage: "research",
+					name: "precedent-research",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "research",
+					name: "regulatory-review",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "45" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Precedent research found 4 relevant cases:\n  1. SaaS liability cap precedent (Delaware Chancery 2024)\n  2. GDPR processor obligations enforcement (EU CJEU 2025)\n  3. Financial data residency ruling (NYDFS guidance 2025)\n  4. Force majeure in cloud services (9th Circuit 2024)\nEach analyzed for applicability to our matter.",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "precedent-research",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "regulatory-review",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: analyst. Regulatory landscape mapped:\n  • GDPR Articles 28, 32, 33 (processor obligations)\n  • NYDFS 23 NYCRR 500 (cybersecurity requirements)\n  • SOX implications for financial data handling\nAll requirements mapped to specific contract provisions needed.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/knowledge/RESEARCH-MEMO.md",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "regulatory-review",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Research complete. Review gate: auto. Sources verified — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "draft" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering draft stage. Hat: drafter.\nLoading upstream outputs...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/draft/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → research/research-memo (knowledge/RESEARCH-MEMO.md), intake/legal-brief (knowledge/LEGAL-BRIEF.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/draft/units/unit-01-contract-draft.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/draft/units/unit-02-dpa-annex.md",
+				},
+				{
+					type: "card",
+					stage: "draft",
+					name: "contract-draft",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "draft", name: "dpa-annex", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "60" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Initial draft complete. Key terms for your review:\n  • Liability cap: 12 months of fees (standard for enterprise SaaS)\n  • SLA: 99.9% uptime with service credits\n  • Data processing: Full GDPR DPA as Annex B\n  • Indemnification: Mutual with carve-outs for IP and data breach\n  • Term: 3 years with auto-renewal\n\nAnything you want to adjust?",
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Liability cap should be 24 months for data breaches specifically. Keep 12 months for everything else. Also add a data residency clause — US and EU only, no third-country transfers without consent.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Updated. Tiered liability cap: 24 months for data breach, 12 months general. Data residency clause added with explicit third-country transfer prohibition. Each protective clause maps to an identified risk from intake.",
+				},
+				{
+					type: "updateCard",
+					stage: "draft",
+					name: "contract-draft",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "draft",
+					name: "dpa-annex",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: editor. DPA annex complete with GDPR Article 28 standard clauses, sub-processor list, and data breach notification within 48 hours. All defined terms consistent throughout. Cross-references verified.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/draft/artifacts/enterprise-license-agreement-v1.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/draft/artifacts/dpa-annex-b.md",
+				},
+				{
+					type: "updateCard",
+					stage: "draft",
+					name: "dpa-annex",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Draft stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Draft looks solid. Send it to compliance.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to review stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "review" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering review stage. Hat: reviewer.\nLoading draft and research...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/review/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → draft/draft-document (stages/draft/artifacts/), research/research-memo (knowledge/RESEARCH-MEMO.md), intake/legal-brief (knowledge/LEGAL-BRIEF.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/review/units/unit-01-legal-review.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/review/units/unit-02-compliance-check.md",
+				},
+				{
+					type: "card",
+					stage: "review",
+					name: "legal-review",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "review", name: "compliance-check", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "50" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: compliance-officer. Review findings:\n  Critical: None\n  Important: 2 items\n    1. Sub-processor notification period should be 30 days (currently 14)\n    2. Audit rights clause needs annual frequency cap\n  Advisory: 1 item\n    1. Consider adding AI-specific data processing terms\n\nCompliance check: GDPR mapped ✓, NYDFS mapped ✓, SOX provisions ✓",
+				},
+				{
+					type: "updateCard",
+					stage: "review",
+					name: "legal-review",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "review",
+					name: "compliance-check",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Both important items remediated in draft. AI data processing addendum included as advisory enhancement. Residual risk: low across all categories.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/knowledge/REVIEW-FINDINGS.md",
+				},
+				{
+					type: "updateCard",
+					stage: "review",
+					name: "compliance-check",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Review stage complete. Review gate: external.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Sharing review findings for General Counsel approval...",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "showReview",
+					title: "Review",
+					intent: "saas-enterprise-license-agreement",
+					criteria: [
+						"All critical issues resolved (none found)",
+						"Important findings remediated in draft",
+						"GDPR compliance verified across all provisions",
+						"NYDFS cybersecurity requirements addressed",
+						"Residual risk documented and accepted",
+					],
+					gateType: "external",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2400, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "General Counsel approved. Advancing to execution.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "execute" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering execute stage. Hat: closer.\nLoading review findings and final draft...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/execute/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → review/review-findings (knowledge/REVIEW-FINDINGS.md), draft/draft-document (stages/draft/artifacts/)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/execute/units/unit-01-finalization.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/execute/units/unit-02-signature-coordination.md",
+				},
+				{
+					type: "card",
+					stage: "execute",
+					name: "finalization",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "execute", name: "signatures", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Final document incorporates all review findings. Change log documents each modification from v1 to final. All conditions precedent satisfied.",
+				},
+				{
+					type: "updateCard",
+					stage: "execute",
+					name: "finalization",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "execute",
+					name: "signatures",
+					status: "in-progress",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: administrator. Signature coordination:\n  1. Our CEO (internal) — DocuSign envelope prepared\n  2. Their General Counsel (counterparty) — awaiting signature\n\nThis is an await gate — pausing for external signatures.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Execute stage: await gate active. Waiting for counterparty signature...",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Signature received from counterparty. Both parties have executed.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Document fully executed. Filed with complete audit trail including all draft versions and review comments.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/execute/artifacts/executed-agreement-final.pdf",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/saas-enterprise-license-agreement/stages/execute/artifacts/dpa-annex-b-executed.pdf",
+				},
+				{
+					type: "updateCard",
+					stage: "execute",
+					name: "signatures",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for saas-enterprise-license-agreement.\n\nDelivered:\n  • Legal brief with multi-jurisdiction risk assessment (GDPR + NYDFS + SOX)\n  • Research memo with 4 relevant precedents and regulatory mapping\n  • Enterprise license agreement with tiered liability caps and data residency clause\n  • GDPR DPA annex with sub-processor controls and 48hr breach notification\n  • Compliance review with all findings remediated\n  • Fully executed agreement with audit trail\n\nIntent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

@@ -1,80 +1,925 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "marketing",
-  studio: "marketing",
-  stages: ["research", "strategy", "content", "launch", "measure"],
-  completionText: "All 5 stages passed. q3-product-launch-campaign delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1000, actions: [{"type":"typing"}] },
-    { delay: 800, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Q3 product launch campaign for our new analytics dashboard feature"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: q3-product-launch-campaign..."}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: marketing. 5 stages: research → strategy → content → launch → measure"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"research"}, {"type":"msg","role":"agent","label":"agent","text":"Entering research stage. Hat: market-researcher.\nWhat’s the target audience for the analytics dashboard?"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/research/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Product managers and data analysts at mid-market SaaS companies. 200-2000 employees. They’re currently using a mix of Looker, Amplitude, and spreadsheets."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Good — fragmented tooling is a strong pain point to exploit. Decomposing research..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/research/units/unit-01-audience-segments.md"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/research/units/unit-02-competitive-analysis.md"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/research/units/unit-03-positioning.md"}, {"type":"card","stage":"research","name":"audience-segments","status":"in-progress"}, {"type":"card","stage":"research","name":"competitive-analysis","status":""}, {"type":"card","stage":"research","name":"positioning","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: audience-analyst. Three audience segments defined:\n  1. Data-Driven PMs: want self-serve insights, hate waiting on analyst requests\n  2. Analytics Engineers: want SQL-native workflows, custom metric definitions\n  3. Exec Stakeholders: want automated reports, trend alerts\n\nPrimary segment: Data-Driven PMs (largest, highest intent)."}, {"type":"updateCard","stage":"research","name":"audience-segments","status":"completed"}, {"type":"updateCard","stage":"research","name":"competitive-analysis","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Competitive landscape:\n  • Looker: powerful but expensive, steep learning curve\n  • Amplitude: product analytics focused, weak on custom metrics\n  • Mixpanel: self-serve friendly but limited data modeling\n\nGap: none offer embedded analytics + custom metric builder in one tool."}, {"type":"updateCard","stage":"research","name":"competitive-analysis","status":"completed"}, {"type":"updateCard","stage":"research","name":"positioning","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Positioning opportunity: “The analytics dashboard you don’t need a data team to use.” Underserved angle: self-serve custom metrics without SQL knowledge."}, {"type":"updateCard","stage":"research","name":"positioning","status":"completed"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/knowledge/MARKET-BRIEF.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Research complete. Review gate: auto. All criteria met — advancing."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to strategy stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"strategy"}, {"type":"msg","role":"agent","label":"agent","text":"Entering strategy stage. Hat: strategist.\nLoading market brief..."}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/strategy/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → research/market-brief (knowledge/MARKET-BRIEF.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Building messaging framework and channel strategy from research findings..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/strategy/units/unit-01-messaging-framework.md"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/strategy/units/unit-02-channel-strategy.md"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/strategy/units/unit-03-campaign-goals.md"}, {"type":"card","stage":"strategy","name":"messaging-framework","status":"in-progress"}, {"type":"card","stage":"strategy","name":"channel-strategy","status":""}, {"type":"card","stage":"strategy","name":"campaign-goals","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Messaging framework draft:\n  Primary value prop: “Build custom dashboards in minutes, not sprints”\n  Proof points:\n    1. No-code metric builder (vs. SQL-only competitors)\n    2. Real-time data, not overnight batch refreshes\n    3. Embedded sharing — dashboards live where your team works\n\nTone: confident but approachable. Technical credibility without jargon.\n\nWhat tone adjustments do you want?"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"I like the direction. But make it slightly more provocative — lean into the pain of waiting on data teams. Something like “stop filing Jira tickets for charts.”"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Love it. Updated primary hook: “Stop filing Jira tickets for charts. Build your own dashboard in 5 minutes.”\nHat: brand-reviewer. Tone check: provocative but professional. Brand-aligned."}, {"type":"updateCard","stage":"strategy","name":"messaging-framework","status":"completed"}, {"type":"updateCard","stage":"strategy","name":"channel-strategy","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Channel strategy:\n  • LinkedIn (PMs + analysts): thought leadership + product demos\n  • Twitter/X: launch thread + customer testimonial clips\n  • Email: segmented nurture (3-email sequence per persona)\n  • Product Hunt: launch day listing\n  • Blog: deep-dive feature walkthrough + comparison posts"}, {"type":"updateCard","stage":"strategy","name":"channel-strategy","status":"completed"}, {"type":"updateCard","stage":"strategy","name":"campaign-goals","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"15"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Campaign goals (SMART):\n  • 1,000 landing page signups in first 2 weeks\n  • 150 Product Hunt upvotes on launch day\n  • 25% email open rate on nurture sequence\n  • 50 qualified demo requests from LinkedIn"}, {"type":"updateCard","stage":"strategy","name":"campaign-goals","status":"completed"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/knowledge/MESSAGING-FRAMEWORK.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Strategy stage complete. Review gate: ask."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Strategy","intent":"","criteria":["Messaging framework with value prop hierarchy","Provocative tone aligned with brand","Channel strategy maps segments to channels","SMART goals: signups, upvotes, open rate, demos","Brand reviewer validated positioning"],"gateType":"ask gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2200, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. Let’s create the content."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to content stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"content"}, {"type":"msg","role":"agent","label":"agent","text":"Entering content stage. Hat: content-creator.\nLoading messaging framework..."}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/content/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → strategy/messaging-framework (knowledge/MESSAGING-FRAMEWORK.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Creating campaign assets for all channels..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/content/units/unit-01-landing-page.md"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/content/units/unit-02-email-sequence.md"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/content/units/unit-03-social-posts.md"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/content/units/unit-04-blog-post.md"}, {"type":"card","stage":"content","name":"landing-page","status":"in-progress"}, {"type":"card","stage":"content","name":"email-sequence","status":""}, {"type":"card","stage":"content","name":"social-posts","status":""}, {"type":"card","stage":"content","name":"blog-post","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Landing page copy ready:\n  Headline: “Stop filing Jira tickets for charts.”\n  Subhead: “Build custom analytics dashboards in minutes. No SQL. No data team. No waiting.”\n  CTA: “Start your free dashboard”\n  Social proof: 3 customer logos + “2,400 dashboards created in beta”\n\nAddresses 2 objections from audience research: complexity and data team dependency."}, {"type":"updateCard","stage":"content","name":"landing-page","status":"completed"}, {"type":"updateCard","stage":"content","name":"email-sequence","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"3-email nurture sequence per segment:\n  PMs: pain → demo video → case study\n  Engineers: architecture deep-dive → API docs → free trial\n  Execs: ROI calculator → automated reports preview → custom demo\n\nHat: copy-editor. All emails refined for clarity and CTA consistency."}, {"type":"updateCard","stage":"content","name":"email-sequence","status":"completed"}, {"type":"updateCard","stage":"content","name":"social-posts","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Social posts ready: 8 LinkedIn posts, 12 tweets, Product Hunt listing copy. Launch thread drafted with 7 tweets."}, {"type":"updateCard","stage":"content","name":"social-posts","status":"completed"}, {"type":"updateCard","stage":"content","name":"blog-post","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Blog post: “Why we built a dashboard builder PMs actually want to use” — 2,200 words with embedded demo GIFs and comparison table."}, {"type":"updateCard","stage":"content","name":"blog-post","status":"completed"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/knowledge/ASSETS.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Content stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"The landing page headline is perfect. Approved."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to launch stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"launch"}, {"type":"msg","role":"agent","label":"agent","text":"Entering launch stage. Hat: campaign-manager.\nLoading content assets..."}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/launch/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → content/assets (knowledge/ASSETS.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Coordinating multi-channel launch sequence..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/launch/units/unit-01-launch-sequence.md"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/launch/units/unit-02-distribution.md"}, {"type":"card","stage":"launch","name":"launch-sequence","status":"in-progress"}, {"type":"card","stage":"launch","name":"distribution","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: channel-coordinator. Launch sequence finalized:\n  T-1 day: Landing page live, tracking verified\n  T-0 morning: Product Hunt listing goes live\n  T-0 +1hr: LinkedIn launch post from company page\n  T-0 +2hr: Twitter launch thread\n  T-0 +4hr: Email blast to segmented lists\n  T+1 day: Blog post published\n  T+3 days: Nurture sequence activated for non-converters"}, {"type":"updateCard","stage":"launch","name":"launch-sequence","status":"completed"}, {"type":"updateCard","stage":"launch","name":"distribution","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"All channels activated. Campaign log:\n  • Landing page: live, UTM tracking confirmed\n  • Product Hunt: listed, first 20 upvotes in 30 minutes\n  • LinkedIn: posted, 1,200 impressions in first hour\n  • Email: sent to 8,400 contacts across 3 segments\n  • Blog: published, indexed by Google\n\nAll tracking is active."}, {"type":"updateCard","stage":"launch","name":"distribution","status":"completed"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/knowledge/CAMPAIGN-LOG.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Launch stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Everything looks live. Let’s measure."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to measure stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"measure"}, {"type":"msg","role":"agent","label":"agent","text":"Entering measure stage. Hat: analyst.\nLoading campaign log..."}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/measure/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → launch/campaign-log (knowledge/CAMPAIGN-LOG.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Analyzing performance against campaign goals..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/measure/units/unit-01-kpi-analysis.md"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/measure/units/unit-02-channel-breakdown.md"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/stages/measure/units/unit-03-recommendations.md"}, {"type":"card","stage":"measure","name":"kpi-analysis","status":"in-progress"}, {"type":"card","stage":"measure","name":"channel-breakdown","status":""}, {"type":"card","stage":"measure","name":"recommendations","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"KPI results (2-week mark):\n  • Landing page signups: 1,340 / 1,000 goal (134%)\n  • Product Hunt upvotes: 187 / 150 goal (125%)\n  • Email open rate: 31% / 25% goal (124%)\n  • LinkedIn demo requests: 38 / 50 goal (76%) ← below target"}, {"type":"updateCard","stage":"measure","name":"kpi-analysis","status":"completed"}, {"type":"updateCard","stage":"measure","name":"channel-breakdown","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Channel breakdown:\n  Top performer: Product Hunt (42% of signups, lowest CAC)\n  Surprise: Engineer segment email had 38% open rate (highest)\n  Underperformer: LinkedIn — high impressions but low conversion to demo requests\n\nLinkedIn issue: posts are getting engagement but CTA is buried. The demo request form requires too many fields."}, {"type":"updateCard","stage":"measure","name":"channel-breakdown","status":"completed"}, {"type":"updateCard","stage":"measure","name":"recommendations","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"15"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: report-writer. Recommendations:\n  1. [High impact] Simplify LinkedIn demo form to 3 fields (projected +40% conversion)\n  2. [Medium] Double down on engineer segment — create technical webinar series\n  3. [Medium] Run Product Hunt “Ship” update to recapture momentum\n  4. [Low] A/B test email subject lines for PM segment (31% open rate has room to grow)"}, {"type":"updateCard","stage":"measure","name":"recommendations","status":"completed"}, {"type":"file","path":".haiku/intents/q3-product-launch-campaign/knowledge/PERFORMANCE-REPORT.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Measure stage complete. Review gate: auto. All criteria met."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for q3-product-launch-campaign.\n\nDelivered:\n  • Research: 3 audience segments, competitive gaps mapped\n  • Strategy: provocative messaging framework, 5-channel plan, SMART goals\n  • Content: landing page, 9 nurture emails, 20 social posts, blog post\n  • Launch: multi-channel activation with tracking verified\n  • Measurement: 3/4 goals exceeded, 4 data-backed recommendations\n\nTop line: 1,340 signups in 2 weeks (34% over goal). Intent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "marketing",
+	studio: "marketing",
+	stages: ["research", "strategy", "content", "launch", "measure"],
+	completionText: "All 5 stages passed. q3-product-launch-campaign delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1000, actions: [{ type: "typing" }] },
+		{
+			delay: 800,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Q3 product launch campaign for our new analytics dashboard feature",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: q3-product-launch-campaign...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: marketing. 5 stages: research → strategy → content → launch → measure",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "research" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering research stage. Hat: market-researcher.\nWhat’s the target audience for the analytics dashboard?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/research/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Product managers and data analysts at mid-market SaaS companies. 200-2000 employees. They’re currently using a mix of Looker, Amplitude, and spreadsheets.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Good — fragmented tooling is a strong pain point to exploit. Decomposing research...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/research/units/unit-01-audience-segments.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/research/units/unit-02-competitive-analysis.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/research/units/unit-03-positioning.md",
+				},
+				{
+					type: "card",
+					stage: "research",
+					name: "audience-segments",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "research",
+					name: "competitive-analysis",
+					status: "",
+				},
+				{ type: "card", stage: "research", name: "positioning", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: audience-analyst. Three audience segments defined:\n  1. Data-Driven PMs: want self-serve insights, hate waiting on analyst requests\n  2. Analytics Engineers: want SQL-native workflows, custom metric definitions\n  3. Exec Stakeholders: want automated reports, trend alerts\n\nPrimary segment: Data-Driven PMs (largest, highest intent).",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "audience-segments",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "competitive-analysis",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Competitive landscape:\n  • Looker: powerful but expensive, steep learning curve\n  • Amplitude: product analytics focused, weak on custom metrics\n  • Mixpanel: self-serve friendly but limited data modeling\n\nGap: none offer embedded analytics + custom metric builder in one tool.",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "competitive-analysis",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "positioning",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Positioning opportunity: “The analytics dashboard you don’t need a data team to use.” Underserved angle: self-serve custom metrics without SQL knowledge.",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "positioning",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/knowledge/MARKET-BRIEF.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Research complete. Review gate: auto. All criteria met — advancing.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to strategy stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "strategy" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering strategy stage. Hat: strategist.\nLoading market brief...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/strategy/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → research/market-brief (knowledge/MARKET-BRIEF.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Building messaging framework and channel strategy from research findings...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/strategy/units/unit-01-messaging-framework.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/strategy/units/unit-02-channel-strategy.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/strategy/units/unit-03-campaign-goals.md",
+				},
+				{
+					type: "card",
+					stage: "strategy",
+					name: "messaging-framework",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "strategy",
+					name: "channel-strategy",
+					status: "",
+				},
+				{ type: "card", stage: "strategy", name: "campaign-goals", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Messaging framework draft:\n  Primary value prop: “Build custom dashboards in minutes, not sprints”\n  Proof points:\n    1. No-code metric builder (vs. SQL-only competitors)\n    2. Real-time data, not overnight batch refreshes\n    3. Embedded sharing — dashboards live where your team works\n\nTone: confident but approachable. Technical credibility without jargon.\n\nWhat tone adjustments do you want?",
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "I like the direction. But make it slightly more provocative — lean into the pain of waiting on data teams. Something like “stop filing Jira tickets for charts.”",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Love it. Updated primary hook: “Stop filing Jira tickets for charts. Build your own dashboard in 5 minutes.”\nHat: brand-reviewer. Tone check: provocative but professional. Brand-aligned.",
+				},
+				{
+					type: "updateCard",
+					stage: "strategy",
+					name: "messaging-framework",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "strategy",
+					name: "channel-strategy",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Channel strategy:\n  • LinkedIn (PMs + analysts): thought leadership + product demos\n  • Twitter/X: launch thread + customer testimonial clips\n  • Email: segmented nurture (3-email sequence per persona)\n  • Product Hunt: launch day listing\n  • Blog: deep-dive feature walkthrough + comparison posts",
+				},
+				{
+					type: "updateCard",
+					stage: "strategy",
+					name: "channel-strategy",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "strategy",
+					name: "campaign-goals",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "15" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Campaign goals (SMART):\n  • 1,000 landing page signups in first 2 weeks\n  • 150 Product Hunt upvotes on launch day\n  • 25% email open rate on nurture sequence\n  • 50 qualified demo requests from LinkedIn",
+				},
+				{
+					type: "updateCard",
+					stage: "strategy",
+					name: "campaign-goals",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/knowledge/MESSAGING-FRAMEWORK.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Strategy stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Strategy",
+					intent: "",
+					criteria: [
+						"Messaging framework with value prop hierarchy",
+						"Provocative tone aligned with brand",
+						"Channel strategy maps segments to channels",
+						"SMART goals: signups, upvotes, open rate, demos",
+						"Brand reviewer validated positioning",
+					],
+					gateType: "ask gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2200, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. Let’s create the content.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to content stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "content" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering content stage. Hat: content-creator.\nLoading messaging framework...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/content/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → strategy/messaging-framework (knowledge/MESSAGING-FRAMEWORK.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating campaign assets for all channels...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/content/units/unit-01-landing-page.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/content/units/unit-02-email-sequence.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/content/units/unit-03-social-posts.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/content/units/unit-04-blog-post.md",
+				},
+				{
+					type: "card",
+					stage: "content",
+					name: "landing-page",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "content", name: "email-sequence", status: "" },
+				{ type: "card", stage: "content", name: "social-posts", status: "" },
+				{ type: "card", stage: "content", name: "blog-post", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Landing page copy ready:\n  Headline: “Stop filing Jira tickets for charts.”\n  Subhead: “Build custom analytics dashboards in minutes. No SQL. No data team. No waiting.”\n  CTA: “Start your free dashboard”\n  Social proof: 3 customer logos + “2,400 dashboards created in beta”\n\nAddresses 2 objections from audience research: complexity and data team dependency.",
+				},
+				{
+					type: "updateCard",
+					stage: "content",
+					name: "landing-page",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "content",
+					name: "email-sequence",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "3-email nurture sequence per segment:\n  PMs: pain → demo video → case study\n  Engineers: architecture deep-dive → API docs → free trial\n  Execs: ROI calculator → automated reports preview → custom demo\n\nHat: copy-editor. All emails refined for clarity and CTA consistency.",
+				},
+				{
+					type: "updateCard",
+					stage: "content",
+					name: "email-sequence",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "content",
+					name: "social-posts",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Social posts ready: 8 LinkedIn posts, 12 tweets, Product Hunt listing copy. Launch thread drafted with 7 tweets.",
+				},
+				{
+					type: "updateCard",
+					stage: "content",
+					name: "social-posts",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "content",
+					name: "blog-post",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Blog post: “Why we built a dashboard builder PMs actually want to use” — 2,200 words with embedded demo GIFs and comparison table.",
+				},
+				{
+					type: "updateCard",
+					stage: "content",
+					name: "blog-post",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/knowledge/ASSETS.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Content stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "The landing page headline is perfect. Approved.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to launch stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "launch" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering launch stage. Hat: campaign-manager.\nLoading content assets...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/launch/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → content/assets (knowledge/ASSETS.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Coordinating multi-channel launch sequence...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/launch/units/unit-01-launch-sequence.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/launch/units/unit-02-distribution.md",
+				},
+				{
+					type: "card",
+					stage: "launch",
+					name: "launch-sequence",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "launch", name: "distribution", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: channel-coordinator. Launch sequence finalized:\n  T-1 day: Landing page live, tracking verified\n  T-0 morning: Product Hunt listing goes live\n  T-0 +1hr: LinkedIn launch post from company page\n  T-0 +2hr: Twitter launch thread\n  T-0 +4hr: Email blast to segmented lists\n  T+1 day: Blog post published\n  T+3 days: Nurture sequence activated for non-converters",
+				},
+				{
+					type: "updateCard",
+					stage: "launch",
+					name: "launch-sequence",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "launch",
+					name: "distribution",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All channels activated. Campaign log:\n  • Landing page: live, UTM tracking confirmed\n  • Product Hunt: listed, first 20 upvotes in 30 minutes\n  • LinkedIn: posted, 1,200 impressions in first hour\n  • Email: sent to 8,400 contacts across 3 segments\n  • Blog: published, indexed by Google\n\nAll tracking is active.",
+				},
+				{
+					type: "updateCard",
+					stage: "launch",
+					name: "distribution",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/knowledge/CAMPAIGN-LOG.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Launch stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Everything looks live. Let’s measure.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to measure stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "measure" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering measure stage. Hat: analyst.\nLoading campaign log...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/measure/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → launch/campaign-log (knowledge/CAMPAIGN-LOG.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Analyzing performance against campaign goals...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/measure/units/unit-01-kpi-analysis.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/measure/units/unit-02-channel-breakdown.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/stages/measure/units/unit-03-recommendations.md",
+				},
+				{
+					type: "card",
+					stage: "measure",
+					name: "kpi-analysis",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "measure",
+					name: "channel-breakdown",
+					status: "",
+				},
+				{ type: "card", stage: "measure", name: "recommendations", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "KPI results (2-week mark):\n  • Landing page signups: 1,340 / 1,000 goal (134%)\n  • Product Hunt upvotes: 187 / 150 goal (125%)\n  • Email open rate: 31% / 25% goal (124%)\n  • LinkedIn demo requests: 38 / 50 goal (76%) ← below target",
+				},
+				{
+					type: "updateCard",
+					stage: "measure",
+					name: "kpi-analysis",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "measure",
+					name: "channel-breakdown",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Channel breakdown:\n  Top performer: Product Hunt (42% of signups, lowest CAC)\n  Surprise: Engineer segment email had 38% open rate (highest)\n  Underperformer: LinkedIn — high impressions but low conversion to demo requests\n\nLinkedIn issue: posts are getting engagement but CTA is buried. The demo request form requires too many fields.",
+				},
+				{
+					type: "updateCard",
+					stage: "measure",
+					name: "channel-breakdown",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "measure",
+					name: "recommendations",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "15" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: report-writer. Recommendations:\n  1. [High impact] Simplify LinkedIn demo form to 3 fields (projected +40% conversion)\n  2. [Medium] Double down on engineer segment — create technical webinar series\n  3. [Medium] Run Product Hunt “Ship” update to recapture momentum\n  4. [Low] A/B test email subject lines for PM segment (31% open rate has room to grow)",
+				},
+				{
+					type: "updateCard",
+					stage: "measure",
+					name: "recommendations",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q3-product-launch-campaign/knowledge/PERFORMANCE-REPORT.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Measure stage complete. Review gate: auto. All criteria met.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for q3-product-launch-campaign.\n\nDelivered:\n  • Research: 3 audience segments, competitive gaps mapped\n  • Strategy: provocative messaging framework, 5-channel plan, SMART goals\n  • Content: landing page, 9 nurture emails, 20 social posts, blog post\n  • Launch: multi-channel activation with tracking verified\n  • Measurement: 3/4 goals exceeded, 4 data-backed recommendations\n\nTop line: 1,340 signups in 2 weeks (34% over goal). Intent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

@@ -1,4 +1,3 @@
-import { getAllDocs, getDocBySlug } from "@/lib/docs"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -6,6 +5,7 @@ import ReactMarkdown from "react-markdown"
 import rehypeHighlight from "rehype-highlight"
 import rehypeSlug from "rehype-slug"
 import remarkGfm from "remark-gfm"
+import { getAllDocs, getDocBySlug } from "@/lib/docs"
 
 interface Props {
 	params: Promise<{ slug: string }>

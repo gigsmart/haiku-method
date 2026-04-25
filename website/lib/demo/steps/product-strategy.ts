@@ -1,60 +1,667 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "product-strategy",
-  studio: "product-strategy",
-  stages: ["discovery", "user-research", "prioritization", "roadmap", "stakeholder-review"],
-  completionText: "All 5 stages passed. 2027-product-roadmap delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Define the 2027 product roadmap"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Creating intent: 2027-product-roadmap..."}, {"type":"file","path":".haiku/intents/2027-product-roadmap/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: product-strategy. 5 stages: discovery → user-research → prioritization → roadmap → stakeholder-review"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"discovery"}, {"type":"msg","role":"agent","label":"agent","text":"Entering discovery stage. Hat: market-explorer.\nWhat market segment are you primarily targeting? Who are the top competitors?"}, {"type":"file","path":".haiku/intents/2027-product-roadmap/stages/discovery/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"B2B SaaS for mid-market. Competitors: Acme Corp, Nexus Inc, and Beacon Systems."}] },
-    { delay: 1000, actions: [{"type":"msg","role":"agent","label":"agent","text":"Hat: competitive-analyst. Analyzing the B2B mid-market SaaS landscape..."}, {"type":"file","path":".haiku/intents/2027-product-roadmap/stages/discovery/units/unit-01-market-landscape.md"}, {"type":"file","path":".haiku/intents/2027-product-roadmap/stages/discovery/units/unit-02-competitive-analysis.md"}, {"type":"card","stage":"discovery","name":"market-landscape","status":"in-progress"}, {"type":"card","stage":"discovery","name":"competitive-analysis","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"45"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Market landscape mapped. Mid-market B2B SaaS growing 18% YoY. Three underserved segments: compliance-heavy verticals, multi-team orgs needing RBAC, international expansion blocked by localization.\n\nCompetitive gap: Acme has enterprise features but poor UX. Nexus owns SMB. Nobody owns \"easy enterprise.\""}, {"type":"updateCard","stage":"discovery","name":"market-landscape","status":"completed"}, {"type":"updateCard","stage":"discovery","name":"competitive-analysis","status":"completed"}, {"type":"file","path":".haiku/intents/2027-product-roadmap/knowledge/MARKET-LANDSCAPE.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Discovery complete. Review gate: auto. All criteria met — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"user-research"}, {"type":"msg","role":"agent","label":"agent","text":"Entering user-research stage. Hat: user-researcher."}, {"type":"file","path":".haiku/intents/2027-product-roadmap/stages/user-research/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → discovery/market-landscape (knowledge/MARKET-LANDSCAPE.md)"}, {"type":"file","path":".haiku/intents/2027-product-roadmap/stages/user-research/units/unit-01-persona-synthesis.md"}, {"type":"file","path":".haiku/intents/2027-product-roadmap/stages/user-research/units/unit-02-jtbd-analysis.md"}, {"type":"card","stage":"user-research","name":"persona-synthesis","status":"in-progress"}, {"type":"card","stage":"user-research","name":"jtbd-analysis","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: insights-synthesizer. Three personas:\n  1. \"Compliance Carol\" — audit logs, SSO, data residency\n  2. \"Ops Oscar\" — role-based access, approval workflows\n  3. \"Growth Gina\" — localization, multi-currency billing\n\nDo these match your customer segments?"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"Yes, but Carol is our biggest pain point. We’re losing deals to Acme on compliance."}] },
-    { delay: 1000, actions: [{"type":"msg","role":"agent","label":"agent","text":"Weighting compliance highest. Carol’s top job: \"Pass SOC 2 audit without switching tools.\" Current workaround: manual CSV exports."}, {"type":"updateCard","stage":"user-research","name":"persona-synthesis","status":"completed"}, {"type":"updateCard","stage":"user-research","name":"jtbd-analysis","status":"completed"}, {"type":"file","path":".haiku/intents/2027-product-roadmap/knowledge/INSIGHTS-REPORT.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"User-research complete. Review gate: ask."}, {"type":"showReview","title":"User Research","intent":"2027-product-roadmap","criteria":["3 distinct personas with documented pain points","Jobs-to-be-done include frequency, workaround, and satisfaction","Compliance needs weighted per lost-deal feedback"]}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 1800, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. The Carol persona is spot on."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"prioritization"}, {"type":"msg","role":"agent","label":"agent","text":"Entering prioritization stage. Hat: prioritizer."}, {"type":"file","path":".haiku/intents/2027-product-roadmap/stages/prioritization/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → user-research/insights-report (knowledge/INSIGHTS-REPORT.md)"}, {"type":"file","path":".haiku/intents/2027-product-roadmap/stages/prioritization/units/unit-01-scoring.md"}, {"type":"file","path":".haiku/intents/2027-product-roadmap/stages/prioritization/units/unit-02-trade-offs.md"}, {"type":"card","stage":"prioritization","name":"scoring","status":"in-progress"}, {"type":"card","stage":"prioritization","name":"trade-offs","status":""}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Scoring on 4 dimensions: revenue impact, competitive differentiation, effort, strategic alignment. How would you weight these?"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Revenue 40%, differentiation 25%, effort 20%, alignment 15%."}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: stakeholder-proxy. Priority matrix:\n  1. Compliance suite — score: 92\n  2. Role-based access controls — score: 78\n  3. Approval workflows — score: 71\n  4. Localization framework — score: 65\n  5. Multi-currency billing — score: 58\n\nDeprioritized: mobile app (34), AI features (41)."}, {"type":"updateCard","stage":"prioritization","name":"scoring","status":"completed"}, {"type":"updateCard","stage":"prioritization","name":"trade-offs","status":"completed"}, {"type":"file","path":".haiku/intents/2027-product-roadmap/knowledge/PRIORITY-MATRIX.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Prioritization complete. Review gate: ask."}, {"type":"showReview","title":"Prioritization","intent":"2027-product-roadmap","criteria":["Opportunities scored on 4 dimensions with explicit weighting","Top 5 include impact estimates and confidence levels","Trade-off analysis documents what is deprioritized and why"]}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 1800, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. The AI deprioritization will be controversial but it’s right."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"roadmap"}, {"type":"msg","role":"agent","label":"agent","text":"Entering roadmap stage. Hat: roadmap-architect."}, {"type":"file","path":".haiku/intents/2027-product-roadmap/stages/roadmap/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → prioritization/priority-matrix (knowledge/PRIORITY-MATRIX.md)"}, {"type":"card","stage":"roadmap","name":"sequencing","status":"in-progress"}, {"type":"card","stage":"roadmap","name":"milestones","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: capacity-planner. 3 phases:\n  Phase 1: Compliance suite (SSO + audit logs + data residency)\n  Phase 2: RBAC + approval workflows (depends on Phase 1 auth primitives)\n  Phase 3: Localization + multi-currency (independent)\n\nBottleneck: compliance requires a dedicated security engineer hire."}, {"type":"updateCard","stage":"roadmap","name":"sequencing","status":"completed"}, {"type":"updateCard","stage":"roadmap","name":"milestones","status":"completed"}, {"type":"file","path":".haiku/intents/2027-product-roadmap/knowledge/ROADMAP-DOC.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Roadmap complete. Review gate: ask."}, {"type":"showReview","title":"Roadmap","intent":"2027-product-roadmap","criteria":["Initiatives sequenced with explicit dependency chains","Milestones have measurable success criteria","Capacity plan identifies resource bottlenecks"]}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 1800, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. Good catch on the security engineer hire."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"stakeholder-review"}, {"type":"msg","role":"agent","label":"agent","text":"Entering stakeholder-review stage. Hat: presenter."}, {"type":"file","path":".haiku/intents/2027-product-roadmap/stages/stakeholder-review/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → roadmap/roadmap-doc (knowledge/ROADMAP-DOC.md)"}, {"type":"card","stage":"stakeholder-review","name":"presentation","status":"in-progress"}, {"type":"card","stage":"stakeholder-review","name":"alignment","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: feedback-synthesizer. Presentation deck and alignment document ready. Decision records for: Phase 1 scope, AI deprioritization, security engineer timeline."}, {"type":"updateCard","stage":"stakeholder-review","name":"presentation","status":"completed"}, {"type":"updateCard","stage":"stakeholder-review","name":"alignment","status":"completed"}, {"type":"file","path":".haiku/intents/2027-product-roadmap/knowledge/ALIGNMENT-DOC.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Stakeholder-review complete. Review gate: external."}, {"type":"msg","role":"agent","label":"agent","text":"Sharing browse URL for external stakeholder review..."}] },
-    { delay: 1000, actions: [{"type":"showReview","title":"Stakeholder Review","intent":"2027-product-roadmap","criteria":["Presentation includes executive summary and strategic rationale","Alignment document records go/no-go decisions with decision-makers","Roadmap adjustments from feedback reflected back"],"gateType":"external gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2000, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"External stakeholder review approved via browse page."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for 2027-product-roadmap.\n\nDelivered:\n  • Market landscape with 3 underserved segments and competitive gap analysis\n  • User research with 3 personas, compliance weighted highest per lost-deal data\n  • Priority matrix: compliance #1 (score 92), AI/mobile deprioritized\n  • 3-phase roadmap with dependency chains and hiring dependency flagged\n  • Stakeholder presentation and alignment document with decision records\n\nIntent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "product-strategy",
+	studio: "product-strategy",
+	stages: [
+		"discovery",
+		"user-research",
+		"prioritization",
+		"roadmap",
+		"stakeholder-review",
+	],
+	completionText: "All 5 stages passed. 2027-product-roadmap delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Define the 2027 product roadmap",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: 2027-product-roadmap...",
+				},
+				{ type: "file", path: ".haiku/intents/2027-product-roadmap/intent.md" },
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: product-strategy. 5 stages: discovery → user-research → prioritization → roadmap → stakeholder-review",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "discovery" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering discovery stage. Hat: market-explorer.\nWhat market segment are you primarily targeting? Who are the top competitors?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/stages/discovery/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "B2B SaaS for mid-market. Competitors: Acme Corp, Nexus Inc, and Beacon Systems.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: competitive-analyst. Analyzing the B2B mid-market SaaS landscape...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/stages/discovery/units/unit-01-market-landscape.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/stages/discovery/units/unit-02-competitive-analysis.md",
+				},
+				{
+					type: "card",
+					stage: "discovery",
+					name: "market-landscape",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "discovery",
+					name: "competitive-analysis",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "45" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: 'Market landscape mapped. Mid-market B2B SaaS growing 18% YoY. Three underserved segments: compliance-heavy verticals, multi-team orgs needing RBAC, international expansion blocked by localization.\n\nCompetitive gap: Acme has enterprise features but poor UX. Nexus owns SMB. Nobody owns "easy enterprise."',
+				},
+				{
+					type: "updateCard",
+					stage: "discovery",
+					name: "market-landscape",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "discovery",
+					name: "competitive-analysis",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/knowledge/MARKET-LANDSCAPE.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Discovery complete. Review gate: auto. All criteria met — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "user-research" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering user-research stage. Hat: user-researcher.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/stages/user-research/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → discovery/market-landscape (knowledge/MARKET-LANDSCAPE.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/stages/user-research/units/unit-01-persona-synthesis.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/stages/user-research/units/unit-02-jtbd-analysis.md",
+				},
+				{
+					type: "card",
+					stage: "user-research",
+					name: "persona-synthesis",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "user-research",
+					name: "jtbd-analysis",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: 'Hat: insights-synthesizer. Three personas:\n  1. "Compliance Carol" — audit logs, SSO, data residency\n  2. "Ops Oscar" — role-based access, approval workflows\n  3. "Growth Gina" — localization, multi-currency billing\n\nDo these match your customer segments?',
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Yes, but Carol is our biggest pain point. We’re losing deals to Acme on compliance.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: 'Weighting compliance highest. Carol’s top job: "Pass SOC 2 audit without switching tools." Current workaround: manual CSV exports.',
+				},
+				{
+					type: "updateCard",
+					stage: "user-research",
+					name: "persona-synthesis",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "user-research",
+					name: "jtbd-analysis",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/knowledge/INSIGHTS-REPORT.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "User-research complete. Review gate: ask.",
+				},
+				{
+					type: "showReview",
+					title: "User Research",
+					intent: "2027-product-roadmap",
+					criteria: [
+						"3 distinct personas with documented pain points",
+						"Jobs-to-be-done include frequency, workaround, and satisfaction",
+						"Compliance needs weighted per lost-deal feedback",
+					],
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 1800, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. The Carol persona is spot on.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "prioritization" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering prioritization stage. Hat: prioritizer.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/stages/prioritization/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → user-research/insights-report (knowledge/INSIGHTS-REPORT.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/stages/prioritization/units/unit-01-scoring.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/stages/prioritization/units/unit-02-trade-offs.md",
+				},
+				{
+					type: "card",
+					stage: "prioritization",
+					name: "scoring",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "prioritization",
+					name: "trade-offs",
+					status: "",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Scoring on 4 dimensions: revenue impact, competitive differentiation, effort, strategic alignment. How would you weight these?",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Revenue 40%, differentiation 25%, effort 20%, alignment 15%.",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: stakeholder-proxy. Priority matrix:\n  1. Compliance suite — score: 92\n  2. Role-based access controls — score: 78\n  3. Approval workflows — score: 71\n  4. Localization framework — score: 65\n  5. Multi-currency billing — score: 58\n\nDeprioritized: mobile app (34), AI features (41).",
+				},
+				{
+					type: "updateCard",
+					stage: "prioritization",
+					name: "scoring",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "prioritization",
+					name: "trade-offs",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/knowledge/PRIORITY-MATRIX.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Prioritization complete. Review gate: ask.",
+				},
+				{
+					type: "showReview",
+					title: "Prioritization",
+					intent: "2027-product-roadmap",
+					criteria: [
+						"Opportunities scored on 4 dimensions with explicit weighting",
+						"Top 5 include impact estimates and confidence levels",
+						"Trade-off analysis documents what is deprioritized and why",
+					],
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 1800, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. The AI deprioritization will be controversial but it’s right.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "roadmap" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering roadmap stage. Hat: roadmap-architect.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/stages/roadmap/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → prioritization/priority-matrix (knowledge/PRIORITY-MATRIX.md)",
+				},
+				{
+					type: "card",
+					stage: "roadmap",
+					name: "sequencing",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "roadmap", name: "milestones", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: capacity-planner. 3 phases:\n  Phase 1: Compliance suite (SSO + audit logs + data residency)\n  Phase 2: RBAC + approval workflows (depends on Phase 1 auth primitives)\n  Phase 3: Localization + multi-currency (independent)\n\nBottleneck: compliance requires a dedicated security engineer hire.",
+				},
+				{
+					type: "updateCard",
+					stage: "roadmap",
+					name: "sequencing",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "roadmap",
+					name: "milestones",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/knowledge/ROADMAP-DOC.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Roadmap complete. Review gate: ask.",
+				},
+				{
+					type: "showReview",
+					title: "Roadmap",
+					intent: "2027-product-roadmap",
+					criteria: [
+						"Initiatives sequenced with explicit dependency chains",
+						"Milestones have measurable success criteria",
+						"Capacity plan identifies resource bottlenecks",
+					],
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 1800, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. Good catch on the security engineer hire.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "stakeholder-review" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering stakeholder-review stage. Hat: presenter.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/stages/stakeholder-review/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → roadmap/roadmap-doc (knowledge/ROADMAP-DOC.md)",
+				},
+				{
+					type: "card",
+					stage: "stakeholder-review",
+					name: "presentation",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "stakeholder-review",
+					name: "alignment",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: feedback-synthesizer. Presentation deck and alignment document ready. Decision records for: Phase 1 scope, AI deprioritization, security engineer timeline.",
+				},
+				{
+					type: "updateCard",
+					stage: "stakeholder-review",
+					name: "presentation",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "stakeholder-review",
+					name: "alignment",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/2027-product-roadmap/knowledge/ALIGNMENT-DOC.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Stakeholder-review complete. Review gate: external.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Sharing browse URL for external stakeholder review...",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "showReview",
+					title: "Stakeholder Review",
+					intent: "2027-product-roadmap",
+					criteria: [
+						"Presentation includes executive summary and strategic rationale",
+						"Alignment document records go/no-go decisions with decision-makers",
+						"Roadmap adjustments from feedback reflected back",
+					],
+					gateType: "external gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2000, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "External stakeholder review approved via browse page.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for 2027-product-roadmap.\n\nDelivered:\n  • Market landscape with 3 underserved segments and competitive gap analysis\n  • User research with 3 personas, compliance weighted highest per lost-deal data\n  • Priority matrix: compliance #1 (score 92), AI/mobile deprioritized\n  • 3-phase roadmap with dependency chains and hiring dependency flagged\n  • Stakeholder presentation and alignment document with decision records\n\nIntent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

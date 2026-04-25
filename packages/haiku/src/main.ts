@@ -7,7 +7,28 @@
 //
 // Built from packages/haiku/, compiled to plugin/bin/haiku
 
-import { reportError } from "./sentry.js"
+import { flush as flushSentry, reportError } from "./sentry.js"
+
+// Global safety net: report any uncaught error or unhandled rejection from any
+// subcommand (mcp / hook / migrate) before the process exits. Without this,
+// async errors that escape handler catches die silently in the stderr log.
+process.on("uncaughtException", (err) => {
+	reportError(err, { context: "uncaughtException" })
+	console.error("uncaughtException:", err)
+	// Best-effort flush, then exit — Node treats uncaughtException as fatal.
+	flushSentry().finally(() => process.exit(1))
+})
+
+process.on("unhandledRejection", (reason) => {
+	const err = reason instanceof Error ? reason : new Error(String(reason))
+	reportError(err, { context: "unhandledRejection" })
+	console.error("unhandledRejection:", reason)
+	// Match the uncaughtException path: flush queued Sentry events, then exit.
+	// Without this, short-lived subcommands (hook, migrate) would exit before the
+	// in-memory event is sent, and the long-lived MCP server would keep running
+	// in a degraded state with no Sentry breadcrumb of the rejection.
+	flushSentry().finally(() => process.exit(1))
+})
 
 const [cmd, ...args] = process.argv.slice(2)
 
@@ -40,9 +61,9 @@ if (cmd === "mcp") {
 	harnessReady
 		.then(() => import("./server.js"))
 		.catch((err) => {
-			reportError(err)
+			reportError(err, { context: "mcp-bootstrap" })
 			console.error(`haiku mcp: ${err.message}`)
-			process.exit(1)
+			flushSentry().finally(() => process.exit(1))
 		})
 } else if (cmd === "hook") {
 	const hookName = args[0]
@@ -53,15 +74,17 @@ if (cmd === "mcp") {
 	import("./hooks/index.js")
 		.then((m) => m.runHook(hookName, args.slice(1)))
 		.catch((err) => {
+			reportError(err, { context: `hook:${hookName}` })
 			console.error(`haiku hook ${hookName}: ${err.message}`)
-			process.exit(1)
+			flushSentry().finally(() => process.exit(1))
 		})
 } else if (cmd === "migrate") {
 	import("./migrate.js")
 		.then((m) => m.runMigrate(args))
 		.catch((err) => {
+			reportError(err, { context: "migrate" })
 			console.error(`haiku migrate: ${err.message}`)
-			process.exit(1)
+			flushSentry().finally(() => process.exit(1))
 		})
 } else {
 	console.error("Usage: haiku <mcp|hook|migrate> [args...]")

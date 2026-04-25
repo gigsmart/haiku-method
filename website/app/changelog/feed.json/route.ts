@@ -1,8 +1,8 @@
 import {
 	FEED_HEADERS_JSON,
-	SITE_URL,
 	generateJsonFeed,
 	getChangelogFeedItems,
+	SITE_URL,
 } from "@/lib/feed"
 
 export const dynamic = "force-static"

@@ -1,10 +1,11 @@
-import { getAllDocs } from "@/lib/docs"
 import type { Metadata } from "next"
 import Link from "next/link"
+import { getAllDocs } from "@/lib/docs"
 
 export const metadata: Metadata = {
 	title: "Documentation - H\u00b7AI\u00b7K\u00b7U",
-	description: "Learn how to use H\u00b7AI\u00b7K\u00b7U for iterative AI-driven development.",
+	description:
+		"Learn how to use H\u00b7AI\u00b7K\u00b7U for iterative AI-driven development.",
 }
 
 export default function DocsPage() {
@@ -22,8 +23,14 @@ export default function DocsPage() {
 				<h2>Getting Started</h2>
 				<p>Install the H·AI·K·U plugin in your Claude environment:</p>
 				<div className="not-prose my-4 rounded-lg bg-stone-100 p-4 font-mono text-sm dark:bg-stone-800">
-					<div><code>/plugin marketplace add gigsmart/haiku-method</code></div>
-					<div><code>/plugin install haiku@gigsmart-haiku-method --scope project</code></div>
+					<div>
+						<code>/plugin marketplace add gigsmart/haiku-method</code>
+					</div>
+					<div>
+						<code>
+							/plugin install haiku@gigsmart-haiku-method --scope project
+						</code>
+					</div>
 				</div>
 
 				<p>Then use the stage commands to structure your workflow:</p>

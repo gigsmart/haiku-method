@@ -7,7 +7,6 @@ import type {
 } from "../types.js"
 import { renderAnnotationCanvas } from "./annotation-canvas.js"
 import {
-	type TabDef,
 	card,
 	renderBadge,
 	renderBreadcrumb,
@@ -18,12 +17,12 @@ import {
 	renderReviewSidebarScript,
 	renderTabs,
 	sectionHeading,
+	type TabDef,
 } from "./components.js"
 import { renderInlineComments } from "./inline-comments.js"
+import type { ReviewResult } from "./intent-review.js"
 import { escapeAttr, escapeHtml } from "./layout.js"
 import type { MockupInfo } from "./types.js"
-
-import type { ReviewResult } from "./intent-review.js"
 
 export function renderUnitReview(
 	intent: ParsedIntent,
@@ -39,7 +38,7 @@ export function renderUnitReview(
 		return section?.content ?? ""
 	}
 
-	const findSectionWithSubs = (name: string): Section | undefined => {
+	const _findSectionWithSubs = (name: string): Section | undefined => {
 		return unit.sections.find(
 			(s: Section) => s.heading?.toLowerCase() === name.toLowerCase(),
 		)
@@ -171,7 +170,7 @@ export function renderUnitReview(
 		}
 
     ${
-			!risks && !boundaries && !notes
+			!(risks || boundaries || notes)
 				? card(`
       <p class="text-gray-500 dark:text-gray-400 italic">No risks or boundaries documented for this unit.</p>
     `)

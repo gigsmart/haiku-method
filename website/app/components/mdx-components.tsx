@@ -105,10 +105,17 @@ function Pill({ children }: { children: ReactNode }) {
  * Tailwind output plus exposes custom components by name.
  */
 export const mdxComponents: MDXComponents = {
-	a: ({ href, children, ...rest }: HTMLAttributes<HTMLAnchorElement> & { href?: string }) => {
+	a: ({
+		href,
+		children,
+		...rest
+	}: HTMLAttributes<HTMLAnchorElement> & { href?: string }) => {
 		if (href?.startsWith("/")) {
 			return (
-				<Link href={href} className="text-blue-600 underline underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+				<Link
+					href={href}
+					className="text-blue-600 underline underline-offset-2 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+				>
 					{children}
 				</Link>
 			)
@@ -128,9 +135,11 @@ export const mdxComponents: MDXComponents = {
 	},
 	// Intercept fenced code blocks tagged ```mermaid and render as diagram
 	pre: ({ children, ...rest }: HTMLAttributes<HTMLPreElement>) => {
-		const child = (children as {
-			props?: { className?: string; children?: string }
-		})?.props
+		const child = (
+			children as {
+				props?: { className?: string; children?: string }
+			}
+		)?.props
 		const className = child?.className || ""
 		const isMermaid = className.includes("language-mermaid")
 		if (isMermaid && typeof child?.children === "string") {

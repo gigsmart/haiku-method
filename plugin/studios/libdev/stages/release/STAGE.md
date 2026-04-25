@@ -2,6 +2,7 @@
 name: release
 description: Publish, changelog, documentation, and deprecation policy
 hats: [release-engineer, doc-writer]
+fix_hats: [release-engineer, feedback-assessor]
 review: auto
 elaboration: autonomous
 inputs:
@@ -20,10 +21,3 @@ generating changelogs, updating the documentation site, and managing the
 deprecation lifecycle. Libraries don't deploy — they publish. There is no
 on-call, no rollback in the traditional sense; a broken release means a new
 patch version, not a redeployment.
-
-## Completion Signal (RFC 2119)
-
-Changelog **MUST** be updated with all user-visible changes. Version **MUST**
-follow semver based on API surface changes. Documentation site **MUST**
-reflect the released version. Deprecated APIs **MUST** have migration
-guidance and a removal timeline.

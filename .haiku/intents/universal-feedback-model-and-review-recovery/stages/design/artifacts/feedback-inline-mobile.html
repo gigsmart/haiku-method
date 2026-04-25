@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  a11y contract — dev-stage inherits the contract from aria-landmark-spec.md §3.7
+  ============================================================================
+
+  This wireframe encodes the canonical "dialog open/close" contract for the
+  MobileFeedbackPanel. Before porting to React, read:
+
+    - aria-landmark-spec.md §3   — every modal carries role=dialog, aria-modal,
+                                    aria-labelledby pointing at a visible heading.
+    - aria-landmark-spec.md §3.7 — inert + aria-hidden="true" are both applied
+                                    to every background landmark (<header>, <nav>,
+                                    <main>, <aside>) on open and BOTH removed on
+                                    close. Property assignment (element.inert =
+                                    true/false) for inert, setAttribute /
+                                    removeAttribute for aria-hidden. The live-
+                                    region nodes and the dialog itself MUST NOT
+                                    receive either attribute.
+    - aria-landmark-spec.md §5   — full MobileFeedbackPanel lifecycle (state
+                                    matrix, FAB aria-haspopup/aria-expanded/
+                                    aria-controls wiring, focus return).
+
+  The vanilla <script data-feedback-sheet-controller> block at the bottom of
+  this document implements §3.7 end-to-end — main.inert = true + aria-hidden
+  on open, reversed on close, plus Escape handling and focus return to the
+  FAB. Dev-stage replaces the vanilla controller with <FocusTrap active
+  returnFocusOnDeactivate> from focus-trap-react
+  (https://github.com/focus-trap/focus-trap-react); the inert + aria-hidden
+  apparatus on background landmarks stays exactly as wired here.
+
+  Grep contract (feedback-assessor gate — aria-landmark-spec.md §9):
+    - 'role="dialog" aria-modal="true" aria-labelledby=' → ≥ 1 match
+    - 'main\.inert|setAttribute\(.aria-hidden'            → ≥ 4 matches (controller open + close paths)
+    - 'aria-landmark-spec\.md §3\.7'                      → ≥ 1 match (this head-of-document pointer + controller inline citations)
+  ============================================================================
+-->
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=375, initial-scale=1.0" />
+  <title>Feedback Inline Annotations — Mobile Wireframe (375px)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: {} }
+    };
+  </script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+
+    /* Status left-border indicators
+       Colors reference Tailwind palette: amber-500, blue-400, green-400, stone-400
+       Applied via border-l-[3px] + Tailwind border color classes in markup */
+
+    /* Bottom sheet animation */
+    @keyframes sheet-up {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .sheet-enter {
+      animation: sheet-up 0.3s ease-out;
+    }
+
+    /* FAB pulse for new feedback — uses Tailwind theme color */
+    @keyframes feedback-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgb(13 148 136 / 0.4); }
+      50%      { box-shadow: 0 0 0 8px rgb(13 148 136 / 0); }
+    }
+    .feedback-fab-pulse {
+      animation: feedback-pulse 2s ease-in-out 3;
+    }
+
+    /* Ensure touch targets are at least 44px */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* ==========================================================================
+       Reduced-motion guard — closes FB-143, reinforces FB-86 + FB-20 (WCAG 2.3.3 AAA / 2.2.2 A)
+       --------------------------------------------------------------------------
+       Canonical stage-wide pattern landed by unit-25-stagewide-reduced-motion-guards
+       (see motion-and-reduced-motion-spec.md §Cross-file policy). Belt-and-suspenders:
+
+         1. Global 0.01ms override keeps essential state-conveying transitions
+            (sheet-enter → final position, aria-expanded flip, aria-checked flip)
+            intact — the final frame still paints, so SR + visual users see state.
+         2. Per-component `animation: none` on the FAB pulse because the pulse
+            is decorative; the amber badge count is the alternate "unread > 0"
+            signal per motion-and-reduced-motion-spec.md §Audit table row
+            `feedback-inline-mobile.html:31-34`.
+         3. `scroll-behavior: auto` disables smooth scroll on reduced-motion —
+            tab-strip horizontal scroll and feedback-list scroll jump instantly.
+
+       Vestibular-disorder users (migraines, Ménière's, concussion recovery)
+       report nausea / dizziness from unguarded motion. The FAB pulse was the
+       single most-called-out vestibular trigger in the spec. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      .feedback-fab-pulse,
+      .animate-pulse,
+      [class*="feedback-pulse"] { animation: none !important; }
+    }
+  </style>
+</head>
+<body class="dark bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 min-h-screen" style="max-width: 375px; margin: 0 auto;">
+
+  <!-- FB-30/FB-35: Skip links. First focusable elements; visually hidden until focused. Bypass header nav for keyboard users. -->
+  <a href="#main-content" class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-[200] focus-visible:px-3 focus-visible:py-2 focus-visible:bg-teal-600 focus-visible:text-white focus-visible:rounded-md focus-visible:shadow-lg focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900">Skip to main content</a>
+  <a href="#feedback-list" class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-40 focus-visible:z-[200] focus-visible:px-3 focus-visible:py-2 focus-visible:bg-teal-600 focus-visible:text-white focus-visible:rounded-md focus-visible:shadow-lg focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900">Skip to feedback list</a>
+
+  <!-- Header -->
+  <header role="banner" class="sticky top-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur-sm border-b border-stone-200 dark:border-stone-800">
+    <div class="px-4 py-3 flex items-center justify-between">
+      <h1 class="text-base font-semibold truncate text-stone-900 dark:text-stone-100">Review: Feedback Model</h1>
+      <!-- FB-66: icon-only theme toggle carries a dynamic aria-label reflecting the current state.
+           Implementation contract: the label MUST reflect the ACTION the user would take, not the
+           current theme. So if dark mode is active, aria-label="Switch to light theme"; if light
+           mode is active, aria-label="Switch to dark theme". The label updates in the same click
+           handler that flips the `.dark` class on <html>. aria-pressed is also exposed so AT can
+           surface the binary state independently of the label. -->
+      <button
+        id="theme-toggle"
+        type="button"
+        aria-label="Switch to light theme"
+        aria-pressed="true"
+        title="Switch to light theme"
+        onclick="var h=document.documentElement;var nowDark=h.classList.toggle('dark');this.setAttribute('aria-pressed',String(nowDark));var nextLabel=nowDark?'Switch to light theme':'Switch to dark theme';this.setAttribute('aria-label',nextLabel);this.setAttribute('title',nextLabel);this.querySelector('[data-theme-glyph]').textContent=nowDark?'\u263E':'\u2600';"
+        class="text-xs px-2 py-1 rounded border border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-400 touch-target flex items-center justify-center focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none"
+      >
+        <span aria-hidden="true" data-theme-glyph>&#x263E;</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main content (mobile — no sidebar, just content) -->
+  <main id="main-content" role="main" class="px-4 py-4">
+
+    <!-- Tabs (horizontal scroll on mobile) -->
+    <div class="sticky top-[49px] z-30 bg-white dark:bg-stone-950 border-b border-stone-200 dark:border-stone-700 mb-4 -mx-4 px-4 overflow-x-auto">
+      <div role="tablist" aria-label="Review sections" class="flex gap-1 -mb-px whitespace-nowrap">
+        <button role="tab" aria-selected="true" tabindex="0" class="px-3 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 touch-target focus:ring-2 focus:ring-teal-500">Overview</button>
+        <button role="tab" aria-selected="false" tabindex="-1" class="px-3 py-2 text-sm font-medium border-b-2 border-transparent text-stone-500 dark:text-stone-400 touch-target focus:ring-2 focus:ring-teal-500">Units</button>
+        <button role="tab" aria-selected="false" tabindex="-1" class="px-3 py-2 text-sm font-medium border-b-2 border-transparent text-stone-500 dark:text-stone-400 touch-target focus:ring-2 focus:ring-teal-500">Knowledge</button>
+      </div>
+    </div>
+
+    <!-- Overview card (content only, no floating annotations on mobile) -->
+    <div class="bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 p-4 mb-4">
+      <h2 class="text-base font-semibold mb-2 text-stone-900 dark:text-stone-100">Overview</h2>
+      <div class="prose prose-sm prose-gray dark:prose-invert max-w-none">
+        <h3 class="text-sm">Problem</h3>
+        <p class="text-sm">The current review workflow treats feedback as ephemeral batch comments that vanish after submission. When a reviewer requests changes, the agent receives a single feedback string with no structured identity.</p>
+        <h3 class="text-sm">Solution</h3>
+        <p class="text-sm">Introduce a universal feedback model where each piece of feedback is a first-class file on disk with its own identity, status lifecycle, origin tracking, and resolution metadata.</p>
+      </div>
+    </div>
+
+    <!-- Criteria card -->
+    <div class="bg-white dark:bg-stone-900 rounded-lg border border-stone-200 dark:border-stone-700 p-4 mb-4">
+      <h2 class="text-base font-semibold mb-2 text-stone-900 dark:text-stone-100">Success Criteria</h2>
+      <ul class="space-y-2 text-sm text-stone-700 dark:text-stone-300">
+        <li class="flex items-start gap-2">
+          <span class="inline-block w-4 h-4 rounded border border-stone-300 dark:border-stone-600 mt-0.5 shrink-0"></span>
+          Feedback items are individually trackable
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="inline-block w-4 h-4 rounded border border-stone-300 dark:border-stone-600 mt-0.5 shrink-0"></span>
+          Status lifecycle: pending &rarr; addressed &rarr; closed
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="inline-block w-4 h-4 rounded border border-stone-300 dark:border-stone-600 mt-0.5 shrink-0"></span>
+          Sidebar shows feedback across review cycles
+        </li>
+      </ul>
+    </div>
+
+    <!-- Extra bottom padding to clear FAB -->
+    <div class="h-20"></div>
+  </main>
+
+  <!-- FAB (Floating Action Button) — bottom right
+       id="feedback-fab" used by dialog close handler to restore focus (FB-22).
+       open/close are handled by the inline script at the bottom of the document
+       (data-feedback-sheet-controller) — NO onclick inline handlers. Dev stage
+       replaces this vanilla controller with <FocusTrap active returnFocusOnDeactivate>
+       wrapping <MobileFeedbackPanel> per aria-landmark-spec.md §5. -->
+  <button
+    type="button"
+    id="feedback-fab"
+    aria-label="Open feedback panel, 3 pending"
+    aria-haspopup="dialog"
+    aria-expanded="false"
+    aria-controls="feedback-sheet"
+    data-feedback-sheet-trigger
+    class="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full bg-teal-600 text-white shadow-lg flex items-center justify-center text-lg feedback-fab-pulse touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none"
+  >
+    &#x1F4AC;
+    <!-- Count badge -->
+    <span class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-2 border-white dark:border-gray-900">3</span>
+  </button>
+
+  <!--
+    Bottom Sheet Overlay — role="dialog" aria-modal="true"
+
+    ## Dialog + inert contract (FB-22, FB-51, FB-80 fix, referenced by aria-landmark-spec.md §3 + §5)
+
+    The sheet below renders the dialog landmark per aria-landmark-spec §3:
+      - role="dialog" aria-modal="true" aria-labelledby="sheet-title" on the root
+      - <h2 id="sheet-title"> visible inside the sheet
+      - hidden by default (hidden attribute) — toggled by the controller at the bottom of the file
+
+    The controller <script data-feedback-sheet-controller> at the bottom of this document wires the
+    real open/close behavior so dev-stage has a concrete pattern to port, not a TODO comment:
+
+      On open (FAB click or keyboard activation):
+        - Set aria-hidden="true" AND inert on #main-content, <header role="banner">
+        - Set aria-expanded="true" on #feedback-fab
+        - Show the sheet (remove [hidden])
+        - Move focus to #sheet-first-tab (the AgentFeedbackToggle switch inside the sheet)
+        - Install an Escape-key listener scoped to the sheet
+
+      On close (close button, Escape, Approve/Request Changes submit):
+        - Remove aria-hidden + inert from #main-content and <header>
+        - Set aria-expanded="false" on #feedback-fab
+        - Hide the sheet (add [hidden])
+        - Return focus to #feedback-fab
+
+    ## Dev-stage handoff (React)
+    Replace the vanilla controller with <FocusTrap active returnFocusOnDeactivate> from
+    focus-trap-react (https://github.com/focus-trap/focus-trap-react) — the library moves focus
+    to the first tabbable on mount and restores to the opener on unmount, making the manual
+    focus() calls unnecessary. Wrap the sheet exactly as annotation-popover-states.html does.
+    The inert + aria-hidden pair on background landmarks stays exactly as this artifact wires
+    it (belt-and-suspenders — see aria-landmark-spec.md §3.7).
+  -->
+  <div
+    id="feedback-sheet"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="sheet-title"
+    hidden
+    class="fixed inset-0 z-50 bg-white dark:bg-stone-900 flex flex-col sheet-enter"
+  >
+
+    <!-- Sheet header -->
+    <div class="shrink-0 px-4 py-3 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between">
+      <h2 id="sheet-title" class="text-sm font-semibold text-stone-700 dark:text-stone-300">Feedback</h2>
+      <button
+        type="button"
+        aria-label="Close feedback panel"
+        data-feedback-sheet-close
+        class="text-stone-600 dark:text-stone-300 hover:text-stone-800 dark:hover:text-stone-100 touch-target flex items-center justify-center text-lg focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none"
+      >
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+
+    <!-- Segmented control -->
+    <div class="shrink-0 flex border-b border-gray-200 dark:border-gray-700" role="tablist">
+      <button role="tab" aria-selected="true" class="flex-1 border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 text-xs font-medium px-3 py-2.5 touch-target text-center">
+        Feedback
+        <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">5</span>
+      </button>
+      <button role="tab" aria-selected="false" class="flex-1 border-b-2 border-transparent text-gray-500 dark:text-gray-400 text-xs font-medium px-3 py-2.5 touch-target text-center hover:text-gray-700 dark:hover:text-gray-200">
+        Mine
+        <span class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-xs font-bold bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300">2</span>
+      </button>
+    </div>
+
+    <!-- Summary bar — filter chips; colored dots aria-hidden (label conveys status) -->
+    <div class="shrink-0 px-3 py-2 bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-700 flex items-center gap-2 overflow-x-auto" role="group" aria-label="Filter feedback by status">
+      <!-- FB-06 fix: active filter pill uses primary teal-600/white per DESIGN-BRIEF §3 line 617 + DESIGN-TOKENS §2.5 -->
+      <button aria-pressed="true" aria-label="All, 5 items" class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full bg-teal-600 text-white border border-transparent dark:bg-teal-500 dark:text-white dark:border-transparent transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+        <span aria-hidden="true" class="inline-block w-2 h-2 rounded-full bg-stone-500 dark:bg-stone-300 mr-1"></span>All
+        <span aria-hidden="true" class="ml-0.5 font-bold">5</span>
+      </button>
+      <button aria-pressed="false" aria-label="Pending, 3 items" class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+        <span aria-hidden="true" class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Pending
+        <span aria-hidden="true" class="ml-0.5 font-bold">3</span>
+      </button>
+      <button aria-pressed="false" aria-label="Addressed, 1 item" class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+        <span aria-hidden="true" class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Addressed
+        <span aria-hidden="true" class="ml-0.5 font-bold">1</span>
+      </button>
+      <button aria-pressed="false" aria-label="Closed, 1 item" class="shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-full border border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+        <span aria-hidden="true" class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Closed
+        <span aria-hidden="true" class="ml-0.5 font-bold">1</span>
+      </button>
+    </div>
+
+    <!-- Feedback list (scrollable) — id anchors the skip link, role="list" groups feedback items -->
+    <div id="feedback-list" class="flex-1 overflow-y-auto p-3 space-y-2" role="list" aria-label="Feedback items">
+
+      <!-- Group: Current Visit -->
+      <div class="flex items-center gap-2 px-1 py-1">
+        <span class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300">Current Visit</span>
+        <div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
+      </div>
+
+      <!-- Pending item 1 — emoji 🔍 magnifier matches DESIGN-BRIEF §2 for adversarial-review origin -->
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 active:border-blue-400 dark:active:border-blue-500 transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
+            <span aria-hidden="true">&#x1F50D;</span> Review Agent
+          </span>
+          <span class="flex-1"></span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
+        </div>
+        <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Missing null check in handleSubmit</p>
+        <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-03 &middot; Visit 2 &middot; adversarial-review</p>
+      </div>
+
+      <!-- Pending item 2 — emoji ✎ pencil matches DESIGN-BRIEF §2 for user-visual origin -->
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-stone-200 dark:border-stone-700 active:border-blue-400 dark:active:border-blue-500 transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
+            <span aria-hidden="true">&#x270E;</span> Annotation
+          </span>
+          <span class="flex-1"></span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
+        </div>
+        <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Header alignment feels off</p>
+        <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-05 &middot; Visit 2 &middot; jwaldrip</p>
+      </div>
+
+      <!-- Pending item 3 (agent — shows Dismiss button). In-flight example: role="status" announces "FB-06 marking as closed..." (FB-26 aria-live sequencing spec). Emoji 🤖 matches DESIGN-BRIEF §2 for agent origin -->
+      <div role="listitem" tabindex="0" aria-busy="true" class="border-l-[3px] border-l-amber-400 dark:border-l-amber-500 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-blue-400 dark:border-blue-500 transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800">
+            <span aria-hidden="true">&#x1F916;</span> Agent
+          </span>
+          <span class="flex-1"></span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" aria-label="Status: pending">pending</span>
+        </div>
+        <p class="text-xs font-medium text-stone-700 dark:text-stone-300">Consider extracting validation into shared module</p>
+        <div class="prose prose-xs prose-gray dark:prose-invert max-w-none mt-2">
+          <p class="text-xs text-stone-600 dark:text-stone-400">The feedback validation logic in <code>ReviewSidebar</code> and the CRUD API handler both independently check field lengths and status transitions. This should be a shared utility to prevent drift.</p>
+        </div>
+        <p class="text-xs text-stone-600 dark:text-stone-300 mt-2">FB-06 &middot; Visit 2 &middot; agent</p>
+        <div class="flex gap-2 mt-2">
+          <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400 transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">Dismiss</button>
+          <button class="text-xs font-medium px-3 py-1.5 rounded-md bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">Verify &amp; Close</button>
+        </div>
+      </div>
+
+      <!-- Group: Visit 1 -->
+      <div class="flex items-center gap-2 px-1 py-1 mt-3">
+        <span class="text-xs font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300">Visit 1</span>
+        <div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
+      </div>
+
+      <!-- Addressed — emoji 🔗 link matches DESIGN-BRIEF §2 for external-pr origin -->
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-blue-400 dark:border-l-blue-500 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-stone-200 dark:border-stone-700 transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800">
+            <span aria-hidden="true">&#x1F517;</span> PR Comment
+          </span>
+          <span class="flex-1"></span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" aria-label="Status: addressed">addressed</span>
+        </div>
+        <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Lifecycle transitions need validation guards</p>
+        <p class="text-xs text-blue-500 dark:text-blue-400 mt-1">Addressed by: unit-04-feedback-crud-api</p>
+        <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-02 &middot; Visit 1 &middot; external-pr</p>
+      </div>
+
+      <!-- Closed -->
+      <div role="listitem" tabindex="0" class="border-l-[3px] border-l-green-500 dark:border-l-green-400 p-3 rounded-lg bg-green-50/60 dark:bg-green-950/25 border border-stone-200 dark:border-stone-700 transition-colors touch-target focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 outline-none">
+        <div class="flex items-center gap-2 mb-1">
+          <span aria-hidden="true" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-600 dark:bg-green-500 text-white text-xs font-bold leading-none">&check;</span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800">
+            <span aria-hidden="true">&#x270E;</span> Annotation
+          </span>
+          <span class="flex-1"></span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" aria-label="Status: closed">closed</span>
+        </div>
+        <p class="text-xs font-medium text-stone-700 dark:text-stone-300"><span class="text-green-700 dark:text-green-400 font-semibold">Closed &middot;</span> Button spacing inconsistent on tablet</p>
+        <p class="text-xs text-stone-600 dark:text-stone-300 mt-0.5">FB-04 &middot; Visit 1 &middot; user-visual</p>
+      </div>
+    </div><!-- /role=list -->
+    </div><!-- /tabpanel -->
+
+    <!-- hidden: mine panel placeholder so aria-controls has a valid target -->
+    <div id="sheet-mine-panel" role="tabpanel" aria-labelledby="sheet-mine-tab" hidden></div>
+
+    <!-- Sheet footer: comment input + decision buttons -->
+    <div class="shrink-0 border-t border-stone-200 dark:border-stone-700 p-3 space-y-3 bg-stone-50/50 dark:bg-stone-800/50">
+      <div class="flex gap-2">
+        <label for="sheet-general-comment" class="sr-only">Add a general comment</label>
+        <!-- Canonical focus ring: 2px teal-500 with offset (focus-ring-spec.html §1) -->
+        <textarea id="sheet-general-comment" class="flex-1 text-xs p-2 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 resize-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 focus:outline-none" rows="2" placeholder="Add a comment..."></textarea>
+        <button class="self-end px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors touch-target focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none">Add</button>
+      </div>
+      <div class="flex gap-2">
+        <!-- Decision buttons use variant-matched focus rings per focus-ring-spec.html §2 (green-500 for Approve, amber-500 for Request Changes) -->
+        <button class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors touch-target focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200 disabled:cursor-not-allowed">Approve</button>
+        <button class="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors touch-target focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900 outline-none disabled:bg-amber-200 disabled:text-amber-900 dark:disabled:bg-amber-900/40 dark:disabled:text-amber-200 disabled:cursor-not-allowed">Request Changes</button>
+      </div>
+    </div>
+  </div><!-- /feedback-sheet dialog -->
+
+  <!--
+    Live region for screen reader announcements (FB-26 aria-live sequencing).
+    Optimistic UI three-phase template — see aria-live-sequencing-spec.md:
+      on click:   role="status" aria-live="polite" -> "FB-XX marking as closed…"
+      on success: role="status" aria-live="polite" -> "FB-XX closed."
+      on failure: role="alert"  aria-live="assertive" -> "FB-XX close failed; reverted to addressed."
+    Failure announcements use role="alert" (assertive) in a SEPARATE live-region node so
+    the in-flight "marking…" text does not get overwritten before it's read out.
+  -->
+  <div id="feedback-live-polite" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+  <div id="feedback-live-assertive" role="alert" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
+
+  <!--
+    Feedback-sheet controller — vanilla implementation of the dialog + inert contract.
+
+    Closes FB-80 (the narrative comment moved into a real wired script). Dev stage replaces
+    this with <FocusTrap active returnFocusOnDeactivate> from focus-trap-react; the inert +
+    aria-hidden apparatus on background landmarks stays exactly as wired below.
+
+    Contract (aria-landmark-spec.md §3 + §5):
+      - On open:  main + header get inert=true AND aria-hidden="true"; focus moves into sheet.
+      - On close: main + header lose inert + aria-hidden; focus returns to #feedback-fab.
+      - Escape while open closes the sheet.
+
+    grep contract (unit-19 completion criteria — must hit this block):
+      grep -nE 'main.*\.inert|setAttribute\(.aria-hidden' feedback-inline-mobile.html
+  -->
+  <script data-feedback-sheet-controller>
+    (function () {
+      var sheet = document.getElementById('feedback-sheet');
+      var fab = document.getElementById('feedback-fab');
+      var main = document.getElementById('main-content');
+      var header = document.querySelector('header[role="banner"]');
+      var closeBtn = document.querySelector('[data-feedback-sheet-close]');
+      var firstTab = document.getElementById('sheet-first-tab');
+      if (!sheet || !fab || !main || !header || !closeBtn) return;
+
+      function lockBackground() {
+        // Belt-and-suspenders: inert blocks pointer/keyboard; aria-hidden hides from AT.
+        // Both are required per aria-landmark-spec.md §3.7.
+        main.inert = true;
+        main.setAttribute('aria-hidden', 'true');
+        header.inert = true;
+        header.setAttribute('aria-hidden', 'true');
+      }
+
+      function unlockBackground() {
+        main.inert = false;
+        main.removeAttribute('aria-hidden');
+        header.inert = false;
+        header.removeAttribute('aria-hidden');
+      }
+
+      function openSheet() {
+        if (!sheet.hasAttribute('hidden') && fab.getAttribute('aria-expanded') === 'true') return;
+        sheet.removeAttribute('hidden');
+        fab.setAttribute('aria-expanded', 'true');
+        lockBackground();
+        // Dev-stage replaces this manual focus() with <FocusTrap active returnFocusOnDeactivate>;
+        // the library moves focus to the first tabbable on mount. The behavior must match.
+        if (firstTab) firstTab.focus();
+        document.addEventListener('keydown', onEscape);
+      }
+
+      function closeSheet() {
+        if (sheet.hasAttribute('hidden')) return;
+        sheet.setAttribute('hidden', '');
+        fab.setAttribute('aria-expanded', 'false');
+        unlockBackground();
+        document.removeEventListener('keydown', onEscape);
+        // focus-trap-react's returnFocusOnDeactivate handles this in dev; vanilla here.
+        fab.focus();
+      }
+
+      function onEscape(e) {
+        if (e.key === 'Escape') closeSheet();
+      }
+
+      fab.addEventListener('click', openSheet);
+      closeBtn.addEventListener('click', closeSheet);
+
+      // Approve / Request Changes submit handlers close the sheet after decision completes.
+      // Wired here as a placeholder — real submit logic lives in dev-stage components.
+      Array.prototype.forEach.call(
+        sheet.querySelectorAll('[data-feedback-sheet-submit]'),
+        function (btn) { btn.addEventListener('click', closeSheet); }
+      );
+    })();
+  </script>
+</body>
+</html>

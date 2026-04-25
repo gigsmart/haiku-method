@@ -137,10 +137,10 @@ export function BigPictureDiagram() {
 				>
 					<title>H·AI·K·U Big Picture Diagram</title>
 					<desc>
-						An interactive diagram showing the H·AI·K·U methodology structure with
-						four layers: Development Phases (Intent, Unit, Bolt, Deploy), Hats
-						(Researcher, Planner, Builder, Reviewer), Operating Modes (HITL,
-						OHOTL, AHOTL), and Core Principles (Backpressure, Completion
+						An interactive diagram showing the H·AI·K·U methodology structure
+						with four layers: Development Phases (Intent, Unit, Bolt, Deploy),
+						Hats (Researcher, Planner, Builder, Reviewer), Operating Modes
+						(HITL, OHOTL, AHOTL), and Core Principles (Backpressure, Completion
 						Criteria, Collapsed SDLC, State Management).
 					</desc>
 

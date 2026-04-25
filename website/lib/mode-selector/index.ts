@@ -1,13 +1,11 @@
+export type { ModeInfo } from "./explanations"
+export { generateExplanation, getScoreSummary, modeInfo } from "./explanations"
+export type { Option, Question } from "./questions"
 export { questions } from "./questions"
-export type { Question, Option } from "./questions"
-
+export type { Mode, Scores, ScoringResult } from "./scoring"
 export {
 	calculateScores,
-	encodeAnswers,
 	decodeAnswers,
+	encodeAnswers,
 	isValidAnswers,
 } from "./scoring"
-export type { Mode, Scores, ScoringResult } from "./scoring"
-
-export { modeInfo, generateExplanation, getScoreSummary } from "./explanations"
-export type { ModeInfo } from "./explanations"

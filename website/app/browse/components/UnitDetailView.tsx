@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { resolveLinks } from "@/lib/browse/resolve-links"
 import type { BrowseProvider, HaikuAsset, HaikuUnit } from "@/lib/browse/types"
 import { formatDate, formatDuration } from "@/lib/browse/types"
-import { resolveLinks } from "@/lib/browse/resolve-links"
-import { AuthenticatedMedia } from "./AuthenticatedMedia"
 import { AssetLightbox } from "./AssetLightbox"
+import { AuthenticatedMedia } from "./AuthenticatedMedia"
 
 function titleCase(s: string): string {
 	return s
@@ -34,7 +34,15 @@ interface Props {
 	onBack: () => void
 }
 
-export function UnitDetailView({ unit, stageName, intentSlug, provider, assets = [], host, onBack }: Props) {
+export function UnitDetailView({
+	unit,
+	stageName,
+	intentSlug,
+	provider,
+	assets = [],
+	host,
+	onBack,
+}: Props) {
 	const checkedCount = unit.criteria.filter((c) => c.checked).length
 	const totalCriteria = unit.criteria.length
 	const progress = totalCriteria > 0 ? (checkedCount / totalCriteria) * 100 : 0
@@ -50,6 +58,7 @@ export function UnitDetailView({ unit, stageName, intentSlug, provider, assets =
 		<div className="mx-auto max-w-4xl px-4 py-8 lg:py-12">
 			{/* Breadcrumb */}
 			<button
+				type="button"
 				onClick={onBack}
 				className="mb-4 text-sm text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
 			>
@@ -59,7 +68,9 @@ export function UnitDetailView({ unit, stageName, intentSlug, provider, assets =
 			{/* Header */}
 			<header className="mb-8">
 				<div className="flex items-center gap-3">
-					<h1 className="text-2xl font-bold tracking-tight">{titleCase(unit.name)}</h1>
+					<h1 className="text-2xl font-bold tracking-tight">
+						{titleCase(unit.name)}
+					</h1>
 					<StatusBadge status={unit.status} />
 				</div>
 				<p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
@@ -70,7 +81,9 @@ export function UnitDetailView({ unit, stageName, intentSlug, provider, assets =
 			{/* Quick Stats */}
 			<div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
 				<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
-					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">Criteria</div>
+					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">
+						Criteria
+					</div>
 					<div className="mt-1 text-2xl font-bold">
 						{checkedCount}
 						<span className="text-stone-400">/{totalCriteria}</span>
@@ -85,24 +98,39 @@ export function UnitDetailView({ unit, stageName, intentSlug, provider, assets =
 					)}
 				</div>
 				<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
-					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">Bolt</div>
+					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">
+						Bolt
+					</div>
 					<div className="mt-1 text-2xl font-bold">{unit.bolt || 0}</div>
 				</div>
 				<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
-					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">Hat</div>
-					<div className="mt-1 text-lg font-semibold">{unit.hat ? titleCase(unit.hat) : "—"}</div>
+					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">
+						Hat
+					</div>
+					<div className="mt-1 text-lg font-semibold">
+						{unit.hat ? titleCase(unit.hat) : "—"}
+					</div>
 				</div>
 				<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
-					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">Status</div>
-					<div className="mt-1 text-lg font-semibold">{titleCase(unit.status)}</div>
+					<div className="text-xs font-medium uppercase tracking-wider text-stone-400">
+						Status
+					</div>
+					<div className="mt-1 text-lg font-semibold">
+						{titleCase(unit.status)}
+					</div>
 				</div>
 				{unit.startedAt && (
 					<div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
 						<div className="text-xs font-medium uppercase tracking-wider text-stone-400">
 							{unit.completedAt ? "Duration" : "Elapsed"}
 						</div>
-						<div className="mt-1 text-lg font-semibold">{formatDuration(unit.startedAt, unit.completedAt)}</div>
-						<div className="mt-0.5 text-xs text-stone-400">{formatDate(unit.startedAt)}{unit.completedAt ? ` — ${formatDate(unit.completedAt)}` : ""}</div>
+						<div className="mt-1 text-lg font-semibold">
+							{formatDuration(unit.startedAt, unit.completedAt)}
+						</div>
+						<div className="mt-0.5 text-xs text-stone-400">
+							{formatDate(unit.startedAt)}
+							{unit.completedAt ? ` — ${formatDate(unit.completedAt)}` : ""}
+						</div>
 					</div>
 				)}
 			</div>
@@ -116,29 +144,46 @@ export function UnitDetailView({ unit, stageName, intentSlug, provider, assets =
 					<div className="rounded-xl border border-stone-200 dark:border-stone-700">
 						{unit.criteria.map((criterion, i) => (
 							<div
-								key={i}
+								key={criterion.text}
 								className={`flex items-start gap-3 px-5 py-3 ${
-									i < unit.criteria.length - 1 ? "border-b border-stone-100 dark:border-stone-800" : ""
+									i < unit.criteria.length - 1
+										? "border-b border-stone-100 dark:border-stone-800"
+										: ""
 								}`}
 							>
-								<div className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded ${
-									criterion.checked
-										? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-										: "bg-stone-100 text-stone-400 dark:bg-stone-800"
-								}`}>
+								<div
+									className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded ${
+										criterion.checked
+											? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+											: "bg-stone-100 text-stone-400 dark:bg-stone-800"
+									}`}
+								>
 									{criterion.checked ? (
-										<svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+										<svg
+											className="h-3.5 w-3.5"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+											aria-hidden="true"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={3}
+												d="M5 13l4 4L19 7"
+											/>
 										</svg>
 									) : (
 										<span className="h-3 w-3" />
 									)}
 								</div>
-								<span className={`text-sm ${
-									criterion.checked
-										? "text-stone-500 line-through dark:text-stone-500"
-										: "text-stone-800 dark:text-stone-200"
-								}`}>
+								<span
+									className={`text-sm ${
+										criterion.checked
+											? "text-stone-500 line-through dark:text-stone-500"
+											: "text-stone-800 dark:text-stone-200"
+									}`}
+								>
 									{criterion.text}
 								</span>
 							</div>
@@ -175,18 +220,37 @@ export function UnitDetailView({ unit, stageName, intentSlug, provider, assets =
 					<div className="space-y-1">
 						{unit.outputs.map((output) => {
 							const fileName = output.split("/").pop() || output
-							const dirPath = output.includes("/") ? output.substring(0, output.lastIndexOf("/")) : ""
+							const dirPath = output.includes("/")
+								? output.substring(0, output.lastIndexOf("/"))
+								: ""
 							return (
 								<div
 									key={output}
 									className="flex items-center gap-3 rounded-lg border border-stone-200 px-4 py-2.5 dark:border-stone-700"
 								>
-									<svg className="h-4 w-4 flex-shrink-0 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+									<svg
+										className="h-4 w-4 flex-shrink-0 text-teal-500"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+										aria-hidden="true"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+										/>
 									</svg>
 									<div className="min-w-0">
-										<p className="truncate text-sm font-mono text-stone-700 dark:text-stone-300">{fileName}</p>
-										{dirPath && <p className="truncate text-xs text-stone-400">{dirPath}</p>}
+										<p className="truncate text-sm font-mono text-stone-700 dark:text-stone-300">
+											{fileName}
+										</p>
+										{dirPath && (
+											<p className="truncate text-xs text-stone-400">
+												{dirPath}
+											</p>
+										)}
 									</div>
 								</div>
 							)
@@ -224,10 +288,23 @@ export function UnitDetailView({ unit, stageName, intentSlug, provider, assets =
 										rel="noopener noreferrer"
 										className="inline-flex items-center gap-2 rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-teal-600 transition hover:border-teal-300 hover:bg-teal-50 dark:border-stone-700 dark:text-teal-400 dark:hover:border-teal-700 dark:hover:bg-teal-950"
 									>
-										<svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+										<svg
+											className="h-4 w-4"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+											aria-hidden="true"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+											/>
 										</svg>
-										<span className="text-stone-500 dark:text-stone-400">{label}:</span>
+										<span className="text-stone-500 dark:text-stone-400">
+											{label}:
+										</span>
 										{link.value}
 									</a>
 								)
@@ -237,7 +314,9 @@ export function UnitDetailView({ unit, stageName, intentSlug, provider, assets =
 									key={link.field}
 									className="inline-flex items-center gap-2 rounded-lg border border-stone-200 px-4 py-2 text-sm text-stone-600 dark:border-stone-700 dark:text-stone-400"
 								>
-									<span className="font-medium text-stone-500 dark:text-stone-400">{label}:</span>
+									<span className="font-medium text-stone-500 dark:text-stone-400">
+										{label}:
+									</span>
 									{link.value}
 								</span>
 							)
@@ -254,7 +333,9 @@ export function UnitDetailView({ unit, stageName, intentSlug, provider, assets =
 					</h2>
 					<div className="rounded-xl border border-stone-200 p-6 dark:border-stone-700">
 						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
-							<ReactMarkdown remarkPlugins={[remarkGfm]}>{unit.content}</ReactMarkdown>
+							<ReactMarkdown remarkPlugins={[remarkGfm]}>
+								{unit.content}
+							</ReactMarkdown>
 						</div>
 					</div>
 				</section>
@@ -275,14 +356,30 @@ export function UnitDetailView({ unit, stageName, intentSlug, provider, assets =
 	)
 }
 
-const TEXT_EXTENSIONS = new Set(["md", "json", "yaml", "yml", "txt", "toml", "csv", "xml", "html"])
+const TEXT_EXTENSIONS = new Set([
+	"md",
+	"json",
+	"yaml",
+	"yml",
+	"txt",
+	"toml",
+	"csv",
+	"xml",
+	"html",
+])
 
 function isTextFile(path: string): boolean {
 	const ext = path.split(".").pop()?.toLowerCase() || ""
 	return TEXT_EXTENSIONS.has(ext)
 }
 
-function RefsSection({ refs, intentSlug, provider, assets, host }: {
+function RefsSection({
+	refs,
+	intentSlug,
+	provider,
+	assets,
+	host,
+}: {
 	refs: string[]
 	intentSlug: string
 	provider: BrowseProvider
@@ -308,31 +405,50 @@ function RefsSection({ refs, intentSlug, provider, assets, host }: {
 					const matchedAsset = assetByRelPath.get(ref)
 					if (matchedAsset && host) {
 						return (
-							<AssetRefItem key={ref} ref_={ref} asset={matchedAsset} host={host} />
+							<AssetRefItem
+								key={ref}
+								ref_={ref}
+								asset={matchedAsset}
+								host={host}
+							/>
 						)
 					}
 					if (isTextFile(ref)) {
 						return (
-							<TextRefItem key={ref} ref_={ref} intentSlug={intentSlug} provider={provider} />
+							<TextRefItem
+								key={ref}
+								ref_={ref}
+								intentSlug={intentSlug}
+								provider={provider}
+							/>
 						)
 					}
-					return (
-						<GenericRefItem key={ref} ref_={ref} />
-					)
+					return <GenericRefItem key={ref} ref_={ref} />
 				})}
 			</div>
 		</section>
 	)
 }
 
-function AssetRefItem({ ref_, asset, host }: { ref_: string; asset: HaikuAsset; host: string }) {
+function AssetRefItem({
+	ref_,
+	asset,
+	host,
+}: {
+	ref_: string
+	asset: HaikuAsset
+	host: string
+}) {
 	const [showLightbox, setShowLightbox] = useState(false)
 	const fileName = ref_.split("/").pop() || ref_
-	const dirPath = ref_.includes("/") ? ref_.substring(0, ref_.lastIndexOf("/")) : ""
+	const dirPath = ref_.includes("/")
+		? ref_.substring(0, ref_.lastIndexOf("/"))
+		: ""
 
 	return (
 		<>
 			<button
+				type="button"
 				onClick={() => setShowLightbox(true)}
 				className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-stone-200 p-3 text-left transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
 			>
@@ -345,8 +461,12 @@ function AssetRefItem({ ref_, asset, host }: { ref_: string; asset: HaikuAsset; 
 					/>
 				</div>
 				<div className="min-w-0">
-					<p className="truncate text-sm font-medium text-stone-700 dark:text-stone-300">{fileName}</p>
-					{dirPath && <p className="truncate text-xs text-stone-400">{dirPath}</p>}
+					<p className="truncate text-sm font-medium text-stone-700 dark:text-stone-300">
+						{fileName}
+					</p>
+					{dirPath && (
+						<p className="truncate text-xs text-stone-400">{dirPath}</p>
+					)}
 				</div>
 			</button>
 			{showLightbox && (
@@ -360,17 +480,29 @@ function AssetRefItem({ ref_, asset, host }: { ref_: string; asset: HaikuAsset; 
 	)
 }
 
-function TextRefItem({ ref_, intentSlug, provider }: { ref_: string; intentSlug: string; provider: BrowseProvider }) {
+function TextRefItem({
+	ref_,
+	intentSlug,
+	provider,
+}: {
+	ref_: string
+	intentSlug: string
+	provider: BrowseProvider
+}) {
 	const [content, setContent] = useState<string | null>(null)
 	const [showModal, setShowModal] = useState(false)
 
 	const fileName = ref_.split("/").pop() || ref_
-	const dirPath = ref_.includes("/") ? ref_.substring(0, ref_.lastIndexOf("/")) : ""
+	const dirPath = ref_.includes("/")
+		? ref_.substring(0, ref_.lastIndexOf("/"))
+		: ""
 	const isMarkdown = ref_.endsWith(".md")
 
 	const handleOpen = async () => {
 		if (content === null) {
-			const raw = await provider.readFile(`.haiku/intents/${intentSlug}/${ref_}`)
+			const raw = await provider.readFile(
+				`.haiku/intents/${intentSlug}/${ref_}`,
+			)
 			setContent(raw || "(empty)")
 		}
 		setShowModal(true)
@@ -379,6 +511,7 @@ function TextRefItem({ ref_, intentSlug, provider }: { ref_: string; intentSlug:
 	return (
 		<>
 			<button
+				type="button"
 				onClick={handleOpen}
 				className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-stone-200 p-3 text-left transition hover:border-teal-300 hover:shadow-sm dark:border-stone-700 dark:hover:border-teal-700"
 			>
@@ -386,8 +519,12 @@ function TextRefItem({ ref_, intentSlug, provider }: { ref_: string; intentSlug:
 					{isMarkdown ? "📄" : "📋"}
 				</div>
 				<div className="min-w-0">
-					<p className="truncate text-sm font-medium text-stone-700 dark:text-stone-300">{fileName}</p>
-					{dirPath && <p className="truncate text-xs text-stone-400">{dirPath}</p>}
+					<p className="truncate text-sm font-medium text-stone-700 dark:text-stone-300">
+						{fileName}
+					</p>
+					{dirPath && (
+						<p className="truncate text-xs text-stone-400">{dirPath}</p>
+					)}
 				</div>
 			</button>
 			{showModal && content && (
@@ -403,11 +540,23 @@ function TextRefItem({ ref_, intentSlug, provider }: { ref_: string; intentSlug:
 	)
 }
 
-function DocModal({ fileName, filePath, content, isMarkdown, onClose }: {
-	fileName: string; filePath: string; content: string; isMarkdown: boolean; onClose: () => void
+function DocModal({
+	fileName,
+	filePath,
+	content,
+	isMarkdown,
+	onClose,
+}: {
+	fileName: string
+	filePath: string
+	content: string
+	isMarkdown: boolean
+	onClose: () => void
 }) {
 	useEffect(() => {
-		const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose() }
+		const handleEsc = (e: KeyboardEvent) => {
+			if (e.key === "Escape") onClose()
+		}
 		document.addEventListener("keydown", handleEsc)
 		return () => document.removeEventListener("keydown", handleEsc)
 	}, [onClose])
@@ -424,32 +573,55 @@ function DocModal({ fileName, filePath, content, isMarkdown, onClose }: {
 	}
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+		<div
+			className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+			onClick={onClose}
+			onKeyDown={(e) => {
+				if (e.key === "Escape") onClose()
+			}}
+			role="dialog"
+			aria-modal="true"
+			aria-label={`File viewer: ${fileName}`}
+		>
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: inner container stops backdrop-close propagation */}
+			{/* biome-ignore lint/a11y/useKeyWithClickEvents: stopPropagation is click-capture suppression */}
 			<div
 				className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-stone-200 bg-white shadow-2xl dark:border-stone-700 dark:bg-stone-900"
 				onClick={(e) => e.stopPropagation()}
 			>
 				<div className="flex items-center justify-between border-b border-stone-200 px-5 py-3 dark:border-stone-700">
 					<div>
-						<h3 className="font-mono text-sm font-semibold text-stone-900 dark:text-stone-100">{fileName}</h3>
+						<h3 className="font-mono text-sm font-semibold text-stone-900 dark:text-stone-100">
+							{fileName}
+						</h3>
 						<p className="font-mono text-xs text-stone-400">{filePath}</p>
 					</div>
-					<button onClick={onClose} className="rounded p-1 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200">
+					<button
+						type="button"
+						onClick={onClose}
+						className="rounded p-1 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
+					>
 						&#10005;
 					</button>
 				</div>
 				{frontmatter && (
 					<div className="border-b border-stone-100 bg-stone-50 px-5 py-2 dark:border-stone-800 dark:bg-stone-950/50">
-						<pre className="font-mono text-[11px] text-stone-500">{frontmatter}</pre>
+						<pre className="font-mono text-[11px] text-stone-500">
+							{frontmatter}
+						</pre>
 					</div>
 				)}
 				<div className="flex-1 overflow-y-auto px-5 py-4">
 					{isMarkdown ? (
 						<div className="prose prose-sm prose-stone dark:prose-invert max-w-none">
-							<ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
+							<ReactMarkdown remarkPlugins={[remarkGfm]}>
+								{displayContent}
+							</ReactMarkdown>
 						</div>
 					) : (
-						<pre className="overflow-x-auto text-xs text-stone-600 dark:text-stone-400">{content}</pre>
+						<pre className="overflow-x-auto text-xs text-stone-600 dark:text-stone-400">
+							{content}
+						</pre>
 					)}
 				</div>
 			</div>
@@ -459,15 +631,30 @@ function DocModal({ fileName, filePath, content, isMarkdown, onClose }: {
 
 function GenericRefItem({ ref_ }: { ref_: string }) {
 	const fileName = ref_.split("/").pop() || ref_
-	const dirPath = ref_.includes("/") ? ref_.substring(0, ref_.lastIndexOf("/")) : ""
+	const dirPath = ref_.includes("/")
+		? ref_.substring(0, ref_.lastIndexOf("/"))
+		: ""
 
 	return (
 		<div className="flex items-center gap-3 rounded-lg border border-stone-200 px-4 py-3 dark:border-stone-700">
-			<svg className="h-5 w-5 flex-shrink-0 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-				<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+			<svg
+				className="h-5 w-5 flex-shrink-0 text-stone-400"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				aria-hidden="true"
+			>
+				<path
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					strokeWidth={1.5}
+					d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+				/>
 			</svg>
 			<div className="min-w-0">
-				<p className="truncate text-sm font-mono text-stone-600 dark:text-stone-400">{fileName}</p>
+				<p className="truncate text-sm font-mono text-stone-600 dark:text-stone-400">
+					{fileName}
+				</p>
 				{dirPath && (
 					<p className="truncate text-xs text-stone-400">{dirPath}</p>
 				)}
@@ -478,13 +665,17 @@ function GenericRefItem({ ref_ }: { ref_: string }) {
 
 function StatusBadge({ status }: { status: string }) {
 	const colors: Record<string, string> = {
-		completed: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+		completed:
+			"bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
 		active: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
-		pending: "bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400",
+		pending:
+			"bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400",
 		blocked: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 	}
 	return (
-		<span className={`rounded px-2 py-0.5 text-xs font-medium ${colors[status] || colors.pending}`}>
+		<span
+			className={`rounded px-2 py-0.5 text-xs font-medium ${colors[status] || colors.pending}`}
+		>
 			{status}
 		</span>
 	)

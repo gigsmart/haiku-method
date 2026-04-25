@@ -1,0 +1,9 @@
+{
+	"createdAt": "2026-04-22T01:48:59.834Z",
+	"gzipBytes": 693403,
+	"notes": [
+		"Set by `audit-bundle-size.mjs --update-baseline`. Updating this",
+		"file requires an explicit PR — the audit script only writes it",
+		"when this flag is passed."
+	]
+}

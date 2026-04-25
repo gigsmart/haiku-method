@@ -13,6 +13,11 @@ export const INTENT_FIELDS = [
 	"active_stage",
 	"started_at",
 	"completed_at",
+	"phase",
+	"completion_review_dispatched",
+	"completion_review_skipped",
+	"completion_review_entered_at",
+	"completion_review_dispatched_at",
 ]
 
 export const STAGE_FIELDS = [
@@ -31,4 +36,5 @@ export const UNIT_FIELDS = [
 	"bolt",
 	"hat",
 	"hat_started_at",
+	"scope_reject_attempts",
 ]

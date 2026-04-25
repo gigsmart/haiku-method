@@ -3,8 +3,8 @@
 import {
 	existsSync,
 	lstatSync,
-	readFileSync,
 	readdirSync,
+	readFileSync,
 	statSync,
 } from "node:fs"
 import { join } from "node:path"
@@ -15,8 +15,26 @@ import {
 
 // Re-export so consumers don't need to reach into prompts/helpers
 export const studioSearchPaths = _studioSearchPaths
+
 import { resolvePluginRoot } from "./config.js"
+import { type ModelTier, sanitizeModel } from "./model-selection.js"
 import { parseFrontmatter } from "./state-tools.js"
+
+/**
+ * Read the `model:` field from a mandate file's frontmatter and sanitize it
+ * to a known ModelTier. Returns undefined if the file doesn't exist, has no
+ * model field, or has an invalid value. Used at review-agent and fix-hat
+ * dispatch sites to pull the declared tier without re-reading the whole file.
+ */
+export function readModelFromPath(path: string): ModelTier | undefined {
+	try {
+		if (!existsSync(path)) return undefined
+		const { data } = parseFrontmatter(readFileSync(path, "utf8"))
+		return sanitizeModel(data.model as string | undefined)
+	} catch {
+		return undefined
+	}
+}
 
 /** Read a studio stage definition file */
 export function readStageDef(
@@ -100,6 +118,225 @@ export function readReviewAgentDefs(
 		}
 	}
 	return agents
+}
+
+/** Return review agent NAME → FILE PATH mapping (project overrides plugin). Subagent reads the file itself. */
+export function readReviewAgentPaths(
+	studio: string,
+	stage: string,
+): Record<string, string> {
+	validateIdentifier(studio, "studio")
+	validateIdentifier(stage, "stage")
+	const agents: Record<string, string> = {}
+	for (const base of [...studioSearchPaths()].reverse()) {
+		const agentsDir = join(base, studio, "stages", stage, "review-agents")
+		if (!existsSync(agentsDir)) continue
+		for (const f of readdirSync(agentsDir).filter((f) => f.endsWith(".md"))) {
+			agents[f.replace(/\.md$/, "")] = join(agentsDir, f)
+		}
+	}
+	return agents
+}
+
+/**
+ * Studio-level review agents live at `plugin/studios/{studio}/review-agents/*.md`
+ * (NOT per-stage). They run once at intent completion, after the final
+ * stage gate passes but before `intent_complete`. Their scope is the whole
+ * intent, not a single stage. Project overrides plugin. Subagent reads
+ * each file. Returns name → absolute path.
+ */
+export function readStudioReviewAgentPaths(
+	studio: string,
+): Record<string, string> {
+	validateIdentifier(studio, "studio")
+	const agents: Record<string, string> = {}
+	for (const base of [...studioSearchPaths()].reverse()) {
+		const agentsDir = join(base, studio, "review-agents")
+		if (!existsSync(agentsDir)) continue
+		for (const f of readdirSync(agentsDir).filter((f) => f.endsWith(".md"))) {
+			agents[f.replace(/\.md$/, "")] = join(agentsDir, f)
+		}
+	}
+	return agents
+}
+
+/**
+ * Studio-level fix hats live at `plugin/studios/{studio}/fix-hats/*.md`
+ * (NOT per-stage). They are dispatched against intent-scope feedback
+ * produced by the studio-level review agents. They run at intent
+ * completion time to reconcile cross-stage artifacts against studio-wide
+ * standards — different mandate than stage-owned hats. Project overrides
+ * plugin. Returns name → HatDef (content + agent_type + model).
+ */
+export function readStudioFixHatDefs(studio: string): Record<string, HatDef> {
+	validateIdentifier(studio, "studio")
+	const hats: Record<string, HatDef> = {}
+	for (const base of [...studioSearchPaths()].reverse()) {
+		const hatsDir = join(base, studio, "fix-hats")
+		if (!existsSync(hatsDir)) continue
+		for (const f of readdirSync(hatsDir).filter((f) => f.endsWith(".md"))) {
+			const raw = readFileSync(join(hatsDir, f), "utf8")
+			const { data, body } = parseFrontmatter(raw)
+			hats[f.replace(/\.md$/, "")] = {
+				content: body,
+				agent_type: (data.agent_type as string) || undefined,
+				model: (data.model as string) || undefined,
+				raw,
+			}
+		}
+	}
+	return hats
+}
+
+/** Return studio-level fix hat NAME → FILE PATH mapping. Parent spawns a
+ *  subagent with the mandate file; we pass the path, not the body, to keep
+ *  the parent's context small. */
+export function readStudioFixHatPaths(studio: string): Record<string, string> {
+	validateIdentifier(studio, "studio")
+	const hats: Record<string, string> = {}
+	for (const base of [...studioSearchPaths()].reverse()) {
+		const hatsDir = join(base, studio, "fix-hats")
+		if (!existsSync(hatsDir)) continue
+		for (const f of readdirSync(hatsDir).filter((f) => f.endsWith(".md"))) {
+			hats[f.replace(/\.md$/, "")] = join(hatsDir, f)
+		}
+	}
+	return hats
+}
+
+/**
+ * Filter review agents by their `applies_to:` frontmatter against the
+ * artifacts the stage actually produces. Agents with no `applies_to:`
+ * declaration always run (backward compat). Agents with a list of globs
+ * run only when at least one artifact in the stage directory matches at
+ * least one glob — e.g. `applies_to: ['*.html', '*.tsx']` skips the web
+ * a11y agent on a backend-only stage.
+ *
+ * Globs support simple `*.ext` patterns; full glob semantics are not
+ * required because this is a coarse "does this stage have any HTML?" check.
+ */
+export function filterReviewAgentsByScope(
+	agentPaths: Record<string, string>,
+	stageArtifactsDir: string,
+	/** Optional: studio + stage, used when artifacts don't exist yet (pre-execute
+	 *  review). Lets the filter consult declared output templates instead of
+	 *  falling back to "include everything." */
+	studioStage?: { studio: string; stage: string },
+): Record<string, string> {
+	const filtered: Record<string, string> = {}
+	let stageFiles: string[] | null = null // lazily loaded
+	let outputExts: string[] | null = null // lazily loaded
+	for (const [name, mandatePath] of Object.entries(agentPaths)) {
+		if (!applies(mandatePath)) continue
+		filtered[name] = mandatePath
+	}
+	return filtered
+
+	function readAppliesTo(mandatePath: string): string[] | undefined {
+		try {
+			const raw = readFileSync(mandatePath, "utf8")
+			const { data } = parseFrontmatter(raw)
+			const v = data.applies_to
+			if (v !== undefined && v !== null) {
+				if (Array.isArray(v) && v.every((x) => typeof x === "string")) {
+					return v as string[]
+				}
+				// Malformed — warn so typos like `applyes_to:` surface rather
+				// than silently producing a fall-through "always include."
+				console.warn(
+					`[haiku] review-agent ${mandatePath}: \`applies_to:\` is present but not a string[]; treating as unscoped (always runs). Fix the frontmatter to scope the agent.`,
+				)
+			}
+		} catch {
+			/* defensive: can't parse → treat as unscoped */
+		}
+		return undefined
+	}
+
+	function getStageFiles(): string[] {
+		if (stageFiles === null) {
+			stageFiles = walkDirExtensions(stageArtifactsDir)
+		}
+		return stageFiles
+	}
+
+	function getOutputExts(): string[] {
+		if (outputExts === null) {
+			outputExts = []
+			if (studioStage) {
+				for (const def of readStageArtifactDefs(
+					studioStage.studio,
+					studioStage.stage,
+				)) {
+					if (def.kind !== "output") continue
+					const loc = def.location || ""
+					// Extract extension from location template (e.g.
+					// ".../stages/design/artifacts/DESIGN-BRIEF.md" → ".md";
+					// ".../stages/design/artifacts/{foo}.html" → ".html"). Strip
+					// placeholder segments so templates with `{}` markers still
+					// resolve an extension.
+					const cleaned = loc.replace(/\{[^}]+\}/g, "").toLowerCase()
+					const m = cleaned.match(/\.[a-z0-9]+$/)
+					if (m) outputExts.push(m[0])
+				}
+			}
+		}
+		return outputExts
+	}
+
+	function applies(mandatePath: string): boolean {
+		const appliesTo = readAppliesTo(mandatePath)
+		if (!appliesTo || appliesTo.length === 0) return true
+		const files = getStageFiles()
+		// Prefer filesystem evidence when the stage has actually produced
+		// artifacts (post-execute review path).
+		if (files.length > 0) {
+			for (const pattern of appliesTo) {
+				const ext = pattern.replace(/^\*/, "").toLowerCase()
+				if (files.some((f) => f.toLowerCase().endsWith(ext))) return true
+			}
+			return false
+		}
+		// Pre-execute review: artifacts don't exist yet. Consult the stage's
+		// DECLARED output templates so the applies_to: filter isn't silently
+		// defeated (e.g. a web a11y agent must not run on a stage whose
+		// outputs are all .md specs).
+		const declaredExts = getOutputExts()
+		if (declaredExts.length > 0) {
+			for (const pattern of appliesTo) {
+				const ext = pattern.replace(/^\*/, "").toLowerCase()
+				if (declaredExts.some((e) => e === ext)) return true
+			}
+			return false
+		}
+		// No artifacts AND no declared outputs — can't decide; include by
+		// default. This path fires only for misconfigured stages without
+		// any `outputs/*.md` definitions.
+		return true
+	}
+}
+
+/** Recursively collect every file path under `dir`, returning the filenames
+ *  (not full paths). Used by the review-agent scope filter so artifacts in
+ *  subdirectories (`artifacts/wireframes/home.html`) still match extension
+ *  globs. Non-fatal on missing dir. */
+function walkDirExtensions(dir: string): string[] {
+	if (!existsSync(dir)) return []
+	const out: string[] = []
+	const stack: string[] = [dir]
+	while (stack.length > 0) {
+		const current = stack.pop() as string
+		try {
+			const entries = readdirSync(current, { withFileTypes: true })
+			for (const e of entries) {
+				const name = String(e.name)
+				const p = join(current, name)
+				if (e.isDirectory()) stack.push(p)
+				else out.push(name)
+			}
+		} catch {}
+	}
+	return out
 }
 
 /** Read discovery and output artifact definitions for a stage */
@@ -399,6 +636,31 @@ export function resolveStudio(identifier: string): StudioInfo | null {
 		if (s.name.toLowerCase() === needle) return s
 		if (s.slug.toLowerCase() === needle) return s
 		if (s.aliases.some((a) => a.toLowerCase() === needle)) return s
+	}
+	return null
+}
+
+/** Read a phase override file for a stage (e.g. ELABORATION.md, EXECUTION.md).
+ *  Returns frontmatter + body, or null if no override exists. */
+export function readPhaseOverride(
+	studio: string,
+	stage: string,
+	phase: string,
+): { data: Record<string, unknown>; body: string } | null {
+	validateIdentifier(studio, "studio")
+	validateIdentifier(stage, "stage")
+	for (const base of studioSearchPaths()) {
+		const file = join(
+			base,
+			studio,
+			"stages",
+			stage,
+			"phases",
+			`${phase.toUpperCase()}.md`,
+		)
+		if (existsSync(file)) {
+			return parseFrontmatter(readFileSync(file, "utf8"))
+		}
 	}
 	return null
 }

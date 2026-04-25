@@ -329,7 +329,47 @@
         }
       },
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "soc2-readiness-audit": {
+          "slug": "soc2-readiness-audit",
+          "title": "SOC 2 Type II Readiness",
+          "studio": "compliance",
+          "related": [
+            "security-assessment",
+            "documentation",
+            "vendor-management"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Get us SOC 2 Type II ready — we're chasing enterprise deals."
+            },
+            {
+              "role": "agent",
+              "text": "Which trust services criteria — Security only, or add Availability and Confidentiality?"
+            },
+            {
+              "role": "user",
+              "text": "Security and Availability. No customer PHI so we can skip the rest."
+            },
+            {
+              "role": "agent",
+              "text": "Target audit window and auditor selected?"
+            },
+            {
+              "role": "user",
+              "text": "6-month window starting July. Going with Prescient Assurance."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — scoping the controls against the selected criteria now."
+            }
+          ],
+          "seed": "Prepare the company for a SOC 2 Type II audit covering the Security and Availability trust services criteria. 6-month observation window begins July 1; auditor is Prescient Assurance. No PHI in scope.",
+          "preIntentPath": "plugin/studios/compliance/examples/soc2-readiness-audit/pre-intent.yml",
+          "intentPath": "plugin/studios/compliance/examples/soc2-readiness-audit/intent.md"
+        }
+      },
       "stages": {
         "scope": {
           "frontmatter": {
@@ -914,7 +954,47 @@
         }
       },
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "q2-churn-playbook": {
+          "slug": "q2-churn-playbook",
+          "title": "Q2 Churn Recovery Playbook",
+          "studio": "customer-success",
+          "related": [
+            "product-strategy",
+            "sales",
+            "marketing"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Q1 logo churn spiked 40%. Build me a playbook to stop the bleeding."
+            },
+            {
+              "role": "agent",
+              "text": "Do we know which segment is churning — SMB, mid-market, enterprise?"
+            },
+            {
+              "role": "user",
+              "text": "Mid-market, mostly 50-200 seat accounts that signed up in Q3."
+            },
+            {
+              "role": "agent",
+              "text": "Is there a common failure pattern — onboarding gap, feature mismatch, price objection?"
+            },
+            {
+              "role": "user",
+              "text": "Onboarding. They never got past the workspace setup."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — the playbook will focus on the Q3 mid-market cohort and onboarding recovery."
+            }
+          ],
+          "seed": "Build and execute a churn recovery playbook for mid-market accounts that signed up in Q3 2025 but never completed onboarding. Q1 logo churn spiked 40% driven almost entirely by this cohort. The playbook needs a re-onboarding motion, a health signal update, and a save-play for renewal conversations.",
+          "preIntentPath": "plugin/studios/customer-success/examples/q2-churn-playbook/pre-intent.yml",
+          "intentPath": "plugin/studios/customer-success/examples/q2-churn-playbook/intent.md"
+        }
+      },
       "stages": {
         "onboarding": {
           "frontmatter": {
@@ -1411,7 +1491,47 @@
       },
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "salesforce-to-warehouse-sync": {
+          "slug": "salesforce-to-warehouse-sync",
+          "title": "Salesforce → Snowflake Opportunity Sync",
+          "studio": "data-pipeline",
+          "related": [
+            "software",
+            "documentation",
+            "security-assessment"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Pipe Salesforce opportunity data into the warehouse every 15 minutes."
+            },
+            {
+              "role": "agent",
+              "text": "Incremental by LastModifiedDate or full snapshot each run?"
+            },
+            {
+              "role": "user",
+              "text": "Incremental. Full snapshots choked the API last time."
+            },
+            {
+              "role": "agent",
+              "text": "Warehouse target — Snowflake, BigQuery, or something else?"
+            },
+            {
+              "role": "user",
+              "text": "Snowflake. Land raw into RAW.SFDC then transform in dbt."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — incremental extract, Snowflake RAW landing, dbt downstream."
+            }
+          ],
+          "seed": "Incremental 15-minute sync of Salesforce opportunity data into Snowflake. Land raw into `RAW.SFDC.OPPORTUNITY` and let the existing dbt graph take it from there. Incremental by `LastModifiedDate` — full snapshots previously exhausted the SFDC API quota.",
+          "preIntentPath": "plugin/studios/data-pipeline/examples/salesforce-to-warehouse-sync/pre-intent.yml",
+          "intentPath": "plugin/studios/data-pipeline/examples/salesforce-to-warehouse-sync/intent.md"
+        }
+      },
       "stages": {
         "discovery": {
           "frontmatter": {
@@ -1804,7 +1924,47 @@
       "operations": {},
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "launch-conference-talk": {
+          "slug": "launch-conference-talk",
+          "title": "ReactConf Talk: Server Components in Production",
+          "studio": "dev-evangelism",
+          "related": [
+            "marketing",
+            "documentation",
+            "product-strategy"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "I'm speaking at ReactConf about our new server components work."
+            },
+            {
+              "role": "agent",
+              "text": "What's the audience's baseline — brand new to RSC or already shipping?"
+            },
+            {
+              "role": "user",
+              "text": "Mixed. Assume they've read the docs but haven't built anything production."
+            },
+            {
+              "role": "agent",
+              "text": "Slot length and demo depth?"
+            },
+            {
+              "role": "user",
+              "text": "25 minutes. One live demo, rest slides and code walkthroughs."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — narrative-first talk with one anchor demo, mixed-experience audience."
+            }
+          ],
+          "seed": "25-minute ReactConf talk on shipping React Server Components in production. Audience has read the docs but hasn't built anything real yet — the talk bridges the theory/practice gap with one anchor demo and a narrative arc around the tradeoffs we hit.",
+          "preIntentPath": "plugin/studios/dev-evangelism/examples/launch-conference-talk/pre-intent.yml",
+          "intentPath": "plugin/studios/dev-evangelism/examples/launch-conference-talk/intent.md"
+        }
+      },
       "stages": {
         "research": {
           "frontmatter": {
@@ -2340,7 +2500,47 @@
         }
       },
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "api-reference-revamp": {
+          "slug": "api-reference-revamp",
+          "title": "API Reference Revamp",
+          "studio": "documentation",
+          "related": [
+            "software",
+            "dev-evangelism",
+            "libdev"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Our API reference is a dumping ground. Rebuild it properly."
+            },
+            {
+              "role": "agent",
+              "text": "Generated from OpenAPI or hand-curated?"
+            },
+            {
+              "role": "user",
+              "text": "Generated from the spec, but with hand-written examples per endpoint."
+            },
+            {
+              "role": "agent",
+              "text": "Versioning — latest only, or every public version?"
+            },
+            {
+              "role": "user",
+              "text": "Latest plus the previous major. We EOL anything older."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — OpenAPI-driven reference with curated examples, latest + one back."
+            }
+          ],
+          "seed": "Rebuild the public API reference from the OpenAPI spec, add hand-written request/response examples for every endpoint, and ship versioned docs for the latest and previous-major versions. Older versions are EOL'd.",
+          "preIntentPath": "plugin/studios/documentation/examples/api-reference-revamp/pre-intent.yml",
+          "intentPath": "plugin/studios/documentation/examples/api-reference-revamp/intent.md"
+        }
+      },
       "stages": {
         "audit": {
           "frontmatter": {
@@ -2722,7 +2922,47 @@
       "operations": {},
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "ai-platform-strategy": {
+          "slug": "ai-platform-strategy",
+          "title": "AI Platform vs. Portfolio Strategy",
+          "studio": "executive-strategy",
+          "related": [
+            "product-strategy",
+            "marketing",
+            "finance"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Board wants a platform-vs-point-solution answer on our AI roadmap."
+            },
+            {
+              "role": "agent",
+              "text": "What's the current revenue split between the point products?"
+            },
+            {
+              "role": "user",
+              "text": "70% on two flagship products, 30% on six smaller ones."
+            },
+            {
+              "role": "agent",
+              "text": "Timeline — board decision this quarter, or longer?"
+            },
+            {
+              "role": "user",
+              "text": "Next board meeting. 6 weeks out."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — I'll frame platform vs. portfolio tradeoffs against that revenue concentration."
+            }
+          ],
+          "seed": "Frame and decide whether the company pursues a unified AI platform strategy or doubles down on the two revenue-concentrated flagship products. Decision memo due at the next board meeting (6 weeks out). Current revenue is 70% concentrated in two flagships; the remaining 30% is spread across six smaller products.",
+          "preIntentPath": "plugin/studios/executive-strategy/examples/ai-platform-strategy/pre-intent.yml",
+          "intentPath": "plugin/studios/executive-strategy/examples/ai-platform-strategy/intent.md"
+        }
+      },
       "stages": {
         "landscape": {
           "frontmatter": {
@@ -3153,7 +3393,47 @@
       "operations": {},
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "2026-q3-forecast": {
+          "slug": "2026-q3-forecast",
+          "title": "2026 Q3 Forecast",
+          "studio": "finance",
+          "related": [
+            "executive-strategy",
+            "sales",
+            "product-strategy"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Build the Q3 2026 forecast — revenue, opex, and cash runway."
+            },
+            {
+              "role": "agent",
+              "text": "Base case on current pipeline only, or pipeline + pipeline coverage adjustment?"
+            },
+            {
+              "role": "user",
+              "text": "Pipeline + coverage. Our win rate normalizes the top-of-funnel."
+            },
+            {
+              "role": "agent",
+              "text": "Any known one-time items landing in Q3 — hires, renewals, big deals?"
+            },
+            {
+              "role": "user",
+              "text": "5 senior eng hires starting in July, and the Acme renewal in August."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — Q3 model keyed off pipeline-coverage revenue, with the headcount and renewal events explicit."
+            }
+          ],
+          "seed": "Quarterly forecast for Q3 2026 — revenue, opex, and cash runway. Base case uses pipeline coverage (not raw pipeline). Known events: 5 senior engineering hires start in July; Acme renewal lands in August.",
+          "preIntentPath": "plugin/studios/finance/examples/2026-q3-forecast/pre-intent.yml",
+          "intentPath": "plugin/studios/finance/examples/2026-q3-forecast/intent.md"
+        }
+      },
       "stages": {
         "forecast": {
           "frontmatter": {
@@ -3593,7 +3873,47 @@
       "operations": {},
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "coop-shooter-prototype": {
+          "slug": "coop-shooter-prototype",
+          "title": "4-Player Co-op Shooter Prototype",
+          "studio": "gamedev",
+          "related": [
+            "software",
+            "marketing",
+            "quality-assurance"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Prototype a 4-player co-op shooter — session-based, 20-minute runs."
+            },
+            {
+              "role": "agent",
+              "text": "Target platform — PC only, or console from day one?"
+            },
+            {
+              "role": "user",
+              "text": "PC first. Console port after we validate the loop."
+            },
+            {
+              "role": "agent",
+              "text": "Engine and netcode — Unreal with replication, Unity with Mirror, something else?"
+            },
+            {
+              "role": "user",
+              "text": "Unreal. Rollback netcode isn't in scope — authoritative server is fine."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — Unreal, 4-player auth-server, PC prototype targeting a 20-minute session loop."
+            }
+          ],
+          "seed": "Playable prototype of a 4-player co-op session-based shooter. Target session is 20 minutes. Unreal Engine with authoritative-server netcode (no rollback). PC first — console ports come after the loop is validated.",
+          "preIntentPath": "plugin/studios/gamedev/examples/coop-shooter-prototype/pre-intent.yml",
+          "intentPath": "plugin/studios/gamedev/examples/coop-shooter-prototype/intent.md"
+        }
+      },
       "stages": {
         "concept": {
           "frontmatter": {
@@ -4106,7 +4426,47 @@
       "operations": {},
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "senior-backend-hire": {
+          "slug": "senior-backend-hire",
+          "title": "Senior Backend Engineer — Platform Team",
+          "studio": "hr",
+          "related": [
+            "executive-strategy",
+            "finance",
+            "training"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Hire a senior backend engineer for the platform team."
+            },
+            {
+              "role": "agent",
+              "text": "What's the must-have technical signal — distributed systems, databases, infra?"
+            },
+            {
+              "role": "user",
+              "text": "Distributed systems. We're rewriting the event bus."
+            },
+            {
+              "role": "agent",
+              "text": "Comp band and location flexibility?"
+            },
+            {
+              "role": "user",
+              "text": "Senior band, equity heavy. Remote US."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — sourcing against distributed-systems senior, remote US, senior comp band."
+            }
+          ],
+          "seed": "Hire a senior backend engineer for the platform team to lead the event bus rewrite. Must-have signal is distributed systems experience. Remote US; senior comp band with equity-heavy mix.",
+          "preIntentPath": "plugin/studios/hr/examples/senior-backend-hire/pre-intent.yml",
+          "intentPath": "plugin/studios/hr/examples/senior-backend-hire/intent.md"
+        }
+      },
       "stages": {
         "requisition": {
           "frontmatter": {
@@ -6709,7 +7069,47 @@
       "operations": {},
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "retry-middleware-lib": {
+          "slug": "retry-middleware-lib",
+          "title": "Retry Middleware Library",
+          "studio": "libdev",
+          "related": [
+            "software",
+            "documentation",
+            "security-assessment"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Extract our retry logic into an open-source middleware library."
+            },
+            {
+              "role": "agent",
+              "text": "Which runtimes — Node only, or also Bun and Deno?"
+            },
+            {
+              "role": "user",
+              "text": "Node and Bun. Skip Deno for now."
+            },
+            {
+              "role": "agent",
+              "text": "Backoff strategies — exponential, decorrelated jitter, user-defined?"
+            },
+            {
+              "role": "user",
+              "text": "Exponential with decorrelated jitter as the default. Let users plug their own."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — Node + Bun, decorrelated-jitter default, pluggable strategies."
+            }
+          ],
+          "seed": "Extract the in-house retry logic into a standalone open-source middleware library for Node and Bun runtimes. Default strategy is exponential backoff with decorrelated jitter; users can plug custom strategies via interface.",
+          "preIntentPath": "plugin/studios/libdev/examples/retry-middleware-lib/pre-intent.yml",
+          "intentPath": "plugin/studios/libdev/examples/retry-middleware-lib/intent.md"
+        }
+      },
       "stages": {
         "inception": {
           "frontmatter": {
@@ -7265,7 +7665,47 @@
         }
       },
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "pricing-page-relaunch": {
+          "slug": "pricing-page-relaunch",
+          "title": "Pricing Page Relaunch",
+          "studio": "marketing",
+          "related": [
+            "product-strategy",
+            "sales",
+            "documentation"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Relaunch the pricing page. The current one buries enterprise."
+            },
+            {
+              "role": "agent",
+              "text": "Three tiers like today, or restructure the plans too?"
+            },
+            {
+              "role": "user",
+              "text": "Three tiers, but rename Growth → Team, and add a real Enterprise tier with a contact-sales CTA."
+            },
+            {
+              "role": "agent",
+              "text": "Per-seat, flat, or usage-based for the Team tier?"
+            },
+            {
+              "role": "user",
+              "text": "Per-seat with a platform fee. Usage add-ons for storage and API calls."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — three-tier page with a real Enterprise row and per-seat + usage Team pricing."
+            }
+          ],
+          "seed": "Relaunch the public pricing page. The current page buries Enterprise in an afterthought row; the new page surfaces it as a full tier with a contact-sales path. Growth is renamed to Team with per-seat + platform-fee pricing and usage add-ons.",
+          "preIntentPath": "plugin/studios/marketing/examples/pricing-page-relaunch/pre-intent.yml",
+          "intentPath": "plugin/studios/marketing/examples/pricing-page-relaunch/intent.md"
+        }
+      },
       "stages": {
         "research": {
           "frontmatter": {
@@ -7744,7 +8184,47 @@
       },
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "mongo-to-postgres-migration": {
+          "slug": "mongo-to-postgres-migration",
+          "title": "User Service: MongoDB → Postgres",
+          "studio": "migration",
+          "related": [
+            "data-pipeline",
+            "software",
+            "security-assessment"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Move the user service from MongoDB to Postgres."
+            },
+            {
+              "role": "agent",
+              "text": "Is this a clean cut-over or a dual-write period first?"
+            },
+            {
+              "role": "user",
+              "text": "Dual-write for 2 weeks, then read from Postgres, then drop Mongo."
+            },
+            {
+              "role": "agent",
+              "text": "What's the schema story — flatten the nested documents or relational model?"
+            },
+            {
+              "role": "user",
+              "text": "Relational. The nesting was accidental; the real model has foreign keys."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — dual-write migration to a proper relational model, 2-week overlap."
+            }
+          ],
+          "seed": "Migrate the user service from MongoDB to Postgres with a 2-week dual-write overlap. Collapse the accidentally-nested document shape into a proper relational model with foreign keys. Read traffic flips after the dual-write window; Mongo is decommissioned 7 days after read cutover.",
+          "preIntentPath": "plugin/studios/migration/examples/mongo-to-postgres-migration/pre-intent.yml",
+          "intentPath": "plugin/studios/migration/examples/mongo-to-postgres-migration/intent.md"
+        }
+      },
       "stages": {
         "assessment": {
           "frontmatter": {
@@ -8244,7 +8724,47 @@
       },
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "mobile-priority-roadmap": {
+          "slug": "mobile-priority-roadmap",
+          "title": "H1 2026 Mobile-Priority Roadmap",
+          "studio": "product-strategy",
+          "related": [
+            "executive-strategy",
+            "marketing",
+            "customer-success"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Build the H1 2026 roadmap — mobile is top priority."
+            },
+            {
+              "role": "agent",
+              "text": "Mobile-first standalone app, or native wrapper around the web?"
+            },
+            {
+              "role": "user",
+              "text": "Native standalone. The web shell doesn't cut it anymore."
+            },
+            {
+              "role": "agent",
+              "text": "What's the must-have feature parity bar with web at launch?"
+            },
+            {
+              "role": "user",
+              "text": "Core workflows and offline read. Collaboration and admin can come later."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — native mobile roadmap with core-workflow + offline-read parity as the H1 bar."
+            }
+          ],
+          "seed": "H1 2026 product roadmap with native mobile as top priority. Deprecate the web-shell wrapper in favor of a standalone native app. Launch bar is core-workflow parity with web + offline read support. Collaboration and admin features defer to H2.",
+          "preIntentPath": "plugin/studios/product-strategy/examples/mobile-priority-roadmap/pre-intent.yml",
+          "intentPath": "plugin/studios/product-strategy/examples/mobile-priority-roadmap/intent.md"
+        }
+      },
       "stages": {
         "discovery": {
           "frontmatter": {
@@ -8680,7 +9200,47 @@
       "operations": {},
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "website-redesign-delivery": {
+          "slug": "website-redesign-delivery",
+          "title": "Website Redesign Delivery",
+          "studio": "project-management",
+          "related": [
+            "marketing",
+            "software",
+            "documentation"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Deliver the website redesign by end of quarter."
+            },
+            {
+              "role": "agent",
+              "text": "What's done already — design, content, or still upstream?"
+            },
+            {
+              "role": "user",
+              "text": "Design is approved. Content 50% drafted. Engineering hasn't started."
+            },
+            {
+              "role": "agent",
+              "text": "Is there a hard launch date or is EOQ a soft target?"
+            },
+            {
+              "role": "user",
+              "text": "Hard date. We're announcing at our customer summit on the 30th."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — hard launch 30th, backward-planning from there with eng as the critical path."
+            }
+          ],
+          "seed": "Deliver the website redesign by the customer summit (hard date, day 30 of the quarter). Design is approved, content is 50% drafted, engineering hasn't started — eng is the critical path. Backward-plan from the summit date with a weekly status cadence and explicit go/no-go at day 20.",
+          "preIntentPath": "plugin/studios/project-management/examples/website-redesign-delivery/pre-intent.yml",
+          "intentPath": "plugin/studios/project-management/examples/website-redesign-delivery/intent.md"
+        }
+      },
       "stages": {
         "charter": {
           "frontmatter": {
@@ -9119,7 +9679,47 @@
       "operations": {},
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "mobile-app-release-cert": {
+          "slug": "mobile-app-release-cert",
+          "title": "Mobile App v4.0 Release Certification",
+          "studio": "quality-assurance",
+          "related": [
+            "software",
+            "gamedev",
+            "security-assessment"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Certify the mobile app v4.0 for release — iOS and Android."
+            },
+            {
+              "role": "agent",
+              "text": "Regression scope — full matrix, or smoke + impacted areas?"
+            },
+            {
+              "role": "user",
+              "text": "Smoke + impacted areas. Full matrix takes too long for the release cadence."
+            },
+            {
+              "role": "agent",
+              "text": "Accessibility and localization covered separately or part of this cert?"
+            },
+            {
+              "role": "user",
+              "text": "A11y in this cert. Localization has its own track."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — smoke + impacted + a11y for iOS and Android v4.0 certification."
+            }
+          ],
+          "seed": "Pre-release QA certification for the mobile app v4.0 on iOS and Android. Scope is smoke + impacted-areas regression plus the full accessibility suite. Localization runs on its own track and is out of scope here.",
+          "preIntentPath": "plugin/studios/quality-assurance/examples/mobile-app-release-cert/pre-intent.yml",
+          "intentPath": "plugin/studios/quality-assurance/examples/mobile-app-release-cert/intent.md"
+        }
+      },
       "stages": {
         "plan": {
           "frontmatter": {
@@ -9687,7 +10287,47 @@
         }
       },
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "enterprise-lead-close": {
+          "slug": "enterprise-lead-close",
+          "title": "Acme Corp Enterprise Close",
+          "studio": "sales",
+          "related": [
+            "customer-success",
+            "marketing",
+            "finance"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Close the Acme Corp deal — they're in legal review."
+            },
+            {
+              "role": "agent",
+              "text": "What's the deal size and contract length?"
+            },
+            {
+              "role": "user",
+              "text": "$480K ACV, 3-year term with an annual ramp."
+            },
+            {
+              "role": "agent",
+              "text": "Main blockers in legal — redlines, DPA, indemnity?"
+            },
+            {
+              "role": "user",
+              "text": "DPA. They want unlimited liability on data breach and we cap at annual fees."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — DPA unlimited-liability pushback is the live issue, going to negotiation with legal."
+            }
+          ],
+          "seed": "Close the Acme Corp enterprise deal currently stuck in legal review. $480K ACV, 3-year term with an annual ramp. Sticking point is the DPA — customer wants unlimited liability on data breach; standard contract caps at annual fees.",
+          "preIntentPath": "plugin/studios/sales/examples/enterprise-lead-close/pre-intent.yml",
+          "intentPath": "plugin/studios/sales/examples/enterprise-lead-close/intent.md"
+        }
+      },
       "stages": {
         "research": {
           "frontmatter": {
@@ -10180,7 +10820,47 @@
       },
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "internal-app-pentest": {
+          "slug": "internal-app-pentest",
+          "title": "Internal Admin Dashboard Pentest",
+          "studio": "security-assessment",
+          "related": [
+            "compliance",
+            "software",
+            "documentation"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Pentest our internal admin dashboard before we open it to partner admins."
+            },
+            {
+              "role": "agent",
+              "text": "Scope — the web app only, or API + infra too?"
+            },
+            {
+              "role": "user",
+              "text": "Web app + the API it calls. Infra is out of scope."
+            },
+            {
+              "role": "agent",
+              "text": "Authenticated testing, unauthenticated, or both?"
+            },
+            {
+              "role": "user",
+              "text": "Both. Partner admin role is the primary target."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — web + API pentest, authenticated and unauthenticated, partner-admin role focus."
+            }
+          ],
+          "seed": "Pre-launch pentest of the internal admin dashboard before it's opened to partner admins. Scope is the web app and the API it calls; infrastructure is excluded. Both authenticated and unauthenticated testing, with focus on the partner-admin role and privilege-escalation paths.",
+          "preIntentPath": "plugin/studios/security-assessment/examples/internal-app-pentest/pre-intent.yml",
+          "intentPath": "plugin/studios/security-assessment/examples/internal-app-pentest/intent.md"
+        }
+      },
       "stages": {
         "reconnaissance": {
           "frontmatter": {
@@ -11697,7 +12377,47 @@
       "operations": {},
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "new-hire-engineering-onboarding": {
+          "slug": "new-hire-engineering-onboarding",
+          "title": "Engineering New-Hire Onboarding (30-day)",
+          "studio": "training",
+          "related": [
+            "documentation",
+            "hr",
+            "project-management"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Build a new-hire onboarding program for the engineering team."
+            },
+            {
+              "role": "agent",
+              "text": "How long is the program — week one, first month, first 90 days?"
+            },
+            {
+              "role": "user",
+              "text": "First 30 days. Structured, with explicit milestones."
+            },
+            {
+              "role": "agent",
+              "text": "Shipping a real change in week one, or ramp-up only?"
+            },
+            {
+              "role": "user",
+              "text": "Shipping something real by end of week two. Week one is tooling and pairing."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — 30-day program, week one tooling + pairing, week two real ship, weeks three and four ownership ramp."
+            }
+          ],
+          "seed": "Structured 30-day onboarding program for new engineering hires. Week one is tooling setup and pair programming; week two ships a real change to production; weeks three and four ramp up ownership of a discrete area. Explicit milestones and a graduation review at day 30.",
+          "preIntentPath": "plugin/studios/training/examples/new-hire-engineering-onboarding/pre-intent.yml",
+          "intentPath": "plugin/studios/training/examples/new-hire-engineering-onboarding/intent.md"
+        }
+      },
       "stages": {
         "needs-analysis": {
           "frontmatter": {
@@ -12136,7 +12856,47 @@
       "operations": {},
       "templates": {},
       "examples": {},
-      "preIntents": {},
+      "preIntents": {
+        "observability-vendor-selection": {
+          "slug": "observability-vendor-selection",
+          "title": "Observability Vendor Selection",
+          "studio": "vendor-management",
+          "related": [
+            "finance",
+            "security-assessment",
+            "executive-strategy"
+          ],
+          "turns": [
+            {
+              "role": "user",
+              "text": "Pick an observability vendor — we're consolidating logs, metrics, traces."
+            },
+            {
+              "role": "agent",
+              "text": "Top contenders in mind, or open field?"
+            },
+            {
+              "role": "user",
+              "text": "Datadog, Grafana Cloud, New Relic. Open to others if there's a reason."
+            },
+            {
+              "role": "agent",
+              "text": "Budget ceiling and must-have features?"
+            },
+            {
+              "role": "user",
+              "text": "$300K annual. Must support OpenTelemetry natively and have a compliant EU region."
+            },
+            {
+              "role": "agent",
+              "text": "Got it — OTel-native + EU region + $300K ceiling against the three contenders."
+            }
+          ],
+          "seed": "Select a single observability vendor to consolidate logs, metrics, and traces. Top contenders: Datadog, Grafana Cloud, New Relic. Must-haves: native OpenTelemetry support and a compliant EU region. Annual budget ceiling is $300K.",
+          "preIntentPath": "plugin/studios/vendor-management/examples/observability-vendor-selection/pre-intent.yml",
+          "intentPath": "plugin/studios/vendor-management/examples/observability-vendor-selection/intent.md"
+        }
+      },
       "stages": {
         "requirements": {
           "frontmatter": {

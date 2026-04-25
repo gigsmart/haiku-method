@@ -1,67 +1,770 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "executive-strategy",
-  studio: "executive-strategy",
-  stages: ["landscape", "options", "evaluate", "decide", "communicate"],
-  completionText: "All 5 stages passed. apac-market-expansion delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1200, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Evaluate and plan market expansion into APAC"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: apac-market-expansion..."}, {"type":"file","path":".haiku/intents/apac-market-expansion/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: executive-strategy. 5 stages: landscape → options → evaluate → decide → communicate"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"landscape"}, {"type":"msg","role":"agent","label":"agent","text":"Entering landscape stage. Hat: strategist.\nWhich APAC markets are you considering? And what’s your current footprint there?"}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/landscape/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Japan, Singapore, and Australia are the top 3. We have zero presence today. Our competitors launched in Singapore last year."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Noted. Zero-base entry with competitive pressure in Singapore. Let me map the landscape."}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/landscape/units/unit-01-market-analysis.md"}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/landscape/units/unit-02-competitive-intel.md"}, {"type":"card","stage":"landscape","name":"market-analysis","status":"in-progress"}, {"type":"card","stage":"landscape","name":"competitive-intel","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"50"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: analyst. Market analysis complete. Key findings:\n  Japan: $2.8B TAM, enterprise-dominant, requires local partnerships\n  Singapore: $680M TAM, tech-forward, competitor has 12% share\n  Australia: $1.4B TAM, English-speaking, regulatory alignment with US\n\n5 macro trends identified with evidence-based impact assessment."}, {"type":"updateCard","stage":"landscape","name":"market-analysis","status":"completed"}, {"type":"updateCard","stage":"landscape","name":"competitive-intel","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Competitive intelligence mapped:\n  Competitor A: Singapore office, 15 enterprise clients, pricing 20% below us\n  Competitor B: Japan partnership with NTT, strong mid-market\n  Competitor C: Australia-only, acquired local player last quarter\nSWOT analysis connected to verifiable market data."}, {"type":"file","path":".haiku/intents/apac-market-expansion/knowledge/LANDSCAPE-ANALYSIS.md"}, {"type":"updateCard","stage":"landscape","name":"competitive-intel","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Landscape complete. Review gate: auto. Data sources verified — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"options"}, {"type":"msg","role":"agent","label":"agent","text":"Entering options stage. Hat: ideator.\nLoading landscape analysis..."}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/options/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → landscape/landscape-analysis (knowledge/LANDSCAPE-ANALYSIS.md)"}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/options/units/unit-01-option-generation.md"}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/options/units/unit-02-financial-modeling.md"}, {"type":"card","stage":"options","name":"option-generation","status":"in-progress"}, {"type":"card","stage":"options","name":"financial-modeling","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"3 distinct strategic options generated:\n  Option A: Singapore-first — direct entry, compete head-on ($2.5M investment)\n  Option B: Japan-first — partnership model with local SI ($4M investment)\n  Option C: Australia-first — organic growth, use as APAC HQ ($1.8M investment)\n\nEach has a differentiated value proposition and risk profile."}, {"type":"updateCard","stage":"options","name":"option-generation","status":"completed"}, {"type":"updateCard","stage":"options","name":"financial-modeling","status":"in-progress"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Hat: modeler. What’s the maximum investment you’d consider for year 1? And what’s your target payback period?"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"$3M max year 1. Payback within 24 months. We can go higher if the ROI justifies it."}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Financial models complete. Under $3M constraint:\n  Option A (Singapore): 18-month payback, 2.1x ROI at 3yr\n  Option B (Japan): 28-month payback — exceeds target, but 3.4x ROI at 3yr\n  Option C (Australia): 14-month payback, 1.6x ROI at 3yr\nAll assumptions stated with sensitivity analysis."}, {"type":"file","path":".haiku/intents/apac-market-expansion/knowledge/OPTIONS-MATRIX.md"}, {"type":"updateCard","stage":"options","name":"financial-modeling","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Options stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Good options. Japan’s ROI is interesting even with the longer payback. Let’s evaluate all three."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to evaluate stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"evaluate"}, {"type":"msg","role":"agent","label":"agent","text":"Entering evaluate stage. Hat: evaluator.\nLoading options and landscape..."}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/evaluate/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → options/options-matrix (knowledge/OPTIONS-MATRIX.md), landscape/landscape-analysis (knowledge/LANDSCAPE-ANALYSIS.md)"}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/evaluate/units/unit-01-tradeoff-analysis.md"}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/evaluate/units/unit-02-scenario-modeling.md"}, {"type":"card","stage":"evaluate","name":"tradeoff-analysis","status":"in-progress"}, {"type":"card","stage":"evaluate","name":"scenario-modeling","status":""}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"I’ll score each option against weighted criteria. How would you weight these factors?\n  1. Speed to revenue\n  2. Strategic positioning\n  3. Risk level\n  4. Competitive response\n  5. Talent availability"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"Strategic positioning highest — 40%. Speed to revenue 25%. Risk 20%. Competitive response 10%. Talent 5%."}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Weighted scoring complete:\n  Option A (Singapore): 78/100 — strong on speed, moderate strategic value\n  Option B (Japan): 85/100 — highest strategic value, longer timeline\n  Option C (Australia): 71/100 — lowest risk but limited strategic upside\n\nExplicit reasoning documented for each score."}, {"type":"updateCard","stage":"evaluate","name":"tradeoff-analysis","status":"completed"}, {"type":"updateCard","stage":"evaluate","name":"scenario-modeling","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: risk-analyst. Scenario modeling under 3 market conditions:\n  Bull: All options viable, Japan dominates at 4.2x ROI\n  Base: Singapore and Japan viable, Australia marginal\n  Bear: Only Australia survives within risk tolerance\n\nTop risks per option quantified with probability estimates and mitigations."}, {"type":"file","path":".haiku/intents/apac-market-expansion/knowledge/EVALUATION-REPORT.md"}, {"type":"updateCard","stage":"evaluate","name":"scenario-modeling","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Evaluate stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Japan as primary with Singapore as a fast-follow makes sense to me. Send the recommendation to the board."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to decide stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"decide"}, {"type":"msg","role":"agent","label":"agent","text":"Entering decide stage. Hat: advisor.\nLoading evaluation and options..."}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/decide/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → evaluate/evaluation-report (knowledge/EVALUATION-REPORT.md), options/options-matrix (knowledge/OPTIONS-MATRIX.md)"}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/decide/units/unit-01-decision-brief.md"}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/decide/units/unit-02-board-package.md"}, {"type":"card","stage":"decide","name":"decision-brief","status":"in-progress"}, {"type":"card","stage":"decide","name":"board-package","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Decision brief complete:\n  Recommendation: Japan-first with Singapore fast-follow (phased approach)\n  Supporting: Highest weighted score, best 3yr ROI, strongest strategic positioning\n  Counter-arguments: Longer payback, partnership dependency, cultural complexity\n  Dissenting view documented: CFO may prefer Australia for faster payback"}, {"type":"updateCard","stage":"decide","name":"decision-brief","status":"completed"}, {"type":"updateCard","stage":"decide","name":"board-package","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: facilitator. Board package prepared with executive summary, financial projections, risk matrix, and competitive positioning rationale. Decision criteria weights and stakeholder input documented transparently."}, {"type":"file","path":".haiku/intents/apac-market-expansion/knowledge/DECISION-BRIEF.md"}, {"type":"updateCard","stage":"decide","name":"board-package","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Decide stage complete. Review gate: external."}, {"type":"msg","role":"agent","label":"agent","text":"Sharing decision brief for board approval..."}] },
-    { delay: 1000, actions: [{"type":"showReview","title":"Decide","intent":"apac-market-expansion","criteria":["Clear recommendation with 3 supporting arguments","Counter-arguments and dissenting views documented","Decision framework criteria and weights transparent","Financial projections validated under 3 scenarios","All stakeholder perspectives considered"],"gateType":"external"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2400, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"Board approved Japan-first strategy with Singapore fast-follow."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"communicate"}, {"type":"msg","role":"agent","label":"agent","text":"Entering communicate stage. Hat: communicator.\nLoading decision brief..."}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/communicate/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → decide/decision-brief (knowledge/DECISION-BRIEF.md)"}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/communicate/units/unit-01-stakeholder-comms.md"}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/communicate/units/unit-02-rollout-plan.md"}, {"type":"card","stage":"communicate","name":"stakeholder-comms","status":"in-progress"}, {"type":"card","stage":"communicate","name":"rollout-plan","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Communication plan tailored to 4 stakeholder groups:\n  Board: Strategic rationale and financial commitment\n  Leadership team: Operational implications and resource needs\n  All-hands: Vision narrative and growth opportunity\n  Partners: Partnership framework and mutual value proposition\n\nEach with specific channels, timing, and key messages."}, {"type":"updateCard","stage":"communicate","name":"stakeholder-comms","status":"completed"}, {"type":"updateCard","stage":"communicate","name":"rollout-plan","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: planner. Rollout plan sequenced:\n  Phase 1: Japan partnership negotiations + legal entity setup\n  Phase 2: Singapore market entry preparation\n  Phase 3: Regional operations consolidation\n\nFAQ document covers top 10 anticipated questions with pre-approved responses. Dependencies mapped, owners assigned, milestones measurable."}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/communicate/artifacts/comms-package.md"}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/communicate/artifacts/rollout-plan.md"}, {"type":"file","path":".haiku/intents/apac-market-expansion/stages/communicate/artifacts/faq-document.md"}, {"type":"updateCard","stage":"communicate","name":"rollout-plan","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Communicate stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Approved. Excellent work on the stakeholder messaging."}, {"type":"msg","role":"agent","label":"agent","text":"All stages complete."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for apac-market-expansion.\n\nDelivered:\n  • Competitive landscape analysis across Japan, Singapore, and Australia\n  • 3 strategic options with financial models and sensitivity analysis\n  • Weighted tradeoff evaluation with 3-scenario stress testing\n  • Board-ready decision brief recommending Japan-first with Singapore fast-follow\n  • 4-audience communication plan with phased rollout and FAQ\n\nIntent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "executive-strategy",
+	studio: "executive-strategy",
+	stages: ["landscape", "options", "evaluate", "decide", "communicate"],
+	completionText: "All 5 stages passed. apac-market-expansion delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1200, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Evaluate and plan market expansion into APAC",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: apac-market-expansion...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: executive-strategy. 5 stages: landscape → options → evaluate → decide → communicate",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "landscape" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering landscape stage. Hat: strategist.\nWhich APAC markets are you considering? And what’s your current footprint there?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/landscape/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Japan, Singapore, and Australia are the top 3. We have zero presence today. Our competitors launched in Singapore last year.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Noted. Zero-base entry with competitive pressure in Singapore. Let me map the landscape.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/landscape/units/unit-01-market-analysis.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/landscape/units/unit-02-competitive-intel.md",
+				},
+				{
+					type: "card",
+					stage: "landscape",
+					name: "market-analysis",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "landscape",
+					name: "competitive-intel",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "50" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: analyst. Market analysis complete. Key findings:\n  Japan: $2.8B TAM, enterprise-dominant, requires local partnerships\n  Singapore: $680M TAM, tech-forward, competitor has 12% share\n  Australia: $1.4B TAM, English-speaking, regulatory alignment with US\n\n5 macro trends identified with evidence-based impact assessment.",
+				},
+				{
+					type: "updateCard",
+					stage: "landscape",
+					name: "market-analysis",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "landscape",
+					name: "competitive-intel",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Competitive intelligence mapped:\n  Competitor A: Singapore office, 15 enterprise clients, pricing 20% below us\n  Competitor B: Japan partnership with NTT, strong mid-market\n  Competitor C: Australia-only, acquired local player last quarter\nSWOT analysis connected to verifiable market data.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/knowledge/LANDSCAPE-ANALYSIS.md",
+				},
+				{
+					type: "updateCard",
+					stage: "landscape",
+					name: "competitive-intel",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Landscape complete. Review gate: auto. Data sources verified — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "options" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering options stage. Hat: ideator.\nLoading landscape analysis...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/options/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → landscape/landscape-analysis (knowledge/LANDSCAPE-ANALYSIS.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/options/units/unit-01-option-generation.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/options/units/unit-02-financial-modeling.md",
+				},
+				{
+					type: "card",
+					stage: "options",
+					name: "option-generation",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "options",
+					name: "financial-modeling",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "3 distinct strategic options generated:\n  Option A: Singapore-first — direct entry, compete head-on ($2.5M investment)\n  Option B: Japan-first — partnership model with local SI ($4M investment)\n  Option C: Australia-first — organic growth, use as APAC HQ ($1.8M investment)\n\nEach has a differentiated value proposition and risk profile.",
+				},
+				{
+					type: "updateCard",
+					stage: "options",
+					name: "option-generation",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "options",
+					name: "financial-modeling",
+					status: "in-progress",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: modeler. What’s the maximum investment you’d consider for year 1? And what’s your target payback period?",
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "$3M max year 1. Payback within 24 months. We can go higher if the ROI justifies it.",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Financial models complete. Under $3M constraint:\n  Option A (Singapore): 18-month payback, 2.1x ROI at 3yr\n  Option B (Japan): 28-month payback — exceeds target, but 3.4x ROI at 3yr\n  Option C (Australia): 14-month payback, 1.6x ROI at 3yr\nAll assumptions stated with sensitivity analysis.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/knowledge/OPTIONS-MATRIX.md",
+				},
+				{
+					type: "updateCard",
+					stage: "options",
+					name: "financial-modeling",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Options stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Good options. Japan’s ROI is interesting even with the longer payback. Let’s evaluate all three.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to evaluate stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "evaluate" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering evaluate stage. Hat: evaluator.\nLoading options and landscape...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/evaluate/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → options/options-matrix (knowledge/OPTIONS-MATRIX.md), landscape/landscape-analysis (knowledge/LANDSCAPE-ANALYSIS.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/evaluate/units/unit-01-tradeoff-analysis.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/evaluate/units/unit-02-scenario-modeling.md",
+				},
+				{
+					type: "card",
+					stage: "evaluate",
+					name: "tradeoff-analysis",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "evaluate",
+					name: "scenario-modeling",
+					status: "",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "I’ll score each option against weighted criteria. How would you weight these factors?\n  1. Speed to revenue\n  2. Strategic positioning\n  3. Risk level\n  4. Competitive response\n  5. Talent availability",
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Strategic positioning highest — 40%. Speed to revenue 25%. Risk 20%. Competitive response 10%. Talent 5%.",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Weighted scoring complete:\n  Option A (Singapore): 78/100 — strong on speed, moderate strategic value\n  Option B (Japan): 85/100 — highest strategic value, longer timeline\n  Option C (Australia): 71/100 — lowest risk but limited strategic upside\n\nExplicit reasoning documented for each score.",
+				},
+				{
+					type: "updateCard",
+					stage: "evaluate",
+					name: "tradeoff-analysis",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "evaluate",
+					name: "scenario-modeling",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: risk-analyst. Scenario modeling under 3 market conditions:\n  Bull: All options viable, Japan dominates at 4.2x ROI\n  Base: Singapore and Japan viable, Australia marginal\n  Bear: Only Australia survives within risk tolerance\n\nTop risks per option quantified with probability estimates and mitigations.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/knowledge/EVALUATION-REPORT.md",
+				},
+				{
+					type: "updateCard",
+					stage: "evaluate",
+					name: "scenario-modeling",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Evaluate stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Japan as primary with Singapore as a fast-follow makes sense to me. Send the recommendation to the board.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to decide stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "decide" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering decide stage. Hat: advisor.\nLoading evaluation and options...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/decide/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → evaluate/evaluation-report (knowledge/EVALUATION-REPORT.md), options/options-matrix (knowledge/OPTIONS-MATRIX.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/decide/units/unit-01-decision-brief.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/decide/units/unit-02-board-package.md",
+				},
+				{
+					type: "card",
+					stage: "decide",
+					name: "decision-brief",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "decide", name: "board-package", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Decision brief complete:\n  Recommendation: Japan-first with Singapore fast-follow (phased approach)\n  Supporting: Highest weighted score, best 3yr ROI, strongest strategic positioning\n  Counter-arguments: Longer payback, partnership dependency, cultural complexity\n  Dissenting view documented: CFO may prefer Australia for faster payback",
+				},
+				{
+					type: "updateCard",
+					stage: "decide",
+					name: "decision-brief",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "decide",
+					name: "board-package",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: facilitator. Board package prepared with executive summary, financial projections, risk matrix, and competitive positioning rationale. Decision criteria weights and stakeholder input documented transparently.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/knowledge/DECISION-BRIEF.md",
+				},
+				{
+					type: "updateCard",
+					stage: "decide",
+					name: "board-package",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Decide stage complete. Review gate: external.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Sharing decision brief for board approval...",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "showReview",
+					title: "Decide",
+					intent: "apac-market-expansion",
+					criteria: [
+						"Clear recommendation with 3 supporting arguments",
+						"Counter-arguments and dissenting views documented",
+						"Decision framework criteria and weights transparent",
+						"Financial projections validated under 3 scenarios",
+						"All stakeholder perspectives considered",
+					],
+					gateType: "external",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2400, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Board approved Japan-first strategy with Singapore fast-follow.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "communicate" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering communicate stage. Hat: communicator.\nLoading decision brief...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/communicate/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → decide/decision-brief (knowledge/DECISION-BRIEF.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/communicate/units/unit-01-stakeholder-comms.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/communicate/units/unit-02-rollout-plan.md",
+				},
+				{
+					type: "card",
+					stage: "communicate",
+					name: "stakeholder-comms",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "communicate",
+					name: "rollout-plan",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Communication plan tailored to 4 stakeholder groups:\n  Board: Strategic rationale and financial commitment\n  Leadership team: Operational implications and resource needs\n  All-hands: Vision narrative and growth opportunity\n  Partners: Partnership framework and mutual value proposition\n\nEach with specific channels, timing, and key messages.",
+				},
+				{
+					type: "updateCard",
+					stage: "communicate",
+					name: "stakeholder-comms",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "communicate",
+					name: "rollout-plan",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: planner. Rollout plan sequenced:\n  Phase 1: Japan partnership negotiations + legal entity setup\n  Phase 2: Singapore market entry preparation\n  Phase 3: Regional operations consolidation\n\nFAQ document covers top 10 anticipated questions with pre-approved responses. Dependencies mapped, owners assigned, milestones measurable.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/communicate/artifacts/comms-package.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/communicate/artifacts/rollout-plan.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/apac-market-expansion/stages/communicate/artifacts/faq-document.md",
+				},
+				{
+					type: "updateCard",
+					stage: "communicate",
+					name: "rollout-plan",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Communicate stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. Excellent work on the stakeholder messaging.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All stages complete.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for apac-market-expansion.\n\nDelivered:\n  • Competitive landscape analysis across Japan, Singapore, and Australia\n  • 3 strategic options with financial models and sensitivity analysis\n  • Weighted tradeoff evaluation with 3-scenario stress testing\n  • Board-ready decision brief recommending Japan-first with Singapore fast-follow\n  • 4-audience communication plan with phased rollout and FAQ\n\nIntent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

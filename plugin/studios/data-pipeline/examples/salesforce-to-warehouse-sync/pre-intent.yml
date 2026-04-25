@@ -1,0 +1,17 @@
+related:
+  - software
+  - documentation
+  - security-assessment
+turns:
+  - role: user
+    text: "Pipe Salesforce opportunity data into the warehouse every 15 minutes."
+  - role: agent
+    text: "Incremental by LastModifiedDate or full snapshot each run?"
+  - role: user
+    text: "Incremental. Full snapshots choked the API last time."
+  - role: agent
+    text: "Warehouse target — Snowflake, BigQuery, or something else?"
+  - role: user
+    text: "Snowflake. Land raw into RAW.SFDC then transform in dbt."
+  - role: agent
+    text: "Got it — incremental extract, Snowflake RAW landing, dbt downstream."

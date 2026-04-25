@@ -58,7 +58,10 @@ const exampleModules: Record<string, () => Promise<{ config: DemoConfig }>> = {
 		),
 }
 
-export async function getDemoConfig(slug: string, example?: string): Promise<DemoConfig | null> {
+export async function getDemoConfig(
+	slug: string,
+	example?: string,
+): Promise<DemoConfig | null> {
 	// Check for example-driven demo first
 	const exampleName = example || findExampleName(slug)
 	if (exampleName) {

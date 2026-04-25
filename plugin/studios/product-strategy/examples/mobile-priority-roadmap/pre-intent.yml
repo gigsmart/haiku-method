@@ -1,0 +1,17 @@
+related:
+  - executive-strategy
+  - marketing
+  - customer-success
+turns:
+  - role: user
+    text: "Build the H1 2026 roadmap — mobile is top priority."
+  - role: agent
+    text: "Mobile-first standalone app, or native wrapper around the web?"
+  - role: user
+    text: "Native standalone. The web shell doesn't cut it anymore."
+  - role: agent
+    text: "What's the must-have feature parity bar with web at launch?"
+  - role: user
+    text: "Core workflows and offline read. Collaboration and admin can come later."
+  - role: agent
+    text: "Got it — native mobile roadmap with core-workflow + offline-read parity as the H1 bar."

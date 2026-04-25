@@ -1,0 +1,188 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FeedbackOriginIcon — state matrix > renders every (origin × label-visibility) cell (snapshot) 1`] = `
+<div
+  data-token-hash="fa9f004f38d5ccf1"
+>
+  <div
+    data-cell="with-label-adversarial-review"
+  >
+    <span
+      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+    >
+      <span
+        aria-hidden="true"
+      >
+        🔍
+      </span>
+      <span>
+        Review Agent
+      </span>
+    </span>
+  </div>
+  <div
+    data-cell="with-label-external-pr"
+  >
+    <span
+      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+    >
+      <span
+        aria-hidden="true"
+      >
+        🔗
+      </span>
+      <span>
+        PR Comment
+      </span>
+    </span>
+  </div>
+  <div
+    data-cell="with-label-external-mr"
+  >
+    <span
+      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+    >
+      <span
+        aria-hidden="true"
+      >
+        🔗
+      </span>
+      <span>
+        MR Comment
+      </span>
+    </span>
+  </div>
+  <div
+    data-cell="with-label-user-visual"
+  >
+    <span
+      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+    >
+      <span
+        aria-hidden="true"
+      >
+        ✎
+      </span>
+      <span>
+        Annotation
+      </span>
+    </span>
+  </div>
+  <div
+    data-cell="with-label-user-chat"
+  >
+    <span
+      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+    >
+      <span
+        aria-hidden="true"
+      >
+        💬
+      </span>
+      <span>
+        Comment
+      </span>
+    </span>
+  </div>
+  <div
+    data-cell="with-label-agent"
+  >
+    <span
+      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400"
+    >
+      <span
+        aria-hidden="true"
+      >
+        🤖
+      </span>
+      <span>
+        Agent
+      </span>
+    </span>
+  </div>
+  <div
+    data-cell="icon-only-adversarial-review"
+  >
+    <span
+      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+    >
+      <span
+        aria-label="Review Agent"
+        role="img"
+      >
+        🔍
+      </span>
+    </span>
+  </div>
+  <div
+    data-cell="icon-only-external-pr"
+  >
+    <span
+      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+    >
+      <span
+        aria-label="PR Comment"
+        role="img"
+      >
+        🔗
+      </span>
+    </span>
+  </div>
+  <div
+    data-cell="icon-only-external-mr"
+  >
+    <span
+      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+    >
+      <span
+        aria-label="MR Comment"
+        role="img"
+      >
+        🔗
+      </span>
+    </span>
+  </div>
+  <div
+    data-cell="icon-only-user-visual"
+  >
+    <span
+      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+    >
+      <span
+        aria-label="Annotation"
+        role="img"
+      >
+        ✎
+      </span>
+    </span>
+  </div>
+  <div
+    data-cell="icon-only-user-chat"
+  >
+    <span
+      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+    >
+      <span
+        aria-label="Comment"
+        role="img"
+      >
+        💬
+      </span>
+    </span>
+  </div>
+  <div
+    data-cell="icon-only-agent"
+  >
+    <span
+      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400"
+    >
+      <span
+        aria-label="Agent"
+        role="img"
+      >
+        🤖
+      </span>
+    </span>
+  </div>
+</div>
+`;

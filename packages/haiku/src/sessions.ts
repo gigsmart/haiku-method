@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events"
+import { newSessionId } from "./session-id.js"
 
 const sessionEvents = new EventEmitter()
 // Prevent warnings when many sessions are active concurrently
@@ -84,23 +85,49 @@ export function notifySessionUpdate(sessionId: string): void {
 
 /**
  * Await a session status change. Resolves when notifySessionUpdate is called
- * for the given session, or rejects on timeout.
+ * for the given session, rejects on timeout, or rejects if `signal` aborts.
+ *
+ * Signal support is how tool cancellation propagates — when the MCP
+ * client cancels an in-flight tool call, its abort signal fires; the
+ * handler's finally block needs to unwind promptly so the session can
+ * be cleaned up. Without signal support the handler would spin inside
+ * this promise for the full 30-minute timeout.
  */
 export function waitForSession(
 	sessionId: string,
 	timeoutMs: number = 30 * 60 * 1000,
+	signal?: AbortSignal,
 ): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const timer = setTimeout(() => {
 			sessionEvents.removeListener(`session:${sessionId}`, handler)
+			signal?.removeEventListener("abort", onAbort)
 			reject(new Error("Session timeout"))
 		}, timeoutMs)
 
 		function handler() {
 			clearTimeout(timer)
+			signal?.removeEventListener("abort", onAbort)
 			resolve()
 		}
 
+		function onAbort() {
+			clearTimeout(timer)
+			sessionEvents.removeListener(`session:${sessionId}`, handler)
+			reject(
+				new Error(
+					`Session wait aborted${signal?.reason ? `: ${String(signal.reason)}` : ""}`,
+				),
+			)
+		}
+
+		if (signal?.aborted) {
+			clearTimeout(timer)
+			reject(new Error("Session wait aborted before start"))
+			return
+		}
+
+		signal?.addEventListener("abort", onAbort, { once: true })
 		sessionEvents.once(`session:${sessionId}`, handler)
 	})
 }
@@ -127,6 +154,18 @@ export interface ReviewSession {
 	review_type: "intent" | "unit"
 	target: string
 	status: "pending" | "approved" | "changes_requested" | "decided"
+	/** Ad-hoc sessions are opened on-demand via `haiku_review_open` (not a
+	 *  gate). The UI hides Approve, swaps the primary button to
+	 *  Done/Close (no feedback) or Request Changes (with feedback), and
+	 *  shows an "Ad-hoc review" badge in the header. The FSM does not
+	 *  treat an ad-hoc session's status as a gate decision — durable
+	 *  feedback left on the session routes through the usual fix-loop on
+	 *  the next `run_next`. */
+	ad_hoc?: boolean
+	/** For ad-hoc sessions: the stage the reviewer was browsing when the
+	 *  pane was opened. Used so the session-scoped URL can land on the
+	 *  right stage without guessing. */
+	stage?: string
 	decision: string
 	feedback: string
 	annotations?: ReviewAnnotations
@@ -304,7 +343,7 @@ export function createSession(
 	>,
 ): ReviewSession {
 	evictSessions()
-	const session_id = crypto.randomUUID()
+	const session_id = newSessionId()
 	const session: ReviewSession = {
 		...params,
 		session_type: "review",
@@ -325,7 +364,7 @@ export function createQuestionSession(
 	> & { imagePaths?: string[] },
 ): QuestionSession {
 	evictSessions()
-	const session_id = crypto.randomUUID()
+	const session_id = newSessionId()
 	const session: QuestionSession = {
 		...params,
 		session_type: "question",
@@ -347,7 +386,7 @@ export function createDesignDirectionSession(
 	>,
 ): DesignDirectionSession {
 	evictSessions()
-	const session_id = crypto.randomUUID()
+	const session_id = newSessionId()
 	const session: DesignDirectionSession = {
 		...params,
 		session_type: "design_direction",
@@ -366,6 +405,20 @@ export function getSession(
 	return sessions.get(sessionId)
 }
 
+/**
+ * Drop a session from the in-memory registry. Callers should use this
+ * when the session's purpose is complete (tool call returned, user
+ * abandoned the review, MCP process shutting down) so subsequent
+ * `getSession` lookups return 404 and the SPA's polling fallback
+ * transitions to the session-ended overlay on reload.
+ */
+export function deleteSession(sessionId: string): boolean {
+	const had = sessions.delete(sessionId)
+	sessionCreatedAt.delete(sessionId)
+	clearHeartbeat(sessionId)
+	return had
+}
+
 export function updateSession(
 	sessionId: string,
 	updates: Partial<
@@ -381,7 +434,11 @@ export function updateSession(
 	// same intent can attach it as `previousReview` and render a delta. On
 	// any other terminal decision, drop any prior snapshot so we don't show
 	// a stale "previous review" banner.
-	if (updates.status === "decided") {
+	//
+	// Ad-hoc sessions skip snapshot stashing/clearing entirely — their
+	// decision is a UX signal (Done / Request Changes) not a gate
+	// outcome, so they must not disturb the next gate review's delta.
+	if (updates.status === "decided" && !session.ad_hoc) {
 		if (session.decision === "changes_requested") {
 			const intent = session.parsedIntent as { rawContent?: string } | undefined
 			const units =

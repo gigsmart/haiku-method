@@ -1,4 +1,9 @@
-import { createCipheriv, createHmac, randomBytes } from "node:crypto"
+import {
+	createCipheriv,
+	createHmac,
+	randomBytes,
+	timingSafeEqual,
+} from "node:crypto"
 import localtunnel from "localtunnel"
 import { features, review } from "./config.js"
 
@@ -69,6 +74,126 @@ export function signJWT(payload: {
 		.update(`${header}.${body}`)
 		.digest("base64url")
 	return `${header}.${body}.${signature}`
+}
+
+export type TunnelJWTPayload = {
+	tun: string
+	sid: string
+	typ: string
+	key: string
+	iat: number
+	exp: number
+}
+
+export type TunnelVerifyReason =
+	| "malformed"
+	| "bad_signature"
+	| "bad_alg"
+	| "bad_typ"
+	| "expired"
+	| "tunnel_mismatch"
+	| "sid_mismatch"
+
+export type TunnelVerifyResult =
+	| { ok: true; payload: TunnelJWTPayload }
+	| { ok: false; reason: TunnelVerifyReason }
+
+/**
+ * Verify a tunnel-auth JWT against the current MCP process's EPHEMERAL_SECRET.
+ *
+ * - Constant-time HMAC-SHA256 signature compare (`timingSafeEqual`).
+ * - Rejects tokens whose `exp` is in the past.
+ * - Binds to the currently active tunnel URL: a token minted for a prior
+ *   tunnel session (or an alternate localtunnel URL) is rejected with
+ *   `tunnel_mismatch`. A null active tunnel (not yet opened or torn down)
+ *   also rejects.
+ * - When `expectedSid` is a string, the token's `sid` claim must equal it
+ *   (prevents replay of session A's token against session B's URL).
+ * - Pass `expectedSid = null` for the intent-scoped `/api/review/current`
+ *   route — it has no `:sid` in the path but the token must still be valid.
+ *
+ * This function is the authentication layer. It does NOT validate any
+ * downstream authorization (e.g. cross-session / cross-intent checks —
+ * those live in `verifyFeedbackMutationAuth` and elsewhere).
+ */
+export function verifyTunnelJWT(
+	token: string,
+	expectedSid: string | null,
+): TunnelVerifyResult {
+	const parts = token.split(".")
+	if (parts.length !== 3) return { ok: false, reason: "malformed" }
+	const [header, body, sig] = parts
+	if (!header || !body || !sig) return { ok: false, reason: "malformed" }
+
+	// FB-18: explicit header `alg` + `typ` validation as defense-in-depth
+	// against `alg: none` / algorithm-confusion attempts. The HMAC path
+	// below is the primary enforcement — it always uses SHA-256 with the
+	// ephemeral secret, so a forged `alg: none` header won't produce a
+	// signature the verify step accepts. But rejecting the bad header up
+	// front surfaces the attack in logs and guards against any future
+	// refactor that might start trusting the declared algorithm.
+	try {
+		const headerJson = Buffer.from(header, "base64url").toString("utf-8")
+		const parsed = JSON.parse(headerJson) as {
+			alg?: unknown
+			typ?: unknown
+		}
+		if (parsed.alg !== "HS256") {
+			return { ok: false, reason: "bad_alg" }
+		}
+		if (parsed.typ !== undefined && parsed.typ !== "JWT") {
+			return { ok: false, reason: "bad_typ" }
+		}
+	} catch {
+		return { ok: false, reason: "malformed" }
+	}
+
+	const expected = createHmac("sha256", EPHEMERAL_SECRET)
+		.update(`${header}.${body}`)
+		.digest("base64url")
+
+	let sigBuf: Buffer
+	let expBuf: Buffer
+	try {
+		sigBuf = Buffer.from(sig, "base64url")
+		expBuf = Buffer.from(expected, "base64url")
+	} catch {
+		return { ok: false, reason: "malformed" }
+	}
+	if (sigBuf.length === 0 || sigBuf.length !== expBuf.length) {
+		return { ok: false, reason: "bad_signature" }
+	}
+	if (!timingSafeEqual(sigBuf, expBuf)) {
+		return { ok: false, reason: "bad_signature" }
+	}
+
+	let payload: TunnelJWTPayload
+	try {
+		const json = Buffer.from(body, "base64url").toString("utf-8")
+		payload = JSON.parse(json) as TunnelJWTPayload
+	} catch {
+		return { ok: false, reason: "malformed" }
+	}
+
+	const now = Math.floor(Date.now() / 1000)
+	if (typeof payload.exp !== "number" || payload.exp <= now) {
+		return { ok: false, reason: "expired" }
+	}
+
+	// Bind to the currently-active tunnel URL. If the tunnel has rotated
+	// (auto-reconnect assigned a new localtunnel URL) or is closed, the
+	// token is stale — reject rather than accept something that was minted
+	// against a different public origin.
+	const currentTunnel = getTunnelUrl()
+	if (!currentTunnel || payload.tun !== currentTunnel) {
+		return { ok: false, reason: "tunnel_mismatch" }
+	}
+
+	if (expectedSid !== null && payload.sid !== expectedSid) {
+		return { ok: false, reason: "sid_mismatch" }
+	}
+
+	return { ok: true, payload }
 }
 
 async function reconnectTunnel(): Promise<void> {
@@ -245,4 +370,26 @@ export function isE2EActive(sessionId?: string): boolean {
  */
 export function clearE2EKey(sessionId: string): void {
 	e2eKeys.delete(sessionId)
+}
+
+/**
+ * Test-only: stub the active-tunnel URL so tests can exercise
+ * `verifyTunnelJWT` without spinning up a real localtunnel. Pass a URL to
+ * impersonate an active tunnel; pass null to clear. Production code must
+ * not call this — the `__` prefix and name signal intent.
+ */
+export function __setActiveTunnelForTesting(url: string | null): void {
+	if (url) {
+		activeTunnel = {
+			url,
+			close: () => {
+				activeTunnel = null
+			},
+			on: () => {
+				// no-op listener sink for the tunnel interface
+			},
+		} as unknown as LocaltunnelInstance
+	} else {
+		activeTunnel = null
+	}
 }

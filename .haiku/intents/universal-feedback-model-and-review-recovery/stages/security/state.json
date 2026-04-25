@@ -1,0 +1,24 @@
+{
+  "stage": "security",
+  "status": "completed",
+  "phase": "gate",
+  "started_at": "2026-04-24T12:51:50Z",
+  "completed_at": "2026-04-24T19:20:30Z",
+  "gate_entered_at": "2026-04-24T19:18:32Z",
+  "gate_outcome": "advanced",
+  "visits": 1,
+  "iterations": [
+    {
+      "index": 1,
+      "started_at": "2026-04-24T12:51:51Z",
+      "completed_at": "2026-04-24T19:20:31Z",
+      "trigger": "initial",
+      "result": "advanced"
+    }
+  ],
+  "pre_review_dispatched": true,
+  "pre_review_dispatched_at": "2026-04-24T12:52:03Z",
+  "pre_review_reviewers_acknowledged": true,
+  "pre_review_reviewers_acknowledged_at": "2026-04-24T13:02:11Z",
+  "elaboration_turns": 1
+}

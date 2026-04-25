@@ -19,7 +19,7 @@ export function renderTabs(tabGroupId: string, tabs: TabDef[]): string {
 	const firstEnabled = enabledTabs[0]?.id ?? ""
 
 	const tabButtons = tabs
-		.map((tab, i) => {
+		.map((tab, _i) => {
 			const isFirst = tab.id === firstEnabled
 			const disabled = tab.disabled ?? false
 			return `<button role="tab"
@@ -565,7 +565,7 @@ export function renderMockupInteractionScript(): string {
  * Collects inline text comments, annotation canvas pins, and general feedback
  * into a single sticky panel — GitHub/GitLab-style.
  */
-export function renderReviewSidebar(sessionId: string): string {
+export function renderReviewSidebar(_sessionId: string): string {
 	return `<aside id="review-sidebar"
     class="sticky top-20 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col"
     style="max-height: calc(100vh - 6rem);">

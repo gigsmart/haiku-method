@@ -1,48 +1,513 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "ideation",
-  studio: "ideation",
-  stages: ["research", "create", "review", "deliver"],
-  completionText: "All 4 stages passed. company-rebrand-strategy delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Design a company rebrand strategy"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Creating intent: company-rebrand-strategy..."}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: ideation. 4 stages: research → create → review → deliver"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"research"}, {"type":"msg","role":"agent","label":"agent","text":"Entering research stage. Hat: researcher.\nWhat’s driving the rebrand? Merger, repositioning, or something else?"}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/stages/research/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Repositioning. We’re moving upmarket from SMB to enterprise. Current brand feels too playful."}] },
-    { delay: 1000, actions: [{"type":"msg","role":"agent","label":"agent","text":"SMB-to-enterprise repositioning. Researching competitor strategies, enterprise buyer expectations, and similar transitions."}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/stages/research/units/unit-01-competitor-analysis.md"}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/stages/research/units/unit-02-enterprise-brand-patterns.md"}, {"type":"card","stage":"research","name":"competitor-analysis","status":"in-progress"}, {"type":"card","stage":"research","name":"enterprise-patterns","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: analyst. Found 5 competitors who made similar transitions. Key pattern: enterprise buyers want approachable expertise, not stuffy corporate. Three pillars: trust signals, visual maturity, tone shift."}, {"type":"updateCard","stage":"research","name":"competitor-analysis","status":"completed"}, {"type":"updateCard","stage":"research","name":"enterprise-patterns","status":"completed"}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/knowledge/RESEARCH-BRIEF.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Research complete. Review gate: auto. All criteria met — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"create"}, {"type":"msg","role":"agent","label":"agent","text":"Entering create stage. Hat: creator.\nLoading research outputs..."}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/stages/create/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → research/research-brief (knowledge/RESEARCH-BRIEF.md)"}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/stages/create/units/unit-01-brand-positioning.md"}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/stages/create/units/unit-02-visual-direction.md"}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/stages/create/units/unit-03-messaging-framework.md"}, {"type":"card","stage":"create","name":"brand-positioning","status":"in-progress"}, {"type":"card","stage":"create","name":"visual-direction","status":""}, {"type":"card","stage":"create","name":"messaging-framework","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Two positioning directions:\n  A) \"Trusted partner\" — reliability and depth\n  B) \"Smart ally\" — intelligence and approachability\nWhich resonates?"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"B — smart ally. But add more credibility signals for enterprise trust."}] },
-    { delay: 1000, actions: [{"type":"msg","role":"agent","label":"agent","text":"\"Smart ally with substance.\" Leading with expertise proof points while keeping conversational tone."}, {"type":"updateCard","stage":"create","name":"brand-positioning","status":"completed"}, {"type":"updateCard","stage":"create","name":"visual-direction","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Visual: deeper tones with accent color, humanist typeface. Messaging: three tiers — executive (ROI), practitioner (capability), developer (technical depth)."}, {"type":"updateCard","stage":"create","name":"visual-direction","status":"completed"}, {"type":"updateCard","stage":"create","name":"messaging-framework","status":"completed"}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/knowledge/DRAFT-DELIVERABLE.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Create stage complete. Review gate: ask."}, {"type":"showReview","title":"Create","intent":"company-rebrand-strategy","criteria":["Brand positioning uses \"smart ally\" direction with credibility signals","Visual direction shifts palette to mature tones with warmth","Messaging framework covers executive, practitioner, and developer tiers"]}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 1800, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. The messaging tiers are exactly right."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"review"}, {"type":"msg","role":"agent","label":"agent","text":"Entering review stage. Hat: critic.\nAdversarial review of draft deliverable..."}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/stages/review/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → create/draft-deliverable (knowledge/DRAFT-DELIVERABLE.md)"}, {"type":"card","stage":"review","name":"strategic-review","status":"in-progress"}, {"type":"card","stage":"review","name":"fact-check","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: fact-checker. Found 2 issues:\n  1. Major: Competitor case study cites pre-launch data only — no post-launch metrics\n  2. Minor: \"Best-in-class\" used twice — enterprise buyers find this generic\nVerdict: revise, then approve."}, {"type":"updateCard","stage":"review","name":"strategic-review","status":"completed"}, {"type":"updateCard","stage":"review","name":"fact-check","status":"completed"}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/knowledge/REVIEW-REPORT.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Review stage complete. Review gate: ask."}, {"type":"showReview","title":"Review","intent":"company-rebrand-strategy","criteria":["Substantive issues identified with remediation suggestions","Factual claims verified against original sources","Each finding includes severity and actionable fix"]}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 1800, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. Fair catches."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"deliver"}, {"type":"msg","role":"agent","label":"agent","text":"Entering deliver stage. Hat: publisher.\nLoading draft and review report..."}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/stages/deliver/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → create/draft-deliverable, review/review-report"}, {"type":"card","stage":"deliver","name":"finalize","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"All review findings addressed. Case study updated with post-launch metrics. Formatted for executive audience."}, {"type":"updateCard","stage":"deliver","name":"finalize","status":"completed"}, {"type":"file","path":".haiku/intents/company-rebrand-strategy/knowledge/FINAL-DELIVERABLE.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Deliver complete. Review gate: auto. All criteria met — advancing."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 4 stages complete for company-rebrand-strategy.\n\nDelivered:\n  • Research brief with competitor analysis and enterprise brand patterns\n  • Brand positioning: \"smart ally with substance\"\n  • Visual direction: mature palette, humanist typography\n  • Messaging framework: executive, practitioner, and developer tiers\n  • Adversarial review with 2 findings addressed\n  • Final deliverable formatted for executive audience\n\nIntent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "ideation",
+	studio: "ideation",
+	stages: ["research", "create", "review", "deliver"],
+	completionText: "All 4 stages passed. company-rebrand-strategy delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Design a company rebrand strategy",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: company-rebrand-strategy...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: ideation. 4 stages: research → create → review → deliver",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "research" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering research stage. Hat: researcher.\nWhat’s driving the rebrand? Merger, repositioning, or something else?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/stages/research/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Repositioning. We’re moving upmarket from SMB to enterprise. Current brand feels too playful.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "SMB-to-enterprise repositioning. Researching competitor strategies, enterprise buyer expectations, and similar transitions.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/stages/research/units/unit-01-competitor-analysis.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/stages/research/units/unit-02-enterprise-brand-patterns.md",
+				},
+				{
+					type: "card",
+					stage: "research",
+					name: "competitor-analysis",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "research",
+					name: "enterprise-patterns",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: analyst. Found 5 competitors who made similar transitions. Key pattern: enterprise buyers want approachable expertise, not stuffy corporate. Three pillars: trust signals, visual maturity, tone shift.",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "competitor-analysis",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "research",
+					name: "enterprise-patterns",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/knowledge/RESEARCH-BRIEF.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Research complete. Review gate: auto. All criteria met — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "create" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering create stage. Hat: creator.\nLoading research outputs...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/stages/create/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → research/research-brief (knowledge/RESEARCH-BRIEF.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/stages/create/units/unit-01-brand-positioning.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/stages/create/units/unit-02-visual-direction.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/stages/create/units/unit-03-messaging-framework.md",
+				},
+				{
+					type: "card",
+					stage: "create",
+					name: "brand-positioning",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "create", name: "visual-direction", status: "" },
+				{
+					type: "card",
+					stage: "create",
+					name: "messaging-framework",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: 'Two positioning directions:\n  A) "Trusted partner" — reliability and depth\n  B) "Smart ally" — intelligence and approachability\nWhich resonates?',
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "B — smart ally. But add more credibility signals for enterprise trust.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: '"Smart ally with substance." Leading with expertise proof points while keeping conversational tone.',
+				},
+				{
+					type: "updateCard",
+					stage: "create",
+					name: "brand-positioning",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "create",
+					name: "visual-direction",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Visual: deeper tones with accent color, humanist typeface. Messaging: three tiers — executive (ROI), practitioner (capability), developer (technical depth).",
+				},
+				{
+					type: "updateCard",
+					stage: "create",
+					name: "visual-direction",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "create",
+					name: "messaging-framework",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/knowledge/DRAFT-DELIVERABLE.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Create stage complete. Review gate: ask.",
+				},
+				{
+					type: "showReview",
+					title: "Create",
+					intent: "company-rebrand-strategy",
+					criteria: [
+						'Brand positioning uses "smart ally" direction with credibility signals',
+						"Visual direction shifts palette to mature tones with warmth",
+						"Messaging framework covers executive, practitioner, and developer tiers",
+					],
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 1800, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. The messaging tiers are exactly right.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "review" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering review stage. Hat: critic.\nAdversarial review of draft deliverable...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/stages/review/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → create/draft-deliverable (knowledge/DRAFT-DELIVERABLE.md)",
+				},
+				{
+					type: "card",
+					stage: "review",
+					name: "strategic-review",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "review", name: "fact-check", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: 'Hat: fact-checker. Found 2 issues:\n  1. Major: Competitor case study cites pre-launch data only — no post-launch metrics\n  2. Minor: "Best-in-class" used twice — enterprise buyers find this generic\nVerdict: revise, then approve.',
+				},
+				{
+					type: "updateCard",
+					stage: "review",
+					name: "strategic-review",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "review",
+					name: "fact-check",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/knowledge/REVIEW-REPORT.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Review stage complete. Review gate: ask.",
+				},
+				{
+					type: "showReview",
+					title: "Review",
+					intent: "company-rebrand-strategy",
+					criteria: [
+						"Substantive issues identified with remediation suggestions",
+						"Factual claims verified against original sources",
+						"Each finding includes severity and actionable fix",
+					],
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 1800, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. Fair catches.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "deliver" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering deliver stage. Hat: publisher.\nLoading draft and review report...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/stages/deliver/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → create/draft-deliverable, review/review-report",
+				},
+				{
+					type: "card",
+					stage: "deliver",
+					name: "finalize",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All review findings addressed. Case study updated with post-launch metrics. Formatted for executive audience.",
+				},
+				{
+					type: "updateCard",
+					stage: "deliver",
+					name: "finalize",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/company-rebrand-strategy/knowledge/FINAL-DELIVERABLE.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Deliver complete. Review gate: auto. All criteria met — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: 'All 4 stages complete for company-rebrand-strategy.\n\nDelivered:\n  • Research brief with competitor analysis and enterprise brand patterns\n  • Brand positioning: "smart ally with substance"\n  • Visual direction: mature palette, humanist typography\n  • Messaging framework: executive, practitioner, and developer tiers\n  • Adversarial review with 2 findings addressed\n  • Final deliverable formatted for executive audience\n\nIntent status: complete.',
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

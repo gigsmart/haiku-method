@@ -1,0 +1,180 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AgentFeedbackToggle — state matrix > renders every documented state cell (snapshot) 1`] = `
+<div>
+  <div
+    data-cell="off"
+  >
+    <label
+      class="touch-target inline-flex items-center gap-2 cursor-pointer group"
+    >
+      <button
+        aria-checked="false"
+        aria-label="Show agent feedback inline"
+        class="relative inline-block w-8 h-4 rounded-full bg-stone-300 dark:bg-stone-600 hover:bg-stone-400 dark:hover:bg-stone-500 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+        data-state="off"
+        role="switch"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="absolute top-0.5 w-3 h-3 rounded-full bg-white shadow left-0.5 transition-all duration-200"
+        />
+      </button>
+      <span
+        class="text-xs font-medium text-stone-700 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-stone-100"
+      >
+        Show agent feedback
+      </span>
+    </label>
+  </div>
+  <div
+    data-cell="on"
+  >
+    <label
+      class="touch-target inline-flex items-center gap-2 cursor-pointer group"
+    >
+      <button
+        aria-checked="true"
+        aria-label="Show agent feedback inline"
+        class="relative inline-block w-8 h-4 rounded-full bg-teal-700 dark:bg-teal-700 hover:bg-teal-800 dark:hover:bg-teal-800 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+        data-state="on"
+        role="switch"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="absolute top-0.5 w-3 h-3 rounded-full bg-white shadow left-[18px] transition-all duration-200"
+        />
+      </button>
+      <span
+        class="text-xs font-medium text-stone-700 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-stone-100"
+      >
+        Show agent feedback
+      </span>
+    </label>
+  </div>
+  <div
+    data-cell="off-with-count"
+  >
+    <label
+      class="touch-target inline-flex items-center gap-2 cursor-pointer group"
+    >
+      <button
+        aria-checked="false"
+        aria-label="Show agent feedback inline"
+        class="relative inline-block w-8 h-4 rounded-full bg-stone-300 dark:bg-stone-600 hover:bg-stone-400 dark:hover:bg-stone-500 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+        data-state="off"
+        role="switch"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="absolute top-0.5 w-3 h-3 rounded-full bg-white shadow left-0.5 transition-all duration-200"
+        />
+      </button>
+      <span
+        class="text-xs font-medium text-stone-700 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-stone-100"
+      >
+        Show agent feedback
+      </span>
+      <span
+        class="text-[11px] font-semibold uppercase tracking-wide text-stone-700 dark:text-stone-200 px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800"
+      >
+        3
+         
+        hidden
+      </span>
+    </label>
+  </div>
+  <div
+    data-cell="on-with-count"
+  >
+    <label
+      class="touch-target inline-flex items-center gap-2 cursor-pointer group"
+    >
+      <button
+        aria-checked="true"
+        aria-label="Show agent feedback inline"
+        class="relative inline-block w-8 h-4 rounded-full bg-teal-700 dark:bg-teal-700 hover:bg-teal-800 dark:hover:bg-teal-800 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+        data-state="on"
+        role="switch"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="absolute top-0.5 w-3 h-3 rounded-full bg-white shadow left-[18px] transition-all duration-200"
+        />
+      </button>
+      <span
+        class="text-xs font-medium text-stone-700 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-stone-100"
+      >
+        Show agent feedback
+      </span>
+      <span
+        class="text-[11px] font-semibold uppercase tracking-wide text-stone-700 dark:text-stone-200 px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800"
+      >
+        3
+         
+        inline
+      </span>
+    </label>
+  </div>
+  <div
+    data-cell="disabled-off"
+  >
+    <label
+      class="touch-target inline-flex items-center gap-2 cursor-pointer group cursor-not-allowed"
+    >
+      <button
+        aria-checked="false"
+        aria-disabled="true"
+        aria-label="Show agent feedback inline"
+        class="relative inline-block w-8 h-4 rounded-full bg-stone-200 dark:bg-stone-700 cursor-not-allowed transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+        data-state="off"
+        disabled=""
+        role="switch"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="absolute top-0.5 w-3 h-3 rounded-full bg-white shadow left-0.5 transition-all duration-200"
+        />
+      </button>
+      <span
+        class="text-xs font-medium text-stone-700 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-stone-100"
+      >
+        Show agent feedback
+      </span>
+    </label>
+  </div>
+  <div
+    data-cell="disabled-on"
+  >
+    <label
+      class="touch-target inline-flex items-center gap-2 cursor-pointer group cursor-not-allowed"
+    >
+      <button
+        aria-checked="true"
+        aria-disabled="true"
+        aria-label="Show agent feedback inline"
+        class="relative inline-block w-8 h-4 rounded-full bg-stone-200 dark:bg-stone-700 cursor-not-allowed transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-stone-900"
+        data-state="on"
+        disabled=""
+        role="switch"
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          class="absolute top-0.5 w-3 h-3 rounded-full bg-white shadow left-[18px] transition-all duration-200"
+        />
+      </button>
+      <span
+        class="text-xs font-medium text-stone-700 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-stone-100"
+      >
+        Show agent feedback
+      </span>
+    </label>
+  </div>
+</div>
+`;

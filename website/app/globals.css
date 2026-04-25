@@ -8,10 +8,12 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-	--font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+	--font-sans:
+		"Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
 		"Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-	--font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-		"Liberation Mono", monospace;
+	--font-mono:
+		ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+		monospace;
 
 	--color-stone-50: #fafaf9;
 	--color-stone-100: #f5f5f4;
@@ -60,7 +62,7 @@
 
 /* Code highlighting theme */
 .hljs {
-	background: transparent !important;
+	background: transparent;
 }
 
 /* Smooth transitions for theme changes */
@@ -182,100 +184,100 @@ html.dark {
 
 /* Demo animations */
 @keyframes demo-fadeSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 @keyframes demo-typingDot {
-  0%,
-  80%,
-  100% {
-    opacity: 0.3;
-    transform: scale(0.8);
-  }
-  40% {
-    opacity: 1;
-    transform: scale(1);
-  }
+	0%,
+	80%,
+	100% {
+		opacity: 0.3;
+		transform: scale(0.8);
+	}
+	40% {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
 
 @keyframes demo-pulse {
-  0%,
-  100% {
-    opacity: 0.7;
-  }
-  50% {
-    opacity: 1;
-  }
+	0%,
+	100% {
+		opacity: 0.7;
+	}
+	50% {
+		opacity: 1;
+	}
 }
 
 @keyframes demo-highlightFade {
-  0% {
-    color: #2dd4bf;
-    text-shadow: 0 0 12px rgba(45, 212, 191, 0.15);
-  }
-  100% {
-    color: #a8a29e;
-    text-shadow: none;
-  }
+	0% {
+		color: #2dd4bf;
+		text-shadow: 0 0 12px rgba(45, 212, 191, 0.15);
+	}
+	100% {
+		color: #a8a29e;
+		text-shadow: none;
+	}
 }
 
 @keyframes demo-stageFlash {
-  0% {
-    box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 20px 4px rgba(45, 212, 191, 0.2);
-  }
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
+	0% {
+		box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.4);
+	}
+	50% {
+		box-shadow: 0 0 20px 4px rgba(45, 212, 191, 0.2);
+	}
+	100% {
+		box-shadow: 0 0 0 0 transparent;
+	}
 }
 
 @keyframes demo-cursorBlink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0;
+	}
 }
 
 .demo-animate-in {
-  animation: demo-fadeSlideIn 0.3s ease;
+	animation: demo-fadeSlideIn 0.3s ease;
 }
 
 .demo-typing-dot {
-  animation: demo-typingDot 0.8s infinite;
+	animation: demo-typingDot 0.8s infinite;
 }
 
 .demo-typing-dot:nth-child(2) {
-  animation-delay: 0.15s;
+	animation-delay: 0.15s;
 }
 
 .demo-typing-dot:nth-child(3) {
-  animation-delay: 0.3s;
+	animation-delay: 0.3s;
 }
 
 .demo-ff-pulse {
-  animation: demo-pulse 1.5s ease-in-out infinite;
+	animation: demo-pulse 1.5s ease-in-out infinite;
 }
 
 .demo-stage-flash {
-  animation: demo-stageFlash 0.6s ease;
+	animation: demo-stageFlash 0.6s ease;
 }
 
 .demo-highlight-glow {
-  color: #2dd4bf;
-  text-shadow: 0 0 8px rgba(45, 212, 191, 0.15);
-  animation: demo-highlightFade 2s ease forwards;
+	color: #2dd4bf;
+	text-shadow: 0 0 8px rgba(45, 212, 191, 0.15);
+	animation: demo-highlightFade 2s ease forwards;
 }
 
 /* Print styles */
@@ -285,29 +287,29 @@ html.dark {
 	footer,
 	nav,
 	.print\:hidden {
-		display: none !important;
+		display: none;
 	}
 
 	/* Reset body styles for print */
 	body {
-		background: white !important;
-		color: black !important;
+		background: white;
+		color: black;
 		font-size: 12pt;
 		line-height: 1.5;
 	}
 
 	/* Single column layout */
 	.print-page {
-		max-width: 100% !important;
-		padding: 0 !important;
-		margin: 0 !important;
+		max-width: 100%;
+		padding: 0;
+		margin: 0;
 	}
 
 	/* Prose print styles */
 	.prose-print {
-		max-width: 100% !important;
+		max-width: 100%;
 		font-size: 11pt;
-		color: black !important;
+		color: black;
 	}
 
 	.prose-print h1 {
@@ -338,7 +340,7 @@ html.dark {
 	}
 
 	.prose-print pre {
-		background: #f5f5f5 !important;
+		background: #f5f5f5;
 		border: 1px solid #ddd;
 		font-size: 9pt;
 		page-break-inside: avoid;
@@ -346,9 +348,10 @@ html.dark {
 		word-wrap: break-word;
 	}
 
+	/* biome-ignore lint/style/noDescendingSpecificity: the higher-specificity `.prose code:not(pre code)` above is intentionally declared first because it's the common screen-reading case; this print-override is scoped by media query */
 	.prose-print code {
-		background: #f5f5f5 !important;
-		color: black !important;
+		background: #f5f5f5;
+		color: black;
 	}
 
 	.prose-print table {
@@ -361,7 +364,7 @@ html.dark {
 	}
 
 	.prose-print a {
-		color: black !important;
+		color: black;
 		text-decoration: underline;
 	}
 
@@ -379,7 +382,7 @@ html.dark {
 
 	/* Ensure images fit */
 	.prose-print img {
-		max-width: 100% !important;
+		max-width: 100%;
 		page-break-inside: avoid;
 	}
 }

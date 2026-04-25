@@ -5,8 +5,8 @@
 import assert from "node:assert"
 import { z } from "zod"
 
-import { stateToolDefs } from "../src/state-tools.ts"
 import { orchestratorToolDefs } from "../src/orchestrator.ts"
+import { stateToolDefs } from "../src/state-tools.ts"
 
 // ── Setup ──────────────────────────────────────────────────────────────────
 
@@ -14,51 +14,51 @@ let passed = 0
 let failed = 0
 
 function test(name, fn) {
-  try {
-    fn()
-    passed++
-    console.log(`  ✓ ${name}`)
-  } catch (e) {
-    failed++
-    console.log(`  ✗ ${name}: ${e.message}`)
-  }
+	try {
+		fn()
+		passed++
+		console.log(`  ✓ ${name}`)
+	} catch (e) {
+		failed++
+		console.log(`  ✗ ${name}: ${e.message}`)
+	}
 }
 
 // ── Combined tool definitions ─────────────────────────────────────────────
 
 // These are the tools listed in the server's ListTools handler
 const serverTools = [
-  ...orchestratorToolDefs,
-  ...stateToolDefs,
-  // The manually-defined tools from server.ts:
-  {
-    name: "ask_user_visual_question",
-    inputSchema: {
-      type: "object",
-      properties: {
-        questions: { type: "array" },
-        context: { type: "string" },
-        title: { type: "string" },
-        image_paths: { type: "array" },
-      },
-      required: ["questions"],
-    },
-  },
-  {
-    name: "pick_design_direction",
-    inputSchema: {
-      type: "object",
-      properties: {
-        intent_slug: { type: "string" },
-        archetypes: { type: "array" },
-        archetypes_file: { type: "string" },
-        parameters: { type: "array" },
-        parameters_file: { type: "string" },
-        title: { type: "string" },
-      },
-      required: ["intent_slug"],
-    },
-  },
+	...orchestratorToolDefs,
+	...stateToolDefs,
+	// The manually-defined tools from server.ts:
+	{
+		name: "ask_user_visual_question",
+		inputSchema: {
+			type: "object",
+			properties: {
+				questions: { type: "array" },
+				context: { type: "string" },
+				title: { type: "string" },
+				image_paths: { type: "array" },
+			},
+			required: ["questions"],
+		},
+	},
+	{
+		name: "pick_design_direction",
+		inputSchema: {
+			type: "object",
+			properties: {
+				intent_slug: { type: "string" },
+				archetypes: { type: "array" },
+				archetypes_file: { type: "string" },
+				parameters: { type: "array" },
+				parameters_file: { type: "string" },
+				title: { type: "string" },
+			},
+			required: ["intent_slug"],
+		},
+	},
 ]
 
 // ── Tool Definition Completeness ──────────────────────────────────────────
@@ -66,41 +66,52 @@ const serverTools = [
 console.log("\n=== Tool Definition Completeness ===")
 
 test("no duplicate tool names across all tool sets", () => {
-  const names = serverTools.map((t) => t.name)
-  const duplicates = names.filter((n, i) => names.indexOf(n) !== i)
-  assert.strictEqual(duplicates.length, 0, `Duplicate tool names: ${duplicates.join(", ")}`)
+	const names = serverTools.map((t) => t.name)
+	const duplicates = names.filter((n, i) => names.indexOf(n) !== i)
+	assert.strictEqual(
+		duplicates.length,
+		0,
+		`Duplicate tool names: ${duplicates.join(", ")}`,
+	)
 })
 
 test("all tool names are non-empty strings", () => {
-  for (const tool of serverTools) {
-    assert.ok(typeof tool.name === "string" && tool.name.length > 0)
-  }
+	for (const tool of serverTools) {
+		assert.ok(typeof tool.name === "string" && tool.name.length > 0)
+	}
 })
 
 test("all tools have inputSchema with type object", () => {
-  for (const tool of serverTools) {
-    assert.ok(tool.inputSchema, `${tool.name} missing inputSchema`)
-    assert.strictEqual(tool.inputSchema.type, "object", `${tool.name} inputSchema.type not object`)
-  }
+	for (const tool of serverTools) {
+		assert.ok(tool.inputSchema, `${tool.name} missing inputSchema`)
+		assert.strictEqual(
+			tool.inputSchema.type,
+			"object",
+			`${tool.name} inputSchema.type not object`,
+		)
+	}
 })
 
 test("all tools have properties in inputSchema", () => {
-  for (const tool of serverTools) {
-    assert.ok(tool.inputSchema.properties, `${tool.name} missing inputSchema.properties`)
-    assert.strictEqual(typeof tool.inputSchema.properties, "object")
-  }
+	for (const tool of serverTools) {
+		assert.ok(
+			tool.inputSchema.properties,
+			`${tool.name} missing inputSchema.properties`,
+		)
+		assert.strictEqual(typeof tool.inputSchema.properties, "object")
+	}
 })
 
 test("required fields reference existing properties", () => {
-  for (const tool of serverTools) {
-    const required = tool.inputSchema.required || []
-    for (const req of required) {
-      assert.ok(
-        req in tool.inputSchema.properties,
-        `${tool.name}: required field '${req}' not found in properties`
-      )
-    }
-  }
+	for (const tool of serverTools) {
+		const required = tool.inputSchema.required || []
+		for (const req of required) {
+			assert.ok(
+				req in tool.inputSchema.properties,
+				`${tool.name}: required field '${req}' not found in properties`,
+			)
+		}
+	}
 })
 
 // ── State Tool Coverage ───────────────────────────────────────────────────
@@ -108,29 +119,29 @@ test("required fields reference existing properties", () => {
 console.log("\n=== State Tool Coverage ===")
 
 const expectedStateTools = [
-  "haiku_intent_get",
-  "haiku_intent_list",
-  "haiku_stage_get",
-  "haiku_unit_get",
-  "haiku_unit_set",
-  "haiku_unit_list",
-  "haiku_unit_start",
-  "haiku_unit_advance_hat",
-  "haiku_unit_reject_hat",
-  "haiku_unit_increment_bolt",
-  "haiku_knowledge_list",
-  "haiku_knowledge_read",
-  "haiku_studio_list",
-  "haiku_studio_get",
-  "haiku_studio_stage_get",
-  "haiku_settings_get",
+	"haiku_intent_get",
+	"haiku_intent_list",
+	"haiku_stage_get",
+	"haiku_unit_get",
+	"haiku_unit_set",
+	"haiku_unit_list",
+	"haiku_unit_start",
+	"haiku_unit_advance_hat",
+	"haiku_unit_reject_hat",
+	"haiku_unit_increment_bolt",
+	"haiku_knowledge_list",
+	"haiku_knowledge_read",
+	"haiku_studio_list",
+	"haiku_studio_get",
+	"haiku_studio_stage_get",
+	"haiku_settings_get",
 ]
 
 for (const toolName of expectedStateTools) {
-  test(`state tool '${toolName}' exists`, () => {
-    const found = stateToolDefs.find((t) => t.name === toolName)
-    assert.ok(found, `Missing state tool: ${toolName}`)
-  })
+	test(`state tool '${toolName}' exists`, () => {
+		const found = stateToolDefs.find((t) => t.name === toolName)
+		assert.ok(found, `Missing state tool: ${toolName}`)
+	})
 }
 
 // ── Orchestrator Tool Coverage ────────────────────────────────────────────
@@ -138,16 +149,16 @@ for (const toolName of expectedStateTools) {
 console.log("\n=== Orchestrator Tool Coverage ===")
 
 const expectedOrchestratorTools = [
-  "haiku_run_next",
-  "haiku_intent_create",
-  "haiku_revisit",
+	"haiku_run_next",
+	"haiku_intent_create",
+	"haiku_revisit",
 ]
 
 for (const toolName of expectedOrchestratorTools) {
-  test(`orchestrator tool '${toolName}' exists`, () => {
-    const found = orchestratorToolDefs.find((t) => t.name === toolName)
-    assert.ok(found, `Missing orchestrator tool: ${toolName}`)
-  })
+	test(`orchestrator tool '${toolName}' exists`, () => {
+		const found = orchestratorToolDefs.find((t) => t.name === toolName)
+		assert.ok(found, `Missing orchestrator tool: ${toolName}`)
+	})
 }
 
 // ── Tool Input Schema Specifics ───────────────────────────────────────────
@@ -155,70 +166,93 @@ for (const toolName of expectedOrchestratorTools) {
 console.log("\n=== Tool Input Schema Specifics ===")
 
 test("haiku_intent_get requires slug and field", () => {
-  const tool = stateToolDefs.find((t) => t.name === "haiku_intent_get")
-  assert.deepStrictEqual(tool.inputSchema.required, ["slug", "field"])
+	const tool = stateToolDefs.find((t) => t.name === "haiku_intent_get")
+	assert.deepStrictEqual(tool.inputSchema.required, ["slug", "field"])
 })
 
 test("haiku_unit_start requires intent, unit", () => {
-  const tool = stateToolDefs.find((t) => t.name === "haiku_unit_start")
-  assert.deepStrictEqual(tool.inputSchema.required, ["intent", "unit"])
+	const tool = stateToolDefs.find((t) => t.name === "haiku_unit_start")
+	assert.deepStrictEqual(tool.inputSchema.required, ["intent", "unit"])
 })
 
 test("haiku_unit_reject_hat requires intent, unit", () => {
-  const tool = stateToolDefs.find((t) => t.name === "haiku_unit_reject_hat")
-  assert.deepStrictEqual(tool.inputSchema.required, ["intent", "unit"])
+	const tool = stateToolDefs.find((t) => t.name === "haiku_unit_reject_hat")
+	assert.deepStrictEqual(tool.inputSchema.required, ["intent", "unit"])
 })
 
 test("haiku_unit_set requires intent, stage, unit, field, value", () => {
-  const tool = stateToolDefs.find((t) => t.name === "haiku_unit_set")
-  assert.deepStrictEqual(tool.inputSchema.required, ["intent", "stage", "unit", "field", "value"])
+	const tool = stateToolDefs.find((t) => t.name === "haiku_unit_set")
+	assert.deepStrictEqual(tool.inputSchema.required, [
+		"intent",
+		"stage",
+		"unit",
+		"field",
+		"value",
+	])
 })
 
-test("haiku_run_next requires intent", () => {
-  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_run_next")
-  assert.deepStrictEqual(tool.inputSchema.required, ["intent"])
+test("haiku_run_next: intent is optional (auto-resolved from branch or sole active intent)", () => {
+	const tool = orchestratorToolDefs.find((t) => t.name === "haiku_run_next")
+	// `required` should be absent OR not include "intent" — the FSM resolves it.
+	const required = tool.inputSchema.required ?? []
+	assert.ok(
+		!required.includes("intent"),
+		"intent should not be required — FSM auto-resolves from current git branch or sole active intent",
+	)
+	assert.ok(
+		"intent" in tool.inputSchema.properties,
+		"intent should still be declared as a property",
+	)
 })
 
 test("haiku_run_next has optional external_review_url", () => {
-  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_run_next")
-  assert.ok("external_review_url" in tool.inputSchema.properties)
+	const tool = orchestratorToolDefs.find((t) => t.name === "haiku_run_next")
+	assert.ok("external_review_url" in tool.inputSchema.properties)
 })
 
 test("haiku_intent_create requires title and description", () => {
-  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_intent_create")
-  assert.deepStrictEqual(tool.inputSchema.required, ["title", "description"])
-  assert.ok("title" in tool.inputSchema.properties)
-  assert.ok("description" in tool.inputSchema.properties)
+	const tool = orchestratorToolDefs.find(
+		(t) => t.name === "haiku_intent_create",
+	)
+	assert.deepStrictEqual(tool.inputSchema.required, ["title", "description"])
+	assert.ok("title" in tool.inputSchema.properties)
+	assert.ok("description" in tool.inputSchema.properties)
 })
 
 test("haiku_intent_create has optional slug and context", () => {
-  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_intent_create")
-  assert.ok("slug" in tool.inputSchema.properties)
-  assert.ok("context" in tool.inputSchema.properties)
-  assert.ok(!tool.inputSchema.required.includes("slug"))
-  assert.ok(!tool.inputSchema.required.includes("context"))
+	const tool = orchestratorToolDefs.find(
+		(t) => t.name === "haiku_intent_create",
+	)
+	assert.ok("slug" in tool.inputSchema.properties)
+	assert.ok("context" in tool.inputSchema.properties)
+	assert.ok(!tool.inputSchema.required.includes("slug"))
+	assert.ok(!tool.inputSchema.required.includes("context"))
 })
 
 test("haiku_revisit requires intent, stage optional", () => {
-  const tool = orchestratorToolDefs.find((t) => t.name === "haiku_revisit")
-  assert.deepStrictEqual(tool.inputSchema.required, ["intent"])
-  assert.ok("intent" in tool.inputSchema.properties)
-  assert.ok("stage" in tool.inputSchema.properties)
+	const tool = orchestratorToolDefs.find((t) => t.name === "haiku_revisit")
+	assert.deepStrictEqual(tool.inputSchema.required, ["intent"])
+	assert.ok("intent" in tool.inputSchema.properties)
+	assert.ok("stage" in tool.inputSchema.properties)
 })
 
 test("haiku_intent_list requires no arguments", () => {
-  const tool = stateToolDefs.find((t) => t.name === "haiku_intent_list")
-  assert.ok(!tool.inputSchema.required || tool.inputSchema.required.length === 0)
+	const tool = stateToolDefs.find((t) => t.name === "haiku_intent_list")
+	assert.ok(
+		!tool.inputSchema.required || tool.inputSchema.required.length === 0,
+	)
 })
 
 test("haiku_studio_list requires no arguments", () => {
-  const tool = stateToolDefs.find((t) => t.name === "haiku_studio_list")
-  assert.ok(!tool.inputSchema.required || tool.inputSchema.required.length === 0)
+	const tool = stateToolDefs.find((t) => t.name === "haiku_studio_list")
+	assert.ok(
+		!tool.inputSchema.required || tool.inputSchema.required.length === 0,
+	)
 })
 
 test("haiku_settings_get requires field", () => {
-  const tool = stateToolDefs.find((t) => t.name === "haiku_settings_get")
-  assert.deepStrictEqual(tool.inputSchema.required, ["field"])
+	const tool = stateToolDefs.find((t) => t.name === "haiku_settings_get")
+	assert.deepStrictEqual(tool.inputSchema.required, ["field"])
 })
 
 // ── Zod Schema Validation ─────────────────────────────────────────────────
@@ -231,227 +265,227 @@ console.log("\n=== Zod Schema Validation ===")
 // run on import.
 
 const GetReviewStatusInput = z.object({
-  session_id: z.string(),
+	session_id: z.string(),
 })
 
 test("GetReviewStatusInput accepts valid input", () => {
-  const result = GetReviewStatusInput.parse({ session_id: "abc-123" })
-  assert.strictEqual(result.session_id, "abc-123")
+	const result = GetReviewStatusInput.parse({ session_id: "abc-123" })
+	assert.strictEqual(result.session_id, "abc-123")
 })
 
 test("GetReviewStatusInput rejects missing session_id", () => {
-  assert.throws(() => GetReviewStatusInput.parse({}))
+	assert.throws(() => GetReviewStatusInput.parse({}))
 })
 
 test("GetReviewStatusInput rejects non-string session_id", () => {
-  assert.throws(() => GetReviewStatusInput.parse({ session_id: 123 }))
+	assert.throws(() => GetReviewStatusInput.parse({ session_id: 123 }))
 })
 
 const AskVisualQuestionInput = z.object({
-  questions: z.array(
-    z.object({
-      question: z.string(),
-      header: z.string().optional(),
-      options: z.array(z.string()),
-      multiSelect: z.boolean().optional(),
-    })
-  ),
-  context: z.string().optional(),
-  title: z.string().optional(),
-  image_paths: z.array(z.string()).optional(),
+	questions: z.array(
+		z.object({
+			question: z.string(),
+			header: z.string().optional(),
+			options: z.array(z.string()),
+			multiSelect: z.boolean().optional(),
+		}),
+	),
+	context: z.string().optional(),
+	title: z.string().optional(),
+	image_paths: z.array(z.string()).optional(),
 })
 
 test("AskVisualQuestionInput accepts minimal valid input", () => {
-  const result = AskVisualQuestionInput.parse({
-    questions: [{ question: "What color?", options: ["Red", "Blue"] }],
-  })
-  assert.strictEqual(result.questions.length, 1)
-  assert.strictEqual(result.questions[0].question, "What color?")
+	const result = AskVisualQuestionInput.parse({
+		questions: [{ question: "What color?", options: ["Red", "Blue"] }],
+	})
+	assert.strictEqual(result.questions.length, 1)
+	assert.strictEqual(result.questions[0].question, "What color?")
 })
 
 test("AskVisualQuestionInput accepts full input", () => {
-  const result = AskVisualQuestionInput.parse({
-    questions: [
-      {
-        question: "Pick one",
-        header: "Colors",
-        options: ["Red", "Blue", "Green"],
-        multiSelect: true,
-      },
-    ],
-    context: "Some context",
-    title: "My Question",
-    image_paths: ["/tmp/img.png"],
-  })
-  assert.strictEqual(result.questions[0].multiSelect, true)
-  assert.strictEqual(result.title, "My Question")
-  assert.strictEqual(result.image_paths.length, 1)
+	const result = AskVisualQuestionInput.parse({
+		questions: [
+			{
+				question: "Pick one",
+				header: "Colors",
+				options: ["Red", "Blue", "Green"],
+				multiSelect: true,
+			},
+		],
+		context: "Some context",
+		title: "My Question",
+		image_paths: ["/tmp/img.png"],
+	})
+	assert.strictEqual(result.questions[0].multiSelect, true)
+	assert.strictEqual(result.title, "My Question")
+	assert.strictEqual(result.image_paths.length, 1)
 })
 
 test("AskVisualQuestionInput accepts empty questions array", () => {
-  // z.array allows empty by default — this should parse
-  const result = AskVisualQuestionInput.parse({ questions: [] })
-  assert.strictEqual(result.questions.length, 0)
+	// z.array allows empty by default — this should parse
+	const result = AskVisualQuestionInput.parse({ questions: [] })
+	assert.strictEqual(result.questions.length, 0)
 })
 
 test("AskVisualQuestionInput rejects missing questions", () => {
-  assert.throws(() => AskVisualQuestionInput.parse({}))
+	assert.throws(() => AskVisualQuestionInput.parse({}))
 })
 
 test("AskVisualQuestionInput rejects question without options", () => {
-  assert.throws(() =>
-    AskVisualQuestionInput.parse({
-      questions: [{ question: "What?" }],
-    })
-  )
+	assert.throws(() =>
+		AskVisualQuestionInput.parse({
+			questions: [{ question: "What?" }],
+		}),
+	)
 })
 
 const DesignArchetypeSchema = z.object({
-  name: z.string(),
-  description: z.string(),
-  preview_html: z.string(),
-  default_parameters: z.record(z.number()),
+	name: z.string(),
+	description: z.string(),
+	preview_html: z.string(),
+	default_parameters: z.record(z.number()),
 })
 
 test("DesignArchetypeSchema accepts valid archetype", () => {
-  const result = DesignArchetypeSchema.parse({
-    name: "Minimal",
-    description: "Clean and simple",
-    preview_html: "<div>Preview</div>",
-    default_parameters: { spacing: 1.5, font_size: 16 },
-  })
-  assert.strictEqual(result.name, "Minimal")
-  assert.strictEqual(result.default_parameters.spacing, 1.5)
+	const result = DesignArchetypeSchema.parse({
+		name: "Minimal",
+		description: "Clean and simple",
+		preview_html: "<div>Preview</div>",
+		default_parameters: { spacing: 1.5, font_size: 16 },
+	})
+	assert.strictEqual(result.name, "Minimal")
+	assert.strictEqual(result.default_parameters.spacing, 1.5)
 })
 
 test("DesignArchetypeSchema rejects non-numeric parameters", () => {
-  assert.throws(() =>
-    DesignArchetypeSchema.parse({
-      name: "Bad",
-      description: "Bad",
-      preview_html: "<div/>",
-      default_parameters: { spacing: "big" },
-    })
-  )
+	assert.throws(() =>
+		DesignArchetypeSchema.parse({
+			name: "Bad",
+			description: "Bad",
+			preview_html: "<div/>",
+			default_parameters: { spacing: "big" },
+		}),
+	)
 })
 
 test("DesignArchetypeSchema rejects missing fields", () => {
-  assert.throws(() => DesignArchetypeSchema.parse({ name: "Incomplete" }))
+	assert.throws(() => DesignArchetypeSchema.parse({ name: "Incomplete" }))
 })
 
 const DesignParameterSchema = z.object({
-  name: z.string(),
-  label: z.string(),
-  description: z.string(),
-  min: z.number(),
-  max: z.number(),
-  step: z.number(),
-  default: z.number(),
-  labels: z.object({
-    low: z.string(),
-    high: z.string(),
-  }),
+	name: z.string(),
+	label: z.string(),
+	description: z.string(),
+	min: z.number(),
+	max: z.number(),
+	step: z.number(),
+	default: z.number(),
+	labels: z.object({
+		low: z.string(),
+		high: z.string(),
+	}),
 })
 
 test("DesignParameterSchema accepts valid parameter", () => {
-  const result = DesignParameterSchema.parse({
-    name: "spacing",
-    label: "Spacing",
-    description: "Controls spacing between elements",
-    min: 0,
-    max: 100,
-    step: 1,
-    default: 50,
-    labels: { low: "Tight", high: "Spacious" },
-  })
-  assert.strictEqual(result.name, "spacing")
-  assert.strictEqual(result.labels.low, "Tight")
+	const result = DesignParameterSchema.parse({
+		name: "spacing",
+		label: "Spacing",
+		description: "Controls spacing between elements",
+		min: 0,
+		max: 100,
+		step: 1,
+		default: 50,
+		labels: { low: "Tight", high: "Spacious" },
+	})
+	assert.strictEqual(result.name, "spacing")
+	assert.strictEqual(result.labels.low, "Tight")
 })
 
 test("DesignParameterSchema rejects missing labels", () => {
-  assert.throws(() =>
-    DesignParameterSchema.parse({
-      name: "spacing",
-      label: "Spacing",
-      description: "desc",
-      min: 0,
-      max: 100,
-      step: 1,
-      default: 50,
-    })
-  )
+	assert.throws(() =>
+		DesignParameterSchema.parse({
+			name: "spacing",
+			label: "Spacing",
+			description: "desc",
+			min: 0,
+			max: 100,
+			step: 1,
+			default: 50,
+		}),
+	)
 })
 
 test("DesignParameterSchema rejects non-numeric min", () => {
-  assert.throws(() =>
-    DesignParameterSchema.parse({
-      name: "spacing",
-      label: "Spacing",
-      description: "desc",
-      min: "zero",
-      max: 100,
-      step: 1,
-      default: 50,
-      labels: { low: "L", high: "H" },
-    })
-  )
+	assert.throws(() =>
+		DesignParameterSchema.parse({
+			name: "spacing",
+			label: "Spacing",
+			description: "desc",
+			min: "zero",
+			max: 100,
+			step: 1,
+			default: 50,
+			labels: { low: "L", high: "H" },
+		}),
+	)
 })
 
 const PickDesignDirectionInput = z.object({
-  intent_slug: z.string(),
-  archetypes: z.array(DesignArchetypeSchema).optional(),
-  archetypes_file: z.string().optional(),
-  parameters: z.array(DesignParameterSchema).optional(),
-  parameters_file: z.string().optional(),
-  title: z.string().optional(),
+	intent_slug: z.string(),
+	archetypes: z.array(DesignArchetypeSchema).optional(),
+	archetypes_file: z.string().optional(),
+	parameters: z.array(DesignParameterSchema).optional(),
+	parameters_file: z.string().optional(),
+	title: z.string().optional(),
 })
 
 test("PickDesignDirectionInput accepts minimal input", () => {
-  const result = PickDesignDirectionInput.parse({ intent_slug: "my-feature" })
-  assert.strictEqual(result.intent_slug, "my-feature")
-  assert.strictEqual(result.archetypes, undefined)
+	const result = PickDesignDirectionInput.parse({ intent_slug: "my-feature" })
+	assert.strictEqual(result.intent_slug, "my-feature")
+	assert.strictEqual(result.archetypes, undefined)
 })
 
 test("PickDesignDirectionInput accepts inline archetypes", () => {
-  const result = PickDesignDirectionInput.parse({
-    intent_slug: "feat",
-    archetypes: [
-      {
-        name: "Minimal",
-        description: "Clean",
-        preview_html: "<div/>",
-        default_parameters: { x: 1 },
-      },
-    ],
-    parameters: [
-      {
-        name: "x",
-        label: "X",
-        description: "X factor",
-        min: 0,
-        max: 10,
-        step: 1,
-        default: 5,
-        labels: { low: "Low", high: "High" },
-      },
-    ],
-  })
-  assert.strictEqual(result.archetypes.length, 1)
-  assert.strictEqual(result.parameters.length, 1)
+	const result = PickDesignDirectionInput.parse({
+		intent_slug: "feat",
+		archetypes: [
+			{
+				name: "Minimal",
+				description: "Clean",
+				preview_html: "<div/>",
+				default_parameters: { x: 1 },
+			},
+		],
+		parameters: [
+			{
+				name: "x",
+				label: "X",
+				description: "X factor",
+				min: 0,
+				max: 10,
+				step: 1,
+				default: 5,
+				labels: { low: "Low", high: "High" },
+			},
+		],
+	})
+	assert.strictEqual(result.archetypes.length, 1)
+	assert.strictEqual(result.parameters.length, 1)
 })
 
 test("PickDesignDirectionInput accepts file paths", () => {
-  const result = PickDesignDirectionInput.parse({
-    intent_slug: "feat",
-    archetypes_file: "/tmp/archetypes.json",
-    parameters_file: "/tmp/parameters.json",
-  })
-  assert.strictEqual(result.archetypes_file, "/tmp/archetypes.json")
-  assert.strictEqual(result.parameters_file, "/tmp/parameters.json")
+	const result = PickDesignDirectionInput.parse({
+		intent_slug: "feat",
+		archetypes_file: "/tmp/archetypes.json",
+		parameters_file: "/tmp/parameters.json",
+	})
+	assert.strictEqual(result.archetypes_file, "/tmp/archetypes.json")
+	assert.strictEqual(result.parameters_file, "/tmp/parameters.json")
 })
 
 test("PickDesignDirectionInput rejects missing intent_slug", () => {
-  assert.throws(() => PickDesignDirectionInput.parse({}))
+	assert.throws(() => PickDesignDirectionInput.parse({}))
 })
 
 // ── Server Tool Routing Invariants ────────────────────────────────────────
@@ -459,33 +493,37 @@ test("PickDesignDirectionInput rejects missing intent_slug", () => {
 console.log("\n=== Server Tool Routing Invariants ===")
 
 test("all haiku_ tools are routed to either orchestrator or state handler", () => {
-  const orchestratorNames = new Set(orchestratorToolDefs.map((t) => t.name))
-  const stateNames = new Set(stateToolDefs.map((t) => t.name))
+	const orchestratorNames = new Set(orchestratorToolDefs.map((t) => t.name))
+	const stateNames = new Set(stateToolDefs.map((t) => t.name))
 
-  for (const tool of serverTools) {
-    if (tool.name.startsWith("haiku_")) {
-      const inOrchestrator = orchestratorNames.has(tool.name)
-      const inState = stateNames.has(tool.name)
-      assert.ok(
-        inOrchestrator || inState,
-        `Tool ${tool.name} starts with haiku_ but isn't in orchestrator or state handlers`
-      )
-    }
-  }
+	for (const tool of serverTools) {
+		if (tool.name.startsWith("haiku_")) {
+			const inOrchestrator = orchestratorNames.has(tool.name)
+			const inState = stateNames.has(tool.name)
+			assert.ok(
+				inOrchestrator || inState,
+				`Tool ${tool.name} starts with haiku_ but isn't in orchestrator or state handlers`,
+			)
+		}
+	}
 })
 
 test("orchestrator and state tools don't overlap", () => {
-  const orchestratorNames = new Set(orchestratorToolDefs.map((t) => t.name))
-  const stateNames = new Set(stateToolDefs.map((t) => t.name))
-  const overlap = [...orchestratorNames].filter((n) => stateNames.has(n))
-  assert.strictEqual(overlap.length, 0, `Overlapping tools: ${overlap.join(", ")}`)
+	const orchestratorNames = new Set(orchestratorToolDefs.map((t) => t.name))
+	const stateNames = new Set(stateToolDefs.map((t) => t.name))
+	const overlap = [...orchestratorNames].filter((n) => stateNames.has(n))
+	assert.strictEqual(
+		overlap.length,
+		0,
+		`Overlapping tools: ${overlap.join(", ")}`,
+	)
 })
 
 test("non-haiku tools exist (ask_user_visual_question, pick_design_direction)", () => {
-  const nonHaiku = serverTools.filter((t) => !t.name.startsWith("haiku_"))
-  const names = nonHaiku.map((t) => t.name)
-  assert.ok(names.includes("ask_user_visual_question"))
-  assert.ok(names.includes("pick_design_direction"))
+	const nonHaiku = serverTools.filter((t) => !t.name.startsWith("haiku_"))
+	const names = nonHaiku.map((t) => t.name)
+	assert.ok(names.includes("ask_user_visual_question"))
+	assert.ok(names.includes("pick_design_direction"))
 })
 
 // ── Property Type Checks ──────────────────────────────────────────────────
@@ -493,22 +531,192 @@ test("non-haiku tools exist (ask_user_visual_question, pick_design_direction)", 
 console.log("\n=== Property Type Annotations ===")
 
 test("all tool properties have type field", () => {
-  for (const tool of serverTools) {
-    for (const [propName, propDef] of Object.entries(tool.inputSchema.properties)) {
-      assert.ok(
-        propDef.type,
-        `${tool.name}.${propName} missing type field`
-      )
-    }
-  }
+	for (const tool of serverTools) {
+		for (const [propName, propDef] of Object.entries(
+			tool.inputSchema.properties,
+		)) {
+			assert.ok(propDef.type, `${tool.name}.${propName} missing type field`)
+		}
+	}
 })
 
 test("string properties use type 'string'", () => {
-  // Spot-check known string properties
-  const intentGet = stateToolDefs.find((t) => t.name === "haiku_intent_get")
-  assert.strictEqual(intentGet.inputSchema.properties.slug.type, "string")
-  assert.strictEqual(intentGet.inputSchema.properties.field.type, "string")
+	// Spot-check known string properties
+	const intentGet = stateToolDefs.find((t) => t.name === "haiku_intent_get")
+	assert.strictEqual(intentGet.inputSchema.properties.slug.type, "string")
+	assert.strictEqual(intentGet.inputSchema.properties.field.type, "string")
 })
+
+// ── haiku-api contract invariants ──────────────────────────────────────────
+//
+// These are cheap structural checks that catch drift in the wire contract.
+// If any route drops the `transport: 'loopback'` annotation the FSM refuses
+// to start — this test fails loudly at the same level.
+
+console.log("\n=== haiku-api contract invariants ===")
+
+const { routes: apiRoutes, routeBodyLimit } = await import("haiku-api")
+
+test("every route declares transport='loopback'", () => {
+	for (const r of apiRoutes) {
+		assert.strictEqual(
+			r.transport,
+			"loopback",
+			`${r.method} ${r.pathTemplate} transport drift: ${r.transport}`,
+		)
+	}
+})
+
+test("every route has a unique operationId", () => {
+	const seen = new Set()
+	for (const r of apiRoutes) {
+		assert.ok(!seen.has(r.operationId), `duplicate ${r.operationId}`)
+		seen.add(r.operationId)
+	}
+})
+
+test("feedback POST uses 8 MiB create cap, PUT uses 128 KiB update cap", () => {
+	// POST carries screenshot attachments, so it gets the larger cap.
+	assert.strictEqual(
+		routeBodyLimit("POST", "/api/feedback/{intent}/{stage}"),
+		8_388_608,
+	)
+	// PUT only updates status/closed_by — text-only traffic.
+	assert.strictEqual(
+		routeBodyLimit("PUT", "/api/feedback/{intent}/{stage}/{feedbackId}"),
+		131_072,
+	)
+})
+
+test("review decide route uses default 1 MiB cap", () => {
+	assert.strictEqual(
+		routeBodyLimit("POST", "/review/{sessionId}/decide"),
+		1_048_576,
+	)
+})
+
+test("revisit endpoint is in the route table", () => {
+	const r = apiRoutes.find(
+		(route) =>
+			route.method === "POST" &&
+			route.pathTemplate === "/api/revisit/{sessionId}",
+	)
+	assert.ok(r, "missing revisit route")
+	assert.strictEqual(r.operationId, "postRevisit")
+})
+
+// ── Server-level body cap + transport invariant ───────────────────────────
+//
+// These tests spawn a child Node process and exercise the real HTTP server.
+// The transport-invariant test specifically forces a non-loopback bind
+// (HAIKU_FORCE_BIND_ADDR=0.0.0.0) and asserts the process exits non-zero.
+
+console.log("\n=== Server-level body cap + transport invariant ===")
+
+import { spawn } from "node:child_process"
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join, dirname as pathDirname } from "node:path"
+import { fileURLToPath } from "node:url"
+
+const here = pathDirname(fileURLToPath(import.meta.url))
+const haikuPkgRoot = join(here, "..")
+
+async function runInChild({ env = {}, scriptBody, timeoutMs = 15000 }) {
+	const childTmp = mkdtempSync(join(tmpdir(), "haiku-server-tools-"))
+	const scriptPath = join(childTmp, "child.mjs")
+	writeFileSync(scriptPath, scriptBody, "utf8")
+	return await new Promise((resolve) => {
+		const child = spawn(process.execPath, ["--import", "tsx", scriptPath], {
+			cwd: haikuPkgRoot,
+			env: { ...process.env, ...env },
+			stdio: ["ignore", "pipe", "pipe"],
+		})
+		let stdout = ""
+		let stderr = ""
+		child.stdout.on("data", (b) => {
+			stdout += b.toString("utf8")
+		})
+		child.stderr.on("data", (b) => {
+			stderr += b.toString("utf8")
+		})
+		const to = setTimeout(() => {
+			child.kill("SIGKILL")
+		}, timeoutMs)
+		child.on("exit", (code, signal) => {
+			clearTimeout(to)
+			rmSync(childTmp, { recursive: true, force: true })
+			resolve({ code, signal, stdout, stderr })
+		})
+	})
+}
+
+const serverAsyncTests = []
+function asyncTest(name, fn) {
+	serverAsyncTests.push({ name, fn })
+}
+
+asyncTest(
+	"transport invariant: process exits non-zero on non-loopback bind",
+	async () => {
+		const res = await runInChild({
+			env: { HAIKU_FORCE_BIND_ADDR: "0.0.0.0" },
+			scriptBody: `
+import { startHttpServer } from "${haikuPkgRoot}/src/http.ts"
+await startHttpServer().catch(() => {})
+`,
+		})
+		// Node may exit 1 (assertLoopbackBind → process.exit(1)) OR the child
+		// may kill itself earlier during bind (EACCES on some systems). We
+		// accept any non-zero code; 0 means the invariant silently passed —
+		// a regression.
+		assert.notStrictEqual(
+			res.code,
+			0,
+			`expected non-zero exit, got ${res.code} / signal=${res.signal} / stderr=${res.stderr}`,
+		)
+	},
+)
+
+asyncTest("server body > 1 MiB returns 413 at bridge level", async () => {
+	const { startHttpServer } = await import("../src/http.ts")
+	const port = await startHttpServer()
+	const huge = "x".repeat(2 * 1024 * 1024) // 2 MiB — above 1 MiB cap
+	let res
+	try {
+		res = await fetch(`http://127.0.0.1:${port}/review/does-not-exist/decide`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ decision: "approved", feedback: huge }),
+		})
+	} catch (e) {
+		// Server may 413 cleanly OR reset the connection while the client
+		// is still writing the oversize body. Both are valid rejections —
+		// what we're asserting is "oversize body is refused", not "refusal
+		// delivers a nicely-framed JSON envelope no matter how the client
+		// paces its writes." ECONNRESET / UND_ERR_SOCKET is the reset path.
+		const code = e.cause?.code
+		if (code === "ECONNRESET" || code === "UND_ERR_SOCKET") return
+		throw new Error(
+			`fetch failed: ${e.message} / cause=${e.cause?.message} code=${code}`,
+		)
+	}
+	assert.strictEqual(res.status, 413)
+	const data = await res.json()
+	assert.strictEqual(data.error, "payload_too_large")
+})
+
+// Run async tests sequentially.
+for (const { name, fn } of serverAsyncTests) {
+	try {
+		await fn()
+		passed++
+		console.log(`  ✓ ${name}`)
+	} catch (e) {
+		failed++
+		console.log(`  ✗ ${name}: ${e.message}`)
+	}
+}
 
 // ── Summary ───────────────────────────────────────────────────────────────
 

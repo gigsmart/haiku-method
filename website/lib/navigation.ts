@@ -190,7 +190,8 @@ export const navigation: NavCategory[] = [
 					{
 						title: "The Paper",
 						href: "/paper/",
-						description: "Full methodology with research and production lessons",
+						description:
+							"Full methodology with research and production lessons",
 					},
 					{
 						title: "Blog",

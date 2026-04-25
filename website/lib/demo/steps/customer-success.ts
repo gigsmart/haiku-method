@@ -1,82 +1,911 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "customer-success",
-  studio: "customer-success",
-  stages: ["onboarding", "adoption", "health-check", "expansion", "renewal"],
-  completionText: "All 5 stages passed. onboard-techstartup-inc delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1000, actions: [{"type":"typing"}] },
-    { delay: 800, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Onboard TechStartup Inc to our platform. They just signed a $120K annual deal."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: onboard-techstartup-inc..."}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: customer-success. 5 stages: onboarding → adoption → health-check → expansion → renewal"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"onboarding"}, {"type":"msg","role":"agent","label":"agent","text":"Entering onboarding stage. Hat: onboarding-lead.\nWhat do you know about TechStartup’s team and their use case?"}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/onboarding/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"50 employees, engineering-heavy. They want to use our API monitoring features. Main contact is Sarah Chen, VP of Engineering. They're migrating from a competitor tool."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Competitor migration — we’ll need to handle data import and make sure the transition is smooth. Decomposing onboarding work..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/onboarding/units/unit-01-setup.md"}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/onboarding/units/unit-02-integration.md"}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/onboarding/units/unit-03-training.md"}, {"type":"card","stage":"onboarding","name":"setup","status":"in-progress"}, {"type":"card","stage":"onboarding","name":"integration","status":""}, {"type":"card","stage":"onboarding","name":"training","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Setup plan:\n  • Workspace provisioned with enterprise SSO (Okta)\n  • 5 team seats activated: Sarah Chen + 4 engineering leads\n  • API keys generated for staging and production\n  • Data import from competitor: 6 months of monitoring history\n\nSuccess milestone: first live monitor created by end of week 1."}, {"type":"updateCard","stage":"onboarding","name":"setup","status":"completed"}, {"type":"updateCard","stage":"onboarding","name":"integration","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: technical-enabler. Integration guide created for TechStartup’s stack:\n  • Node.js SDK configured for their Express API\n  • Kubernetes sidecar agent for their GKE cluster\n  • Slack webhook for alert routing to #eng-alerts\n  • Historical data import: 847 monitors migrated from competitor"}, {"type":"updateCard","stage":"onboarding","name":"integration","status":"completed"}, {"type":"updateCard","stage":"onboarding","name":"training","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Training materials personalized for 3 personas:\n  • Engineering leads: dashboard creation and alert configuration\n  • DevOps: SDK integration and Kubernetes agent management\n  • VP Engineering (Sarah): executive reporting and team oversight\n\nFirst success milestone achieved: 12 live monitors created within 3 days."}, {"type":"updateCard","stage":"onboarding","name":"training","status":"completed"}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/knowledge/ONBOARDING-REPORT.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Onboarding stage complete. Review gate: ask."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Onboarding","intent":"","criteria":["Workspace setup: SSO, seats, API keys","Integration: SDK, K8s agent, Slack webhook","847 monitors migrated from competitor","Training delivered to 3 personas","First success: 12 live monitors in 3 days"],"gateType":"ask gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2200, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Great start. Move to adoption tracking."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to adoption stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"adoption"}, {"type":"msg","role":"agent","label":"agent","text":"Entering adoption stage. Hat: adoption-coach.\nLoading onboarding report..."}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/adoption/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → onboarding/onboarding-report (knowledge/ONBOARDING-REPORT.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Tracking adoption metrics and identifying underutilized features..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/adoption/units/unit-01-usage-tracking.md"}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/adoption/units/unit-02-enablement.md"}, {"type":"card","stage":"adoption","name":"usage-tracking","status":"in-progress"}, {"type":"card","stage":"adoption","name":"enablement","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: usage-analyst. Adoption metrics (30-day mark):\n  • DAU/MAU ratio: 0.68 (healthy)\n  • Monitors active: 47 (up from 12 at onboarding)\n  • Alert channels: 3 (Slack, PagerDuty, email)\n  • Features used: monitoring (high), alerting (high), dashboards (low), API testing (unused)\n\nDashboards and API testing are underutilized — big value opportunities."}, {"type":"updateCard","stage":"adoption","name":"usage-tracking","status":"completed"}, {"type":"updateCard","stage":"adoption","name":"enablement","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Enablement plan created:\n  • Dashboard workshop for Sarah’s team (maps dashboards to their weekly eng review)\n  • API testing walkthrough for DevOps lead (replaces their current Postman workflow)\n  • Custom metric builder tutorial (they have unique SLA requirements)\n\nAdoption target: 80% feature breadth within 60 days."}, {"type":"updateCard","stage":"adoption","name":"enablement","status":"completed"}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/knowledge/USAGE-REPORT.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Adoption stage complete. Review gate: auto. All criteria met — advancing."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to health-check stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"health-check"}, {"type":"msg","role":"agent","label":"agent","text":"Entering health-check stage. Hat: health-monitor.\nLoading usage report..."}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/health-check/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → adoption/usage-report (knowledge/USAGE-REPORT.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Running comprehensive health assessment across 5 dimensions..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/health-check/units/unit-01-health-scorecard.md"}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/health-check/units/unit-02-risk-assessment.md"}, {"type":"card","stage":"health-check","name":"health-scorecard","status":"in-progress"}, {"type":"card","stage":"health-check","name":"risk-assessment","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Health scorecard:\n  • Usage: 8/10 (strong daily engagement)\n  • Engagement: 7/10 (responding to alerts, creating monitors)\n  • Support sentiment: 9/10 (2 tickets, both resolved same day)\n  • Stakeholder access: 6/10 (only talking to Sarah, need exec sponsor)\n  • Contract alignment: 8/10 (using 75% of licensed capacity)\n\nOverall: 7.6/10 — Healthy, with one flag."}, {"type":"updateCard","stage":"health-check","name":"health-scorecard","status":"completed"}, {"type":"updateCard","stage":"health-check","name":"risk-assessment","status":"in-progress"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Hat: risk-analyst. One risk flagged: single-threaded relationship through Sarah Chen. If she leaves or changes roles, we lose our champion. Should we proactively build a relationship with their CTO?"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"Yes — get a meeting with the CTO. Position it as a quarterly business review. Sarah can make the intro."}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Action item created: schedule QBR with CTO via Sarah’s intro. Also adding their DevOps lead as a secondary contact for day-to-day interactions."}, {"type":"updateCard","stage":"health-check","name":"risk-assessment","status":"completed"}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/knowledge/HEALTH-REPORT.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Health-check stage complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Good catch on the single-thread risk. Approved."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to expansion stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"expansion"}, {"type":"msg","role":"agent","label":"agent","text":"Entering expansion stage. Hat: growth-strategist.\nLoading health report..."}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/expansion/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → health-check/health-report (knowledge/HEALTH-REPORT.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Identifying expansion opportunities based on usage patterns and customer value..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/expansion/units/unit-01-opportunity-analysis.md"}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/expansion/units/unit-02-expansion-proposal.md"}, {"type":"card","stage":"expansion","name":"opportunity-analysis","status":"in-progress"}, {"type":"card","stage":"expansion","name":"expansion-proposal","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: value-consultant. Two expansion opportunities identified:\n\n  1. [High] Additional seats: only 5 of 50 employees have access. Their QA team (8 people) is asking for monitoring access. Revenue impact: +$28K ARR.\n\n  2. [Medium] API testing add-on: they’re currently using Postman separately. Our API testing integrates with their existing monitors. Revenue impact: +$15K ARR.\n\nTotal expansion potential: $43K ARR (36% uplift on $120K base)."}, {"type":"updateCard","stage":"expansion","name":"opportunity-analysis","status":"completed"}, {"type":"updateCard","stage":"expansion","name":"expansion-proposal","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Expansion proposals drafted:\n  • QA team seats: ROI justification tied to their bug escape rate (currently 12%, industry benchmark 5%)\n  • API testing: positioned as Postman replacement with monitoring integration\n\nBoth proposals grounded in their actual usage data and business outcomes."}, {"type":"updateCard","stage":"expansion","name":"expansion-proposal","status":"completed"}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/knowledge/OPPORTUNITY-BRIEF.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Expansion stage complete. Review gate: ask + await."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Expansion","intent":"","criteria":["2 expansion opportunities with revenue impact","QA team seats: +$28K ARR justified by bug escape rate","API testing add-on: +$15K ARR replacing Postman","ROI grounded in actual usage data","Proposals ready for customer presentation"],"gateType":"ask gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2000, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. Send both proposals."}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Await gate: waiting for TechStartup Inc response on expansion proposals..."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"Await resolved — TechStartup approved QA team seats (+$28K). API testing deferred to next quarter."}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Partial win — $28K expansion closed. API testing is in pipeline for Q2. Advancing to renewal."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"renewal"}, {"type":"msg","role":"agent","label":"agent","text":"Entering renewal stage. Hat: renewal-manager.\nLoading opportunity brief..."}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/renewal/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → expansion/opportunity-brief (knowledge/OPPORTUNITY-BRIEF.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Building renewal strategy with value realization summary..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/renewal/units/unit-01-value-summary.md"}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/renewal/units/unit-02-renewal-proposal.md"}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/stages/renewal/units/unit-03-ebr-deck.md"}, {"type":"card","stage":"renewal","name":"value-summary","status":"in-progress"}, {"type":"card","stage":"renewal","name":"renewal-proposal","status":""}, {"type":"card","stage":"renewal","name":"ebr-deck","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Value realization summary:\n  • Monitors: 12 at onboarding → 63 active today\n  • MTTR reduction: 47 min → 12 min (74% improvement)\n  • Incident detection: 89% of issues caught before customer reports\n  • Team adoption: 13 active users (up from 5)\n  • Competitor migration: complete, zero data loss\n\nQuantified ROI: $340K in prevented downtime costs vs. $148K contract value."}, {"type":"updateCard","stage":"renewal","name":"value-summary","status":"completed"}, {"type":"updateCard","stage":"renewal","name":"renewal-proposal","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: executive-sponsor. Renewal proposal:\n  • 2-year renewal at $148K/year (includes QA team expansion)\n  • 5% multi-year discount if they commit to 2 years\n  • API testing add-on included at 10% discount as early commitment incentive\n\nAnticipated objection: “why pay more when we’re not using API testing yet?” Counter: bundle discount saves them $8K vs. adding it later."}, {"type":"updateCard","stage":"renewal","name":"renewal-proposal","status":"completed"}, {"type":"updateCard","stage":"renewal","name":"ebr-deck","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"EBR deck tells the value story:\n  Slide 1: Where they started (competitor tool, manual monitoring)\n  Slide 2: What they achieved (74% MTTR reduction, $340K saved)\n  Slide 3: Where they can go (API testing, full-team adoption)\n  Slide 4: Renewal terms with bundle savings"}, {"type":"updateCard","stage":"renewal","name":"ebr-deck","status":"completed"}, {"type":"file","path":".haiku/intents/onboard-techstartup-inc/knowledge/RENEWAL-OUTCOME.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Renewal stage complete. Review gate: external + await."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Renewal","intent":"","criteria":["Value summary with quantified ROI ($340K saved)","74% MTTR improvement documented with evidence","Renewal proposal with multi-year discount","Objection handling prepared for API testing bundle","EBR deck with clear value narrative"],"gateType":"external gate"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2400, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"External review approved. CTO signed 2-year renewal with API testing bundle."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for onboard-techstartup-inc.\n\nDelivered:\n  • Onboarding: SSO setup, 847 monitors migrated, 3-persona training\n  • Adoption: 0.68 DAU/MAU, enablement plan for underutilized features\n  • Health-check: 7.6/10 score, single-thread risk mitigated with CTO QBR\n  • Expansion: QA team seats closed (+$28K), API testing in pipeline\n  • Renewal: 2-year deal signed at $163K/year with API testing bundle\n\nAccount growth: $120K → $163K ARR (36% expansion). Intent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "customer-success",
+	studio: "customer-success",
+	stages: ["onboarding", "adoption", "health-check", "expansion", "renewal"],
+	completionText: "All 5 stages passed. onboard-techstartup-inc delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1000, actions: [{ type: "typing" }] },
+		{
+			delay: 800,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Onboard TechStartup Inc to our platform. They just signed a $120K annual deal.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: onboard-techstartup-inc...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: customer-success. 5 stages: onboarding → adoption → health-check → expansion → renewal",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "onboarding" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering onboarding stage. Hat: onboarding-lead.\nWhat do you know about TechStartup’s team and their use case?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/onboarding/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "50 employees, engineering-heavy. They want to use our API monitoring features. Main contact is Sarah Chen, VP of Engineering. They're migrating from a competitor tool.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Competitor migration — we’ll need to handle data import and make sure the transition is smooth. Decomposing onboarding work...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/onboarding/units/unit-01-setup.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/onboarding/units/unit-02-integration.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/onboarding/units/unit-03-training.md",
+				},
+				{
+					type: "card",
+					stage: "onboarding",
+					name: "setup",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "onboarding", name: "integration", status: "" },
+				{ type: "card", stage: "onboarding", name: "training", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Setup plan:\n  • Workspace provisioned with enterprise SSO (Okta)\n  • 5 team seats activated: Sarah Chen + 4 engineering leads\n  • API keys generated for staging and production\n  • Data import from competitor: 6 months of monitoring history\n\nSuccess milestone: first live monitor created by end of week 1.",
+				},
+				{
+					type: "updateCard",
+					stage: "onboarding",
+					name: "setup",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "onboarding",
+					name: "integration",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: technical-enabler. Integration guide created for TechStartup’s stack:\n  • Node.js SDK configured for their Express API\n  • Kubernetes sidecar agent for their GKE cluster\n  • Slack webhook for alert routing to #eng-alerts\n  • Historical data import: 847 monitors migrated from competitor",
+				},
+				{
+					type: "updateCard",
+					stage: "onboarding",
+					name: "integration",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "onboarding",
+					name: "training",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Training materials personalized for 3 personas:\n  • Engineering leads: dashboard creation and alert configuration\n  • DevOps: SDK integration and Kubernetes agent management\n  • VP Engineering (Sarah): executive reporting and team oversight\n\nFirst success milestone achieved: 12 live monitors created within 3 days.",
+				},
+				{
+					type: "updateCard",
+					stage: "onboarding",
+					name: "training",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/knowledge/ONBOARDING-REPORT.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Onboarding stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Onboarding",
+					intent: "",
+					criteria: [
+						"Workspace setup: SSO, seats, API keys",
+						"Integration: SDK, K8s agent, Slack webhook",
+						"847 monitors migrated from competitor",
+						"Training delivered to 3 personas",
+						"First success: 12 live monitors in 3 days",
+					],
+					gateType: "ask gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2200, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Great start. Move to adoption tracking.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to adoption stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "adoption" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering adoption stage. Hat: adoption-coach.\nLoading onboarding report...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/adoption/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → onboarding/onboarding-report (knowledge/ONBOARDING-REPORT.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Tracking adoption metrics and identifying underutilized features...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/adoption/units/unit-01-usage-tracking.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/adoption/units/unit-02-enablement.md",
+				},
+				{
+					type: "card",
+					stage: "adoption",
+					name: "usage-tracking",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "adoption", name: "enablement", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: usage-analyst. Adoption metrics (30-day mark):\n  • DAU/MAU ratio: 0.68 (healthy)\n  • Monitors active: 47 (up from 12 at onboarding)\n  • Alert channels: 3 (Slack, PagerDuty, email)\n  • Features used: monitoring (high), alerting (high), dashboards (low), API testing (unused)\n\nDashboards and API testing are underutilized — big value opportunities.",
+				},
+				{
+					type: "updateCard",
+					stage: "adoption",
+					name: "usage-tracking",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "adoption",
+					name: "enablement",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Enablement plan created:\n  • Dashboard workshop for Sarah’s team (maps dashboards to their weekly eng review)\n  • API testing walkthrough for DevOps lead (replaces their current Postman workflow)\n  • Custom metric builder tutorial (they have unique SLA requirements)\n\nAdoption target: 80% feature breadth within 60 days.",
+				},
+				{
+					type: "updateCard",
+					stage: "adoption",
+					name: "enablement",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/knowledge/USAGE-REPORT.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Adoption stage complete. Review gate: auto. All criteria met — advancing.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to health-check stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "health-check" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering health-check stage. Hat: health-monitor.\nLoading usage report...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/health-check/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → adoption/usage-report (knowledge/USAGE-REPORT.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Running comprehensive health assessment across 5 dimensions...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/health-check/units/unit-01-health-scorecard.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/health-check/units/unit-02-risk-assessment.md",
+				},
+				{
+					type: "card",
+					stage: "health-check",
+					name: "health-scorecard",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "health-check",
+					name: "risk-assessment",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Health scorecard:\n  • Usage: 8/10 (strong daily engagement)\n  • Engagement: 7/10 (responding to alerts, creating monitors)\n  • Support sentiment: 9/10 (2 tickets, both resolved same day)\n  • Stakeholder access: 6/10 (only talking to Sarah, need exec sponsor)\n  • Contract alignment: 8/10 (using 75% of licensed capacity)\n\nOverall: 7.6/10 — Healthy, with one flag.",
+				},
+				{
+					type: "updateCard",
+					stage: "health-check",
+					name: "health-scorecard",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "health-check",
+					name: "risk-assessment",
+					status: "in-progress",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: risk-analyst. One risk flagged: single-threaded relationship through Sarah Chen. If she leaves or changes roles, we lose our champion. Should we proactively build a relationship with their CTO?",
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Yes — get a meeting with the CTO. Position it as a quarterly business review. Sarah can make the intro.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Action item created: schedule QBR with CTO via Sarah’s intro. Also adding their DevOps lead as a secondary contact for day-to-day interactions.",
+				},
+				{
+					type: "updateCard",
+					stage: "health-check",
+					name: "risk-assessment",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/knowledge/HEALTH-REPORT.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Health-check stage complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Good catch on the single-thread risk. Approved.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to expansion stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "expansion" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering expansion stage. Hat: growth-strategist.\nLoading health report...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/expansion/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → health-check/health-report (knowledge/HEALTH-REPORT.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Identifying expansion opportunities based on usage patterns and customer value...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/expansion/units/unit-01-opportunity-analysis.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/expansion/units/unit-02-expansion-proposal.md",
+				},
+				{
+					type: "card",
+					stage: "expansion",
+					name: "opportunity-analysis",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "expansion",
+					name: "expansion-proposal",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: value-consultant. Two expansion opportunities identified:\n\n  1. [High] Additional seats: only 5 of 50 employees have access. Their QA team (8 people) is asking for monitoring access. Revenue impact: +$28K ARR.\n\n  2. [Medium] API testing add-on: they’re currently using Postman separately. Our API testing integrates with their existing monitors. Revenue impact: +$15K ARR.\n\nTotal expansion potential: $43K ARR (36% uplift on $120K base).",
+				},
+				{
+					type: "updateCard",
+					stage: "expansion",
+					name: "opportunity-analysis",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "expansion",
+					name: "expansion-proposal",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Expansion proposals drafted:\n  • QA team seats: ROI justification tied to their bug escape rate (currently 12%, industry benchmark 5%)\n  • API testing: positioned as Postman replacement with monitoring integration\n\nBoth proposals grounded in their actual usage data and business outcomes.",
+				},
+				{
+					type: "updateCard",
+					stage: "expansion",
+					name: "expansion-proposal",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/knowledge/OPPORTUNITY-BRIEF.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Expansion stage complete. Review gate: ask + await.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Expansion",
+					intent: "",
+					criteria: [
+						"2 expansion opportunities with revenue impact",
+						"QA team seats: +$28K ARR justified by bug escape rate",
+						"API testing add-on: +$15K ARR replacing Postman",
+						"ROI grounded in actual usage data",
+						"Proposals ready for customer presentation",
+					],
+					gateType: "ask gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2000, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. Send both proposals.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Await gate: waiting for TechStartup Inc response on expansion proposals...",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Await resolved — TechStartup approved QA team seats (+$28K). API testing deferred to next quarter.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Partial win — $28K expansion closed. API testing is in pipeline for Q2. Advancing to renewal.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "renewal" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering renewal stage. Hat: renewal-manager.\nLoading opportunity brief...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/renewal/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → expansion/opportunity-brief (knowledge/OPPORTUNITY-BRIEF.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Building renewal strategy with value realization summary...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/renewal/units/unit-01-value-summary.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/renewal/units/unit-02-renewal-proposal.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/stages/renewal/units/unit-03-ebr-deck.md",
+				},
+				{
+					type: "card",
+					stage: "renewal",
+					name: "value-summary",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "renewal",
+					name: "renewal-proposal",
+					status: "",
+				},
+				{ type: "card", stage: "renewal", name: "ebr-deck", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Value realization summary:\n  • Monitors: 12 at onboarding → 63 active today\n  • MTTR reduction: 47 min → 12 min (74% improvement)\n  • Incident detection: 89% of issues caught before customer reports\n  • Team adoption: 13 active users (up from 5)\n  • Competitor migration: complete, zero data loss\n\nQuantified ROI: $340K in prevented downtime costs vs. $148K contract value.",
+				},
+				{
+					type: "updateCard",
+					stage: "renewal",
+					name: "value-summary",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "renewal",
+					name: "renewal-proposal",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: executive-sponsor. Renewal proposal:\n  • 2-year renewal at $148K/year (includes QA team expansion)\n  • 5% multi-year discount if they commit to 2 years\n  • API testing add-on included at 10% discount as early commitment incentive\n\nAnticipated objection: “why pay more when we’re not using API testing yet?” Counter: bundle discount saves them $8K vs. adding it later.",
+				},
+				{
+					type: "updateCard",
+					stage: "renewal",
+					name: "renewal-proposal",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "renewal",
+					name: "ebr-deck",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "EBR deck tells the value story:\n  Slide 1: Where they started (competitor tool, manual monitoring)\n  Slide 2: What they achieved (74% MTTR reduction, $340K saved)\n  Slide 3: Where they can go (API testing, full-team adoption)\n  Slide 4: Renewal terms with bundle savings",
+				},
+				{
+					type: "updateCard",
+					stage: "renewal",
+					name: "ebr-deck",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/onboard-techstartup-inc/knowledge/RENEWAL-OUTCOME.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Renewal stage complete. Review gate: external + await.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Renewal",
+					intent: "",
+					criteria: [
+						"Value summary with quantified ROI ($340K saved)",
+						"74% MTTR improvement documented with evidence",
+						"Renewal proposal with multi-year discount",
+						"Objection handling prepared for API testing bundle",
+						"EBR deck with clear value narrative",
+					],
+					gateType: "external gate",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2400, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "External review approved. CTO signed 2-year renewal with API testing bundle.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for onboard-techstartup-inc.\n\nDelivered:\n  • Onboarding: SSO setup, 847 monitors migrated, 3-persona training\n  • Adoption: 0.68 DAU/MAU, enablement plan for underutilized features\n  • Health-check: 7.6/10 score, single-thread risk mitigated with CTO QBR\n  • Expansion: QA team seats closed (+$28K), API testing in pipeline\n  • Renewal: 2-year deal signed at $163K/year with API testing bundle\n\nAccount growth: $120K → $163K ARR (36% expansion). Intent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

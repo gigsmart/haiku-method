@@ -3,6 +3,7 @@ name: quality-assurance
 description: Quality assurance and testing lifecycle for products and processes
 stages: [plan, design-tests, execute-tests, analyze, certify]
 category: operations
+default_model: sonnet
 ---
 
 # Quality Assurance Studio

@@ -7,7 +7,7 @@
 //
 // Falls back gracefully when the Agent SDK is not installed.
 
-import { existsSync, readFileSync, readdirSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import matter from "gray-matter"
 

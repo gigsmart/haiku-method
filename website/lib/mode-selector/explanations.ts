@@ -115,7 +115,7 @@ interface FactorAnalysis {
 export function generateExplanation(
 	questions: Question[],
 	answers: number[],
-	scores: Scores,
+	_scores: Scores,
 	recommendedMode: Mode,
 ): string {
 	const factors: FactorAnalysis[] = []

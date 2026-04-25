@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useCallback } from "react"
+import { useCallback, useEffect } from "react"
 import type { HaikuAsset } from "@/lib/browse/types"
 import { AuthenticatedMedia } from "./AuthenticatedMedia"
 
@@ -19,11 +19,14 @@ function resolveUrl(rawUrl: string, host: string): string {
 }
 
 export function AssetLightbox({ asset, host, onClose }: Props) {
-	const handleKeyDown = useCallback((e: KeyboardEvent) => {
-		if (e.key === "Escape") {
-			onClose()
-		}
-	}, [onClose])
+	const handleKeyDown = useCallback(
+		(e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				onClose()
+			}
+		},
+		[onClose],
+	)
 
 	useEffect(() => {
 		document.addEventListener("keydown", handleKeyDown)
@@ -41,6 +44,12 @@ export function AssetLightbox({ asset, host, onClose }: Props) {
 			onClick={(e) => {
 				if (e.target === e.currentTarget) onClose()
 			}}
+			onKeyDown={(e) => {
+				if (e.key === "Escape") onClose()
+			}}
+			role="dialog"
+			aria-modal="true"
+			aria-label={`Asset preview: ${asset.name}`}
 		>
 			<div className="relative flex max-h-[95vh] max-w-[95vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-stone-900">
 				{/* Header */}
@@ -63,12 +72,24 @@ export function AssetLightbox({ asset, host, onClose }: Props) {
 							Download
 						</a>
 						<button
+							type="button"
 							onClick={onClose}
 							className="rounded-lg p-1.5 text-stone-400 transition hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
 							aria-label="Close"
 						>
-							<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+							<svg
+								className="h-5 w-5"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								aria-hidden="true"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M6 18L18 6M6 6l12 12"
+								/>
 							</svg>
 						</button>
 					</div>

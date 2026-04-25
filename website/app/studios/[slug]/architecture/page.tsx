@@ -1,7 +1,7 @@
-import { getAllStudios, getStudioBySlug } from "@/lib/studios"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { getAllStudios, getStudioBySlug } from "@/lib/studios"
 
 interface Props {
 	params: Promise<{ slug: string }>
@@ -36,7 +36,10 @@ export default async function StudioArchitecturePage({ params }: Props) {
 	return (
 		<>
 			<nav className="flex flex-wrap items-center gap-2 border-b border-stone-200 bg-white px-4 py-2 text-sm dark:border-stone-700 dark:bg-stone-900">
-				<Link href="/studios/" className="text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-white">
+				<Link
+					href="/studios/"
+					className="text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
+				>
 					Studios
 				</Link>
 				<span className="text-stone-300 dark:text-stone-600">/</span>
@@ -47,7 +50,9 @@ export default async function StudioArchitecturePage({ params }: Props) {
 					{titleCase(studio.name)}
 				</Link>
 				<span className="text-stone-300 dark:text-stone-600">/</span>
-				<span className="font-semibold text-stone-900 dark:text-white">Architecture</span>
+				<span className="font-semibold text-stone-900 dark:text-white">
+					Architecture
+				</span>
 			</nav>
 			<iframe
 				src={`/prototype-stage-flow.html?studio=${slug}`}

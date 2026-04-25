@@ -1,0 +1,17 @@
+related:
+  - software
+  - marketing
+  - quality-assurance
+turns:
+  - role: user
+    text: "Prototype a 4-player co-op shooter — session-based, 20-minute runs."
+  - role: agent
+    text: "Target platform — PC only, or console from day one?"
+  - role: user
+    text: "PC first. Console port after we validate the loop."
+  - role: agent
+    text: "Engine and netcode — Unreal with replication, Unity with Mirror, something else?"
+  - role: user
+    text: "Unreal. Rollback netcode isn't in scope — authoritative server is fine."
+  - role: agent
+    text: "Got it — Unreal, 4-player auth-server, PC prototype targeting a 20-minute session loop."

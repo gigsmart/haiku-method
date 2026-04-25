@@ -119,6 +119,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # haiku-api is a workspace package with `main: ./dist/index.js`;
+      # haiku-ui imports from it and the MCP build bundles haiku-ui, so
+      # the dist bundle has to exist before the MCP build runs. `npm ci`
+      # doesn't build workspace packages automatically — do it explicitly.
+      - name: Build haiku-api
+        run: npm run -w haiku-api build
+
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false

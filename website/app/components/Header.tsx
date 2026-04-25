@@ -1,11 +1,11 @@
 "use client"
 
-import { navigation, primaryNavItems } from "@/lib/navigation"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ThemeToggle } from "./ThemeToggle"
+import { navigation, primaryNavItems } from "@/lib/navigation"
 import { BottomNav, MegaMenu, MobileNav } from "./navigation"
+import { ThemeToggle } from "./ThemeToggle"
 
 export function Header() {
 	const pathname = usePathname()
@@ -72,7 +72,7 @@ export function Header() {
 		)
 	}
 
-	const isActiveCategory = (category: (typeof navigation)[0]) => {
+	const _isActiveCategory = (category: (typeof navigation)[0]) => {
 		// Check if any section item matches the current path
 		return category.sections.some((section) =>
 			section.items.some(
@@ -119,6 +119,7 @@ export function Header() {
 								const isOpen = openCategory === megaCategory.title
 
 								return (
+									// biome-ignore lint/a11y/noStaticElementInteractions: hover-to-open mega menu wrapper; click-through is handled by the nested button
 									<div
 										key={item.title}
 										className="relative"
@@ -206,6 +207,7 @@ export function Header() {
 
 				{/* Mega Menu Dropdowns */}
 				{navigation.map((category) => (
+					// biome-ignore lint/a11y/noStaticElementInteractions: mega-menu wrapper carries only mouse events; content inside has keyboard affordances
 					<div
 						key={category.title}
 						onMouseEnter={handleMegaMenuMouseEnter}

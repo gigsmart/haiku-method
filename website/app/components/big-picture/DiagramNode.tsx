@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { type KeyboardEvent, useCallback, useState } from "react"
-import { type DiagramNode as DiagramNodeType, categoryColors } from "./types"
+import { categoryColors, type DiagramNode as DiagramNodeType } from "./types"
 
 interface DiagramNodeProps {
 	node: DiagramNodeType

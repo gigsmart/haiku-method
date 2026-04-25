@@ -3,6 +3,7 @@ name: finance
 description: Financial planning, budgeting, and analysis lifecycle
 stages: [forecast, budget, analysis, reporting, close]
 category: back-office
+default_model: sonnet
 ---
 
 # Finance Studio

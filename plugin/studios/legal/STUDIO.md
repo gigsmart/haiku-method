@@ -3,6 +3,7 @@ name: legal
 description: Legal review and contract management lifecycle
 stages: [intake, research, draft, review, execute]
 category: back-office
+default_model: sonnet
 ---
 
 # Legal Studio

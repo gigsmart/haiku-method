@@ -10,8 +10,8 @@
 // avoids cluttering the orchestrator with per-harness conditionals.
 
 import {
-	type HarnessCapabilities,
 	getCapabilities,
+	type HarnessCapabilities,
 	isClaudeCode,
 	skillReference,
 } from "./harness.js"

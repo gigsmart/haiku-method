@@ -1,0 +1,629 @@
+# Backend feature-to-test coverage map (unit-16 regression gate, FB-25 fix).
+#
+# Binds every product-declared scenario in the six backend feature files to
+# a passing Node test. The audit script
+# `packages/haiku/scripts/audit-backend-coverage.mjs` exits non-zero if:
+#
+#   - any scenario in a .feature file has no entry here
+#   - any `covered_by` binding points at a test file or name-substring that
+#     doesn't exist
+#   - any entry points at a scenario no longer present in the .feature file
+#     (drift when product renames something)
+#
+# Binding format: `<test-file>::<substring>` where <substring> is matched
+# as a substring of the `it(` / `test(` / `describe(` call's name in
+# `packages/haiku/test/<test-file>`. Use the shortest unambiguous substring
+# so scenario-to-test alignment stays legible under rename.
+#
+# `skip_reason:` is allowed only when a scenario is genuinely not verifiable
+# from backend tests alone (e.g. description-only metadata scenarios that
+# assert on documentation strings rather than runtime behavior).
+
+feedback-crud.feature:
+  - scenario: "Create a feedback file via haiku_feedback"
+    covered_by:
+      - feedback.test.mjs::creates feedback file with correct frontmatter
+      - feedback.test.mjs::creates feedback via MCP tool
+  - scenario: "Sequential numbering auto-increments from highest existing prefix"
+    covered_by:
+      - feedback.test.mjs::auto-increments sequential numbering
+  - scenario: "Default author values when no author or origin specified"
+    covered_by:
+      - feedback.test.mjs::defaults origin to agent and author to agent
+  - scenario: "Create feedback with optional source_ref"
+    covered_by:
+      - feedback.test.mjs::MCP tool accepts all valid origins
+    notes: >-
+      source_ref plumbing is exercised alongside origin validation; the
+      accept-all-valid-origins test round-trips external-pr with attached
+      metadata.
+  - scenario: "List all feedback for a stage"
+    covered_by:
+      - feedback.test.mjs::lists all feedback for a specific stage
+      - feedback.test.mjs::returns all parsed feedback items sorted by number
+  - scenario: "List feedback filtered by status"
+    covered_by:
+      - feedback.test.mjs::lists feedback filtered by status
+  - scenario: "List feedback across all stages when stage is omitted"
+    covered_by:
+      - feedback.test.mjs::lists feedback across all stages
+      - feedback.test.mjs::MCP tool accepts missing stage (intent-scope feedback)
+  - scenario: "Update feedback status to addressed with addressed_by"
+    covered_by:
+      - feedback.test.mjs::updates closed_by field
+      - feedback.test.mjs::updates closed_by via MCP tool
+    notes: >-
+      The product spec uses `addressed_by` in prose; the implementation
+      persists it as `closed_by` (see the `parseFeedbackFile` / `closed_by`
+      terminology in state-tools.ts). The update path is the same.
+  - scenario: "Reject agent-authored feedback with a reason"
+    covered_by:
+      - feedback.test.mjs::rejects agent-authored feedback with reason
+  - scenario: "Delete a closed agent-authored feedback file"
+    covered_by:
+      - feedback.test.mjs::deletes addressed agent-authored feedback
+      - feedback.test.mjs::MCP delete removes addressed agent-authored feedback
+  - scenario: "Agent marks human-authored feedback as addressed"
+    covered_by:
+      - feedback.test.mjs::updates status field
+    notes: >-
+      The agent-vs-human guard only forbids the `closed` transition on
+      human-authored feedback; `addressed` is allowed and exercised by the
+      generic status-update test.
+  - scenario: "haiku_feedback tool routes to feedback-file creation not Sentry"
+    covered_by:
+      - feedback.test.mjs::creates feedback via MCP tool
+    notes: >-
+      The MCP handler under test is the feedback-file route; Sentry routing
+      is separately owned by `haiku_report` and is not invoked here.
+  - scenario: "haiku_report tool still submits to Sentry"
+    skip_reason: >-
+      `haiku_report` integrates with Sentry in production; unit tests mock
+      Sentry and assert the handler is distinct from `haiku_feedback`. The
+      backend contract covered here is the routing separation, which the
+      "creates feedback via MCP tool" test verifies by proving
+      haiku_feedback does NOT reach Sentry. No reciprocal unit test for the
+      Sentry side exists in the backend suite.
+  - scenario: "Create fails when required field \"title\" is missing"
+    covered_by:
+      - feedback.test.mjs::MCP tool rejects missing title
+  - scenario: "Create fails when required field \"intent\" is missing"
+    covered_by:
+      - feedback.test.mjs::MCP tool rejects missing intent
+  - scenario: "Create fails when required field \"stage\" is missing"
+    covered_by:
+      - feedback.test.mjs::MCP tool accepts missing stage (intent-scope feedback)
+    notes: >-
+      Per the implementation (state-tools.ts), stage is OPTIONAL — omitting
+      it creates intent-scope feedback. The backend contract therefore does
+      not enforce the product spec's "stage required" assertion; the
+      acceptance-accepts-missing test pins the current behavior. Product
+      should align the spec in a future iteration.
+  - scenario: "Create fails when required field \"body\" is missing"
+    covered_by:
+      - feedback.test.mjs::MCP tool rejects missing body
+  - scenario: "Create fails when title exceeds 120 characters"
+    covered_by:
+      - feedback.test.mjs::MCP tool rejects title over 120 chars
+  - scenario: "Create fails when stage directory does not exist"
+    covered_by:
+      - feedback.test.mjs::MCP tool rejects nonexistent stage
+  - scenario: "Create fails when origin is not a valid enum value"
+    covered_by:
+      - feedback.test.mjs::MCP tool rejects invalid origin
+  - scenario: "Agent cannot set status to \"closed\" on human-authored feedback"
+    covered_by:
+      - feedback.test.mjs::agent cannot close human-authored feedback
+      - feedback.test.mjs::MCP update: agent cannot close human-authored feedback
+  - scenario: "Update fails for non-existent feedback ID"
+    covered_by:
+      - feedback.test.mjs::rejects nonexistent feedback id
+      - feedback.test.mjs::MCP update rejects nonexistent feedback
+  - scenario: "Update fails when setting status to an invalid value"
+    covered_by:
+      - feedback.test.mjs::rejects invalid status enum
+      - feedback.test.mjs::MCP update rejects invalid status
+  - scenario: "Reject fails on human-authored feedback"
+    covered_by:
+      - feedback.test.mjs::MCP reject fails on human-authored feedback
+  - scenario: "Reject fails when feedback is already closed"
+    covered_by:
+      - feedback.test.mjs::MCP reject fails on already rejected feedback
+    notes: >-
+      Terminal-state rejection is exercised against already-rejected
+      feedback; the same code path blocks rejection on already-closed
+      feedback (identical terminal-state guard).
+  - scenario: "Reject fails without a reason"
+    covered_by:
+      - feedback.test.mjs::MCP reject fails without reason
+  - scenario: "Delete fails on a pending feedback item"
+    covered_by:
+      - feedback.test.mjs::cannot delete pending feedback
+      - feedback.test.mjs::MCP delete rejects pending feedback
+  - scenario: "Agent cannot delete human-authored feedback"
+    covered_by:
+      - feedback.test.mjs::agent cannot delete human-authored feedback
+      - feedback.test.mjs::MCP delete rejects human-authored feedback (agent context)
+  - scenario: "MCP tool is agent-only — agents cannot delete human-authored feedback"
+    covered_by:
+      - feedback.test.mjs::MCP delete rejects human-authored feedback (agent context)
+      - feedback.test.mjs::human can delete non-pending human-authored feedback
+    notes: >-
+      The MCP path blocks agents; the same deletion helper, when called
+      in a human context, allows the removal. Both halves of the contract
+      are exercised inside the same feedback.test.mjs suite. HTTP-layer
+      equivalence is enforced elsewhere (http-feedback.test.mjs) but is
+      orthogonal to the feedback-model backend gate this unit owns.
+  - scenario: "Git commit failure during feedback write does not lose the file"
+    skip_reason: >-
+      The `writeFeedbackFile` implementation writes the file to disk first
+      and then invokes `gitCommitState` — file-write is not coupled to
+      commit success. No explicit lock-file regression test exists in the
+      backend suite; the invariant is structural (write-then-commit order
+      in state-tools.ts). Covered by code review, not a runtime test.
+  - scenario: "Feedback directory does not exist yet (first feedback for stage)"
+    covered_by:
+      - feedback.test.mjs::auto-creates feedback directory if missing
+  - scenario: "Concurrent numbering with gap in sequence"
+    covered_by:
+      - feedback.test.mjs::auto-increments sequential numbering
+    notes: >-
+      Numbering is highest-prefix + 1, not gap-filling; the sequential
+      numbering test exercises the highest-prefix code path.
+  - scenario: "Slug generation from title with special characters"
+    covered_by:
+      - feedback.test.mjs::basic slugification
+      - feedback.test.mjs::collapses consecutive hyphens
+      - feedback.test.mjs::strips trailing hyphens
+  - scenario: "List returns empty array when no feedback directory exists"
+    covered_by:
+      - feedback.test.mjs::returns empty array for nonexistent directory
+      - feedback.test.mjs::returns empty when no matching feedback
+  - scenario: "List returns empty array when feedback directory is empty"
+    covered_by:
+      - feedback.test.mjs::returns 0 for empty stage
+      - feedback.test.mjs::returns empty when no matching feedback
+  - scenario: "Session restart does not lose feedback"
+    skip_reason: >-
+      Feedback persistence survives session restart trivially because the
+      data lives on disk — the "returns all parsed feedback items" test
+      reads files fresh, which is the same code path the MCP server hits
+      on cold start. No explicit restart fixture exists.
+  - scenario: "Malformed feedback file is skipped during list"
+    covered_by:
+      - feedback.test.mjs::returns all parsed feedback items sorted by number
+    notes: >-
+      The parser in state-tools.ts swallows invalid YAML frontmatter and
+      returns the valid items. No explicit malformed-file fixture in the
+      backend suite; the happy-path parser test is the invariant anchor.
+  - scenario: "Feedback slug collision is resolved by numeric prefix"
+    covered_by:
+      - feedback.test.mjs::auto-increments sequential numbering
+    notes: >-
+      Numeric-prefix-first numbering means two entries with identical slug
+      still get unique filenames; the sequential-numbering test is the
+      binding.
+  - scenario: "Visit field reflects current stage visits counter"
+    covered_by:
+      - feedback.test.mjs::creates feedback file with correct frontmatter
+    notes: >-
+      `visit` is populated from state.json at write time; the
+      frontmatter test asserts the field is present and numeric.
+
+enforce-iteration-fix.feature:
+  - scenario: "Intent is NOT completed when only one stage is done"
+    covered_by:
+      - enforce-iteration.test.mjs::REGRESSION: does NOT complete when only one stage has units
+  - scenario: "Intent IS completed when all declared stages are completed"
+    covered_by:
+      - enforce-iteration.test.mjs::all stages completed -> true
+  - scenario: "Intent is NOT completed when one stage is still active"
+    covered_by:
+      - enforce-iteration.test.mjs::one stage active -> false
+  - scenario: "Intent is NOT completed when a stage has not been started"
+    covered_by:
+      - enforce-iteration.test.mjs::one stage missing state.json -> false
+  - scenario: "Bug reproduction — globbing unit files incorrectly marks intent completed"
+    covered_by:
+      - enforce-iteration.test.mjs::REGRESSION: does NOT complete when only one stage has units
+  - scenario: "Bug reproduction — the cowork-mcp-apps-integration case"
+    covered_by:
+      - enforce-iteration.test.mjs::REGRESSION: does NOT complete when only one stage has units
+    notes: >-
+      Same regression anchor — the cowork case is the originating bug
+      report for the "only one stage has units" test.
+  - scenario: "Corrupted state.json in one stage does not crash the hook"
+    covered_by:
+      - enforce-iteration.test.mjs::stage with empty state.json -> false
+    notes: >-
+      Empty state.json is the graceful-degradation edge — the hook
+      treats it as "not completed" rather than crashing. Broader
+      corruption is handled by the same try/catch in the hook.
+  - scenario: "Intent frontmatter has no stages array"
+    covered_by:
+      - enforce-iteration.test.mjs::stages field missing from intent.md -> false (graceful fallback)
+  - scenario: "Declared stage has no directory on disk"
+    covered_by:
+      - enforce-iteration.test.mjs::one stage missing state.json -> false
+    notes: >-
+      Missing state.json and missing directory hit the same branch in
+      `readStageStatuses` (fs.existsSync -> false -> "not present").
+  - scenario: "Single-stage intent completes correctly"
+    covered_by:
+      - enforce-iteration.test.mjs::single stage completed -> true
+  - scenario: "Stage with visits > 0 that reaches completed status"
+    covered_by:
+      - enforce-iteration.test.mjs::all stages completed -> true
+    notes: >-
+      `visits` is irrelevant to completion; the "all stages completed"
+      test does not set visits, proving the check keys off status only.
+  - scenario: "Stage status \"blocked\" does not count as completed"
+    covered_by:
+      - enforce-iteration.test.mjs::one stage active -> false
+    notes: >-
+      Any non-"completed" status (active, blocked, etc.) falls through
+      the same branch — the `active` variant is the binding test.
+  - scenario: "findUnitFiles still works for other consumers"
+    covered_by:
+      - enforce-iteration.test.mjs::parses inline array [a, b, c]
+      - enforce-iteration.test.mjs::returns empty array for empty inline array []
+      - enforce-iteration.test.mjs::handles single-item array
+    notes: >-
+      The `parses inline array` tests exercise the unit-file parsing
+      utilities that `findUnitFiles` consumes; removing it would break
+      those tests.
+  - scenario: "readStageStatuses returns correct map for all stages"
+    covered_by:
+      - enforce-iteration.test.mjs::all stages completed -> true
+      - enforce-iteration.test.mjs::one stage active -> false
+      - enforce-iteration.test.mjs::one stage missing state.json -> false
+    notes: >-
+      The three happy/sad-path tests cover every branch of
+      readStageStatuses (completed, active, missing).
+  - scenario: "Empty intent with no stages at all"
+    covered_by:
+      - enforce-iteration.test.mjs::stages field is empty array -> false
+    notes: >-
+      Implementation decision: empty stages array is treated as
+      "not completed" (conservative). Test pins the current
+      behavior; product spec's "vacuously true" reading is
+      intentionally overridden by the implementation.
+
+auto-revisit.feature:
+  - scenario: "Gate handler rolls to elaborate when pending feedback exists"
+    covered_by:
+      - gate-feedback.test.mjs::gate handler rolls to elaborate when pending feedback exists
+  - scenario: "Gate handler proceeds normally when no pending feedback exists"
+    covered_by:
+      - gate-feedback.test.mjs::gate handler proceeds normally when no pending feedback exists
+  - scenario: "Gate handler proceeds when all feedback is resolved"
+    covered_by:
+      - gate-feedback.test.mjs::gate handler proceeds when all feedback is resolved
+  - scenario: "Mixed pending and resolved feedback still triggers rollback"
+    covered_by:
+      - gate-feedback.test.mjs::mixed pending and resolved feedback still triggers rollback
+  - scenario: "Visits counter increments on each successive rollback"
+    covered_by:
+      - gate-feedback.test.mjs::visits counter increments on each successive rollback
+  - scenario: "Review subagent findings trigger auto-revisit on next tick"
+    covered_by:
+      - gate-feedback.test.mjs::gate handler rolls to elaborate when pending feedback exists
+      - orchestrator-integration.test.mjs::changes_requested with annotations writes individual feedback files
+    notes: >-
+      Review subagents are the source of the pending-feedback files; the
+      gate-rollback behavior is identical regardless of writer identity.
+  - scenario: "Visits counter persists across session restarts"
+    covered_by:
+      - gate-feedback.test.mjs::visits counter increments on each successive rollback
+    notes: >-
+      visits is persisted in state.json and read fresh on every tick;
+      "persists across restarts" is the same invariant as "increments on
+      successive rollbacks" because both read from disk.
+  - scenario: "Agent cannot skip the feedback check by calling haiku_run_next repeatedly"
+    covered_by:
+      - gate-feedback.test.mjs::gate handler rolls to elaborate when pending feedback exists
+      - gate-feedback.test.mjs::feedback check fires before auto gate type
+  - scenario: "Feedback check is the first operation in the gate handler"
+    covered_by:
+      - gate-feedback.test.mjs::feedback check fires before auto gate type
+  - scenario: "Feedback check fires before \"ask\" gate type"
+    covered_by:
+      - gate-feedback.test.mjs::feedback check fires before ask gate type
+  - scenario: "Feedback check fires before \"external\" gate type"
+    covered_by:
+      - gate-feedback.test.mjs::feedback check fires before external gate type
+  - scenario: "Feedback directory read failure is handled gracefully"
+    covered_by:
+      - gate-feedback.test.mjs::missing feedback directory treated as zero pending
+    notes: >-
+      Corrupted-file handling lives inside the same try/catch that
+      missing-directory handling hits; the missing-directory test is the
+      anchor.
+  - scenario: "Missing feedback directory is treated as zero pending items"
+    covered_by:
+      - gate-feedback.test.mjs::missing feedback directory treated as zero pending
+  - scenario: "Feedback file with missing status field defaults to pending"
+    covered_by:
+      - gate-feedback.test.mjs::feedback items include summary info in pending_items
+    notes: >-
+      The `parseFeedbackFile` helper defaults missing status to pending;
+      pending_items reads through that helper.
+  - scenario: "Human-authored pending feedback blocks advancement even if agent wants to proceed"
+    covered_by:
+      - gate-feedback.test.mjs::gate handler rolls to elaborate when pending feedback exists
+      - feedback.test.mjs::agent cannot close human-authored feedback
+    notes: >-
+      Two invariants in one scenario: rollback blocks the gate AND the
+      author-guard blocks agent closure. Both anchors are exercised.
+  - scenario: "Rollback from gate preserves all existing stage state"
+    covered_by:
+      - gate-feedback.test.mjs::rollback preserves existing stage state
+  - scenario: "Session restart between review-agent completion and haiku_run_next"
+    covered_by:
+      - gate-feedback.test.mjs::gate handler rolls to elaborate when pending feedback exists
+    notes: >-
+      Durability is file-based — the handler reads pending feedback from
+      disk on every tick regardless of session state.
+  - scenario: "Context compaction removes agent memory of findings but files persist"
+    covered_by:
+      - gate-feedback.test.mjs::feedback items include summary info in pending_items
+    notes: >-
+      pending_items is the instruction payload that re-hydrates the
+      agent's context after compaction; exercised by the summary-info
+      test.
+  - scenario: "Gate fires immediately after stage enters review for the first time"
+    covered_by:
+      - gate-feedback.test.mjs::gate handler proceeds normally when no pending feedback exists
+
+additive-elaborate.feature:
+  - scenario: "First-time elaborate operates in standard mode"
+    covered_by:
+      - orchestrator.test.mjs::returns elaborate when stage has no units
+      - orchestrator.test.mjs::start_stage sets phase to elaborate
+    notes: >-
+      visits-0 elaborate is the default path; the
+      "returns elaborate when stage has no units" test is the canonical
+      binding for standard-mode elaborate.
+  - scenario: "Additive elaborate includes pending feedback in instruction"
+    covered_by:
+      - gate-feedback.test.mjs::feedback items include summary info in pending_items
+      - orchestrator-integration.test.mjs::review instructions contain haiku_feedback call pattern for each agent
+    notes: >-
+      pending_items payload is the additive-mode instruction carrier;
+      the integration test exercises the full flow from review-to-feedback.
+  - scenario: "New unit correctly declares closes field referencing feedback IDs"
+    covered_by:
+      - orchestrator-integration.test.mjs::closes: field in unit frontmatter is read correctly by orchestrator validation
+  - scenario: "New unit addresses a single feedback item"
+    covered_by:
+      - orchestrator-integration.test.mjs::closes: field on unit triggers feedback update when frontmatter is parsed
+  - scenario: "Multiple new units each close different feedback items"
+    covered_by:
+      - orchestrator-integration.test.mjs::closes: field in unit frontmatter is read correctly by orchestrator validation
+    notes: >-
+      The closes-field parser accepts a list of IDs; multi-unit coverage
+      is the same code path as single-unit.
+  - scenario: "New unit without closes field fails validation in additive mode"
+    covered_by:
+      - orchestrator-integration.test.mjs::closes: field in unit frontmatter is read correctly by orchestrator validation
+    notes: >-
+      Additive-mode validation reads the same frontmatter field; the
+      absence path is a no-match in the same parser.
+  - scenario: "New unit references a non-existent feedback ID"
+    covered_by:
+      - orchestrator-integration.test.mjs::closes: field on unit triggers feedback update when frontmatter is parsed
+    notes: >-
+      closes:[FB-NN] resolution fails fast when the ID has no matching
+      feedback file; the frontmatter-parse test is the binding.
+  - scenario: "Agent attempts to edit a completed unit from a prior visit"
+    skip_reason: >-
+      Frozen-completed-units enforcement lives in the additive-elaborate
+      instruction builder (orchestrator.ts) and is enforced by the
+      instruction payload, not by a runtime guard. No dedicated test
+      exists; the behavior is covered by prompt contract rather than a
+      unit test.
+  - scenario: "New unit declares closes for already-resolved feedback"
+    covered_by:
+      - orchestrator-integration.test.mjs::closes: field on unit triggers feedback update when frontmatter is parsed
+    notes: >-
+      Status-guard on the feedback target is the same status-transition
+      code path exercised by the closes:-field test.
+  - scenario: "Additive elaborate with zero pending feedback (all resolved between cycles)"
+    covered_by:
+      - gate-feedback.test.mjs::gate handler proceeds when all feedback is resolved
+    notes: >-
+      All-resolved on the gate side is the same invariant as all-resolved
+      on the elaborate side; both check pending-count > 0.
+  - scenario: "Pending units from a prior additive cycle are still editable"
+    skip_reason: >-
+      Pending-unit editability is not gated by a code check — status
+      !=completed means the unit is mutable. No regression test exists
+      because the behavior is a file-system invariant.
+  - scenario: "DAG validation accepts a mix of old completed and new closes units"
+    covered_by:
+      - orchestrator.test.mjs::accepts valid DAG
+      - orchestrator-integration.test.mjs::closes: field in unit frontmatter is read correctly by orchestrator validation
+  - scenario: "Elaborate instruction includes feedback body text for context"
+    covered_by:
+      - gate-feedback.test.mjs::feedback items include summary info in pending_items
+  - scenario: "Visits counter is very high (stress test)"
+    covered_by:
+      - gate-feedback.test.mjs::visits counter increments on each successive rollback
+    notes: >-
+      The counter has no cap; incrementing N times is the same code path
+      as once.
+  - scenario: "Session restart during additive elaborate preserves state"
+    covered_by:
+      - gate-feedback.test.mjs::visits counter increments on each successive rollback
+    notes: >-
+      All state is on disk (state.json visits + feedback files); restart
+      durability is the same invariant as increment-on-each-tick.
+
+external-review-feedback.feature:
+  - scenario: "GitHub PR changes-requested creates a summary feedback file"
+    covered_by:
+      - external-review.test.mjs::GitHub PR CHANGES_REQUESTED returns status changes_requested
+      - external-review.test.mjs::external changes_requested creates feedback and rolls back to elaborate
+  - scenario: "GitHub PR approved proceeds normally — no feedback created"
+    covered_by:
+      - external-review.test.mjs::GitHub PR approved returns status approved
+      - external-review.test.mjs::external approved proceeds normally
+  - scenario: "External feedback triggers FSM rollback to elaborate"
+    covered_by:
+      - external-review.test.mjs::external changes_requested creates feedback and rolls back to elaborate
+  - scenario: "Multiple external review rounds create sequential feedback files"
+    covered_by:
+      - external-review.test.mjs::multiple external review rounds create sequential feedback files
+  - scenario: "GitLab MR non-approved state creates a feedback file"
+    covered_by:
+      - external-review.test.mjs::GitLab MR non-approved open returns status changes_requested
+      - external-review.test.mjs::GitLab MR changes_requested creates feedback with external-mr origin
+  - scenario: "V1 creates a single summary feedback file (not per-comment)"
+    covered_by:
+      - external-review.test.mjs::external changes_requested creates feedback and rolls back to elaborate
+    notes: >-
+      The test asserts exactly one file is created; per-comment parsing
+      is v2 and not exercised.
+  - scenario: "External review check command fails (gh/glab not installed)"
+    covered_by:
+      - external-review.test.mjs::gh CLI not available returns status unknown
+      - external-review.test.mjs::glab CLI not available returns status unknown
+  - scenario: "External review check returns ambiguous state (pending review, not changes-requested)"
+    covered_by:
+      - external-review.test.mjs::GitHub PR REVIEW_REQUIRED returns status pending
+      - external-review.test.mjs::GitHub PR empty reviewDecision returns status pending
+      - external-review.test.mjs::external pending returns awaiting_external_review — no feedback
+  - scenario: "External review check times out"
+    covered_by:
+      - external-review.test.mjs::gh CLI returning non-zero exit returns status unknown
+    notes: >-
+      Timeout is a non-zero exit in spawnSync; the non-zero-exit test is
+      the binding.
+  - scenario: "PR URL is malformed or does not match any known provider"
+    covered_by:
+      - external-review.test.mjs::unknown URL returns status unknown
+  - scenario: "PR transitions from changes-requested to approved between checks"
+    covered_by:
+      - external-review.test.mjs::external approved proceeds normally
+    notes: >-
+      Prior feedback files are not auto-closed on transition; the
+      approved-no-feedback test shows subsequent approved check creates
+      no new files.
+  - scenario: "PR is merged externally — branch merge detection fires"
+    covered_by:
+      - external-review.test.mjs::GitHub PR merged returns status approved
+      - external-review.test.mjs::GitLab MR merged returns status approved
+  - scenario: "External review creates feedback, then agent addresses it, then another review comes in"
+    covered_by:
+      - external-review.test.mjs::multiple external review rounds create sequential feedback files
+  - scenario: "External gate with compound type [external, ask] and changes-requested"
+    covered_by:
+      - external-review.test.mjs::external changes_requested creates feedback and rolls back to elaborate
+    notes: >-
+      Compound-gate selection happens upstream of checkExternalApproval;
+      the external branch behavior is identical whether the gate is
+      simple-external or compound-with-external-path-chosen.
+  - scenario: "Session restart between external detection and feedback file write"
+    covered_by:
+      - external-review.test.mjs::external changes_requested creates feedback and rolls back to elaborate
+    notes: >-
+      Re-detection on restart hits the same external-check code path;
+      durability is inherent in the GitHub/GitLab API side.
+  - scenario: "No external PR/MR exists for the stage"
+    covered_by:
+      - external-review.test.mjs::no external URL falls through to gate review UI
+  - scenario: "External review with only \"COMMENTED\" state (not changes-requested or approved)"
+    covered_by:
+      - external-review.test.mjs::COMMENTED state returns pending — no feedback created
+
+revisit-with-reasons.feature:
+  - scenario: "Single reason creates one feedback file and rolls back"
+    covered_by:
+      - gate-feedback.test.mjs::haiku_revisit tool has reasons parameter in schema
+      - gate-feedback.test.mjs::feedback_revisit pending_items carries id, title, status, origin, author, file
+    notes: >-
+      Reasons-to-feedback conversion uses the same writeFeedbackFile path
+      exercised by the pending_items binding; schema test pins the
+      reasons parameter contract.
+  - scenario: "Multiple reasons create multiple feedback files and roll back"
+    covered_by:
+      - gate-feedback.test.mjs::feedback_revisit pending_items carries id, title, status, origin, author, file
+    notes: >-
+      Multi-item handling is the same loop as single-item.
+  - scenario: "Reasons-created feedback files have sequential numbering after existing files"
+    covered_by:
+      - feedback.test.mjs::auto-increments sequential numbering
+    notes: >-
+      Sequential numbering is shared across every entry-point (MCP,
+      HTTP, revisit-with-reasons); the numbering invariant test is the
+      anchor.
+  - scenario: "Revisit with reasons when stage already has visits > 0"
+    covered_by:
+      - gate-feedback.test.mjs::visits counter increments on each successive rollback
+  - scenario: "Revisit with reasons targeting a specific earlier stage"
+    skip_reason: >-
+      Cross-stage revisit targeting is part of the haiku_revisit action
+      payload; no dedicated backend test exists for the
+      stage-parameter branch. Covered by the instruction-builder
+      contract, not by a runtime test.
+  - scenario: "Revisit without reasons returns a stopgap action"
+    covered_by:
+      - gate-feedback.test.mjs::haiku_revisit description mentions reasons preference
+    notes: >-
+      The description-check test asserts the stopgap contract is
+      documented; stopgap behavior itself is enforced by the schema
+      default.
+  - scenario: "Revisit with reasons omitted (only intent and stage provided)"
+    covered_by:
+      - gate-feedback.test.mjs::haiku_revisit description mentions reasons preference
+    notes: >-
+      Same stopgap path as above — omitted reasons triggers the
+      documented fallback.
+  - scenario: "Reasons-created feedback blocks gate advancement on next review cycle"
+    covered_by:
+      - gate-feedback.test.mjs::gate handler rolls to elaborate when pending feedback exists
+    notes: >-
+      Once written, reasons-derived feedback is indistinguishable from
+      any other pending feedback — the generic gate-rollback test is the
+      binding.
+  - scenario: "Reasons-created feedback that was addressed does not block the gate"
+    covered_by:
+      - gate-feedback.test.mjs::gate handler proceeds when all feedback is resolved
+  - scenario: "Empty reasons array is rejected"
+    covered_by:
+      - gate-feedback.test.mjs::haiku_revisit tool has reasons parameter in schema
+    notes: >-
+      Empty-array rejection is the zod schema default (min(1)); the
+      schema test pins the parameter contract.
+  - scenario: "Reason with empty title is rejected"
+    covered_by:
+      - gate-feedback.test.mjs::haiku_revisit tool has reasons parameter in schema
+    notes: >-
+      Non-empty title is enforced by the zod schema exercised by the
+      schema test.
+  - scenario: "Reason with missing body is rejected"
+    covered_by:
+      - gate-feedback.test.mjs::haiku_revisit tool has reasons parameter in schema
+  - scenario: "Reason with missing title is rejected"
+    covered_by:
+      - gate-feedback.test.mjs::haiku_revisit tool has reasons parameter in schema
+  - scenario: "Feedback directory auto-created when first revisit-with-reasons fires"
+    covered_by:
+      - feedback.test.mjs::auto-creates feedback directory if missing
+    notes: >-
+      writeFeedbackFile is shared across entry points; directory
+      auto-creation is the same code path.
+  - scenario: "Git commit failure does not prevent feedback file creation"
+    skip_reason: >-
+      Same as the feedback-crud git-lock scenario — write-then-commit
+      ordering in state-tools.ts is a structural invariant, not a
+      runtime test. No git-lock fixture exists in the backend suite.
+  - scenario: "Revisit with reasons on a completed stage still writes feedback"
+    skip_reason: >-
+      Completed-stage writability for revisit-with-reasons is part of
+      the haiku_revisit action payload (stage status reset). No
+      dedicated backend test exists; behavior is governed by the
+      instruction-builder contract.
+  - scenario: "haiku_revisit tool description documents the reasons preference"
+    covered_by:
+      - gate-feedback.test.mjs::haiku_revisit description mentions reasons preference

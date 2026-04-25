@@ -76,7 +76,7 @@ export function Breadcrumbs() {
 			currentPath += `/${segment}`
 			items.push({
 				label: getSegmentLabel(segment),
-				href: currentPath + "/",
+				href: `${currentPath}/`,
 			})
 		}
 

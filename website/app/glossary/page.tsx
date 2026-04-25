@@ -1,9 +1,9 @@
+import type { Metadata } from "next"
 import {
 	extractGlossaryTerms,
 	getGlossaryIndex,
 	groupTermsByLetter,
 } from "@/lib/glossary"
-import type { Metadata } from "next"
 import { GlossaryContent } from "./GlossaryContent"
 
 export const metadata: Metadata = {

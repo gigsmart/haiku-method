@@ -16,10 +16,18 @@ export async function GET() {
 	const staticPages = [
 		{ url: SITE_URL, changefreq: "weekly", priority: "1.0" },
 		{ url: `${SITE_URL}/docs/`, changefreq: "weekly", priority: "0.9" },
-		{ url: `${SITE_URL}/docs/installation/`, changefreq: "monthly", priority: "0.9" },
+		{
+			url: `${SITE_URL}/docs/installation/`,
+			changefreq: "monthly",
+			priority: "0.9",
+		},
 		{ url: `${SITE_URL}/blog/`, changefreq: "daily", priority: "0.9" },
 		{ url: `${SITE_URL}/paper/`, changefreq: "monthly", priority: "0.8" },
-		{ url: `${SITE_URL}/how-it-works/`, changefreq: "monthly", priority: "0.8" },
+		{
+			url: `${SITE_URL}/how-it-works/`,
+			changefreq: "monthly",
+			priority: "0.8",
+		},
 		{ url: `${SITE_URL}/changelog/`, changefreq: "weekly", priority: "0.7" },
 	]
 

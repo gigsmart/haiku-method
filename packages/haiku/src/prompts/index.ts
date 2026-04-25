@@ -9,10 +9,10 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js"
 import type { PromptDef } from "./types.js"
 
 export type {
-	PromptDef,
-	PromptArgDef,
-	PromptHandler,
 	ArgumentCompleter,
+	PromptArgDef,
+	PromptDef,
+	PromptHandler,
 } from "./types.js"
 
 // ── Registry ─────────────────────────────────────────────────────────────────

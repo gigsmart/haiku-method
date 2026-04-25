@@ -37,6 +37,7 @@ export function WorkflowDiagram({
 
 						return (
 							<motion.div
+								// biome-ignore lint/suspicious/noArrayIndexKey: same hatId can appear at multiple steps in a workflow; the index disambiguates the instance
 								key={`${workflow.id}-${step.hatId}-${index}`}
 								className="flex items-center"
 								initial={{ opacity: 0, y: 20 }}
@@ -72,6 +73,7 @@ export function WorkflowDiagram({
 
 						return (
 							<motion.div
+								// biome-ignore lint/suspicious/noArrayIndexKey: same hatId can appear at multiple steps (mobile layout)
 								key={`${workflow.id}-${step.hatId}-${index}-mobile`}
 								className="flex flex-col items-center"
 								initial={{ opacity: 0, x: -20 }}

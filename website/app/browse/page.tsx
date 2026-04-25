@@ -1,13 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
+import { useCallback, useEffect, useState } from "react"
 import { LocalProvider } from "@/lib/browse/local-provider"
+import { getRecents } from "@/lib/browse/recents"
 import type { BrowseProvider } from "@/lib/browse/types"
 import { PortfolioView } from "./components/PortfolioView"
 import { RemoteBrowseView } from "./components/RemoteBrowseView"
-
-import { getRecents } from "@/lib/browse/recents"
 
 /**
  * Parse the current URL to detect if we're at a path-based browse URL.
@@ -21,7 +20,10 @@ import { getRecents } from "@/lib/browse/recents"
  * Returns the path segments after /browse/ if there are enough to form a valid
  * remote browse URL (at least host + 2 project segments), otherwise null.
  */
-function getRemoteBrowseSegments(): { segments: string[]; branch?: string } | null {
+function getRemoteBrowseSegments(): {
+	segments: string[]
+	branch?: string
+} | null {
 	if (typeof window === "undefined") return null
 
 	let fullPath = window.location.pathname
@@ -40,7 +42,7 @@ function getRemoteBrowseSegments(): { segments: string[]; branch?: string } | nu
 
 	const pathname = fullPath.replace(/\/+$/, "")
 	const prefix = "/browse"
-	if (!pathname.startsWith(prefix + "/") || pathname === prefix) return null
+	if (!pathname.startsWith(`${prefix}/`) || pathname === prefix) return null
 
 	const rest = pathname.slice(prefix.length + 1)
 	const segments = rest.split("/").filter(Boolean)
@@ -62,7 +64,10 @@ export default function BrowsePage() {
 	const [dragging, setDragging] = useState(false)
 
 	// Detect path-based remote browse URL on initial render
-	const [remoteBrowse, setRemoteBrowse] = useState<{ segments: string[]; branch?: string } | null>(null)
+	const [remoteBrowse, setRemoteBrowse] = useState<{
+		segments: string[]
+		branch?: string
+	} | null>(null)
 	const [mounted, setMounted] = useState(false)
 
 	useEffect(() => {
@@ -84,7 +89,11 @@ export default function BrowsePage() {
 			setLoading(true)
 			setError(null)
 			// File System Access API — not in all TypeScript DOM libs yet
-			const handle = await (window as unknown as { showDirectoryPicker(): Promise<FileSystemDirectoryHandle> }).showDirectoryPicker()
+			const handle = await (
+				window as unknown as {
+					showDirectoryPicker(): Promise<FileSystemDirectoryHandle>
+				}
+			).showDirectoryPicker()
 			const local = new LocalProvider(handle)
 			const found = await local.init()
 			if (!found) {
@@ -95,7 +104,9 @@ export default function BrowsePage() {
 			setProvider(local)
 		} catch (e) {
 			if ((e as Error).name !== "AbortError") {
-				setError("Failed to open directory. Your browser may not support the File System Access API.")
+				setError(
+					"Failed to open directory. Your browser may not support the File System Access API.",
+				)
 			}
 		} finally {
 			setLoading(false)
@@ -113,7 +124,11 @@ export default function BrowsePage() {
 			// File System Access API — Chrome 86+
 			if ("getAsFileSystemHandle" in item) {
 				try {
-					const handle = await (item as unknown as { getAsFileSystemHandle(): Promise<FileSystemHandle | null> }).getAsFileSystemHandle()
+					const handle = await (
+						item as unknown as {
+							getAsFileSystemHandle(): Promise<FileSystemHandle | null>
+						}
+					).getAsFileSystemHandle()
 					if (handle?.kind === "directory") {
 						setLoading(true)
 						setError(null)
@@ -133,7 +148,9 @@ export default function BrowsePage() {
 				}
 			}
 		}
-		setError("Drop a project folder, or click to use the directory picker. Your browser may not support drag-and-drop for directories.")
+		setError(
+			"Drop a project folder, or click to use the directory picker. Your browser may not support drag-and-drop for directories.",
+		)
 	}, [])
 
 	// Don't render anything until mounted (avoids hydration mismatch)
@@ -147,12 +164,19 @@ export default function BrowsePage() {
 
 	// Remote browse mode — path contains host/project info
 	if (remoteBrowse) {
-		return <RemoteBrowseView pathSegments={remoteBrowse.segments} branch={remoteBrowse.branch} />
+		return (
+			<RemoteBrowseView
+				pathSegments={remoteBrowse.segments}
+				branch={remoteBrowse.branch}
+			/>
+		)
 	}
 
 	// Local directory browse mode
 	if (provider) {
-		return <PortfolioView provider={provider} onBack={() => setProvider(null)} />
+		return (
+			<PortfolioView provider={provider} onBack={() => setProvider(null)} />
+		)
 	}
 
 	// Landing page — choose browse mode
@@ -170,10 +194,12 @@ export default function BrowsePage() {
 				Browse H·AI·K·U Workspace
 			</h1>
 			<p className="mb-10 text-stone-600 dark:text-stone-400">
-				Explore intents, stages, units, and artifacts from any H·AI·K·U workspace.
+				Explore intents, stages, units, and artifacts from any H·AI·K·U
+				workspace.
 			</p>
 
 			{/* Local directory */}
+			{/* biome-ignore lint/a11y/useSemanticElements: real <button> can't carry drag-and-drop handlers cleanly; this drop zone mixes click + drag, which only a div pattern supports */}
 			<div
 				className={`mb-8 cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition ${
 					dragging
@@ -181,20 +207,48 @@ export default function BrowsePage() {
 						: "border-stone-300 hover:border-teal-300 dark:border-stone-700 dark:hover:border-teal-700"
 				}`}
 				onClick={handleDirectoryPicker}
-				onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault()
+						handleDirectoryPicker()
+					}
+				}}
+				role="button"
+				tabIndex={0}
+				onDragOver={(e) => {
+					e.preventDefault()
+					setDragging(true)
+				}}
 				onDragLeave={() => setDragging(false)}
 				onDrop={handleDrop}
 			>
 				<div className="mb-3 text-4xl text-stone-300 dark:text-stone-600">
-					<svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+					<svg
+						className="mx-auto h-12 w-12"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						aria-hidden="true"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={1.5}
+							d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+						/>
 					</svg>
 				</div>
 				<p className="text-lg font-medium text-stone-700 dark:text-stone-300">
-					{loading ? "Loading..." : "Drop a project folder here or click to browse"}
+					{loading
+						? "Loading..."
+						: "Drop a project folder here or click to browse"}
 				</p>
 				<p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-					Select a directory containing a <code className="rounded bg-stone-100 px-1.5 py-0.5 text-xs dark:bg-stone-800">.haiku/</code> folder
+					Select a directory containing a{" "}
+					<code className="rounded bg-stone-100 px-1.5 py-0.5 text-xs dark:bg-stone-800">
+						.haiku/
+					</code>{" "}
+					folder
 				</p>
 			</div>
 
@@ -235,7 +289,9 @@ function RemoteUrlInput() {
 			const pathParts = parsed.pathname.split("/").filter(Boolean)
 
 			if (pathParts.length < 2) {
-				setError("URL must include the repository path (e.g., github.com/org/repo)")
+				setError(
+					"URL must include the repository path (e.g., github.com/org/repo)",
+				)
 				return
 			}
 
@@ -245,7 +301,9 @@ function RemoteUrlInput() {
 			if (branch) browsePath += `?branch=${encodeURIComponent(branch)}`
 			window.location.href = browsePath
 		} catch {
-			setError("Invalid URL. Try: github.com/org/repo or gitlab.com/group/project")
+			setError(
+				"Invalid URL. Try: github.com/org/repo or gitlab.com/group/project",
+			)
 		}
 	}
 

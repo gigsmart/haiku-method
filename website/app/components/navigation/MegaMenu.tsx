@@ -1,7 +1,7 @@
 "use client"
 
-import type { NavCategory } from "@/lib/navigation"
 import { useEffect, useRef } from "react"
+import type { NavCategory } from "@/lib/navigation"
 import { MegaMenuPreview } from "./MegaMenuPreview"
 import { MegaMenuSection } from "./MegaMenuSection"
 

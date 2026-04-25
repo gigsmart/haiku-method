@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import * as Sentry from "@sentry/nextjs"
 import Link from "next/link"
+import { useEffect, useState } from "react"
 
 export default function BrowseError({
 	error,
@@ -11,6 +12,12 @@ export default function BrowseError({
 	reset: () => void
 }) {
 	const [showDetails, setShowDetails] = useState(false)
+
+	useEffect(() => {
+		Sentry.captureException(error, {
+			tags: { component: "haiku-browse", kind: "error-boundary" },
+		})
+	}, [error])
 
 	return (
 		<div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
@@ -36,7 +43,13 @@ export default function BrowseError({
 					<ul className="list-inside list-disc space-y-1">
 						<li>Your authentication token is valid and not expired</li>
 						<li>The repository URL is correct and accessible</li>
-						<li>The repository contains a <code className="rounded bg-stone-100 px-1 py-0.5 text-xs dark:bg-stone-800">.haiku/</code> directory</li>
+						<li>
+							The repository contains a{" "}
+							<code className="rounded bg-stone-100 px-1 py-0.5 text-xs dark:bg-stone-800">
+								.haiku/
+							</code>{" "}
+							directory
+						</li>
 					</ul>
 				</div>
 

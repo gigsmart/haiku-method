@@ -3,6 +3,7 @@ name: incident-response
 description: Incident response lifecycle from triage through investigation, mitigation, resolution, and postmortem
 stages: [triage, investigate, mitigate, resolve, postmortem]
 category: operations
+default_model: sonnet
 ---
 
 # Incident Response Studio

@@ -2,8 +2,7 @@
 //
 // Only relevant for harnesses that have an EnterPlanMode tool (Claude Code).
 
-import { isClaudeCode } from "../harness.js"
-import { skillReference } from "../harness.js"
+import { isClaudeCode, skillReference } from "../harness.js"
 
 export async function redirectPlanMode(
 	input: Record<string, unknown>,

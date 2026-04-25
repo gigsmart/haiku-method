@@ -9,9 +9,8 @@
 // tells you which regex needs updating.
 
 import assert from "node:assert"
-
-import { adaptInstructions } from "../src/harness-instructions.ts"
 import { setHarness } from "../src/harness.ts"
+import { adaptInstructions } from "../src/harness-instructions.ts"
 
 let passed = 0
 let failed = 0

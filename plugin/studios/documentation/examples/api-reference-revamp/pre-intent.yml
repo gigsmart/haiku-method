@@ -1,0 +1,17 @@
+related:
+  - software
+  - dev-evangelism
+  - libdev
+turns:
+  - role: user
+    text: "Our API reference is a dumping ground. Rebuild it properly."
+  - role: agent
+    text: "Generated from OpenAPI or hand-curated?"
+  - role: user
+    text: "Generated from the spec, but with hand-written examples per endpoint."
+  - role: agent
+    text: "Versioning — latest only, or every public version?"
+  - role: user
+    text: "Latest plus the previous major. We EOL anything older."
+  - role: agent
+    text: "Got it — OpenAPI-driven reference with curated examples, latest + one back."

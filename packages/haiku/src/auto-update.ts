@@ -55,7 +55,7 @@ function parseSemver(v: string): [number, number, number] | null {
 function isNewer(latest: string, current: string): boolean {
 	const a = parseSemver(latest)
 	const b = parseSemver(current)
-	if (!a || !b) return false
+	if (!(a && b)) return false
 	if (a[0] !== b[0]) return a[0] > b[0]
 	if (a[1] !== b[1]) return a[1] > b[1]
 	return a[2] > b[2]
@@ -109,7 +109,7 @@ async function downloadBinary(url: string, version: string): Promise<string> {
 	const timeout = setTimeout(() => controller.abort(), 120_000) // 2 min
 	try {
 		const res = await fetch(url, { signal: controller.signal })
-		if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
+		if (!(res.ok && res.body)) throw new Error(`HTTP ${res.status}`)
 
 		const ws = createWriteStream(dest)
 		await pipeline(Readable.fromWeb(res.body as NodeReadableStream), ws)
@@ -197,7 +197,7 @@ async function downloadAndExtractFromZip(
 	const timeout = setTimeout(() => controller.abort(), 120_000)
 	try {
 		const res = await fetch(url, { signal: controller.signal })
-		if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
+		if (!(res.ok && res.body)) throw new Error(`HTTP ${res.status}`)
 
 		const ws = createWriteStream(zipPath)
 		await pipeline(Readable.fromWeb(res.body as NodeReadableStream), ws)

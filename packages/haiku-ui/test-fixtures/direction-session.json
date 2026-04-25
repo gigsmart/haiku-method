@@ -1,0 +1,60 @@
+{
+	"session_id": "test-direction-1",
+	"session_type": "design_direction",
+	"status": "pending",
+	"title": "Pick a design direction",
+	"intent_slug": "test-direction-intent",
+	"archetypes": [
+		{
+			"name": "Minimal",
+			"description": "Spare layout, plenty of whitespace, focus on typography.",
+			"preview_html": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 120'><rect width='200' height='120' fill='#fafaf9'/><rect x='20' y='20' width='80' height='10' fill='#1c1917'/><rect x='20' y='40' width='160' height='4' fill='#a8a29e'/><rect x='20' y='52' width='160' height='4' fill='#a8a29e'/></svg>",
+			"default_parameters": { "density": 0.3, "contrast": 0.4, "motion": 0.2 }
+		},
+		{
+			"name": "Bold",
+			"description": "Heavy type, saturated accent, generous padding.",
+			"preview_html": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 120'><rect width='200' height='120' fill='#0c0a09'/><rect x='20' y='20' width='120' height='18' fill='#14b8a6'/><rect x='20' y='48' width='160' height='4' fill='#e7e5e4'/><rect x='20' y='60' width='160' height='4' fill='#e7e5e4'/></svg>",
+			"default_parameters": { "density": 0.7, "contrast": 0.9, "motion": 0.5 }
+		},
+		{
+			"name": "Playful",
+			"description": "Rounded shapes, soft shadows, cheerful accent colors.",
+			"preview_html": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 120'><rect width='200' height='120' fill='#fef3c7'/><circle cx='45' cy='55' r='20' fill='#f97316'/><rect x='80' y='40' width='100' height='8' rx='4' fill='#78350f'/><rect x='80' y='56' width='100' height='8' rx='4' fill='#78350f'/></svg>",
+			"default_parameters": { "density": 0.5, "contrast": 0.6, "motion": 0.8 }
+		}
+	],
+	"parameters": [
+		{
+			"name": "density",
+			"label": "Information density",
+			"description": "How much information is shown per screen.",
+			"min": 0,
+			"max": 1,
+			"step": 0.1,
+			"default": 0.5,
+			"labels": { "low": "sparse", "high": "dense" }
+		},
+		{
+			"name": "contrast",
+			"label": "Visual contrast",
+			"description": "Luminance delta between text and surface.",
+			"min": 0,
+			"max": 1,
+			"step": 0.1,
+			"default": 0.5,
+			"labels": { "low": "soft", "high": "sharp" }
+		},
+		{
+			"name": "motion",
+			"label": "Motion intensity",
+			"description": "How much animation and transition the UI uses.",
+			"min": 0,
+			"max": 1,
+			"step": 0.1,
+			"default": 0.3,
+			"labels": { "low": "still", "high": "kinetic" }
+		}
+	],
+	"selection": null
+}

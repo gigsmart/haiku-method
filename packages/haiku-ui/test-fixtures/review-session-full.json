@@ -1,0 +1,133 @@
+{
+	"session_id": "test-review-full",
+	"session_type": "review",
+	"status": "pending",
+	"intent_slug": "test-intent",
+	"intent_dir": "/tmp/haiku/test-intent",
+	"review_type": "intent",
+	"gate_type": "ask",
+	"target": "test-intent",
+	"intent": {
+		"slug": "test-intent",
+		"title": "Universal Feedback Model + Review Recovery",
+		"frontmatter": {
+			"status": "in_progress",
+			"stages": ["design", "development", "qa"]
+		},
+		"sections": [
+			{
+				"heading": "_preamble",
+				"content": "End-to-end feedback lifecycle across adversarial review, external PR/MR annotations, user-visual pins, user-chat suggestions, and agent probes.",
+				"subsections": []
+			},
+			{
+				"heading": "Problem",
+				"content": "Review findings scatter across disjoint surfaces. The harness cannot close the loop on any of them.",
+				"subsections": []
+			},
+			{
+				"heading": "Solution",
+				"content": "A single feedback record schema with lifecycle ownership, revisit recovery, and desktop + mobile review UX.",
+				"subsections": []
+			}
+		]
+	},
+	"units": [
+		{
+			"slug": "unit-01-acceptance-criteria",
+			"title": "Acceptance criteria",
+			"number": 1,
+			"frontmatter": {
+				"stage": "product",
+				"discipline": "product",
+				"status": "completed"
+			},
+			"sections": [
+				{
+					"heading": "Description",
+					"content": "Codify AC-05 feedback lifecycle rules.",
+					"subsections": []
+				}
+			],
+			"rawContent": "# Acceptance criteria"
+		},
+		{
+			"slug": "unit-07-review-page-desktop-and-mobile",
+			"title": "Review page — desktop + mobile",
+			"number": 7,
+			"frontmatter": {
+				"stage": "development",
+				"discipline": "frontend",
+				"status": "in_progress",
+				"depends_on": [
+					"unit-06-shell-and-routing",
+					"unit-08-feedback-components"
+				]
+			},
+			"sections": [
+				{
+					"heading": "Description",
+					"content": "Rebuild the review page to match DESIGN-BRIEF §3-4.",
+					"subsections": []
+				}
+			],
+			"rawContent": "# Review page"
+		},
+		{
+			"slug": "unit-10-feedback-sheet-mobile",
+			"title": "Feedback sheet — mobile dialog",
+			"number": 10,
+			"frontmatter": {
+				"stage": "development",
+				"discipline": "frontend",
+				"status": "pending"
+			},
+			"sections": [
+				{
+					"heading": "Description",
+					"content": "Mobile sheet semantics with focus-trap.",
+					"subsections": []
+				}
+			],
+			"rawContent": "# Feedback sheet"
+		}
+	],
+	"criteria": [
+		{
+			"id": "AC-05.1",
+			"description": "Feedback records have canonical status set",
+			"complete": true
+		},
+		{
+			"id": "AC-05.2",
+			"description": "Revisit recovery preserves feedback context",
+			"complete": true
+		},
+		{
+			"id": "AC-05.3",
+			"description": "Desktop + mobile review UX renders identical data",
+			"complete": false
+		},
+		{
+			"id": "AC-05.4",
+			"description": "Status change announcements fire via polite live region",
+			"complete": false
+		},
+		{
+			"id": "AC-05.5",
+			"description": "Feedback items sorted deterministically within groups",
+			"complete": true
+		}
+	],
+	"mermaid": "",
+	"intent_mockups": [],
+	"unit_mockups": {},
+	"stage_states": {
+		"design": { "status": "completed" },
+		"development": { "status": "active" },
+		"qa": { "status": "pending" }
+	},
+	"knowledge_files": [],
+	"stage_artifacts": [],
+	"output_artifacts": []
+}

@@ -2,6 +2,7 @@
 name: design
 description: Schematic, PCB layout, mechanical, and BOM
 hats: [electrical-engineer, mechanical-engineer, pcb-designer, design-reviewer]
+fix_hats: [electrical-engineer, feedback-assessor]
 review: [external, ask]
 elaboration: collaborative
 inputs:
@@ -30,13 +31,6 @@ happens in the normal repo tree; live preview is served by `tsci dev` on
 `http://localhost:3020`; packages are consumed via `tsci add` from the
 tscircuit registry; Gerbers, pick-and-place, and BOM are exported with the
 `tsci` CLI. The source-of-truth design artifact is the circuit code itself,
-not a proprietary EDA binary.
-
-## Completion Signal (RFC 2119)
-
-Schematic **MUST** be complete and reviewed. PCB layout **MUST** pass design
-rule check (DRC). Mechanical design **MUST** pass fit and clearance checks
-against the tscircuit-exported PCB outline and 3D preview. BOM **MUST** be
-sourced with confirmed lead times and second sources for critical components.
-Manufacturing exports (Gerbers, pick-and-place, BOM CSV) **MUST** be produced
-from the tscircuit source and committed alongside the `.tsx` circuit code.
+not a proprietary EDA binary. Manufacturing exports (Gerbers, pick-and-place,
+BOM CSV) are produced from the tscircuit source and committed alongside the
+`.tsx` circuit code.

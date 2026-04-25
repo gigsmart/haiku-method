@@ -27,6 +27,14 @@ export interface SubagentCapabilities {
 	modelParam: boolean
 	/** Can multiple subagents be spawned in a single response? */
 	parallelSpawn: boolean
+	/**
+	 * Can subagents be spawned in "background" mode, where the spawn primitive
+	 * returns immediately and the parent is notified when the subagent
+	 * completes? True enables the concurrency-cap slot pool (keep N in flight
+	 * and refill the instant one completes). False falls back to batch-serial
+	 * (spawn N, wait for all N, then next batch of N).
+	 */
+	backgroundSpawn: boolean
 	/** Supports isolation (e.g., worktrees, sandboxed VMs). */
 	isolation: boolean
 }
@@ -90,6 +98,7 @@ const HARNESS_REGISTRY: Record<string, HarnessCapabilities> = {
 			toolNames: ["Agent", "Task"],
 			modelParam: true,
 			parallelSpawn: true,
+			backgroundSpawn: true,
 			isolation: true,
 		},
 		modelTiers: ["haiku", "sonnet", "opus"],
@@ -113,6 +122,7 @@ const HARNESS_REGISTRY: Record<string, HarnessCapabilities> = {
 			toolNames: ["Agent"],
 			modelParam: false,
 			parallelSpawn: true,
+			backgroundSpawn: false,
 			isolation: true,
 		},
 		modelTiers: ["fast", "balanced", "powerful"],
@@ -136,6 +146,7 @@ const HARNESS_REGISTRY: Record<string, HarnessCapabilities> = {
 			toolNames: [],
 			modelParam: false,
 			parallelSpawn: false,
+			backgroundSpawn: false,
 			isolation: false,
 		},
 		modelTiers: ["fast", "balanced", "powerful"],
@@ -159,6 +170,7 @@ const HARNESS_REGISTRY: Record<string, HarnessCapabilities> = {
 			toolNames: ["@subagent"],
 			modelParam: false,
 			parallelSpawn: true,
+			backgroundSpawn: false,
 			isolation: false,
 		},
 		modelTiers: ["flash", "pro"],
@@ -182,6 +194,7 @@ const HARNESS_REGISTRY: Record<string, HarnessCapabilities> = {
 			toolNames: ["subagent"],
 			modelParam: true,
 			parallelSpawn: false,
+			backgroundSpawn: false,
 			isolation: false,
 		},
 		modelTiers: ["fast", "balanced", "powerful"],
@@ -205,6 +218,7 @@ const HARNESS_REGISTRY: Record<string, HarnessCapabilities> = {
 			toolNames: ["/spawn"],
 			modelParam: false,
 			parallelSpawn: true,
+			backgroundSpawn: false,
 			isolation: true,
 		},
 		modelTiers: ["haiku", "sonnet", "opus"],

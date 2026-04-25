@@ -1,63 +1,667 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "quality-assurance",
-  studio: "quality-assurance",
-  stages: ["plan", "design-tests", "execute-tests", "analyze", "certify"],
-  completionText: "All 5 stages passed. payment-integration-qa delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1200, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"QA the new payment processing integration with Stripe"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: payment-integration-qa..."}, {"type":"file","path":".haiku/intents/payment-integration-qa/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: quality-assurance. 5 stages: plan → design-tests → execute-tests → analyze → certify"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"plan"}, {"type":"msg","role":"agent","label":"agent","text":"Entering plan stage. Hat: strategist.\nWhat payment flows need coverage? And what’s the risk tolerance?"}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/plan/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Card payments, refunds, webhooks, and subscription billing. Zero tolerance for double-charges — that’s a P0."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: planner. Decomposing into coverage areas..."}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/plan/units/unit-01-test-strategy.md"}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/plan/units/unit-02-coverage-matrix.md"}, {"type":"card","stage":"plan","name":"test-strategy","status":"in-progress"}, {"type":"card","stage":"plan","name":"coverage-matrix","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Test strategy: 4 payment flows, 12 edge cases (expired cards, insufficient funds, webhook retries, idempotency keys). Coverage matrix maps each flow to test types: unit, integration, E2E, load."}, {"type":"updateCard","stage":"plan","name":"test-strategy","status":"completed"}, {"type":"updateCard","stage":"plan","name":"coverage-matrix","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"20"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"file","path":".haiku/intents/payment-integration-qa/knowledge/TEST-STRATEGY.md"}, {"type":"updateCard","stage":"plan","name":"coverage-matrix","status":"completed"}, {"type":"msg","role":"agent","label":"agent","text":"Strategy complete. 87% coverage target with P0 double-charge scenario at 100%."}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Plan complete. Review gate: ask."}, {"type":"msg","role":"agent","label":"agent","text":"Review the test strategy?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Add webhook failure replay testing — Stripe retries up to 3 times."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Added webhook retry scenarios (1x, 2x, 3x) with idempotency verification. Approved."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"design-tests"}, {"type":"msg","role":"agent","label":"agent","text":"Entering design-tests stage. Hat: designer.\nLoading test strategy..."}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/design-tests/state.json"}] },
-    { delay: 600, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → plan/test-strategy (knowledge/TEST-STRATEGY.md)"}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Designing test cases for each payment flow..."}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/design-tests/units/unit-01-payment-tests.md"}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/design-tests/units/unit-02-webhook-tests.md"}, {"type":"card","stage":"design-tests","name":"payment-tests","status":"in-progress"}, {"type":"card","stage":"design-tests","name":"webhook-tests","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: automator. 34 test cases designed. Payment tests: happy path, decline, 3DS, partial refund, full refund. Webhook tests: success, retry 1-3, payload signature verification."}, {"type":"updateCard","stage":"design-tests","name":"payment-tests","status":"completed"}, {"type":"updateCard","stage":"design-tests","name":"webhook-tests","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1200, actions: [{"type":"removeFastForward"}, {"type":"file","path":".haiku/intents/payment-integration-qa/knowledge/TEST-SUITE-SPEC.md"}, {"type":"updateCard","stage":"design-tests","name":"webhook-tests","status":"completed"}, {"type":"msg","role":"agent","label":"agent","text":"All test cases designed and automation framework selected (Playwright + Stripe test mode). Review agents passed."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"execute-tests"}, {"type":"msg","role":"agent","label":"agent","text":"Entering execute-tests stage. Hat: tester.\nLoading test suite spec..."}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/execute-tests/state.json"}] },
-    { delay: 600, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → design-tests/test-suite-spec, plan/test-strategy"}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Executing 34 test cases against Stripe test mode..."}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/execute-tests/units/unit-01-run-payments.md"}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/execute-tests/units/unit-02-run-webhooks.md"}, {"type":"card","stage":"execute-tests","name":"run-payments","status":"in-progress"}, {"type":"card","stage":"execute-tests","name":"run-webhooks","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"60"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: reporter. 31/34 passed. 3 failures:\n• Partial refund on subscriptions returns wrong amount\n• Webhook retry #3 creates duplicate event\n• 3DS timeout doesn’t clean up pending charge"}, {"type":"updateCard","stage":"execute-tests","name":"run-payments","status":"completed"}, {"type":"updateCard","stage":"execute-tests","name":"run-webhooks","status":"in-progress"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"The partial refund bug — is that our code or Stripe’s?"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeFastForward"}, {"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Our code. We’re calculating refund amount on the original charge, not the prorated subscription amount. Logging as P1 defect."}, {"type":"updateCard","stage":"execute-tests","name":"run-webhooks","status":"completed"}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/execute-tests/artifacts/TEST-RESULTS.md"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"analyze"}, {"type":"msg","role":"agent","label":"agent","text":"Entering analyze stage. Hat: analyst.\nLoading test results..."}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/analyze/state.json"}] },
-    { delay: 600, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → execute-tests/test-results, plan/test-strategy"}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Analyzing quality metrics..."}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/analyze/units/unit-01-results-analysis.md"}, {"type":"card","stage":"analyze","name":"results-analysis","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: statistician. Quality report:\n• Pass rate: 91.2% (31/34)\n• P0 double-charge: PASS (0 occurrences)\n• P1 defects: 2 (refund calc, webhook dedup)\n• P2 defects: 1 (3DS timeout cleanup)\n• Coverage: 89% of mapped flows"}, {"type":"file","path":".haiku/intents/payment-integration-qa/knowledge/QUALITY-REPORT.md"}, {"type":"updateCard","stage":"analyze","name":"results-analysis","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Analyze complete. Review gate: ask."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"The P1s need to be fixed before we certify. Can we proceed with the P2 as known issue?"}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Agreed. P1s flagged as blockers for certification. P2 added to known issues with workaround documented. Approved."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"certify"}, {"type":"msg","role":"agent","label":"agent","text":"Entering certify stage. Hat: certifier.\nLoading quality report..."}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/certify/state.json"}] },
-    { delay: 600, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → analyze/quality-report, execute-tests/test-results"}] },
-    { delay: 800, actions: [{"type":"msg","role":"agent","label":"agent","text":"Preparing certification report..."}, {"type":"file","path":".haiku/intents/payment-integration-qa/stages/certify/units/unit-01-certification.md"}, {"type":"card","stage":"certify","name":"certification","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: reviewer. Certification assessment:\n• P0 criteria: MET (no double-charges)\n• P1 criteria: BLOCKED (2 open defects)\n• Recommendation: Conditional pass pending P1 fixes\n• Known issue: 3DS timeout cleanup (P2, workaround documented)"}, {"type":"file","path":".haiku/intents/payment-integration-qa/knowledge/CERTIFICATION-REPORT.md"}, {"type":"updateCard","stage":"certify","name":"certification","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Certify complete. Review gate: external."}, {"type":"msg","role":"agent","label":"agent","text":"Sharing certification report for QA lead sign-off..."}] },
-    { delay: 800, actions: [{"type":"showReview","title":"Certify","intent":"payment-integration-qa","criteria":["P0 double-charge: 0 occurrences across all test runs","P1 partial refund: fix verified in re-test (31/34 → 33/34)","P1 webhook dedup: fix verified with idempotency key check","P2 3DS timeout: documented as known issue with workaround","Coverage target: 89% achieved (target 87%)"],"gateType":"external"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2200, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"External review approved — QA lead signed off."}, {"type":"msg","role":"agent","label":"agent","text":"Payment integration certified. Conditional release approved."}] },
-    { delay: 1000, actions: [{"type":"complete"}] },
-  ],
+	title: "quality-assurance",
+	studio: "quality-assurance",
+	stages: ["plan", "design-tests", "execute-tests", "analyze", "certify"],
+	completionText: "All 5 stages passed. payment-integration-qa delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1200, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "QA the new payment processing integration with Stripe",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: payment-integration-qa...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: quality-assurance. 5 stages: plan → design-tests → execute-tests → analyze → certify",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "plan" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering plan stage. Hat: strategist.\nWhat payment flows need coverage? And what’s the risk tolerance?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/plan/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Card payments, refunds, webhooks, and subscription billing. Zero tolerance for double-charges — that’s a P0.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: planner. Decomposing into coverage areas...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/plan/units/unit-01-test-strategy.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/plan/units/unit-02-coverage-matrix.md",
+				},
+				{
+					type: "card",
+					stage: "plan",
+					name: "test-strategy",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "plan", name: "coverage-matrix", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Test strategy: 4 payment flows, 12 edge cases (expired cards, insufficient funds, webhook retries, idempotency keys). Coverage matrix maps each flow to test types: unit, integration, E2E, load.",
+				},
+				{
+					type: "updateCard",
+					stage: "plan",
+					name: "test-strategy",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "plan",
+					name: "coverage-matrix",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "20" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/knowledge/TEST-STRATEGY.md",
+				},
+				{
+					type: "updateCard",
+					stage: "plan",
+					name: "coverage-matrix",
+					status: "completed",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Strategy complete. 87% coverage target with P0 double-charge scenario at 100%.",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Plan complete. Review gate: ask.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Review the test strategy?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Add webhook failure replay testing — Stripe retries up to 3 times.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Added webhook retry scenarios (1x, 2x, 3x) with idempotency verification. Approved.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "design-tests" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering design-tests stage. Hat: designer.\nLoading test strategy...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/design-tests/state.json",
+				},
+			],
+		},
+		{
+			delay: 600,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → plan/test-strategy (knowledge/TEST-STRATEGY.md)",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Designing test cases for each payment flow...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/design-tests/units/unit-01-payment-tests.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/design-tests/units/unit-02-webhook-tests.md",
+				},
+				{
+					type: "card",
+					stage: "design-tests",
+					name: "payment-tests",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "design-tests",
+					name: "webhook-tests",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: automator. 34 test cases designed. Payment tests: happy path, decline, 3DS, partial refund, full refund. Webhook tests: success, retry 1-3, payload signature verification.",
+				},
+				{
+					type: "updateCard",
+					stage: "design-tests",
+					name: "payment-tests",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "design-tests",
+					name: "webhook-tests",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/knowledge/TEST-SUITE-SPEC.md",
+				},
+				{
+					type: "updateCard",
+					stage: "design-tests",
+					name: "webhook-tests",
+					status: "completed",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All test cases designed and automation framework selected (Playwright + Stripe test mode). Review agents passed.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "execute-tests" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering execute-tests stage. Hat: tester.\nLoading test suite spec...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/execute-tests/state.json",
+				},
+			],
+		},
+		{
+			delay: 600,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → design-tests/test-suite-spec, plan/test-strategy",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Executing 34 test cases against Stripe test mode...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/execute-tests/units/unit-01-run-payments.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/execute-tests/units/unit-02-run-webhooks.md",
+				},
+				{
+					type: "card",
+					stage: "execute-tests",
+					name: "run-payments",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "execute-tests",
+					name: "run-webhooks",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "60" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: reporter. 31/34 passed. 3 failures:\n• Partial refund on subscriptions returns wrong amount\n• Webhook retry #3 creates duplicate event\n• 3DS timeout doesn’t clean up pending charge",
+				},
+				{
+					type: "updateCard",
+					stage: "execute-tests",
+					name: "run-payments",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "execute-tests",
+					name: "run-webhooks",
+					status: "in-progress",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "The partial refund bug — is that our code or Stripe’s?",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeFastForward" },
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Our code. We’re calculating refund amount on the original charge, not the prorated subscription amount. Logging as P1 defect.",
+				},
+				{
+					type: "updateCard",
+					stage: "execute-tests",
+					name: "run-webhooks",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/execute-tests/artifacts/TEST-RESULTS.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "analyze" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering analyze stage. Hat: analyst.\nLoading test results...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/analyze/state.json",
+				},
+			],
+		},
+		{
+			delay: 600,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → execute-tests/test-results, plan/test-strategy",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Analyzing quality metrics...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/analyze/units/unit-01-results-analysis.md",
+				},
+				{
+					type: "card",
+					stage: "analyze",
+					name: "results-analysis",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: statistician. Quality report:\n• Pass rate: 91.2% (31/34)\n• P0 double-charge: PASS (0 occurrences)\n• P1 defects: 2 (refund calc, webhook dedup)\n• P2 defects: 1 (3DS timeout cleanup)\n• Coverage: 89% of mapped flows",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/knowledge/QUALITY-REPORT.md",
+				},
+				{
+					type: "updateCard",
+					stage: "analyze",
+					name: "results-analysis",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Analyze complete. Review gate: ask.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "The P1s need to be fixed before we certify. Can we proceed with the P2 as known issue?",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Agreed. P1s flagged as blockers for certification. P2 added to known issues with workaround documented. Approved.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "certify" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering certify stage. Hat: certifier.\nLoading quality report...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/certify/state.json",
+				},
+			],
+		},
+		{
+			delay: 600,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → analyze/quality-report, execute-tests/test-results",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Preparing certification report...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/stages/certify/units/unit-01-certification.md",
+				},
+				{
+					type: "card",
+					stage: "certify",
+					name: "certification",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: reviewer. Certification assessment:\n• P0 criteria: MET (no double-charges)\n• P1 criteria: BLOCKED (2 open defects)\n• Recommendation: Conditional pass pending P1 fixes\n• Known issue: 3DS timeout cleanup (P2, workaround documented)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/payment-integration-qa/knowledge/CERTIFICATION-REPORT.md",
+				},
+				{
+					type: "updateCard",
+					stage: "certify",
+					name: "certification",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Certify complete. Review gate: external.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Sharing certification report for QA lead sign-off...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "showReview",
+					title: "Certify",
+					intent: "payment-integration-qa",
+					criteria: [
+						"P0 double-charge: 0 occurrences across all test runs",
+						"P1 partial refund: fix verified in re-test (31/34 → 33/34)",
+						"P1 webhook dedup: fix verified with idempotency key check",
+						"P2 3DS timeout: documented as known issue with workaround",
+						"Coverage target: 89% achieved (target 87%)",
+					],
+					gateType: "external",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2200, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "External review approved — QA lead signed off.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Payment integration certified. Conditional release approved.",
+				},
+			],
+		},
+		{ delay: 1000, actions: [{ type: "complete" }] },
+	],
 }

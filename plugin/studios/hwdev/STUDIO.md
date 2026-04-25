@@ -4,6 +4,7 @@ slug: hwdev
 description: Lifecycle for hardware products — electronics, firmware, manufacturing
 stages: [inception, requirements, design, firmware, validation, manufacturing]
 category: engineering
+default_model: sonnet
 ---
 
 # Hardware Development

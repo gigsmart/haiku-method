@@ -1,8 +1,8 @@
 import {
 	FEED_HEADERS_ATOM,
-	SITE_URL,
 	generateAtom,
 	getChangelogFeedItems,
+	SITE_URL,
 } from "@/lib/feed"
 
 export const dynamic = "force-static"

@@ -1,0 +1,471 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Dark mode: auto-detect from system, toggleable via class on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Design tokens — canonical source: knowledge/DESIGN-TOKENS.md §1 + §2.
+   Tailwind v4 reads @theme blocks as the scale override surface. Arbitrary
+   CSS custom properties live in :root and are consumed via
+   w-[var(--sidebar-width)] / max-w-[var(--content-max)] / similar.
+   ───────────────────────────────────────────────────────────────────────── */
+
+@theme {
+	/* Feedback semantic color aliases (DESIGN-TOKENS §2.1) — exposed as
+	   --color-* so Tailwind will emit matching utilities (bg-feedback-pending-fg
+	   etc.) for consumers that want the semantic name. The literal stone/amber/
+	   etc. tokens below remain the primary mechanism. */
+	--color-feedback-pending-fg: oklch(47.38% 0.114 60.94);
+	--color-feedback-pending-bg: oklch(96.43% 0.048 95.62);
+	--color-feedback-addressed-fg: oklch(33.46% 0.158 259.21);
+	--color-feedback-addressed-bg: oklch(93.2% 0.032 255.59);
+	--color-feedback-closed-fg: oklch(41.06% 0.112 141.66);
+	--color-feedback-closed-bg: oklch(96.2% 0.048 146.63);
+	--color-feedback-rejected-fg: oklch(36.5% 0.011 75.35);
+	--color-feedback-rejected-bg: oklch(96.6% 0.003 75.35);
+
+	/* Origin semantic aliases (DESIGN-TOKENS §2.2) */
+	--color-origin-adversarial-fg: oklch(44.55% 0.165 12.49);
+	--color-origin-adversarial-bg: oklch(94.49% 0.024 15.16);
+	--color-origin-external-fg: oklch(44.55% 0.172 292.34);
+	--color-origin-external-bg: oklch(94.81% 0.033 290.98);
+	--color-origin-user-fg: oklch(45.32% 0.14 232.65);
+	--color-origin-user-bg: oklch(95.17% 0.027 228.25);
+	--color-origin-agent-fg: oklch(44.51% 0.095 188.25);
+	--color-origin-agent-bg: oklch(95.12% 0.04 178.72);
+
+	/* ─── Component color tokens (FB-42) ───
+	   Promoted out of component rules below so a future accent-color swap
+	   is one-line-per-token instead of a hand-patched index.css rewrite.
+	   Canonical source: DESIGN-TOKENS §1.8 Semantic Colors (Named Roles). */
+
+	/* Annotation pin (DESIGN-TOKENS §1.8 "Annotation red" — rose-600). */
+	--color-annotation-pin-bg: oklch(63.52% 0.237 22.75); /* rose-600 */
+	--color-annotation-pin-fg: oklch(100% 0 0); /* white */
+	--color-annotation-pin-selected-outline: oklch(
+		62.3% 0.214 259.81
+	); /* blue-500 */
+
+	/* Inline highlight (DESIGN-TOKENS §1.8 "Inline highlight" — amber-400).
+	   Declared at 1.0 opacity; component rules derive faded states via
+	   color-mix(in oklch, var(--color-highlight), transparent NN%). */
+	--color-highlight: oklch(82.82% 0.189 84.43); /* amber-400 */
+
+	/* Active comment border / hover tint (DESIGN-TOKENS §1.8 "Active comment
+	   border" — blue-500). */
+	--color-comment-active: oklch(62.3% 0.214 259.81); /* blue-500 */
+
+	/* Pulse ring — FeedbackFloatingButton keyframe (teal-600). */
+	--color-pulse-ring: oklch(60.05% 0.118 184.7); /* teal-600 */
+
+	/* Scrim used by <dialog>::backdrop. 50% black by design. */
+	--color-scrim: oklch(0% 0 0 / 0.5);
+
+	/* Drop shadow tint (pin box-shadow). 30% black. */
+	--color-shadow-soft: oklch(0% 0 0 / 0.3);
+
+	/* Dark-mode sheet surface — matches Tailwind stone-900. */
+	--color-sheet-surface-dark: oklch(21.47% 0.006 56.04); /* stone-900 */
+}
+
+/* Canonical container tokens (DESIGN-TOKENS §2.5 + unit-04 spec §Scope).
+   Consumed via Tailwind arbitrary values: w-[var(--sidebar-width)],
+   w-[var(--sidebar-width-xl)], max-w-[var(--content-max)]. They live in
+   :root (NOT @theme) because they are raw CSS custom properties for layout,
+   not Tailwind scale tokens. */
+:root {
+	--sidebar-width: 20rem;
+	--sidebar-width-xl: 24rem;
+	--content-max: 1400px;
+	/* Sticky header height (Header.tsx: py-3 + text-lg font-semibold → ~53px).
+	   Consumed by Tabs.tsx sticky offset via top-[var(--header-height)] so the
+	   tablist stays pinned immediately below the banner without a hand-measured
+	   magic number. If Header padding changes, update this token — Tabs and any
+	   other below-header sticky surface will follow. */
+	--header-height: 53px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Touch target helpers (unit-05 a11y/touch-target.ts) —
+   canonical source: touch-target-audit.md §2–§3 + DESIGN-TOKENS.md §1.7.1.
+   Every pointer-activated control on mobile/tablet MUST meet 44×44.
+   ───────────────────────────────────────────────────────────────────────── */
+.touch-target {
+	position: relative;
+	min-height: 44px;
+	min-width: 44px;
+}
+.touch-target.touch-target--hit-area {
+	min-height: unset;
+	min-width: unset;
+}
+.touch-target.touch-target--hit-area::before {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 44px;
+	height: 44px;
+	transform: translate(-50%, -50%);
+	border-radius: inherit;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Canonical global reduced-motion guard (unit-05 a11y) —
+   per motion-and-reduced-motion-spec.md §10.rule. Individual components
+   MAY layer per-keyframe `animation: none` overrides for decorative
+   pulses on top of this baseline. Using 0.01ms (not `none`) preserves the
+   static end-state for transitions that convey state.
+
+   The `!important` declarations are mandated verbatim by the spec so this
+   baseline always wins over component-level transition/animation rules.
+   ───────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		/* biome-ignore lint/complexity/noImportantStyles: required by motion-and-reduced-motion-spec.md §10.rule (must override component transitions). */
+		animation-duration: 0.01ms !important;
+		/* biome-ignore lint/complexity/noImportantStyles: required by motion-and-reduced-motion-spec.md §10.rule. */
+		animation-iteration-count: 1 !important;
+		/* biome-ignore lint/complexity/noImportantStyles: required by motion-and-reduced-motion-spec.md §10.rule. */
+		transition-duration: 0.01ms !important;
+		/* biome-ignore lint/complexity/noImportantStyles: required by motion-and-reduced-motion-spec.md §10.rule. */
+		scroll-behavior: auto !important;
+	}
+}
+
+/* Hide tab panels that are not active */
+[role="tabpanel"][hidden] {
+	display: none;
+}
+/* Smooth transitions for theme switch */
+html {
+	transition:
+		background-color 0.2s,
+		color 0.2s;
+}
+@media (prefers-reduced-motion: reduce) {
+	html {
+		transition: none;
+	}
+}
+/* Prevent table overflow — wrap in scrollable container */
+table {
+	display: block;
+	overflow-x: auto;
+	max-width: 100%;
+}
+/* Prose code blocks should also scroll */
+pre {
+	overflow-x: auto;
+}
+
+/* Annotation pin markers */
+.annotation-pin {
+	position: absolute;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	background: var(--color-annotation-pin-bg);
+	color: var(--color-annotation-pin-fg);
+	font-size: 11px;
+	font-weight: 700;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transform: translate(-50%, -50%);
+	box-shadow: 0 2px 6px var(--color-shadow-soft);
+	pointer-events: auto;
+	cursor: pointer;
+	z-index: 10;
+	border: 2px solid var(--color-annotation-pin-fg);
+	transition: transform 0.1s;
+}
+.annotation-pin:hover {
+	transform: translate(-50%, -50%) scale(1.2);
+}
+@media (prefers-reduced-motion: reduce) {
+	.annotation-pin {
+		transition: none;
+	}
+	.annotation-pin:hover {
+		transform: translate(-50%, -50%);
+	}
+}
+.annotation-pin.selected {
+	outline: 2px solid var(--color-annotation-pin-selected-outline);
+	outline-offset: 2px;
+}
+
+/* Inline comments — painted via the CSS Custom Highlight API.
+   `InlineComments` populates `CSS.highlights` with three named
+   layers; the ::highlight() pseudos below color them. No DOM spans,
+   no conflict with React-owned innerHTML, no interference with the
+   browser's native text selection. */
+::highlight(inline-comments-pending) {
+	background-color: color-mix(
+		in oklch,
+		var(--color-highlight),
+		transparent 55%
+	);
+}
+::highlight(inline-comments-saved) {
+	background-color: color-mix(
+		in oklch,
+		var(--color-highlight),
+		transparent 75%
+	);
+	text-decoration: underline;
+	text-decoration-color: color-mix(
+		in oklch,
+		var(--color-highlight),
+		transparent 30%
+	);
+	text-decoration-thickness: 2px;
+	text-underline-offset: 2px;
+}
+/* Stale highlights — the file changed since the comment was written,
+   so the anchor *may* no longer match the intended text. Gray / muted
+   to signal "please reverify" without drowning the reader in warnings. */
+::highlight(inline-comments-stale) {
+	background-color: color-mix(in oklch, gray, transparent 75%);
+	text-decoration: underline wavy;
+	text-decoration-color: color-mix(in oklch, gray, transparent 20%);
+	text-decoration-thickness: 1.5px;
+	text-underline-offset: 2px;
+}
+::highlight(inline-comments-flash) {
+	background-color: color-mix(
+		in oklch,
+		var(--color-highlight),
+		transparent 30%
+	);
+}
+
+/* Comment sidebar entries */
+.comment-entry,
+.margin-comment {
+	padding: 6px 8px;
+	border-radius: 6px;
+	border: 1px solid transparent;
+	transition:
+		border-color 0.15s,
+		background-color 0.15s;
+}
+.comment-entry:hover,
+.comment-entry.active,
+.margin-comment:hover,
+.margin-comment.active {
+	border-color: var(--color-comment-active);
+	background-color: color-mix(
+		in oklch,
+		var(--color-comment-active),
+		transparent 95%
+	);
+}
+.margin-comment {
+	border-left: 3px solid
+		color-mix(in oklch, var(--color-highlight), transparent 30%);
+}
+@media (prefers-reduced-motion: reduce) {
+	.comment-entry,
+	.margin-comment {
+		transition: none;
+	}
+}
+
+/* Feedback status-change flash (DESIGN-TOKENS §5) — cosmetic, drops entirely
+   under prefers-reduced-motion. */
+@keyframes feedback-status-change {
+	0% {
+		opacity: 1;
+	}
+	30% {
+		opacity: 0.6;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+.feedback-status-changed {
+	animation: feedback-status-change 0.4s ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+	.feedback-status-changed {
+		animation: none;
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   FeedbackSheet — native <dialog> styling (unit-10).
+   See stages/development/artifacts/unit-10-tactical-plan.md §C.
+
+   FB-34 alignment: the `dialog.feedback-sheet` selector below is tightly
+   coupled to the React component root rendered by
+   `packages/haiku-ui/src/components/feedback/FeedbackSheet.tsx`, which
+   is a native `<dialog className="feedback-sheet">` — NOT a
+   `<div role="dialog">`. Regression coverage lives in
+   `FeedbackSheet.test.tsx` ("renders as a native <dialog ...> root
+   (FB-34 alignment)"). Do NOT change the selector here without also
+   updating the component root and vice versa; the two MUST move
+   together or the styles silently become dead CSS.
+   ───────────────────────────────────────────────────────────────────────── */
+dialog.feedback-sheet {
+	padding: 0;
+	border: none;
+	max-width: none;
+	max-height: none;
+	width: 100vw;
+	height: 100dvh;
+	margin: 0;
+	background: white;
+	color: inherit;
+}
+
+/* dark mode — match DESIGN-TOKENS §2.5 bg-stone-900 */
+:where(.dark) dialog.feedback-sheet {
+	background: var(--color-sheet-surface-dark);
+}
+
+dialog.feedback-sheet::backdrop {
+	background: var(--color-scrim);
+	backdrop-filter: blur(2px);
+}
+
+@keyframes sheet-up {
+	from {
+		transform: translateY(100%);
+	}
+	to {
+		transform: translateY(0);
+	}
+}
+dialog.feedback-sheet.sheet-enter {
+	animation: sheet-up 0.3s ease-out;
+}
+
+@keyframes backdrop-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+dialog.feedback-sheet[open]::backdrop {
+	animation: backdrop-fade-in 0.15s ease-out;
+}
+
+/* Global stage-wide guard at @media (prefers-reduced-motion: reduce) above
+   already clamps animation-duration to 0.01ms. Drop backdrop-filter here
+   (vestibular trigger per unit-15 / FB-20). Explicitly null the decorative
+   sheet-up + backdrop-fade-in animations — the sheet still paints in its
+   final position via the 0.01ms clamp; the explicit `animation: none` is
+   the spec-recommended belt-and-suspenders override for purely decorative
+   slide / fade motion (motion-and-reduced-motion-spec.md §10). The
+   `.sheet-enter--reduced` sentinel class is applied by the React component
+   and has no CSS body — it is a pure marker the test harness asserts on. */
+@media (prefers-reduced-motion: reduce) {
+	dialog.feedback-sheet::backdrop {
+		backdrop-filter: none;
+		/* Kill the backdrop-fade-in decorative fade under reduced-motion. */
+		animation: none;
+	}
+	dialog.feedback-sheet.sheet-enter {
+		/* Kill the sheet-up decorative slide under reduced-motion. */
+		animation: none;
+	}
+}
+
+/* FeedbackFloatingButton — decorative pulse animation gated by reduced-motion. */
+@keyframes feedback-fab-pulse {
+	0%,
+	100% {
+		box-shadow: 0 0 0 0
+			color-mix(in oklch, var(--color-pulse-ring), transparent 60%);
+	}
+	50% {
+		box-shadow: 0 0 0 8px transparent;
+	}
+}
+.feedback-fab-pulse {
+	animation: feedback-fab-pulse 2s ease-in-out 3;
+}
+@media (prefers-reduced-motion: reduce) {
+	.feedback-fab-pulse {
+		animation: none;
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Stage review: brief flash when a feedback card is clicked or when the
+   "Next unseen" button navigates to an artifact. One-shot animation
+   removed after ~1.4s by the caller; reduced-motion path is a solid
+   teal border instead of the ring-pulse.
+   ───────────────────────────────────────────────────────────────────────── */
+@keyframes unit-flash {
+	0% {
+		box-shadow: 0 0 0 0 oklch(0.7 0.12 200 / 0.6);
+	}
+	100% {
+		box-shadow: 0 0 0 12px oklch(0.7 0.12 200 / 0);
+	}
+}
+.unit-flash {
+	animation: unit-flash 1.2s ease-out 1;
+	outline: 2px solid oklch(0.65 0.14 200);
+	outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+	.unit-flash {
+		animation: none;
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Slim scrollbar — subtle, dark-mode aware. Applied app-wide (body +
+   every overflow region). The default macOS overlay scrollbars are
+   chunky and visually compete with the feedback-card borders in the
+   sidebar; this thin track blends into the chrome while still offering
+   a click target on hover.
+   ───────────────────────────────────────────────────────────────────────── */
+*::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+*::-webkit-scrollbar-track {
+	background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+	background: oklch(0.7 0.005 90 / 0.25); /* stone-400/25 */
+	border-radius: 4px;
+	border: 2px solid transparent;
+	background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+	background: oklch(0.6 0.005 90 / 0.5); /* stone-500/50 */
+	background-clip: padding-box;
+}
+.dark *::-webkit-scrollbar-thumb {
+	background: oklch(0.5 0.005 90 / 0.4); /* stone-600/40 */
+	background-clip: padding-box;
+}
+.dark *::-webkit-scrollbar-thumb:hover {
+	background: oklch(0.65 0.005 90 / 0.6); /* stone-400/60 */
+	background-clip: padding-box;
+}
+*::-webkit-scrollbar-corner {
+	background: transparent;
+}
+/* Firefox — there's no thumb-hover selector, so we use the static color */
+html {
+	scrollbar-width: thin;
+	scrollbar-color: oklch(0.7 0.005 90 / 0.25) transparent;
+}
+.dark html,
+html.dark,
+html.dark * {
+	scrollbar-color: oklch(0.5 0.005 90 / 0.4) transparent;
+}

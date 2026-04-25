@@ -1,0 +1,8 @@
+{
+  "gzipBytes": 693403,
+  "absoluteCap": 1048576,
+  "baseline": 919137,
+  "regressionCeiling": 965093.8500000001,
+  "capExceeded": false,
+  "regressed": false
+}

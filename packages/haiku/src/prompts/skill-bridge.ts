@@ -8,7 +8,7 @@
 // This module is loaded conditionally — only when the active harness lacks
 // native skill support.
 
-import { existsSync, readFileSync, readdirSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import type { GetPromptResult } from "@modelcontextprotocol/sdk/types.js"
 import { resolvePluginRoot } from "../config.js"

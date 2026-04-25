@@ -4,12 +4,7 @@
 // injects warnings at 35% and 25% remaining.
 // Uses debouncing to avoid spamming: only warns once per threshold per session.
 
-import {
-	appendFileSync,
-	existsSync,
-	readFileSync,
-	writeFileSync,
-} from "node:fs"
+import { appendFileSync, existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 export async function contextMonitor(

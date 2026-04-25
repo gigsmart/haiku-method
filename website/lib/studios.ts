@@ -51,12 +51,27 @@ const categoryLabels: Record<string, string> = {
 }
 
 function categorizeStudio(slug: string, rawCategory?: string): string {
-	if (rawCategory && categoryLabels[rawCategory]) return categoryLabels[rawCategory]
-	if (rawCategory) return rawCategory.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
+	if (rawCategory && categoryLabels[rawCategory])
+		return categoryLabels[rawCategory]
+	if (rawCategory)
+		return rawCategory
+			.split("-")
+			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+			.join(" ")
 	// Legacy fallback for studios without category field
-	const engineering = ["software", "data-pipeline", "security-assessment", "documentation"]
+	const engineering = [
+		"software",
+		"data-pipeline",
+		"security-assessment",
+		"documentation",
+	]
 	const gtm = ["sales", "marketing", "customer-success"]
-	const ops = ["incident-response", "migration", "project-management", "quality-assurance"]
+	const ops = [
+		"incident-response",
+		"migration",
+		"project-management",
+		"quality-assurance",
+	]
 	if (engineering.includes(slug)) return "Engineering"
 	if (gtm.includes(slug)) return "Go-to-Market"
 	if (ops.includes(slug)) return "Operations"
@@ -97,7 +112,10 @@ function parseStage(stageDir: string): StageDefinition | null {
 	const hatsDir = path.join(stageDir, "hats")
 	const hatDefinitions: HatDefinition[] = []
 	if (fs.existsSync(hatsDir)) {
-		const hatFiles = fs.readdirSync(hatsDir).filter((f) => f.endsWith(".md")).sort()
+		const hatFiles = fs
+			.readdirSync(hatsDir)
+			.filter((f) => f.endsWith(".md"))
+			.sort()
 		for (const hatFile of hatFiles) {
 			const hat = parseHat(path.join(hatsDir, hatFile))
 			if (hat) hatDefinitions.push(hat)
@@ -108,7 +126,10 @@ function parseStage(stageDir: string): StageDefinition | null {
 	const reviewAgentsDir = path.join(stageDir, "review-agents")
 	const reviewAgentDefinitions: ReviewAgentDefinition[] = []
 	if (fs.existsSync(reviewAgentsDir)) {
-		const agentFiles = fs.readdirSync(reviewAgentsDir).filter((f) => f.endsWith(".md")).sort()
+		const agentFiles = fs
+			.readdirSync(reviewAgentsDir)
+			.filter((f) => f.endsWith(".md"))
+			.sort()
 		for (const agentFile of agentFiles) {
 			const agent = parseReviewAgent(path.join(reviewAgentsDir, agentFile))
 			if (agent) reviewAgentDefinitions.push(agent)
@@ -119,12 +140,16 @@ function parseStage(stageDir: string): StageDefinition | null {
 		name: data.name || path.basename(stageDir),
 		description: data.description || "",
 		hats: data.hats || [],
-		review: Array.isArray(data.review) ? data.review.join(", ") : data.review || "ask",
-		inputs: (data.inputs || []).map((i: { stage: string; output?: string; discovery?: string }) => ({
-			stage: i.stage,
-			output: i.discovery || i.output || "",
-			kind: (i.discovery ? "discovery" : "output") as "discovery" | "output",
-		})),
+		review: Array.isArray(data.review)
+			? data.review.join(", ")
+			: data.review || "ask",
+		inputs: (data.inputs || []).map(
+			(i: { stage: string; output?: string; discovery?: string }) => ({
+				stage: i.stage,
+				output: i.discovery || i.output || "",
+				kind: (i.discovery ? "discovery" : "output") as "discovery" | "output",
+			}),
+		),
 		reviewAgentsInclude: (data["review-agents-include"] || []).map(
 			(i: { stage: string; agents: string[] }) => ({
 				stage: i.stage,
@@ -174,8 +199,16 @@ export function getAllStudios(): StudioDefinition[] {
 		.map((d) => parseStudio(path.join(pluginStudiosDir, d)))
 		.filter((s): s is StudioDefinition => s !== null)
 		.sort((a, b) => {
-			const catOrder = ["Engineering", "Product", "Go-to-Market", "Operations", "Back Office", "General Purpose"]
-			const catDiff = catOrder.indexOf(a.category) - catOrder.indexOf(b.category)
+			const catOrder = [
+				"Engineering",
+				"Product",
+				"Go-to-Market",
+				"Operations",
+				"Back Office",
+				"General Purpose",
+			]
+			const catDiff =
+				catOrder.indexOf(a.category) - catOrder.indexOf(b.category)
 			if (catDiff !== 0) return catDiff
 			return a.name.localeCompare(b.name)
 		})

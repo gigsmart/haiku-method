@@ -43,6 +43,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # haiku-api is a workspace package with `main: ./dist/index.js`;
+      # the MCP test suite imports from it, so the dist bundle has to
+      # exist before tests run. `npm ci` doesn't build workspace
+      # packages automatically — do it explicitly here.
+      - name: Build haiku-api
+        run: npm run -w haiku-api build
+
       - name: Run MCP test suite
         working-directory: packages/haiku
         run: node test/run-all.mjs

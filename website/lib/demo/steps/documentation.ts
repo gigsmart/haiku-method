@@ -1,59 +1,623 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "documentation",
-  studio: "documentation",
-  stages: ["audit", "outline", "draft", "review", "publish"],
-  completionText: "All 5 stages passed. rewrite-api-reference-docs delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Rewrite the API reference docs"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Creating intent: rewrite-api-reference-docs..."}, {"type":"file","path":".haiku/intents/rewrite-api-reference-docs/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: documentation. 5 stages: audit → outline → draft → review → publish"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"audit"}, {"type":"msg","role":"agent","label":"agent","text":"Entering audit stage. Hat: auditor.\nWhere are your current API docs? What’s the source of truth — OpenAPI spec, code annotations?"}, {"type":"file","path":".haiku/intents/rewrite-api-reference-docs/stages/audit/state.json"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Docs in /docs/api/. Source of truth is openapi.yaml. But months out of date."}] },
-    { delay: 1000, actions: [{"type":"msg","role":"agent","label":"agent","text":"I’ll diff the spec against existing docs."}, {"type":"file","path":".haiku/intents/rewrite-api-reference-docs/stages/audit/units/unit-01-inventory.md"}, {"type":"file","path":".haiku/intents/rewrite-api-reference-docs/stages/audit/units/unit-02-gap-analysis.md"}, {"type":"card","stage":"audit","name":"inventory","status":"in-progress"}, {"type":"card","stage":"audit","name":"gap-analysis","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: gap-analyst. 47 endpoints in spec, docs cover 31.\n  • 16 undocumented (mostly v2)\n  • 8 outdated schemas\n  • 12 missing error codes\n  • 0 working code examples\nPriority: auth endpoints (most tickets), billing (revenue), then CRUD."}, {"type":"updateCard","stage":"audit","name":"inventory","status":"completed"}, {"type":"updateCard","stage":"audit","name":"gap-analysis","status":"completed"}, {"type":"file","path":".haiku/intents/rewrite-api-reference-docs/knowledge/AUDIT-REPORT.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Audit complete. Review gate: auto. All criteria met — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"outline"}, {"type":"msg","role":"agent","label":"agent","text":"Entering outline stage. Hat: architect."}, {"type":"file","path":".haiku/intents/rewrite-api-reference-docs/stages/outline/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → audit/audit-report (knowledge/AUDIT-REPORT.md)"}, {"type":"card","stage":"outline","name":"ia-design","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Proposed IA:\n  1. Getting Started (auth, keys, rate limits)\n  2. Users & Teams (CRUD, roles)\n  3. Billing (plans, invoices)\n  4. Webhooks (setup, verification)\n  5. Error Reference\n\nTask-oriented, not endpoint-oriented. Thoughts?"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Move Webhooks before Billing — teams set up webhooks first in onboarding."}] },
-    { delay: 1000, actions: [{"type":"msg","role":"agent","label":"agent","text":"Done. Webhooks now section 3. Outline reviewer validated: no orphaned sections, progressive disclosure."}, {"type":"updateCard","stage":"outline","name":"ia-design","status":"completed"}, {"type":"file","path":".haiku/intents/rewrite-api-reference-docs/knowledge/DOCUMENT-OUTLINE.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Outline complete. Review gate: ask."}, {"type":"showReview","title":"Outline","intent":"rewrite-api-reference-docs","criteria":["Clear hierarchy with max 3 levels of nesting","Each section has a purpose statement","Task-oriented architecture follows onboarding flow"]}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 1800, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"draft"}, {"type":"msg","role":"agent","label":"agent","text":"Entering draft stage. Hat: writer."}, {"type":"file","path":".haiku/intents/rewrite-api-reference-docs/stages/draft/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → outline/document-outline (knowledge/DOCUMENT-OUTLINE.md)"}, {"type":"card","stage":"draft","name":"getting-started","status":"in-progress"}, {"type":"card","stage":"draft","name":"users-teams","status":""}, {"type":"card","stage":"draft","name":"webhooks","status":""}, {"type":"card","stage":"draft","name":"billing","status":""}, {"type":"card","stage":"draft","name":"error-reference","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"45"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Getting Started drafted. Code examples in cURL, Python, Node.js."}, {"type":"updateCard","stage":"draft","name":"getting-started","status":"completed"}, {"type":"updateCard","stage":"draft","name":"users-teams","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: technical-reviewer. Found discrepancy — OpenAPI says invite returns 201, actual API returns 200. Which is correct?"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"API returns 200. Known bug, not fixing. Document actual behavior."}, {"type":"updateCard","stage":"draft","name":"users-teams","status":"completed"}, {"type":"updateCard","stage":"draft","name":"webhooks","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"60"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 sections drafted. 47 endpoints with code examples, error codes, troubleshooting. Technical reviewer verified against running API."}, {"type":"updateCard","stage":"draft","name":"webhooks","status":"completed"}, {"type":"updateCard","stage":"draft","name":"billing","status":"completed"}, {"type":"updateCard","stage":"draft","name":"error-reference","status":"completed"}, {"type":"file","path":".haiku/intents/rewrite-api-reference-docs/knowledge/DRAFT-DOCUMENTATION.md"}, {"type":"file","path":"docs/api/getting-started.md"}, {"type":"file","path":"docs/api/users-teams.md"}, {"type":"file","path":"docs/api/webhooks.md"}, {"type":"file","path":"docs/api/billing.md"}, {"type":"file","path":"docs/api/error-reference.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Draft complete. Review gate: ask."}, {"type":"showReview","title":"Draft","intent":"rewrite-api-reference-docs","criteria":["Every code example is syntactically valid and tested","All 47 endpoints documented with error codes","Technical reviewer verified against running API"]}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 1800, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. The code examples are excellent."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"review"}, {"type":"msg","role":"agent","label":"agent","text":"Entering review stage. Hat: editor."}, {"type":"file","path":".haiku/intents/rewrite-api-reference-docs/stages/review/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → draft/draft-documentation (knowledge/DRAFT-DOCUMENTATION.md)"}, {"type":"card","stage":"review","name":"editorial","status":"in-progress"}, {"type":"card","stage":"review","name":"consistency","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: subject-matter-expert. Found 4 issues:\n  1. Major: Webhook examples use SHA-1 but API uses SHA-256\n  2. Minor: Inconsistent \"API key\" vs \"api key\" capitalization\n  3. Minor: Billing section uses passive voice\n  4. Info: Getting Started should link to SDK libraries\n\nConsistency check passed. All links resolve."}, {"type":"updateCard","stage":"review","name":"editorial","status":"completed"}, {"type":"updateCard","stage":"review","name":"consistency","status":"completed"}, {"type":"file","path":".haiku/intents/rewrite-api-reference-docs/knowledge/REVIEW-REPORT.md"}] },
-    { delay: 1000, actions: [{"type":"msg","role":"system","label":"system","text":"Review complete. Review gate: ask."}, {"type":"showReview","title":"Review","intent":"rewrite-api-reference-docs","criteria":["Technical claims verified against source code","Terminology consistent with project glossary","SHA-256 verified for webhook examples"]}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 1800, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"user","label":"you","text":"Approved. The SHA-1 catch was critical."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"publish"}, {"type":"msg","role":"agent","label":"agent","text":"Entering publish stage. Hat: publisher."}, {"type":"file","path":".haiku/intents/rewrite-api-reference-docs/stages/publish/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → draft/draft-documentation, review/review-report"}, {"type":"card","stage":"publish","name":"finalize","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"All findings addressed: SHA-256 corrected, capitalization standardized, active voice, SDK links added. Links validated. Accuracy review agent passed. Tagging as v2.0.0."}, {"type":"updateCard","stage":"publish","name":"finalize","status":"completed"}, {"type":"file","path":"docs/api/CHANGELOG.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Publish complete. Review gate: auto. All criteria met — advancing."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for rewrite-api-reference-docs.\n\nDelivered:\n  • Audit: 16 undocumented, 8 outdated, 12 missing error codes\n  • Task-oriented IA (5 sections, reordered per onboarding flow)\n  • 47 endpoints documented with code examples in 3 languages\n  • Editorial review with SHA-256 correction and consistency fixes\n  • Published as v2.0.0 with validated links and metadata\n\nIntent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "documentation",
+	studio: "documentation",
+	stages: ["audit", "outline", "draft", "review", "publish"],
+	completionText: "All 5 stages passed. rewrite-api-reference-docs delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Rewrite the API reference docs",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: rewrite-api-reference-docs...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/rewrite-api-reference-docs/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: documentation. 5 stages: audit → outline → draft → review → publish",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "audit" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering audit stage. Hat: auditor.\nWhere are your current API docs? What’s the source of truth — OpenAPI spec, code annotations?",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/rewrite-api-reference-docs/stages/audit/state.json",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Docs in /docs/api/. Source of truth is openapi.yaml. But months out of date.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "I’ll diff the spec against existing docs.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/rewrite-api-reference-docs/stages/audit/units/unit-01-inventory.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/rewrite-api-reference-docs/stages/audit/units/unit-02-gap-analysis.md",
+				},
+				{
+					type: "card",
+					stage: "audit",
+					name: "inventory",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "audit", name: "gap-analysis", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: gap-analyst. 47 endpoints in spec, docs cover 31.\n  • 16 undocumented (mostly v2)\n  • 8 outdated schemas\n  • 12 missing error codes\n  • 0 working code examples\nPriority: auth endpoints (most tickets), billing (revenue), then CRUD.",
+				},
+				{
+					type: "updateCard",
+					stage: "audit",
+					name: "inventory",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "audit",
+					name: "gap-analysis",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/rewrite-api-reference-docs/knowledge/AUDIT-REPORT.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Audit complete. Review gate: auto. All criteria met — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "outline" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering outline stage. Hat: architect.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/rewrite-api-reference-docs/stages/outline/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → audit/audit-report (knowledge/AUDIT-REPORT.md)",
+				},
+				{
+					type: "card",
+					stage: "outline",
+					name: "ia-design",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Proposed IA:\n  1. Getting Started (auth, keys, rate limits)\n  2. Users & Teams (CRUD, roles)\n  3. Billing (plans, invoices)\n  4. Webhooks (setup, verification)\n  5. Error Reference\n\nTask-oriented, not endpoint-oriented. Thoughts?",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Move Webhooks before Billing — teams set up webhooks first in onboarding.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Done. Webhooks now section 3. Outline reviewer validated: no orphaned sections, progressive disclosure.",
+				},
+				{
+					type: "updateCard",
+					stage: "outline",
+					name: "ia-design",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/rewrite-api-reference-docs/knowledge/DOCUMENT-OUTLINE.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Outline complete. Review gate: ask.",
+				},
+				{
+					type: "showReview",
+					title: "Outline",
+					intent: "rewrite-api-reference-docs",
+					criteria: [
+						"Clear hierarchy with max 3 levels of nesting",
+						"Each section has a purpose statement",
+						"Task-oriented architecture follows onboarding flow",
+					],
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 1800, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{ type: "msg", role: "user", label: "you", text: "Approved." },
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "draft" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering draft stage. Hat: writer.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/rewrite-api-reference-docs/stages/draft/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → outline/document-outline (knowledge/DOCUMENT-OUTLINE.md)",
+				},
+				{
+					type: "card",
+					stage: "draft",
+					name: "getting-started",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "draft", name: "users-teams", status: "" },
+				{ type: "card", stage: "draft", name: "webhooks", status: "" },
+				{ type: "card", stage: "draft", name: "billing", status: "" },
+				{ type: "card", stage: "draft", name: "error-reference", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "45" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Getting Started drafted. Code examples in cURL, Python, Node.js.",
+				},
+				{
+					type: "updateCard",
+					stage: "draft",
+					name: "getting-started",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "draft",
+					name: "users-teams",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: technical-reviewer. Found discrepancy — OpenAPI says invite returns 201, actual API returns 200. Which is correct?",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "API returns 200. Known bug, not fixing. Document actual behavior.",
+				},
+				{
+					type: "updateCard",
+					stage: "draft",
+					name: "users-teams",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "draft",
+					name: "webhooks",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "60" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 sections drafted. 47 endpoints with code examples, error codes, troubleshooting. Technical reviewer verified against running API.",
+				},
+				{
+					type: "updateCard",
+					stage: "draft",
+					name: "webhooks",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "draft",
+					name: "billing",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "draft",
+					name: "error-reference",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/rewrite-api-reference-docs/knowledge/DRAFT-DOCUMENTATION.md",
+				},
+				{ type: "file", path: "docs/api/getting-started.md" },
+				{ type: "file", path: "docs/api/users-teams.md" },
+				{ type: "file", path: "docs/api/webhooks.md" },
+				{ type: "file", path: "docs/api/billing.md" },
+				{ type: "file", path: "docs/api/error-reference.md" },
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Draft complete. Review gate: ask.",
+				},
+				{
+					type: "showReview",
+					title: "Draft",
+					intent: "rewrite-api-reference-docs",
+					criteria: [
+						"Every code example is syntactically valid and tested",
+						"All 47 endpoints documented with error codes",
+						"Technical reviewer verified against running API",
+					],
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 1800, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. The code examples are excellent.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "review" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering review stage. Hat: editor.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/rewrite-api-reference-docs/stages/review/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → draft/draft-documentation (knowledge/DRAFT-DOCUMENTATION.md)",
+				},
+				{
+					type: "card",
+					stage: "review",
+					name: "editorial",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "review", name: "consistency", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: 'Hat: subject-matter-expert. Found 4 issues:\n  1. Major: Webhook examples use SHA-1 but API uses SHA-256\n  2. Minor: Inconsistent "API key" vs "api key" capitalization\n  3. Minor: Billing section uses passive voice\n  4. Info: Getting Started should link to SDK libraries\n\nConsistency check passed. All links resolve.',
+				},
+				{
+					type: "updateCard",
+					stage: "review",
+					name: "editorial",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "review",
+					name: "consistency",
+					status: "completed",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/rewrite-api-reference-docs/knowledge/REVIEW-REPORT.md",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Review complete. Review gate: ask.",
+				},
+				{
+					type: "showReview",
+					title: "Review",
+					intent: "rewrite-api-reference-docs",
+					criteria: [
+						"Technical claims verified against source code",
+						"Terminology consistent with project glossary",
+						"SHA-256 verified for webhook examples",
+					],
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 1800, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. The SHA-1 catch was critical.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "publish" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering publish stage. Hat: publisher.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/rewrite-api-reference-docs/stages/publish/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → draft/draft-documentation, review/review-report",
+				},
+				{
+					type: "card",
+					stage: "publish",
+					name: "finalize",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All findings addressed: SHA-256 corrected, capitalization standardized, active voice, SDK links added. Links validated. Accuracy review agent passed. Tagging as v2.0.0.",
+				},
+				{
+					type: "updateCard",
+					stage: "publish",
+					name: "finalize",
+					status: "completed",
+				},
+				{ type: "file", path: "docs/api/CHANGELOG.md" },
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Publish complete. Review gate: auto. All criteria met — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for rewrite-api-reference-docs.\n\nDelivered:\n  • Audit: 16 undocumented, 8 outdated, 12 missing error codes\n  • Task-oriented IA (5 sections, reordered per onboarding flow)\n  • 47 endpoints documented with code examples in 3 languages\n  • Editorial review with SHA-256 correction and consistency fixes\n  • Published as v2.0.0 with validated links and metadata\n\nIntent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

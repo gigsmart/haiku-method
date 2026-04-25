@@ -1,0 +1,17 @@
+related:
+  - product-strategy
+  - sales
+  - marketing
+turns:
+  - role: user
+    text: "Q1 logo churn spiked 40%. Build me a playbook to stop the bleeding."
+  - role: agent
+    text: "Do we know which segment is churning — SMB, mid-market, enterprise?"
+  - role: user
+    text: "Mid-market, mostly 50-200 seat accounts that signed up in Q3."
+  - role: agent
+    text: "Is there a common failure pattern — onboarding gap, feature mismatch, price objection?"
+  - role: user
+    text: "Onboarding. They never got past the workspace setup."
+  - role: agent
+    text: "Got it — the playbook will focus on the Q3 mid-market cohort and onboarding recovery."

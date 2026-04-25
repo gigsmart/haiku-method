@@ -2,6 +2,7 @@
 name: production
 description: Content and systems at scale
 hats: [gameplay-engineer, content-author, systems-designer, reviewer]
+fix_hats: [gameplay-engineer, feedback-assessor]
 review: [external, ask]
 elaboration: collaborative
 inputs:
@@ -21,9 +22,3 @@ should not be adding new core mechanics.
 
 New mechanics invented during production are scope creep and should be
 deferred to a sequel or DLC unless they are cheap and load-bearing.
-
-## Completion Signal (RFC 2119)
-
-All systems from the design **MUST** be implemented. Content **MUST** meet
-the scope defined in concept. The build **MUST** be in a buildable,
-playable-end-to-end state suitable for polish.

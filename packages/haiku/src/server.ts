@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process"
-import { readFile, readdir } from "node:fs/promises"
+import { readFile } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
 import { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
@@ -17,7 +17,13 @@ import {
 	startUpdateChecker,
 	stopUpdateChecker,
 } from "./auto-update.js"
-import { getActualPort, startHttpServer } from "./http.js"
+import { stripWildcardAllowedOrigins } from "./config.js"
+import { ensureOnStageBranch } from "./git-worktree.js"
+import {
+	closeSessionConnection,
+	startHttpServer,
+	stopHttpServer,
+} from "./http.js"
 import {
 	buildDAG,
 	parseAllUnits,
@@ -35,30 +41,34 @@ import {
 	reportError,
 	reportFeedback,
 } from "./sentry.js"
-import {
-	clearHeartbeat,
-	createDesignDirectionSession,
-	createQuestionSession,
-	createSession,
-	getPreviousReviewSnapshot,
-	getSession,
-	hasPresenceLost,
-	waitForSession,
-} from "./sessions.js"
 import type {
 	DesignArchetypeData,
 	DesignParameterData,
 	QuestionDef,
 } from "./sessions.js"
 import {
+	clearHeartbeat,
+	createDesignDirectionSession,
+	createQuestionSession,
+	createSession,
+	deleteSession,
+	getPreviousReviewSnapshot,
+	getSession,
+	hasPresenceLost,
+	waitForSession,
+} from "./sessions.js"
+import {
 	findHaikuRoot,
+	intentDir,
+	intentFromCurrentBranch,
+	listVisibleIntents,
 	parseFrontmatter,
 	readJson,
 	stageStatePath,
 	writeJson,
 } from "./state-tools.js"
 import { renderDesignDirectionPage } from "./templates/design-direction.js"
-import { type MockupInfo, renderReviewPage } from "./templates/index.js"
+import { renderReviewPage } from "./templates/index.js"
 import { renderQuestionPage } from "./templates/question-form.js"
 import {
 	buildReviewUrl,
@@ -187,6 +197,55 @@ if (!isClaudeCode()) {
 	const caps = getCapabilities()
 	if (caps.mcpPrompts) {
 		registerSkillPrompts()
+	}
+}
+
+/**
+ * Launch the OS default browser at `url`. Best-effort — a failure HERE
+ * never advances a review gate on its own (the caller still `await`s
+ * `waitForSession` which either hears a real decision or times out),
+ * but we log loudly so the reviewer has a visible URL they can paste
+ * manually. The previous implementation swallowed all three failure
+ * modes (sync throw, async 'error', non-zero exit) silently, which
+ * left the FSM "waiting quietly" with no UI hint anywhere.
+ *
+ * `label` lands in log lines so operators can tell which surface
+ * tried to open — review gate, question, direction, or the always-on
+ * review pane.
+ */
+function launchBrowserBestEffort(url: string, label: string): void {
+	console.error(
+		`[haiku] ${label} ready → ${url}\n` +
+			`         Share this URL with the reviewer if the browser didn't auto-open.`,
+	)
+	const cmd = process.platform === "darwin" ? ["open", url] : ["xdg-open", url]
+	try {
+		const child = spawn(cmd[0], cmd.slice(1), {
+			stdio: "ignore",
+			detached: true,
+		})
+		child.unref()
+		child.on("error", (err) => {
+			console.error(
+				`[haiku] Browser launcher ${cmd[0]} failed: ${err.message}. Paste ${url} into a browser to continue.`,
+			)
+		})
+		child.on("exit", (code, signal) => {
+			if (code !== null && code !== 0) {
+				console.error(
+					`[haiku] Browser launcher ${cmd[0]} exited with code ${code}. Paste ${url} into a browser to continue.`,
+				)
+			}
+			if (signal) {
+				console.error(
+					`[haiku] Browser launcher ${cmd[0]} terminated by signal ${signal}. Paste ${url} into a browser to continue.`,
+				)
+			}
+		})
+	} catch (err) {
+		console.error(
+			`[haiku] Browser launcher threw synchronously: ${err instanceof Error ? err.message : String(err)}. Paste ${url} into a browser to continue.`,
+		)
 	}
 }
 
@@ -362,9 +421,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 			},
 		},
 		{
-			name: "haiku_feedback",
+			name: "haiku_report",
 			description:
-				"Submit user feedback or a bug report to the H·AI·K·U team via Sentry. " +
+				"Submit a bug report or feedback to the H·AI·K·U team via Sentry. " +
 				"Use this when a user wants to report an issue, suggest an improvement, or share feedback.",
 			inputSchema: {
 				type: "object" as const,
@@ -416,8 +475,72 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 })
 
 // Call tools — wrapped to trigger hot-swap after response when an update is staged
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-	const result = await handleToolCall(request)
+server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+	let result: Awaited<ReturnType<typeof handleToolCall>>
+	try {
+		result = await handleToolCall(request, extra?.signal)
+	} catch (err) {
+		// User cancellation is not a crash — when Claude Code escapes a
+		// tool call it fires `notifications/cancelled`, the SDK aborts
+		// the signal, and the handler throws out. That's a normal
+		// lifecycle event; don't spam Sentry with it and don't write a
+		// crash file. Just rethrow so the SDK can suppress the response.
+		if (extra?.signal?.aborted) {
+			throw err
+		}
+		// The MCP SDK's request dispatch catches thrown errors and returns
+		// them as JSON-RPC InternalError responses, which means they never
+		// reach main().catch — and therefore never hit Sentry. Report here
+		// so handled-but-thrown tool crashes still get captured alongside
+		// the session context the PreToolUse hook injects on every call.
+		const toolName = request.params?.name ?? "<unknown>"
+		const args = (request.params?.arguments ?? {}) as Record<string, unknown>
+		const sessionCtx = args._session_context as
+			| Record<string, string>
+			| undefined
+
+		// Diagnostic: write a local crash file regardless of Sentry state,
+		// so operators can prove whether the wrapper even fired and inspect
+		// the stack without needing dashboard access.
+		try {
+			const { appendFileSync } = await import("node:fs")
+			const stamp = new Date().toISOString()
+			const stack =
+				err instanceof Error ? err.stack || err.message : String(err)
+			appendFileSync(
+				"/tmp/haiku-mcp-crashes.log",
+				`\n--- ${stamp} tool=${toolName} ---\n${stack}\n`,
+			)
+		} catch {
+			/* diagnostic write best-effort */
+		}
+
+		reportError(
+			err,
+			{
+				context: "mcp-tool-handler",
+				tool_name: toolName,
+				// Intentionally omit args — they may carry sensitive payloads
+				// (source_ref URLs, feedback bodies). The stack + tool name is
+				// enough to locate the crash.
+			},
+			sessionCtx,
+		)
+		// Sentry's HTTP transport is fire-and-forget; force a short flush so
+		// long-running processes don't drop events when the handler returns
+		// before the transport actually ships the envelope.
+		try {
+			const { flush } = await import("./sentry.js")
+			await flush(1000)
+		} catch {
+			/* flush best-effort */
+		}
+		console.error(
+			`[haiku] Tool handler '${toolName}' threw:`,
+			err instanceof Error ? err.stack || err.message : String(err),
+		)
+		throw err
+	}
 
 	// After the response is written, check if we should yield to a new binary.
 	// setImmediate ensures the MCP SDK flushes the response first.
@@ -437,9 +560,62 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	return result
 })
 
-async function handleToolCall(request: {
-	params: { name: string; arguments?: Record<string, unknown> }
-}) {
+/**
+ * Close the session's WebSocket when the given AbortSignal fires.
+ * Used by every tool handler that creates an interactive session so
+ * the SPA sees an immediate `SessionEndedOverlay` if the user cancels
+ * the originating MCP tool call.
+ */
+const SESSION_CANCEL_LOG = "/tmp/haiku-session-cancel.log"
+
+function logCancel(msg: string): void {
+	try {
+		const { appendFileSync } = require("node:fs") as typeof import("node:fs")
+		appendFileSync(SESSION_CANCEL_LOG, `${new Date().toISOString()} ${msg}\n`)
+	} catch {
+		/* best-effort — don't crash the tool handler over a log write */
+	}
+	process.stderr.write(`[haiku-mcp] ${msg}\n`)
+}
+
+function bindSessionCancellation(
+	sessionId: string,
+	signal: AbortSignal | undefined,
+): void {
+	if (!signal) {
+		logCancel(
+			`bindSessionCancellation(${sessionId}): no signal passed — cancel will not fire`,
+		)
+		return
+	}
+	logCancel(
+		`bindSessionCancellation(${sessionId}): signal attached, aborted=${signal.aborted}`,
+	)
+	if (signal.aborted) {
+		logCancel(
+			`bindSessionCancellation(${sessionId}): signal was already aborted, closing immediately`,
+		)
+		closeSessionConnection(sessionId, "tool call cancelled")
+		return
+	}
+	signal.addEventListener(
+		"abort",
+		() => {
+			logCancel(
+				`abort fired for session ${sessionId} — closing WS (reason: ${signal.reason})`,
+			)
+			closeSessionConnection(sessionId, "tool call cancelled")
+		},
+		{ once: true },
+	)
+}
+
+async function handleToolCall(
+	request: {
+		params: { name: string; arguments?: Record<string, unknown> }
+	},
+	signal?: AbortSignal,
+) {
 	const { name, arguments: args } = request.params
 
 	// Orchestration tools (async — gate_ask blocks until user reviews)
@@ -452,11 +628,15 @@ async function handleToolCall(request: {
 		name === "haiku_intent_archive" ||
 		name === "haiku_intent_unarchive"
 	) {
-		return handleOrchestratorTool(name, (args ?? {}) as Record<string, unknown>)
+		return handleOrchestratorTool(
+			name,
+			(args ?? {}) as Record<string, unknown>,
+			signal,
+		)
 	}
 
-	// Feedback tool — submit user feedback to Sentry
-	if (name === "haiku_feedback") {
+	// Report tool — submit user feedback/bug reports to Sentry
+	if (name === "haiku_report") {
 		if (!isSentryConfigured()) {
 			return {
 				content: [
@@ -487,6 +667,208 @@ async function handleToolCall(request: {
 			content: [
 				{ type: "text" as const, text: "Feedback submitted. Thank you!" },
 			],
+		}
+	}
+
+	// Ad-hoc review pane — create a fresh session-scoped review bound to
+	// the active intent + stage, open the browser, return the URL. Does
+	// NOT block the tool call; does NOT call run_next. The session lives
+	// until the usual TTL / presence sweep evicts it. Feedback the
+	// reviewer leaves routes through the normal feedback API; the FSM
+	// picks it up via run_next's fix-loop/revisit path.
+	if (name === "haiku_review_open") {
+		const a = (args ?? {}) as Record<string, unknown>
+		let slug = (a.intent as string) || ""
+		if (!slug) {
+			const branchMatch = intentFromCurrentBranch()
+			if (branchMatch) {
+				slug = branchMatch.slug
+			} else {
+				const root = findHaikuRoot()
+				const intentsDir = join(root, "intents")
+				const active = listVisibleIntents(intentsDir).filter(
+					(i) => (i.data.status as string) !== "completed",
+				)
+				if (active.length === 1) {
+					slug = active[0].slug
+				} else if (active.length === 0) {
+					return {
+						content: [
+							{
+								type: "text" as const,
+								text: "No active intents found. Start one with /haiku:start, or pass `intent` explicitly.",
+							},
+						],
+						isError: true,
+					}
+				} else {
+					return {
+						content: [
+							{
+								type: "text" as const,
+								text: `Multiple active intents (${active.map((i) => i.slug).join(", ")}). Pass \`intent\` explicitly, or checkout an intent branch so the tool can auto-resolve.`,
+							},
+						],
+						isError: true,
+					}
+				}
+			}
+		}
+
+		const intentDirAbs = intentDir(slug)
+		const intent = await parseIntent(intentDirAbs)
+		if (!intent) {
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Could not parse intent "${slug}" — .haiku/intents/${slug}/intent.md missing or malformed.`,
+					},
+				],
+				isError: true,
+			}
+		}
+
+		const stageArg = (a.stage as string) || ""
+		const frontmatter = intent.frontmatter as unknown as Record<string, unknown>
+		const activeStage =
+			stageArg || ((frontmatter.active_stage as string | undefined) ?? "")
+
+		const units = await parseAllUnits(intentDirAbs)
+		const dag = buildDAG(units)
+		const mermaid = toMermaidDefinition(dag, units)
+		const criteriaSection = intent.sections.find(
+			(s) =>
+				s.heading?.toLowerCase().includes("completion criteria") ||
+				s.heading?.toLowerCase().includes("success criteria"),
+		)
+		const criteria = criteriaSection
+			? parseCriteria(criteriaSection.content)
+			: []
+
+		const session = createSession({
+			intent_dir: intentDirAbs,
+			intent_slug: slug,
+			review_type: "intent",
+			target: "",
+			html: "",
+		})
+		session.ad_hoc = true
+		session.stage = activeStage || undefined
+
+		Object.assign(session, {
+			parsedIntent: intent,
+			parsedUnits: units,
+			parsedCriteria: criteria,
+			parsedMermaid: mermaid,
+		})
+
+		const stageStates = await parseStageStates(intentDirAbs)
+		const knowledgeFiles = await parseKnowledgeFiles(intentDirAbs)
+		const stageArtifacts = await parseStageArtifacts(intentDirAbs)
+		const outputArtifacts = await parseOutputArtifacts(intentDirAbs)
+		for (const oa of outputArtifacts) {
+			if (oa.type === "image" && oa.relativePath) {
+				oa.relativePath = `/stage-artifacts/${session.session_id}/stages/${oa.relativePath}`
+			}
+		}
+		Object.assign(session, {
+			stageStates,
+			knowledgeFiles,
+			stageArtifacts,
+			outputArtifacts,
+		})
+
+		session.html = renderReviewPage({
+			intent,
+			units,
+			criteria,
+			reviewType: "intent",
+			target: "",
+			sessionId: session.session_id,
+			mermaid,
+			intentMockups: [],
+			unitMockups: new Map(),
+		})
+
+		const port = await startHttpServer()
+		const base = isRemoteReviewEnabled()
+			? buildReviewUrl(session.session_id, await openTunnel(port), "intent")
+			: `http://127.0.0.1:${port}/review/${session.session_id}`
+		const stageSuffix = activeStage ? `/stages/${activeStage}` : ""
+		const reviewUrl = `${base}${stageSuffix}`
+
+		bindSessionCancellation(session.session_id, signal)
+
+		launchBrowserBestEffort(reviewUrl, "Ad-hoc review")
+
+		// Block until the reviewer hits Done or Request Changes (or the
+		// pane times out). The UI posts a decide frame with decision set
+		// to "approved" (Done) or "changes_requested" (Request Changes),
+		// which flips session.status to "decided" and wakes
+		// waitForSession. The tool return then relays a concrete
+		// instruction to the agent so run_next / revisit is the obvious
+		// next step, not a guess.
+		try {
+			while (true) {
+				let timedOut = false
+				try {
+					await waitForSession(session.session_id, 30 * 60 * 1000, signal)
+				} catch (err) {
+					if (signal?.aborted) throw err
+					timedOut = true
+				}
+
+				const updated = getSession(session.session_id)
+				if (
+					updated &&
+					updated.session_type === "review" &&
+					updated.status === "decided"
+				) {
+					if (updated.decision === "changes_requested") {
+						return {
+							content: [
+								{
+									type: "text" as const,
+									text: `Ad-hoc review closed with Request Changes on stage "${activeStage || "(unspecified)"}". Pending feedback is already persisted on disk — call \`haiku_run_next\` to route it through the normal fix-loop / revisit path.`,
+								},
+							],
+						}
+					}
+					return {
+						content: [
+							{
+								type: "text" as const,
+								text: `Ad-hoc review closed with Done — no changes requested. No FSM action needed.`,
+							},
+						],
+					}
+				}
+
+				if (timedOut) break
+				if (hasPresenceLost(session.session_id)) {
+					console.error(
+						`[haiku] Ad-hoc review ${session.session_id} lost presence — continuing to wait (no reopen)`,
+					)
+				}
+			}
+
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: `Ad-hoc review pane at ${reviewUrl} timed out after 30 minutes without a Done or Request Changes click. Any feedback the reviewer typed is still persisted on disk; the next \`haiku_run_next\` will see it if present.`,
+					},
+				],
+			}
+		} finally {
+			closeSessionConnection(session.session_id, "ad-hoc review closed")
+			clearHeartbeat(session.session_id)
+			if (isRemoteReviewEnabled()) {
+				clearE2EKey(session.session_id)
+				closeTunnel()
+			}
+			deleteSession(session.session_id)
 		}
 	}
 
@@ -529,6 +911,7 @@ async function handleToolCall(request: {
 			imageBaseDirs,
 			html: "",
 		})
+		bindSessionCancellation(session.session_id, signal)
 
 		// Build image URLs for the template (served via /question-image/:sessionId/:index)
 		const imageUrls = imagePaths.map(
@@ -554,21 +937,12 @@ async function handleToolCall(request: {
 			questionUrl = `http://127.0.0.1:${port}/question/${session.session_id}`
 		}
 
-		// Open browser
-		try {
-			const cmd =
-				process.platform === "darwin"
-					? ["open", questionUrl]
-					: ["xdg-open", questionUrl]
-			spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
-		} catch (err) {
-			console.error("Failed to open browser:", err)
-		}
+		launchBrowserBestEffort(questionUrl, "Question session")
 
 		// Block until the user submits their answers (event-based, no polling)
 		const MAX_WAIT_Q = 30 * 60 * 1000 // 30 minutes
 		try {
-			await waitForSession(session.session_id, MAX_WAIT_Q)
+			await waitForSession(session.session_id, MAX_WAIT_Q, signal)
 		} catch {
 			return {
 				content: [
@@ -684,6 +1058,7 @@ async function handleToolCall(request: {
 			parameters,
 			html: "",
 		})
+		bindSessionCancellation(session.session_id, signal)
 
 		// Render HTML
 		session.html = renderDesignDirectionPage({
@@ -703,21 +1078,12 @@ async function handleToolCall(request: {
 			directionUrl = `http://127.0.0.1:${port}/direction/${session.session_id}`
 		}
 
-		// Open browser
-		try {
-			const cmd =
-				process.platform === "darwin"
-					? ["open", directionUrl]
-					: ["xdg-open", directionUrl]
-			spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
-		} catch (err) {
-			console.error("Failed to open browser:", err)
-		}
+		launchBrowserBestEffort(directionUrl, "Direction session")
 
 		// Block until the user submits their selection (event-based, no polling)
 		const MAX_WAIT_DD = 30 * 60 * 1000 // 30 minutes
 		try {
-			await waitForSession(session.session_id, MAX_WAIT_DD)
+			await waitForSession(session.session_id, MAX_WAIT_DD, signal)
 		} catch {
 			return {
 				content: [
@@ -755,6 +1121,18 @@ async function handleToolCall(request: {
 				const intentFm = parseFrontmatter(intentRaw)
 				const activeStage = (intentFm.data.active_stage as string) || ""
 				if (activeStage) {
+					// Re-enforce stage branch after the (up to 30-min) wait —
+					// the user may have checked out another branch during the
+					// design-direction selection. Without this, the stage-state
+					// write below would land on whatever branch is current.
+					const guard = ensureOnStageBranch(input.intent_slug, activeStage)
+					if (!guard.ok) {
+						// Non-fatal: log via throw so the outer catch records it,
+						// and the orchestrator flag will need manual set.
+						throw new Error(
+							`stage-branch enforcement failed after design-direction wait: ${guard.message}`,
+						)
+					}
 					const ssPath = stageStatePath(input.intent_slug, activeStage)
 					const ssData = readJson(ssPath)
 					ssData.design_direction_selected = true
@@ -817,7 +1195,12 @@ async function handleToolCall(request: {
 // This lets haiku_run_next open a review and block until the user decides,
 // without the agent needing to call open_review separately.
 setOpenReviewHandler(
-	async (intentDirRel: string, reviewType: string, gateType?: string) => {
+	async (
+		intentDirRel: string,
+		reviewType: string,
+		gateType?: string,
+		signal?: AbortSignal,
+	) => {
 		const intentDirAbs = resolve(process.cwd(), intentDirRel)
 		const intent = await parseIntent(intentDirAbs)
 		if (!intent) throw new Error("Could not parse intent")
@@ -842,6 +1225,7 @@ setOpenReviewHandler(
 			target: "",
 			html: "",
 		})
+		bindSessionCancellation(session.session_id, signal)
 
 		// Store parsed data on session for the SPA
 		Object.assign(session, {
@@ -901,86 +1285,88 @@ setOpenReviewHandler(
 			reviewUrl = `http://127.0.0.1:${port}/review/${session.session_id}`
 		}
 
-		function openBrowser(url?: string) {
-			try {
-				const target = url ?? reviewUrl
-				const cmd =
-					process.platform === "darwin"
-						? ["open", target]
-						: ["xdg-open", target]
-				spawn(cmd[0], cmd.slice(1), { stdio: "ignore", detached: true }).unref()
-			} catch {
-				/* */
-			}
-		}
+		launchBrowserBestEffort(reviewUrl, "Review gate")
 
-		openBrowser()
-
-		// Single 30-minute wait. NO browser re-opens.
-		//
-		// The previous retry loop spawned a fresh browser tab on every
-		// presence-lost wakeup AND on every attempt timeout. Modern browsers
-		// throttle setInterval in backgrounded tabs, so a user who had the
-		// review tab open but switched windows would hit spurious
-		// presence-lost events and see brand-new tabs pop up, overwriting
-		// their in-progress comments on the original (still-alive) tab.
-		//
-		// Recovery path: on timeout, throw — the caller in orchestrator.ts
-		// classifies review timeouts as agent-fixable and returns
-		// GATE BLOCKED. The agent's next haiku_run_next tick re-enters the
-		// review phase and creates a fresh session. No orphaned tabs.
-		while (true) {
-			let timedOut = false
-			try {
-				await waitForSession(session.session_id, 30 * 60 * 1000)
-			} catch {
-				timedOut = true
-			}
-
-			const updated = getSession(session.session_id)
-			if (
-				updated &&
-				updated.session_type === "review" &&
-				updated.status === "decided"
-			) {
-				clearHeartbeat(session.session_id)
-				if (useRemote) {
-					clearE2EKey(session.session_id)
-					closeTunnel()
+		// Close + evict the session as soon as this tool call exits,
+		// whether the user decided, we timed out, the agent cancelled,
+		// or the call threw. Anchored in try/finally so the WS tear-down
+		// is impossible to skip — otherwise stale sessions linger in the
+		// map and zombie tabs keep thinking they're live.
+		try {
+			// Single 30-minute wait. NO browser re-opens.
+			//
+			// The previous retry loop spawned a fresh browser tab on every
+			// presence-lost wakeup AND on every attempt timeout. Modern
+			// browsers throttle setInterval in backgrounded tabs, so a
+			// user who had the review tab open but switched windows would
+			// hit spurious presence-lost events and see brand-new tabs
+			// pop up, overwriting their in-progress comments on the
+			// original (still-alive) tab.
+			//
+			// Recovery path: on timeout, throw — the caller in
+			// orchestrator.ts classifies review timeouts as agent-fixable
+			// and returns GATE BLOCKED. The agent's next haiku_run_next
+			// tick re-enters the review phase and creates a fresh session.
+			// No orphaned tabs.
+			while (true) {
+				let timedOut = false
+				try {
+					await waitForSession(session.session_id, 30 * 60 * 1000, signal)
+				} catch (err) {
+					// Abort propagates here too — distinguish by checking the
+					// signal. If aborted, break out of the whole retry loop so
+					// the finally block can clean up promptly.
+					if (signal?.aborted) {
+						throw err
+					}
+					timedOut = true
 				}
-				return {
-					decision: updated.decision,
-					feedback: updated.feedback,
-					annotations: updated.annotations,
+
+				const updated = getSession(session.session_id)
+				if (
+					updated &&
+					updated.session_type === "review" &&
+					updated.status === "decided"
+				) {
+					return {
+						decision: updated.decision,
+						feedback: updated.feedback,
+						annotations: updated.annotations,
+					}
 				}
+
+				// Timeout check MUST come before presence-lost: once
+				// presenceLost contains the session ID it stays there
+				// across iterations, so checking presence-lost first
+				// would swallow every subsequent timeout.
+				if (timedOut) break
+
+				if (hasPresenceLost(session.session_id)) {
+					// Log but keep waiting. The tab may just be
+					// backgrounded and heartbeat-throttled; if genuinely
+					// closed, the timeout above will eventually fire.
+					console.error(
+						`[haiku] Review session ${session.session_id} lost presence — continuing to wait (no reopen)`,
+					)
+				}
+
+				// Presence-lost or spurious wakeup — loop again.
 			}
 
-			// Timeout check MUST come before presence-lost: once presenceLost
-			// contains the session ID it stays there across iterations (only
-			// recordHeartbeat or clearHeartbeat removes it), so checking
-			// presence-lost first would swallow every subsequent timeout.
-			if (timedOut) {
-				break
+			throw new Error("Review timeout after 30 minutes")
+		} finally {
+			// Drop the WebSocket first so any still-connected SPA tab
+			// transitions to the session-ended overlay, then remove the
+			// session from the registry so subsequent reloads 404 and
+			// render the overlay from their own fetch path.
+			closeSessionConnection(session.session_id, "tool call complete")
+			clearHeartbeat(session.session_id)
+			if (useRemote) {
+				clearE2EKey(session.session_id)
+				closeTunnel()
 			}
-
-			if (hasPresenceLost(session.session_id)) {
-				// Log but keep waiting. The tab may just be backgrounded and
-				// heartbeat-throttled; if genuinely closed, the timeout above
-				// will eventually fire and the caller can recover.
-				console.error(
-					`[haiku] Review session ${session.session_id} lost presence — continuing to wait (no reopen)`,
-				)
-			}
-
-			// Presence-lost or spurious wakeup — loop again.
+			deleteSession(session.session_id)
 		}
-
-		clearHeartbeat(session.session_id)
-		if (useRemote) {
-			clearE2EKey(session.session_id)
-			closeTunnel()
-		}
-		throw new Error("Review timeout after 30 minutes")
 	},
 )
 
@@ -991,6 +1377,12 @@ setElicitInputHandler(async (params) => {
 
 // Start server
 async function main() {
+	// FB-36: strip any `*` from HAIKU_REVIEW_ALLOWED_ORIGINS before the
+	// HTTP layer starts applying CORS. Wildcard CORS on this server is
+	// unsafe because the session-token-in-URL auth cannot defend against
+	// cross-origin abuse when any origin is accepted.
+	stripWildcardAllowedOrigins()
+
 	const transport = new StdioServerTransport()
 	await server.connect(transport)
 	const harnessInfo = isClaudeCode()
@@ -1003,20 +1395,55 @@ async function main() {
 }
 
 // Graceful shutdown
-process.on("SIGINT", async () => {
-	console.error("Shutting down...")
-	stopUpdateChecker()
-	await server.close()
-	await flushSentry()
-	process.exit(0)
+//
+// Order matters here:
+//   1. Stop the background update checker so it can't start new work.
+//   2. Close the MCP stdio `Server` so we stop accepting new MCP calls.
+//   3. Close the Fastify HTTP+WebSocket server so in-flight feedback/
+//      revisit/review requests get to finish and WS clients see a
+//      clean `1001 Going Away` (via `stopHttpServer` → per-session
+//      `closeSessionConnection`) instead of a TCP RST. Fastify's
+//      `close()` drains pending requests before releasing the socket.
+//   4. Flush Sentry so any errors surfaced during (2)/(3) get reported.
+//   5. `process.exit(0)`.
+//
+// We guard against a hung shutdown with a hard timeout — if any phase
+// stalls for more than SHUTDOWN_TIMEOUT_MS we fall back to a forced
+// exit rather than leaving the process wedged.
+const SHUTDOWN_TIMEOUT_MS = 10_000
+let shuttingDown = false
+async function gracefulShutdown(signal: string): Promise<void> {
+	if (shuttingDown) return
+	shuttingDown = true
+	console.error(`Shutting down (${signal})...`)
+	const hardExit = setTimeout(() => {
+		console.error(
+			`Graceful shutdown exceeded ${SHUTDOWN_TIMEOUT_MS}ms — forcing exit`,
+		)
+		process.exit(1)
+	}, SHUTDOWN_TIMEOUT_MS)
+	hardExit.unref()
+	try {
+		stopUpdateChecker()
+		await server.close()
+		await stopHttpServer()
+		await flushSentry()
+	} catch (err) {
+		console.error(
+			`Error during graceful shutdown: ${err instanceof Error ? err.message : String(err)}`,
+		)
+	} finally {
+		clearTimeout(hardExit)
+		process.exit(0)
+	}
+}
+
+process.on("SIGINT", () => {
+	void gracefulShutdown("SIGINT")
 })
 
-process.on("SIGTERM", async () => {
-	console.error("Shutting down...")
-	stopUpdateChecker()
-	await server.close()
-	await flushSentry()
-	process.exit(0)
+process.on("SIGTERM", () => {
+	void gracefulShutdown("SIGTERM")
 })
 
 // MCP server entry point — invoked by: haiku mcp

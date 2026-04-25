@@ -10,6 +10,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Hardware (`hwdev`) studio now uses [tscircuit](https://tscircuit.com) as its EDA platform. Design stage hats, outputs, and review agents have been updated so schematics and PCBs are authored as TypeScript/React (`.tsx`) circuit code, previewed with `tsci dev`, and exported to Gerbers / pick-and-place / BOM via the `tsci` CLI. The circuit source is now the canonical design artifact — committed manufacturing exports must regenerate from it.
 
+## [1.105.8] - 2026-04-24
+
+### Added
+- Conversation examples for each H·AI·K·U studio demonstrating how to apply the methodology across different domains and workflows.
+
+## [1.105.7] - 2026-04-24
+
+### Added
+- Programmatic feedback API with OpenAPI specification for integrating H·AI·K·U feedback with external systems and automating recovery workflows
+- Studio-level review agents that automatically enforce consistency across stages without manual intervention
+- Autonomous feedback assessor in every stage for independent closure decisions instead of manual sign-off
+- Standalone review UI package for independent deployment and flexible tool integration
+
+### Fixed
+- Tailwind v4 build compatibility and TypeScript compilation errors in CI pipeline
+
+## [1.105.6] - 2026-04-23
+
+### Fixed
+- Enhanced error observability throughout the orchestrator for improved debugging and diagnostics.
+- Hardened intent and unit metadata parsing to prevent edge-case processing failures.
+
+## [1.105.5] - 2026-04-22
+
+### Added
+- OpenTelemetry integration for comprehensive workflow observability
+- Authentication helpers for credential management
+
+### Fixed
+- Browse operations now recover gracefully from transient network failures
+
 ## [1.105.4] - 2026-04-16
 
 ### Fixed

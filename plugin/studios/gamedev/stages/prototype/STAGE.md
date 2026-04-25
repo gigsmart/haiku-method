@@ -2,6 +2,7 @@
 name: prototype
 description: Playable vertical slice that proves the fun before production
 hats: [prototype-engineer, game-designer, playtester]
+fix_hats: [prototype-engineer, feedback-assessor]
 review: [external, ask]
 elaboration: collaborative
 inputs:
@@ -19,10 +20,3 @@ is fun.
 
 The prototype is not meant to scale, look good, or be maintainable. It is
 meant to answer one question: does this work?
-
-## Completion Signal (RFC 2119)
-
-A playable prototype **MUST** exist demonstrating the core loop. Playtest
-sessions **MUST** be conducted with players outside the development team.
-The prototype **MUST** either validate the fun thesis or be iterated until it
-does — "I think it'll be fun once we add X" is not validation.

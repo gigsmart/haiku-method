@@ -1,0 +1,25 @@
+{
+	"session_id": "test-review-1",
+	"session_type": "review",
+	"status": "pending",
+	"intent_slug": "test-intent",
+	"intent_dir": "/tmp/haiku/test-intent",
+	"review_type": "intent",
+	"gate_type": "ask",
+	"target": "test-intent",
+	"intent": {
+		"slug": "test-intent",
+		"title": "Test Intent",
+		"frontmatter": { "status": "in_progress" },
+		"sections": []
+	},
+	"units": [],
+	"criteria": [],
+	"mermaid": "",
+	"intent_mockups": [],
+	"unit_mockups": {},
+	"stage_states": {},
+	"knowledge_files": [],
+	"stage_artifacts": [],
+	"output_artifacts": []
+}

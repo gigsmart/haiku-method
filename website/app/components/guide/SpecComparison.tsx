@@ -65,26 +65,30 @@ export function SpecComparison() {
 					better, but still a hand-off
 				</span>
 				<ul className="mb-4 flex-1 space-y-2 text-sm text-stone-500 dark:text-stone-400">
+					<li>Someone writes a detailed spec or PRD</li>
 					<li>
-						Someone writes a detailed spec or PRD
-					</li>
-					<li>
-						Spec is handed to an <strong className="text-stone-700 dark:text-stone-200">AI or developer</strong> to implement
+						Spec is handed to an{" "}
+						<strong className="text-stone-700 dark:text-stone-200">
+							AI or developer
+						</strong>{" "}
+						to implement
 					</li>
 					<li>
 						Implementer interprets the spec (fills in gaps with assumptions)
 					</li>
+					<li>Reviewer finds mismatches between intent and implementation</li>
 					<li>
-						Reviewer finds mismatches between intent and implementation
-					</li>
-					<li>
-						Back-and-forth to close the gap between what was meant and what was built
+						Back-and-forth to close the gap between what was meant and what was
+						built
 					</li>
 				</ul>
 				<div className="rounded-lg bg-amber-100/60 p-3 dark:bg-amber-900/20">
-					<strong className="text-amber-600 dark:text-amber-400">Problem:</strong>{" "}
+					<strong className="text-amber-600 dark:text-amber-400">
+						Problem:
+					</strong>{" "}
 					<span className="text-sm text-stone-500 dark:text-stone-400">
-						The spec writer and the implementer have different mental models. The hand-off creates gaps that only surface during review.
+						The spec writer and the implementer have different mental models.
+						The hand-off creates gaps that only surface during review.
 					</span>
 				</div>
 				<div className="mt-4 flex items-center justify-center gap-2 text-xs text-stone-400">
@@ -96,7 +100,9 @@ export function SpecComparison() {
 			{/* H·AI·K·U Elaboration */}
 			<div className="flex flex-col rounded-xl border border-green-200 bg-green-50/50 p-6 dark:border-green-800 dark:bg-green-950/10">
 				<span className="mb-3 block text-4xl">&#x1F3AF;</span>
-				<h3 className="mb-1 text-lg font-bold text-green-500">H·AI·K·U Elaboration</h3>
+				<h3 className="mb-1 text-lg font-bold text-green-500">
+					H·AI·K·U Elaboration
+				</h3>
 				<span className="mb-4 w-fit rounded-lg bg-green-100 px-2.5 py-0.5 text-[0.7rem] font-semibold text-green-500 dark:bg-green-900/30">
 					no hand-off — co-created
 				</span>
@@ -109,7 +115,8 @@ export function SpecComparison() {
 						— not a document tossed over a wall
 					</li>
 					<li>
-						AI explores your codebase, discovers the domain model, and asks clarifying questions — no interpretation gap
+						AI explores your codebase, discovers the domain model, and asks
+						clarifying questions — no interpretation gap
 					</li>
 					<li>
 						Success criteria are{" "}
@@ -136,7 +143,8 @@ export function SpecComparison() {
 				<div className="rounded-lg bg-green-100/60 p-3 dark:bg-green-900/20">
 					<strong className="text-green-500">Result:</strong>{" "}
 					<span className="text-sm text-stone-500 dark:text-stone-400">
-						No interpretation gap. The spec is a shared understanding, not a hand-off artifact. Clear criteria = autonomous AI.
+						No interpretation gap. The spec is a shared understanding, not a
+						hand-off artifact. Clear criteria = autonomous AI.
 					</span>
 				</div>
 				<div className="mt-4 flex items-center justify-center gap-2 text-xs text-stone-400">
@@ -225,7 +233,11 @@ function CriteriaPair({
 	variant,
 	text,
 	reason,
-}: { variant: "bad" | "good"; text: string; reason: string }) {
+}: {
+	variant: "bad" | "good"
+	text: string
+	reason: string
+}) {
 	return (
 		<div
 			className={`rounded-xl border p-5 ${

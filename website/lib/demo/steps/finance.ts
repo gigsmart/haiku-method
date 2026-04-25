@@ -1,72 +1,815 @@
 import type { DemoConfig } from "../types"
 
 export const config: DemoConfig = {
-  title: "finance",
-  studio: "finance",
-  stages: ["forecast", "budget", "analysis", "reporting", "close"],
-  completionText: "All 5 stages passed. q4-2026-financial-close delivered.",
-  steps: [
-    { delay: 800, actions: [{"type":"msg","role":"user","label":"you","text":"/haiku:start"}] },
-    { delay: 1200, actions: [{"type":"typing"}] },
-    { delay: 1000, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"What do you want to accomplish?"}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Q4 2026 financial close and reporting"}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Creating intent: q4-2026-financial-close..."}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/intent.md"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Intent created. Studio: finance. 5 stages: forecast → budget → analysis → reporting → close"}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"forecast"}, {"type":"msg","role":"agent","label":"agent","text":"Entering forecast stage. Hat: analyst.\nAnalyzing market conditions for Q4 revenue projections..."}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/forecast/state.json"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"What revenue streams should I model? I see SaaS subscriptions, professional services, and marketplace fees in your chart of accounts."}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Focus on SaaS and marketplace. Professional services is winding down — model it at 60% of Q3."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1200, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Got it. Building 3-scenario model: base, optimistic, pessimistic. Professional services at 60% Q3 baseline."}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/forecast/units/unit-01-market-analysis.md"}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/forecast/units/unit-02-revenue-projections.md"}, {"type":"card","stage":"forecast","name":"market-analysis","status":"in-progress"}, {"type":"card","stage":"forecast","name":"revenue-projections","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"40"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: forecaster. Market analysis shows SaaS churn trending down 0.8% MoM. Marketplace GMV up 12% QoQ. Incorporating into projections..."}, {"type":"updateCard","stage":"forecast","name":"market-analysis","status":"completed"}, {"type":"updateCard","stage":"forecast","name":"revenue-projections","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Revenue projections complete:\n  Base: $4.2M  |  Optimistic: $4.8M  |  Pessimistic: $3.6M\nAll assumptions documented with confidence levels and data sources."}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/knowledge/FORECAST-MODEL.md"}, {"type":"updateCard","stage":"forecast","name":"revenue-projections","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Forecast complete. Review gate: ask."}, {"type":"msg","role":"agent","label":"agent","text":"Ready for your review of the forecast model."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"The pessimistic case should account for potential marketplace fee reduction we discussed. Otherwise approved."}, {"type":"msg","role":"agent","label":"agent","text":"Updated pessimistic scenario with 15% fee reduction risk. Advancing to budget stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"budget"}, {"type":"msg","role":"agent","label":"agent","text":"Entering budget stage. Hat: budget-owner.\nLoading forecast stage outputs..."}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/budget/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → forecast/forecast-model (knowledge/FORECAST-MODEL.md)"}, {"type":"msg","role":"agent","label":"agent","text":"Forecast model loaded. Base revenue target: $4.2M. Decomposing budget allocation work..."}] },
-    { delay: 800, actions: [{"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/budget/units/unit-01-dept-allocations.md"}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/budget/units/unit-02-contingency-planning.md"}, {"type":"card","stage":"budget","name":"dept-allocations","status":"in-progress"}, {"type":"card","stage":"budget","name":"contingency-planning","status":""}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Engineering wants 40% of the budget for infrastructure. Sales is requesting 25% for Q4 push. How do you want to prioritize?"}] },
-    { delay: 2200, actions: [{"type":"msg","role":"user","label":"you","text":"Cap engineering at 35%. Give sales their 25% but tie it to pipeline conversion targets. Rest split between marketing and ops."}] },
-    { delay: 800, actions: [{"type":"typing"}] },
-    { delay: 1500, actions: [{"type":"removeTyping"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: allocator. Allocations set with performance triggers:\n  Engineering: 35% ($1.47M)\n  Sales: 25% ($1.05M) — gated on 30% pipeline conversion\n  Marketing: 22% ($924K)\n  Operations: 18% ($756K)\nContingency: 8% of total held in reserve based on historical variance."}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/knowledge/BUDGET-PLAN.md"}, {"type":"updateCard","stage":"budget","name":"dept-allocations","status":"completed"}, {"type":"updateCard","stage":"budget","name":"contingency-planning","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"25"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Contingency reserves sized at $336K based on 3-quarter variance patterns. Each line item traces to a forecast assumption."}, {"type":"updateCard","stage":"budget","name":"contingency-planning","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Budget stage complete. Review gate: external."}, {"type":"msg","role":"agent","label":"agent","text":"Sharing budget plan for CFO review..."}] },
-    { delay: 1000, actions: [{"type":"showReview","title":"Budget","intent":"q4-2026-financial-close","criteria":["Allocations sum within 2% of approved envelope","Each line item maps to forecast assumption","Contingency sized on historical variance patterns","Performance triggers defined for conditional allocations"],"gateType":"external"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2200, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"External review approved by CFO."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"analysis"}, {"type":"msg","role":"agent","label":"agent","text":"Entering analysis stage. Hat: analyst.\nLoading upstream outputs..."}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/analysis/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → budget/budget-plan (knowledge/BUDGET-PLAN.md), forecast/forecast-model (knowledge/FORECAST-MODEL.md)"}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/analysis/units/unit-01-variance-analysis.md"}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/analysis/units/unit-02-performance-tracking.md"}, {"type":"card","stage":"analysis","name":"variance-analysis","status":"in-progress"}, {"type":"card","stage":"analysis","name":"performance-tracking","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"45"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Variance analysis found 3 material deviations:\n  1. SaaS revenue +7% vs budget (new enterprise deal closed early)\n  2. Engineering spend +4% (unplanned infrastructure migration)\n  3. Marketing -12% (delayed campaign launch)\nEach categorized: #1 timing, #2 structural, #3 operational."}, {"type":"updateCard","stage":"analysis","name":"variance-analysis","status":"completed"}, {"type":"updateCard","stage":"analysis","name":"performance-tracking","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: auditor. Performance metrics compiled with leading and lagging indicators. 3-period trend analysis confirms SaaS growth trajectory. Methodology verified consistent with prior quarters."}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/knowledge/VARIANCE-REPORT.md"}, {"type":"updateCard","stage":"analysis","name":"performance-tracking","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Analysis complete. Review gate: auto. All criteria met — advancing."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"reporting"}, {"type":"msg","role":"agent","label":"agent","text":"Entering reporting stage. Hat: reporter.\nLoading upstream outputs..."}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/reporting/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → analysis/variance-report, budget/budget-plan, forecast/forecast-model"}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/reporting/units/unit-01-exec-summary.md"}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/reporting/units/unit-02-dashboard.md"}, {"type":"card","stage":"reporting","name":"exec-summary","status":"in-progress"}, {"type":"card","stage":"reporting","name":"dashboard","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"35"}] },
-    { delay: 1800, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Executive summary distills 3 headlines:\n  1. Revenue tracking 7% above plan on early enterprise close\n  2. Infrastructure migration requires budget revision request\n  3. Marketing underspend creates reallocation opportunity\n\nEach backed by variance data with recommended actions."}, {"type":"updateCard","stage":"reporting","name":"exec-summary","status":"completed"}, {"type":"updateCard","stage":"reporting","name":"dashboard","status":"in-progress"}] },
-    { delay: 1200, actions: [{"type":"msg","role":"agent","label":"agent","text":"Hat: visualizer. For the dashboard — do you want the standard P&L waterfall or the new format with embedded trend sparklines?"}] },
-    { delay: 2000, actions: [{"type":"msg","role":"user","label":"you","text":"Sparklines format. Board liked it last quarter. Add a cash flow forecast chart too."}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Dashboard complete with sparkline P&L, cash flow forecast, and department-level drill-downs. Consistent scales and labeled axes throughout."}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/reporting/artifacts/exec-summary.md"}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/reporting/artifacts/financial-dashboard.md"}, {"type":"updateCard","stage":"reporting","name":"dashboard","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Reporting stage complete. Review gate: ask."}, {"type":"msg","role":"agent","label":"agent","text":"Reports ready for your review."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"user","label":"you","text":"Approved. Clean work on the dashboard."}, {"type":"msg","role":"agent","label":"agent","text":"Advancing to close stage."}] },
-    { delay: 1000, actions: [{"type":"activateStage","stage":"close"}, {"type":"msg","role":"agent","label":"agent","text":"Entering close stage. Hat: controller.\nLoading upstream outputs..."}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/close/state.json"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Resolved inputs → reporting/financial-reports (stages/reporting/artifacts/), analysis/variance-report (knowledge/VARIANCE-REPORT.md)"}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/close/units/unit-01-reconciliation.md"}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/stages/close/units/unit-02-close-process.md"}, {"type":"card","stage":"close","name":"reconciliation","status":"in-progress"}, {"type":"card","stage":"close","name":"close-process","status":""}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"50"}] },
-    { delay: 2000, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Hat: reconciler. All balance sheet accounts reconciled. Found one $2,400 unexplained difference in accounts receivable — traced to a timing issue on an invoice posted Dec 31. Adjusting entry documented."}, {"type":"updateCard","stage":"close","name":"reconciliation","status":"completed"}, {"type":"updateCard","stage":"close","name":"close-process","status":"in-progress"}] },
-    { delay: 500, actions: [{"type":"fastForward","seconds":"30"}] },
-    { delay: 1500, actions: [{"type":"removeFastForward"}, {"type":"msg","role":"agent","label":"agent","text":"Close checklist complete:\n  • Sub-ledgers posted\n  • Intercompany eliminations verified\n  • Trial balance ties\n  • Revenue recognition entries documented with ASC 606 notes\n  • AR timing adjustment posted"}, {"type":"file","path":".haiku/intents/q4-2026-financial-close/knowledge/CLOSE-REPORT.md"}, {"type":"updateCard","stage":"close","name":"close-process","status":"completed"}] },
-    { delay: 800, actions: [{"type":"msg","role":"system","label":"system","text":"Close stage complete. Review gate: external."}, {"type":"msg","role":"agent","label":"agent","text":"Sharing close report for controller sign-off..."}] },
-    { delay: 1000, actions: [{"type":"showReview","title":"Close","intent":"q4-2026-financial-close","criteria":["All balance sheet accounts reconciled","Revenue recognition ASC 606 compliant","Sub-ledgers posted and intercompany eliminated","Trial balance ties with no unexplained variances","Adjusting entries documented with justification"],"gateType":"external"}] },
-    { delay: 800, actions: [{"type":"animateCheckmarks"}] },
-    { delay: 2400, actions: [{"type":"highlightApprove"}] },
-    { delay: 1200, actions: [{"type":"hideReview"}, {"type":"msg","role":"system","label":"system","text":"External controller sign-off approved."}] },
-    { delay: 1200, actions: [{"type":"complete"}, {"type":"msg","role":"agent","label":"agent","text":"All 5 stages complete for q4-2026-financial-close.\n\nDelivered:\n  • 3-scenario revenue forecast with market analysis and documented assumptions\n  • Department budget allocations with performance triggers and contingency reserves\n  • Variance analysis with root cause categorization across 3 material deviations\n  • Executive summary and sparkline dashboard with cash flow forecast\n  • Period close with full reconciliation, ASC 606 compliance, and balanced trial balance\n\nIntent status: complete."}] },
-    { delay: 1500, actions: [{"type":"msg","role":"system","label":"system","text":"__SHOW_COMPLETION__"}] },
-  ],
+	title: "finance",
+	studio: "finance",
+	stages: ["forecast", "budget", "analysis", "reporting", "close"],
+	completionText: "All 5 stages passed. q4-2026-financial-close delivered.",
+	steps: [
+		{
+			delay: 800,
+			actions: [
+				{ type: "msg", role: "user", label: "you", text: "/haiku:start" },
+			],
+		},
+		{ delay: 1200, actions: [{ type: "typing" }] },
+		{
+			delay: 1000,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What do you want to accomplish?",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Q4 2026 financial close and reporting",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Creating intent: q4-2026-financial-close...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/intent.md",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Intent created. Studio: finance. 5 stages: forecast → budget → analysis → reporting → close",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "forecast" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering forecast stage. Hat: analyst.\nAnalyzing market conditions for Q4 revenue projections...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/forecast/state.json",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "What revenue streams should I model? I see SaaS subscriptions, professional services, and marketplace fees in your chart of accounts.",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Focus on SaaS and marketplace. Professional services is winding down — model it at 60% of Q3.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Got it. Building 3-scenario model: base, optimistic, pessimistic. Professional services at 60% Q3 baseline.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/forecast/units/unit-01-market-analysis.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/forecast/units/unit-02-revenue-projections.md",
+				},
+				{
+					type: "card",
+					stage: "forecast",
+					name: "market-analysis",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "forecast",
+					name: "revenue-projections",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "40" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: forecaster. Market analysis shows SaaS churn trending down 0.8% MoM. Marketplace GMV up 12% QoQ. Incorporating into projections...",
+				},
+				{
+					type: "updateCard",
+					stage: "forecast",
+					name: "market-analysis",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "forecast",
+					name: "revenue-projections",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Revenue projections complete:\n  Base: $4.2M  |  Optimistic: $4.8M  |  Pessimistic: $3.6M\nAll assumptions documented with confidence levels and data sources.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/knowledge/FORECAST-MODEL.md",
+				},
+				{
+					type: "updateCard",
+					stage: "forecast",
+					name: "revenue-projections",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Forecast complete. Review gate: ask.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Ready for your review of the forecast model.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "The pessimistic case should account for potential marketplace fee reduction we discussed. Otherwise approved.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Updated pessimistic scenario with 15% fee reduction risk. Advancing to budget stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "budget" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering budget stage. Hat: budget-owner.\nLoading forecast stage outputs...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/budget/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → forecast/forecast-model (knowledge/FORECAST-MODEL.md)",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Forecast model loaded. Base revenue target: $4.2M. Decomposing budget allocation work...",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/budget/units/unit-01-dept-allocations.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/budget/units/unit-02-contingency-planning.md",
+				},
+				{
+					type: "card",
+					stage: "budget",
+					name: "dept-allocations",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "budget",
+					name: "contingency-planning",
+					status: "",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Engineering wants 40% of the budget for infrastructure. Sales is requesting 25% for Q4 push. How do you want to prioritize?",
+				},
+			],
+		},
+		{
+			delay: 2200,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Cap engineering at 35%. Give sales their 25% but tie it to pipeline conversion targets. Rest split between marketing and ops.",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "typing" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeTyping" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: allocator. Allocations set with performance triggers:\n  Engineering: 35% ($1.47M)\n  Sales: 25% ($1.05M) — gated on 30% pipeline conversion\n  Marketing: 22% ($924K)\n  Operations: 18% ($756K)\nContingency: 8% of total held in reserve based on historical variance.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/knowledge/BUDGET-PLAN.md",
+				},
+				{
+					type: "updateCard",
+					stage: "budget",
+					name: "dept-allocations",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "budget",
+					name: "contingency-planning",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "25" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Contingency reserves sized at $336K based on 3-quarter variance patterns. Each line item traces to a forecast assumption.",
+				},
+				{
+					type: "updateCard",
+					stage: "budget",
+					name: "contingency-planning",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Budget stage complete. Review gate: external.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Sharing budget plan for CFO review...",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "showReview",
+					title: "Budget",
+					intent: "q4-2026-financial-close",
+					criteria: [
+						"Allocations sum within 2% of approved envelope",
+						"Each line item maps to forecast assumption",
+						"Contingency sized on historical variance patterns",
+						"Performance triggers defined for conditional allocations",
+					],
+					gateType: "external",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2200, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "External review approved by CFO.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "analysis" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering analysis stage. Hat: analyst.\nLoading upstream outputs...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/analysis/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → budget/budget-plan (knowledge/BUDGET-PLAN.md), forecast/forecast-model (knowledge/FORECAST-MODEL.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/analysis/units/unit-01-variance-analysis.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/analysis/units/unit-02-performance-tracking.md",
+				},
+				{
+					type: "card",
+					stage: "analysis",
+					name: "variance-analysis",
+					status: "in-progress",
+				},
+				{
+					type: "card",
+					stage: "analysis",
+					name: "performance-tracking",
+					status: "",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "45" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Variance analysis found 3 material deviations:\n  1. SaaS revenue +7% vs budget (new enterprise deal closed early)\n  2. Engineering spend +4% (unplanned infrastructure migration)\n  3. Marketing -12% (delayed campaign launch)\nEach categorized: #1 timing, #2 structural, #3 operational.",
+				},
+				{
+					type: "updateCard",
+					stage: "analysis",
+					name: "variance-analysis",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "analysis",
+					name: "performance-tracking",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: auditor. Performance metrics compiled with leading and lagging indicators. 3-period trend analysis confirms SaaS growth trajectory. Methodology verified consistent with prior quarters.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/knowledge/VARIANCE-REPORT.md",
+				},
+				{
+					type: "updateCard",
+					stage: "analysis",
+					name: "performance-tracking",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Analysis complete. Review gate: auto. All criteria met — advancing.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "reporting" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering reporting stage. Hat: reporter.\nLoading upstream outputs...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/reporting/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → analysis/variance-report, budget/budget-plan, forecast/forecast-model",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/reporting/units/unit-01-exec-summary.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/reporting/units/unit-02-dashboard.md",
+				},
+				{
+					type: "card",
+					stage: "reporting",
+					name: "exec-summary",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "reporting", name: "dashboard", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "35" }] },
+		{
+			delay: 1800,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Executive summary distills 3 headlines:\n  1. Revenue tracking 7% above plan on early enterprise close\n  2. Infrastructure migration requires budget revision request\n  3. Marketing underspend creates reallocation opportunity\n\nEach backed by variance data with recommended actions.",
+				},
+				{
+					type: "updateCard",
+					stage: "reporting",
+					name: "exec-summary",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "reporting",
+					name: "dashboard",
+					status: "in-progress",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: visualizer. For the dashboard — do you want the standard P&L waterfall or the new format with embedded trend sparklines?",
+				},
+			],
+		},
+		{
+			delay: 2000,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Sparklines format. Board liked it last quarter. Add a cash flow forecast chart too.",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Dashboard complete with sparkline P&L, cash flow forecast, and department-level drill-downs. Consistent scales and labeled axes throughout.",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/reporting/artifacts/exec-summary.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/reporting/artifacts/financial-dashboard.md",
+				},
+				{
+					type: "updateCard",
+					stage: "reporting",
+					name: "dashboard",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Reporting stage complete. Review gate: ask.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Reports ready for your review.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "user",
+					label: "you",
+					text: "Approved. Clean work on the dashboard.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Advancing to close stage.",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{ type: "activateStage", stage: "close" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Entering close stage. Hat: controller.\nLoading upstream outputs...",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/close/state.json",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Resolved inputs → reporting/financial-reports (stages/reporting/artifacts/), analysis/variance-report (knowledge/VARIANCE-REPORT.md)",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/close/units/unit-01-reconciliation.md",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/stages/close/units/unit-02-close-process.md",
+				},
+				{
+					type: "card",
+					stage: "close",
+					name: "reconciliation",
+					status: "in-progress",
+				},
+				{ type: "card", stage: "close", name: "close-process", status: "" },
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "50" }] },
+		{
+			delay: 2000,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Hat: reconciler. All balance sheet accounts reconciled. Found one $2,400 unexplained difference in accounts receivable — traced to a timing issue on an invoice posted Dec 31. Adjusting entry documented.",
+				},
+				{
+					type: "updateCard",
+					stage: "close",
+					name: "reconciliation",
+					status: "completed",
+				},
+				{
+					type: "updateCard",
+					stage: "close",
+					name: "close-process",
+					status: "in-progress",
+				},
+			],
+		},
+		{ delay: 500, actions: [{ type: "fastForward", seconds: "30" }] },
+		{
+			delay: 1500,
+			actions: [
+				{ type: "removeFastForward" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Close checklist complete:\n  • Sub-ledgers posted\n  • Intercompany eliminations verified\n  • Trial balance ties\n  • Revenue recognition entries documented with ASC 606 notes\n  • AR timing adjustment posted",
+				},
+				{
+					type: "file",
+					path: ".haiku/intents/q4-2026-financial-close/knowledge/CLOSE-REPORT.md",
+				},
+				{
+					type: "updateCard",
+					stage: "close",
+					name: "close-process",
+					status: "completed",
+				},
+			],
+		},
+		{
+			delay: 800,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "Close stage complete. Review gate: external.",
+				},
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "Sharing close report for controller sign-off...",
+				},
+			],
+		},
+		{
+			delay: 1000,
+			actions: [
+				{
+					type: "showReview",
+					title: "Close",
+					intent: "q4-2026-financial-close",
+					criteria: [
+						"All balance sheet accounts reconciled",
+						"Revenue recognition ASC 606 compliant",
+						"Sub-ledgers posted and intercompany eliminated",
+						"Trial balance ties with no unexplained variances",
+						"Adjusting entries documented with justification",
+					],
+					gateType: "external",
+				},
+			],
+		},
+		{ delay: 800, actions: [{ type: "animateCheckmarks" }] },
+		{ delay: 2400, actions: [{ type: "highlightApprove" }] },
+		{
+			delay: 1200,
+			actions: [
+				{ type: "hideReview" },
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "External controller sign-off approved.",
+				},
+			],
+		},
+		{
+			delay: 1200,
+			actions: [
+				{ type: "complete" },
+				{
+					type: "msg",
+					role: "agent",
+					label: "agent",
+					text: "All 5 stages complete for q4-2026-financial-close.\n\nDelivered:\n  • 3-scenario revenue forecast with market analysis and documented assumptions\n  • Department budget allocations with performance triggers and contingency reserves\n  • Variance analysis with root cause categorization across 3 material deviations\n  • Executive summary and sparkline dashboard with cash flow forecast\n  • Period close with full reconciliation, ASC 606 compliance, and balanced trial balance\n\nIntent status: complete.",
+				},
+			],
+		},
+		{
+			delay: 1500,
+			actions: [
+				{
+					type: "msg",
+					role: "system",
+					label: "system",
+					text: "__SHOW_COMPLETION__",
+				},
+			],
+		},
+	],
 }

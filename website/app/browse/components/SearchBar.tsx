@@ -1,9 +1,9 @@
 "use client"
 
-import type { SearchDocument } from "@/lib/browse/search"
-import { extractSnippet, highlightMatches } from "@/lib/browse/search"
 import type MiniSearch from "minisearch"
 import { useCallback, useEffect, useRef, useState } from "react"
+import type { SearchDocument } from "@/lib/browse/search"
+import { extractSnippet, highlightMatches } from "@/lib/browse/search"
 
 interface SearchResult {
 	id: string
@@ -49,7 +49,13 @@ const typeBadgeColors: Record<string, string> = {
 	asset: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
 }
 
-export function SearchBar({ index, onSelect, query, onQueryChange, placeholder }: Props) {
+export function SearchBar({
+	index,
+	onSelect,
+	query,
+	onQueryChange,
+	placeholder,
+}: Props) {
 	const [results, setResults] = useState<SearchResult[]>([])
 	const [isOpen, setIsOpen] = useState(false)
 	const [activeIndex, setActiveIndex] = useState(-1)
@@ -59,7 +65,7 @@ export function SearchBar({ index, onSelect, query, onQueryChange, placeholder }
 
 	const performSearch = useCallback(
 		(q: string) => {
-			if (!index || !q.trim()) {
+			if (!(index && q.trim())) {
 				setResults([])
 				return
 			}
@@ -321,12 +327,14 @@ export function SearchBar({ index, onSelect, query, onQueryChange, placeholder }
 														).map((part, i) =>
 															part.highlighted ? (
 																<mark
+																	// biome-ignore lint/suspicious/noArrayIndexKey: static match-result list
 																	key={i}
 																	className="bg-teal-100 text-teal-900 dark:bg-teal-900/50 dark:text-teal-300"
 																>
 																	{part.text}
 																</mark>
 															) : (
+																// biome-ignore lint/suspicious/noArrayIndexKey: static match-result list
 																<span key={i}>{part.text}</span>
 															),
 														)}
@@ -352,12 +360,14 @@ export function SearchBar({ index, onSelect, query, onQueryChange, placeholder }
 																(part, i) =>
 																	part.highlighted ? (
 																		<mark
+																			// biome-ignore lint/suspicious/noArrayIndexKey: static match-result list
 																			key={i}
 																			className="bg-teal-100/50 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400"
 																		>
 																			{part.text}
 																		</mark>
 																	) : (
+																		// biome-ignore lint/suspicious/noArrayIndexKey: static match-result list
 																		<span key={i}>{part.text}</span>
 																	),
 															)}

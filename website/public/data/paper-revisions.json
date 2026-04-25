@@ -305,13 +305,13 @@
     "revisions": [
       {
         "version": "2",
-        "date": "2026-04-12",
-        "commitHash": "f76f306",
-        "fullCommitHash": "f76f306484ebc031c2c4e41b05db6fc3f0a23aa6",
-        "commitMessage": "feat: split software studio into product-family studios + fixes (#187)",
+        "date": "2026-04-20",
+        "commitHash": "da3416e",
+        "fullCommitHash": "da3416e03832368157ce28907e5253bd0987b3b3",
+        "commitMessage": "haiku: snapshot design-stage WIP before product switch",
         "stats": {
-          "linesAdded": 284,
-          "linesRemoved": 993
+          "linesAdded": 307,
+          "linesRemoved": 995
         },
         "sectionChanges": [
           {
@@ -346,7 +346,7 @@
             "section": "Glossary",
             "originalSection": "Glossary",
             "isNew": false,
-            "linesAdded": 13,
+            "linesAdded": 19,
             "linesRemoved": 22
           },
           {
@@ -423,14 +423,14 @@
             "section": "What a Stage Defines",
             "originalSection": "What a Stage Defines",
             "isNew": true,
-            "linesAdded": 11,
+            "linesAdded": 20,
             "linesRemoved": 0
           },
           {
             "section": "The Stage Loop",
             "originalSection": "The Stage Loop",
             "isNew": true,
-            "linesAdded": 10,
+            "linesAdded": 22,
             "linesRemoved": 0
           },
           {
@@ -466,7 +466,7 @@
             "section": "Completion Criteria",
             "originalSection": "Completion Criteria",
             "isNew": true,
-            "linesAdded": 15,
+            "linesAdded": 17,
             "linesRemoved": 0
           },
           {
@@ -599,7 +599,7 @@
             "section": "Creating a Custom Studio",
             "originalSection": "Creating a Custom Studio",
             "isNew": true,
-            "linesAdded": 10,
+            "linesAdded": 11,
             "linesRemoved": 0
           },
           {

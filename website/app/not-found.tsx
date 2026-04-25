@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useEffect, useState } from "react"
 
 export default function NotFound() {
 	const [redirecting, setRedirecting] = useState(false)
@@ -10,7 +10,10 @@ export default function NotFound() {
 		const path = window.location.pathname
 		if (path.startsWith("/browse/") && path !== "/browse/") {
 			setRedirecting(true)
-			sessionStorage.setItem("browse-redirect-path", path + window.location.search)
+			sessionStorage.setItem(
+				"browse-redirect-path",
+				path + window.location.search,
+			)
 			window.location.replace("/browse/")
 		}
 	}, [])
@@ -23,7 +26,9 @@ export default function NotFound() {
 				<h2 className="mb-4 text-sm font-bold tracking-widest text-teal-600 dark:text-teal-400">
 					H·AI·K·U
 				</h2>
-				<h1 className="mb-2 text-6xl font-bold text-stone-300 dark:text-stone-700">404</h1>
+				<h1 className="mb-2 text-6xl font-bold text-stone-300 dark:text-stone-700">
+					404
+				</h1>
 				<p className="mb-8 text-lg text-stone-600 dark:text-stone-400">
 					Page not found.
 				</p>

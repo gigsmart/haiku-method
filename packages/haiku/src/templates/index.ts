@@ -1,17 +1,19 @@
 import type { CriterionItem, ParsedIntent, ParsedUnit } from "../types.js"
+
 export type {
+	CriterionItem,
 	ParsedIntent,
 	ParsedUnit,
-	CriterionItem,
 	Section,
 } from "../types.js"
+
 import { renderMockupInteractionScript } from "./components.js"
-import { renderIntentReview } from "./intent-review.js"
 import type { ReviewResult } from "./intent-review.js"
+import { renderIntentReview } from "./intent-review.js"
 import { renderLayout } from "./layout.js"
+import type { MockupInfo } from "./types.js"
 import { renderUnitReview } from "./unit-review.js"
 
-import type { MockupInfo } from "./types.js"
 export type { MockupInfo } from "./types.js"
 
 export interface ReviewData {
