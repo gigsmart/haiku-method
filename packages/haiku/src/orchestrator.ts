@@ -223,7 +223,7 @@ const FSM_CONTRACTS_ELABORATE_BLOCK = [
 	"",
 	"#### Red flags (STOP and re-read this contract if you catch yourself thinking)",
 	"",
-	'- "I\'ll write `TBD` for the parts I\'m unsure about" — placeholders block advancement; write the concrete value or surface it as a question.',
+	"- \"I'll write `TBD` for the parts I'm unsure about\" — placeholders block advancement; write the concrete value or surface it as a question.",
 	'- "I\'ll add `similar to unit-XX` to save typing" — copy the relevant content explicitly; cross-references rot when the source changes.',
 	'- "The criteria are obvious; I\'ll keep them prose" — every criterion needs a command or condition that proves it.',
 	'- "This unit can be huge; the executor will figure it out" — units that take more than one bolt to scope are decomposition failures, not execution failures.',
@@ -250,9 +250,9 @@ const FSM_CONTRACTS_EXECUTE_BLOCK = [
 	"#### Red flags (STOP and re-read this contract if you catch yourself thinking)",
 	"",
 	'- "I\'ll skip the gate just this once" — the gate is the contract; bypass is a scope violation.',
-	'- "I\'ll touch the related file too while I\'m here" — out-of-scope edits create regressions other hats cannot see; if it\'s broken, log it via the next review.',
-	'- **Did you re-run the gate command and read the exit code 0?** If not, you don\'t know whether the build/tests/lints actually pass — "probably" isn\'t evidence. Re-run before calling `haiku_unit_advance_hat`.',
-	'- "Another hat\'s responsibility overlaps with mine, I\'ll cover it" — stay in your lane; another hat will catch what you skip.',
+	"- \"I'll touch the related file too while I'm here\" — out-of-scope edits create regressions other hats cannot see; if it's broken, log it via the next review.",
+	"- **Did you re-run the gate command and read the exit code 0?** If not, you don't know whether the build/tests/lints actually pass — \"probably\" isn't evidence. Re-run before calling `haiku_unit_advance_hat`.",
+	"- \"Another hat's responsibility overlaps with mine, I'll cover it\" — stay in your lane; another hat will catch what you skip.",
 	'- "The user said go fast, so I\'ll abbreviate the work" — speed comes from fewer rejections, not skipped steps.',
 ].join("\n")
 
@@ -271,11 +271,11 @@ const FSM_CONTRACTS_REVIEW_BLOCK = [
 	"#### Red flags (STOP and re-read this contract if you catch yourself thinking)",
 	"",
 	'- "This finding is trivial, I\'ll just fix it myself" — file write = scope violation; log it as feedback no matter how small.',
-	'- "The mandate doesn\'t quite cover this, but it\'s clearly wrong" — if it\'s in your mandate\'s spirit, log it; if not, leave it for another agent.',
+	"- \"The mandate doesn't quite cover this, but it's clearly wrong\" — if it's in your mandate's spirit, log it; if not, leave it for another agent.",
 	"- **Did you open the artifact at HEAD, or are you reading the diff alone?** The diff lies about deletions, renames, and unchanged-but-relevant context. Read both — the diff for what changed, the artifact for the surrounding code that constrains the change.",
 	'- "I\'ll batch related concerns into one finding" — atomic findings let the fix loop dispatch in parallel; merged findings serialize.',
-	'- "This finding\'s root cause is upstream, I\'ll route it through this stage\'s hats anyway" — set `upstream_stage:` so the framework surfaces it; this stage\'s hats cannot fix the wrong stage\'s artifacts.',
-	'- "It\'s not on my checklist, so I\'ll skip it" — if your mandate has `interpretation: lens`, the checklist is examples; the mandate is the lens. In-spirit findings count.',
+	"- \"This finding's root cause is upstream, I'll route it through this stage's hats anyway\" — set `upstream_stage:` so the framework surfaces it; this stage's hats cannot fix the wrong stage's artifacts.",
+	"- \"It's not on my checklist, so I'll skip it\" — if your mandate has `interpretation: lens`, the checklist is examples; the mandate is the lens. In-spirit findings count.",
 	'- "I was dispatched, I should find something" — out-of-mandate findings are noise; zero findings is a valid result for a clean review.',
 	'- "It passes the literal check but it\'s clearly wrong" — the spirit-violation IS the finding. State the spirit-violation explicitly in the body.',
 ].join("\n")
@@ -331,9 +331,7 @@ function readInterpretation(
  *     named item. For compliance / scope-limited reviews where false
  *     positives carry weight.
  */
-function buildInterpretationBlock(
-	mode: "lens" | "strict" | undefined,
-): string {
+function buildInterpretationBlock(mode: "lens" | "strict" | undefined): string {
 	if (!mode) return ""
 	if (mode === "lens") {
 		return [
@@ -3105,8 +3103,7 @@ export function runNext(slug: string): OrchestratorAction {
 		// longer gates advancement.
 		if (elaborationMode === "collaborative") {
 			const decisionLog = (stageState.decision_log as unknown[]) || []
-			const noDecisionsDeclared =
-				stageState.elaboration_no_decisions === true
+			const noDecisionsDeclared = stageState.elaboration_no_decisions === true
 			if (decisionLog.length === 0 && !noDecisionsDeclared) {
 				return {
 					action: "elaboration_insufficient",
@@ -6127,34 +6124,34 @@ function buildRunInstructions(
 						? "Mode: **collaborative** — knowledge unification with the user happens at decision points, not as ritual. (H·AI·K·U = Human + AI Knowledge **Unification**.)\n\n" +
 							"### What collaboration means here\n\n" +
 							"This stage advances when at least one **decision** is recorded in the stage's `decision_log` (via `haiku_decision_record`), OR you honestly declare `no_decisions: true` with a rationale. A decision is a real architectural choice between concrete options — not a question for the sake of asking. Two valid sources:\n\n" +
-							"- **`source: \"user\"`** — you presented options the user couldn't reasonably resolve from the codebase, and they picked.\n" +
-							"- **`source: \"autonomous-acknowledged\"`** — you made the call from clear conventions and surfaced the choice for veto-style approval, and the user did not push back.\n\n" +
+							'- **`source: "user"`** — you presented options the user couldn\'t reasonably resolve from the codebase, and they picked.\n' +
+							'- **`source: "autonomous-acknowledged"`** — you made the call from clear conventions and surfaced the choice for veto-style approval, and the user did not push back.\n\n' +
 							"Both count. The user feels meaningfully involved when they shape real decisions OR review and accept your reasoned choices — not when they're interrogated about defaults.\n\n" +
 							"### Quality bar for user-facing questions\n\n" +
 							"Every question to the user MUST clear this bar before being asked:\n\n" +
 							"- **Real decision**: it can't be answered by reading the codebase, manifest files, prior stages' outputs, or existing conventions.\n" +
-							"- **≥2 concrete options**: you've articulated the alternatives. *\"Should we add tests?\"* fails (one-option default). *\"Cypress or Playwright?\"* passes.\n" +
+							'- **≥2 concrete options**: you\'ve articulated the alternatives. *"Should we add tests?"* fails (one-option default). *"Cypress or Playwright?"* passes.\n' +
 							"- **Tradeoff axis**: each option carries a known tradeoff (speed/safety, cost/flexibility, reversibility, etc.). If all options are equivalent, the choice doesn't need user input.\n" +
-							"- **Records as a decision**: after the user picks, call `haiku_decision_record { decision, options, choice, source: \"user\", rationale? }`.\n\n" +
+							'- **Records as a decision**: after the user picks, call `haiku_decision_record { decision, options, choice, source: "user", rationale? }`.\n\n' +
 							"#### Banned question patterns (do NOT ask these)\n\n" +
-							"- **Yes/no on defaults**: *\"Should we follow your existing patterns?\"* (obvious yes), *\"Want tests?\"* (covered by quality gates).\n" +
-							"- **Codebase-answerable**: *\"What test runner do you use?\"* — read `package.json` / `pyproject.toml` / `Cargo.toml`.\n" +
-							"- **Permission-asking**: *\"Is it OK if I extend the User model?\"* — make the choice and surface it autonomously instead.\n" +
-							"- **Confirmation-seeking**: *\"Does this approach sound good?\"* with no concrete alternatives to compare against.\n\n" +
+							'- **Yes/no on defaults**: *"Should we follow your existing patterns?"* (obvious yes), *"Want tests?"* (covered by quality gates).\n' +
+							'- **Codebase-answerable**: *"What test runner do you use?"* — read `package.json` / `pyproject.toml` / `Cargo.toml`.\n' +
+							'- **Permission-asking**: *"Is it OK if I extend the User model?"* — make the choice and surface it autonomously instead.\n' +
+							'- **Confirmation-seeking**: *"Does this approach sound good?"* with no concrete alternatives to compare against.\n\n' +
 							"### One question at a time (NEVER batch)\n\n" +
 							"Even when you have multiple questions, ask ONE, wait for the answer, then ask the next. Cognition breaks down for both sides if a deeper conversation has to happen on each — batched questions get half-answers and lose context when any one branches.\n\n" +
-							"- **DO**: `AskUserQuestion({ question: \"Auth strategy?\", options: [...] })` → wait → `AskUserQuestion({ question: \"Database?\", options: [...] })`.\n" +
+							'- **DO**: `AskUserQuestion({ question: "Auth strategy?", options: [...] })` → wait → `AskUserQuestion({ question: "Database?", options: [...] })`.\n' +
 							"- **DO NOT**: batch questions in a single `ask_user_visual_question` call with multiple entries in `questions[]`. The visual layout doesn't help if any one branches into a deeper conversation.\n" +
-							"- **DO NOT**: dump numbered questions as plain text (*\"1. Auth? 2. Database? 3. Caching?\"*). Use the structured tool, one at a time.\n\n" +
+							'- **DO NOT**: dump numbered questions as plain text (*"1. Auth? 2. Database? 3. Caching?"*). Use the structured tool, one at a time.\n\n' +
 							"### Surface autonomous decisions for veto-style approval\n\n" +
 							"For decisions you can resolve from the codebase or clear conventions, don't ask — **decide and surface**:\n\n" +
-							"1. State the decision: *\"I'm using `<library X>` for HTTP because `package.json` already includes it.\"*\n" +
-							"2. State the alternative considered: *\"(Considered `<library Y>`, but no existing usage.)\"*\n" +
+							'1. State the decision: *"I\'m using `<library X>` for HTTP because `package.json` already includes it."*\n' +
+							'2. State the alternative considered: *"(Considered `<library Y>`, but no existing usage.)"*\n' +
 							"3. Invite veto: *\"Reply 'change' if you'd prefer otherwise.\"*\n" +
-							"4. If no pushback by the next turn, call `haiku_decision_record { source: \"autonomous-acknowledged\", ... }`.\n\n" +
+							'4. If no pushback by the next turn, call `haiku_decision_record { source: "autonomous-acknowledged", ... }`.\n\n' +
 							"Most decisions in a routine stage should be autonomous-acknowledged; only the genuinely-unresolvable ones earn a user-facing question. The user gets agency without busy-work.\n\n" +
 							"### Honest no-decisions declaration\n\n" +
-							"If the work is purely conventional with NO architectural choices in scope (a doc update following an established style guide; a routine ops runbook against a fixed pipeline), call `haiku_decision_record { intent: \"...\", no_decisions: true, rationale: \"<why this stage has no choices>\" }` and proceed. **Faking a decision to satisfy the gate is the failure mode this design exists to prevent** — be honest.\n\n" +
+							'If the work is purely conventional with NO architectural choices in scope (a doc update following an established style guide; a routine ops runbook against a fixed pipeline), call `haiku_decision_record { intent: "...", no_decisions: true, rationale: "<why this stage has no choices>" }` and proceed. **Faking a decision to satisfy the gate is the failure mode this design exists to prevent** — be honest.\n\n' +
 							"### Tools for asking (when a question is genuinely needed)\n\n" +
 							"| Question type | Tool |\n" +
 							"|---|---|\n" +
@@ -6162,7 +6159,7 @@ function buildRunInstructions(
 							"| Specs, comparisons, detailed options (markdown) | `ask_user_visual_question` MCP tool |\n" +
 							"| Visual artifacts, wireframes, designs | `ask_user_visual_question` with `image_paths` |\n" +
 							"| Design direction with previews | `pick_design_direction` MCP tool |\n\n" +
-							"Always provide pre-selected `options[]`. Include an *\"Other (let me specify)\"* option when the list may not be exhaustive. Never dump option lists as plain conversation text.\n\n"
+							'Always provide pre-selected `options[]`. Include an *"Other (let me specify)"* option when the list may not be exhaustive. Never dump option lists as plain conversation text.\n\n'
 						: "Mode: **autonomous** — elaborate independently. When you DO need user input (genuine blockers, ambiguity that the codebase can't resolve), use `AskUserQuestion` with pre-selected `options[]` — never plain-text option lists. Autonomous mode does not require `haiku_decision_record` calls; the gate only enforces decisions in collaborative mode.\n\n"
 				}**Elaboration produces the PLAN, not the deliverables:**\n1. Research the problem space and write discovery artifacts to \`knowledge/\`\n2. Define units with scope, completion criteria, and dependencies — NOT the actual work product\n   - A unit spec says WHAT will be produced and HOW to verify it\n   - The execution phase produces the actual deliverables\n   - Do NOT write full specs, schemas, or implementations during elaboration\n3. Write unit files to \`.haiku/intents/${slug}/stages/${stage}/units/\`\n4. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator validates and opens the review gate\n\n**Unit file naming convention (REQUIRED):**\nFiles MUST be named \`unit-NN-slug.md\` where:\n- \`NN\` is a zero-padded sequence number (01, 02, 03...)\n- \`slug\` is a kebab-case descriptor (e.g., \`user-auth\`, \`data-model\`)\n- Example: \`unit-01-data-model.md\`, \`unit-02-api-endpoints.md\`\n\nFiles that don't match this pattern will not appear in the review UI and will block advancement.`,
 			)
@@ -6412,9 +6409,7 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 				prompt.push(inlineFile(executionPath, "Execute-phase focus"))
 			if (hatPath) {
 				prompt.push(inlineFile(hatPath, `Hat: ${hat}`))
-				const hatInterp = buildInterpretationBlock(
-					readInterpretation(hatPath),
-				)
+				const hatInterp = buildInterpretationBlock(readInterpretation(hatPath))
 				if (hatInterp) prompt.push("", hatInterp)
 			}
 			prompt.push(inlineFile(unitAbsPath, `Unit spec: ${unit}`))

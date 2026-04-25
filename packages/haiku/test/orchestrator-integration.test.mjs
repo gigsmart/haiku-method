@@ -567,7 +567,14 @@ try {
 		// Override the auto-generated review-agent file with one that declares
 		// interpretation: lens. createProject doesn't take frontmatter overrides
 		// for agents, so write directly.
-		const agentsDir = join(haikuRoot, "studios", studio, "stages", "build", "review-agents")
+		const agentsDir = join(
+			haikuRoot,
+			"studios",
+			studio,
+			"stages",
+			"build",
+			"review-agents",
+		)
 		mkdirSync(agentsDir, { recursive: true })
 		writeFileSync(
 			join(agentsDir, "consistency.md"),
@@ -612,7 +619,14 @@ Check tokens, spacing, naming.
 				},
 			},
 		)
-		const agentsDir = join(haikuRoot, "studios", studio, "stages", "build", "review-agents")
+		const agentsDir = join(
+			haikuRoot,
+			"studios",
+			studio,
+			"stages",
+			"build",
+			"review-agents",
+		)
 		mkdirSync(agentsDir, { recursive: true })
 		writeFileSync(
 			join(agentsDir, "compliance.md"),
@@ -648,21 +662,18 @@ PCI-DSS literal checklist.
 	})
 
 	await test("review dispatch omits interpretation block when mandate has no interpretation field", async () => {
-		const { projDir, intentDirPath, slug } = createProject(
-			"g7b-interp-unset",
-			{
-				active_stage: "build",
-				stageConfig: {
-					build: {
-						review: "auto",
-						hats: ["coder"],
-						reviewAgents: {
-							"plain-agent": "No interpretation field set.",
-						},
+		const { projDir, intentDirPath, slug } = createProject("g7b-interp-unset", {
+			active_stage: "build",
+			stageConfig: {
+				build: {
+					review: "auto",
+					hats: ["coder"],
+					reviewAgents: {
+						"plain-agent": "No interpretation field set.",
 					},
 				},
 			},
-		)
+		})
 		createStageState(intentDirPath, "build", { phase: "review" })
 		createUnit(intentDirPath, "build", "unit-01-impl", { status: "completed" })
 

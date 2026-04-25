@@ -1245,13 +1245,7 @@ body
 		// Response is the FSM Result envelope path; the persisted state should
 		// show bolt+1, hat unchanged.
 		const fmRaw = readFileSync(
-			join(
-				intentDirPath,
-				"stages",
-				"gated",
-				"units",
-				"unit-01-gates-fail.md",
-			),
+			join(intentDirPath, "stages", "gated", "units", "unit-01-gates-fail.md"),
 			"utf8",
 		)
 		const fm = fmRaw.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? ""
@@ -1283,13 +1277,7 @@ body
 		// proceeds. The unit's hat should now be reviewer (the next hat),
 		// bolt should remain 1.
 		const fmRaw = readFileSync(
-			join(
-				intentDirPath,
-				"stages",
-				"gated",
-				"units",
-				"unit-02-gates-pass.md",
-			),
+			join(intentDirPath, "stages", "gated", "units", "unit-02-gates-pass.md"),
 			"utf8",
 		)
 		const fm = fmRaw.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? ""
@@ -1330,13 +1318,7 @@ body
 		})
 		const text = getTextResult(result)
 		const fmRaw = readFileSync(
-			join(
-				intentDirPath,
-				"stages",
-				"gated",
-				"units",
-				"unit-04-no-boolean.md",
-			),
+			join(intentDirPath, "stages", "gated", "units", "unit-04-no-boolean.md"),
 			"utf8",
 		)
 		const fm = fmRaw.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? ""

@@ -5780,8 +5780,9 @@ export function handleStateTool(
 				)
 			}
 
-			const log = ((stageState.decision_log as unknown[]) ||
-				[]) as Array<Record<string, unknown>>
+			const log = ((stageState.decision_log as unknown[]) || []) as Array<
+				Record<string, unknown>
+			>
 			log.push({
 				decision,
 				options,
