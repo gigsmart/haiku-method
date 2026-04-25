@@ -27,8 +27,9 @@ design, not an afterthought.
 This studio uses [tscircuit](https://tscircuit.com) for electronics design.
 Schematics and PCB layouts are authored as TypeScript/React (`.tsx`) circuit
 code — components are composable elements, not canvas objects. Authoring
-happens in the normal repo tree; live preview is served by `tsci dev` on
-`http://localhost:3020`; packages are consumed via `tsci add` from the
+happens in the normal repo tree; live preview is served by `tsci dev`
+(local browser URL printed by the CLI); packages are consumed via `tsci add`
+from the
 tscircuit registry; Gerbers, pick-and-place, and BOM are exported with the
 `tsci` CLI. The source-of-truth design artifact is the circuit code itself,
 not a proprietary EDA binary. Manufacturing exports (Gerbers, pick-and-place,

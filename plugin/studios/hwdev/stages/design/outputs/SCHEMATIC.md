@@ -12,7 +12,7 @@ The complete electrical schematic, authored as [tscircuit](https://tscircuit.com
 
 ## Content Guide
 
-- **Authored in tscircuit** — `.tsx` circuit code, previewable via `tsci dev` on `http://localhost:3020`
+- **Authored in tscircuit** — `.tsx` circuit code, previewable via `tsci dev` (the CLI prints the local URL on startup)
 - **All nets named** where naming aids readability
 - **All components** pulled from the tscircuit registry (`tsci add`) or authored with `@tscircuit/footprinter`, with part numbers in the BOM and rationale for critical choices
 - **Power tree** documented in code (comments / named subcircuits) showing regulation and decoupling strategy
