@@ -2,6 +2,7 @@
 name: feasibility
 stage: product
 studio: software
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** challenge whether the specified behavior is implementable within the technical constraints.

@@ -2,6 +2,7 @@
 name: quality
 stage: create
 studio: ideation
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the deliverable meets the standard defined in the intent and is grounded in the research.

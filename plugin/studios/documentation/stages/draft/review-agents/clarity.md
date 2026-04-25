@@ -2,6 +2,7 @@
 name: clarity
 stage: draft
 studio: documentation
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the documentation is understandable by its target audience.

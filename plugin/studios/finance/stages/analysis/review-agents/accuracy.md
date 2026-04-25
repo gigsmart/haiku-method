@@ -2,6 +2,7 @@
 name: accuracy
 stage: analysis
 studio: finance
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify variance analysis is accurate and root causes are evidence-based.

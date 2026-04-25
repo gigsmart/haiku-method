@@ -2,6 +2,7 @@
 name: structure
 stage: outline
 studio: documentation
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the information architecture supports how users actually look for information.

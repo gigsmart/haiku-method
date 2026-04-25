@@ -2,6 +2,7 @@
 name: accuracy
 stage: create
 studio: ideation
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** fact-check the deliverable against source material and known constraints.

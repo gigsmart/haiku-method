@@ -2,6 +2,7 @@
 name: methodology
 stage: forecast
 studio: finance
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify forecast methodology is sound and assumptions are well-supported.

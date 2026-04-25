@@ -2,6 +2,7 @@
 name: formality
 stage: execute
 studio: legal
+interpretation: strict
 ---
 
 **Mandate:** The agent **MUST** verify execution formalities are correct and document management is complete.

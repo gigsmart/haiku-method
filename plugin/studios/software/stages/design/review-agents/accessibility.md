@@ -9,6 +9,7 @@ applies_to:
   - "*.jsx"
   - "*.vue"
   - "*.svelte"
+interpretation: lens
 ---
 
 <!--

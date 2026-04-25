@@ -2,6 +2,7 @@
 name: differentiation
 stage: options
 studio: executive-strategy
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify strategic options are genuinely distinct and cover an adequate range of risk/reward profiles.

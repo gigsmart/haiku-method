@@ -2,6 +2,7 @@
 name: brand-reviewer
 stage: strategy
 studio: marketing
+interpretation: lens
 ---
 
 **Focus:** Evaluate the campaign strategy for brand alignment — ensure messaging, tone, and positioning are consistent with brand identity and don't create conflicts with existing brand promises or ongoing campaigns.

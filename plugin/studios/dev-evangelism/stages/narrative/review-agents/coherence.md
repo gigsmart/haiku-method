@@ -2,6 +2,7 @@
 name: coherence
 stage: narrative
 studio: dev-evangelism
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the narrative is coherent, technically grounded, and serves the target developer audience.

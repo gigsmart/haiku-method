@@ -2,6 +2,7 @@
 name: accuracy
 stage: proposal
 studio: sales
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the proposal accurately represents capabilities and pricing.

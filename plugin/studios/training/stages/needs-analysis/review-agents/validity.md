@@ -2,6 +2,7 @@
 name: validity
 stage: needs-analysis
 studio: training
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify needs assessment is data-driven and training is the appropriate intervention.

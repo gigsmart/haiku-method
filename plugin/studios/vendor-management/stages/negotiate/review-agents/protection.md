@@ -2,6 +2,7 @@
 name: protection
 stage: negotiate
 studio: vendor-management
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify negotiated terms adequately protect the organization's interests.

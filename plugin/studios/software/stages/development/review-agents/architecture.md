@@ -2,6 +2,7 @@
 name: architecture
 stage: development
 studio: software
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the implementation follows the project's architectural patterns and does not introduce structural debt.

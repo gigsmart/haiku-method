@@ -2,6 +2,7 @@
 name: pillar-coherence
 stage: concept
 studio: gamedev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the pillars, core loop, and fantasy are coherent — no pillar contradicts another, and the core loop actually delivers the stated fantasy.

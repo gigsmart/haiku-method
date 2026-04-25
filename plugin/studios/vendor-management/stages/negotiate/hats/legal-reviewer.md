@@ -2,6 +2,7 @@
 name: legal-reviewer
 stage: negotiate
 studio: vendor-management
+interpretation: lens
 ---
 
 **Focus:** Review contract terms for legal risk, regulatory compliance, and organizational policy alignment.

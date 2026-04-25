@@ -2,6 +2,7 @@
 name: fun-validation
 stage: prototype
 studio: gamedev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the prototype actually validated whether the core loop is fun, not whether it "runs" or "has features."

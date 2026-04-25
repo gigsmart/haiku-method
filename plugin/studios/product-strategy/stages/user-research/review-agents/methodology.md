@@ -2,6 +2,7 @@
 name: methodology
 stage: user-research
 studio: product-strategy
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify research methodology produces reliable insights.

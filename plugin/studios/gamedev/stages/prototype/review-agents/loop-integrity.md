@@ -2,6 +2,7 @@
 name: loop-integrity
 stage: prototype
 studio: gamedev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the prototype actually exercises the core loop as defined in the concept doc, not a simpler or different loop.

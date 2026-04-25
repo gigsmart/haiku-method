@@ -2,6 +2,7 @@
 name: traceability
 stage: requirements
 studio: hwdev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify every functional requirement is traceable to a user need in discovery and to a validation test plan.

@@ -2,6 +2,7 @@
 name: coverage
 stage: reconnaissance
 studio: security-assessment
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify reconnaissance covered the full target surface.

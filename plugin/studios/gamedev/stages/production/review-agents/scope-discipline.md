@@ -2,6 +2,7 @@
 name: scope-discipline
 stage: production
 studio: gamedev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** flag any work that exceeds the scope envelope defined in concept. Production is where scope creep shows up, and unchecked creep pushes the release date or starves polish.

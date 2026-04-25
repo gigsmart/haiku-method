@@ -2,6 +2,7 @@
 name: consistency
 stage: strategy
 studio: marketing
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the strategy is internally consistent and aligned with brand.

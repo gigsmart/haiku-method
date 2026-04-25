@@ -2,6 +2,7 @@
 name: correctness
 stage: extraction
 studio: data-pipeline
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify extraction logic faithfully captures source data without loss or corruption.

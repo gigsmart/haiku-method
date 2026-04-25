@@ -2,6 +2,7 @@
 name: completeness
 stage: inception
 studio: software
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the discovery document fully maps the problem space — both business context and technical landscape — and that unit elaboration covers the intent with no gaps or overlaps.

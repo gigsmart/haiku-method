@@ -2,6 +2,7 @@
 name: currency
 stage: track
 studio: project-management
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify tracking data is current and deviations are identified with root causes.

@@ -2,6 +2,7 @@
 name: regulatory-coverage
 stage: requirements
 studio: hwdev
+interpretation: strict
 ---
 
 **Mandate:** The agent **MUST** verify every target market has its applicable regulatory frameworks identified and the certification path understood.

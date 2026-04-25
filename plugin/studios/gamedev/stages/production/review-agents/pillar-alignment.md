@@ -2,6 +2,7 @@
 name: pillar-alignment
 stage: production
 studio: gamedev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify production work adheres to the pillars. Content and systems that drift from pillars produce tonal whiplash and weaken the finished game.

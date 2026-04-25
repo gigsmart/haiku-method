@@ -2,6 +2,7 @@
 name: manufacturability
 stage: design
 studio: hwdev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the design can be manufactured at target volume without custom tooling or exotic processes.

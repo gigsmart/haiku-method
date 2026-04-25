@@ -2,6 +2,7 @@
 name: coverage
 stage: validation
 studio: hwdev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify validation covers every functional requirement and every hazard from the safety analysis.

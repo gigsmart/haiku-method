@@ -2,6 +2,7 @@
 name: readiness
 stage: onboard
 studio: vendor-management
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify vendor integration is complete and the organization is ready for operational use.

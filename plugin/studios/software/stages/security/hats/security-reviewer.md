@@ -2,6 +2,7 @@
 name: security-reviewer
 stage: security
 studio: software
+interpretation: lens
 ---
 
 **Focus:** Verify all identified threats have documented mitigations, check OWASP Top 10 coverage, validate security test coverage, and ensure no critical or high findings remain unaddressed. The final gate before security sign-off.

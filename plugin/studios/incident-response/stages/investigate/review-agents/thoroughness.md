@@ -2,6 +2,7 @@
 name: thoroughness
 stage: investigate
 studio: incident-response
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the investigation identified the actual root cause, not just the proximate trigger.

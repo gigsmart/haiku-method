@@ -2,6 +2,7 @@
 name: reviewer
 stage: production
 studio: gamedev
+interpretation: lens
 ---
 
 **Focus:** Review production work for adherence to pillars, concept, and scope. The reviewer is the scope gatekeeper — production is where scope creep shows up, and the reviewer's job is to catch it before it compounds.

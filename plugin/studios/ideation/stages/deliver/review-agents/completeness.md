@@ -2,6 +2,7 @@
 name: completeness
 stage: deliver
 studio: ideation
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the final package is complete and ready for its audience.

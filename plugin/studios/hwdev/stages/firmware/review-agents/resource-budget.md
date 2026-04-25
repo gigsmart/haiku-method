@@ -2,6 +2,7 @@
 name: resource-budget
 stage: firmware
 studio: hwdev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the firmware fits within memory, flash, and power budgets with headroom for future updates.

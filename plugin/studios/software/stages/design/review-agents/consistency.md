@@ -2,6 +2,7 @@
 name: consistency
 stage: design
 studio: software
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the design is internally consistent and aligns with the project's existing design system.

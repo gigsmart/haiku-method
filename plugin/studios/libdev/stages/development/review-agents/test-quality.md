@@ -2,6 +2,7 @@
 name: test-quality
 stage: development
 studio: libdev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify tests actually exercise the public API in representative ways.

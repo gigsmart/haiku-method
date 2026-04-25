@@ -2,6 +2,7 @@
 name: test-quality
 stage: development
 studio: software
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify tests actually validate behavior, not just exercise code paths.

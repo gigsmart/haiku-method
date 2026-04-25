@@ -2,6 +2,7 @@
 name: alignment
 stage: budget
 studio: finance
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify budget allocations align with forecast assumptions and strategic priorities.

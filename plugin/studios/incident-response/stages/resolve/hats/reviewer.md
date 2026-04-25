@@ -2,6 +2,7 @@
 name: reviewer
 stage: resolve
 studio: incident-response
+interpretation: lens
 ---
 
 **Focus:** Review the permanent fix for correctness, completeness, and safety. Verify it addresses the root cause, not just the trigger. Ensure regression tests are meaningful and the deployment plan is sound.

@@ -2,6 +2,7 @@
 name: completeness
 stage: inception
 studio: hwdev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the discovery document covers everything downstream stages need.

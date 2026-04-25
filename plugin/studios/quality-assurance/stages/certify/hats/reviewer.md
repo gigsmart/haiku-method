@@ -2,6 +2,7 @@
 name: reviewer
 stage: certify
 studio: quality-assurance
+interpretation: lens
 ---
 
 **Focus:** Independently validate the certification evidence and approve or reject the release readiness determination.

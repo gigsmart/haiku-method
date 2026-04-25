@@ -2,6 +2,7 @@
 name: objectivity
 stage: evaluate
 studio: executive-strategy
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify evaluation is objective and not biased toward a pre-determined outcome.

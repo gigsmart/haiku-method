@@ -2,6 +2,7 @@
 name: reviewer
 stage: review
 studio: legal
+interpretation: lens
 ---
 
 **Focus:** Conduct substantive legal review of the draft document to ensure it achieves the stated legal objectives and protects the organization's interests.

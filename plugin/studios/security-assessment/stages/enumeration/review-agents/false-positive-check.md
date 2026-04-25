@@ -2,6 +2,7 @@
 name: false-positive-check
 stage: enumeration
 studio: security-assessment
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify vulnerability findings are real, not scanner noise.

@@ -2,6 +2,7 @@
 name: data-quality-reviewer
 stage: validation
 studio: data-pipeline
+interpretation: lens
 ---
 
 **Focus:** Review the validation suite for coverage completeness and assertion quality. Verify that tests cover all critical data paths, that thresholds are appropriately tight, and that failure modes produce actionable diagnostics rather than opaque errors.

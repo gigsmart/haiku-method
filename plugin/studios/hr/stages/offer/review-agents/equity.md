@@ -2,6 +2,7 @@
 name: equity
 stage: offer
 studio: hr
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify compensation package is equitable and properly benchmarked.

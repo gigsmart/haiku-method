@@ -2,6 +2,7 @@
 name: risk-coverage
 stage: assessment
 studio: migration
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify all migration risks and dependencies are identified.

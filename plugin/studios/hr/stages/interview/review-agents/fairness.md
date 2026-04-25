@@ -2,6 +2,7 @@
 name: fairness
 stage: interview
 studio: hr
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify interview process is structured, evidence-based, and free from bias.

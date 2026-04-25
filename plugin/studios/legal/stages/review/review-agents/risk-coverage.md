@@ -2,6 +2,7 @@
 name: risk-coverage
 stage: review
 studio: legal
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify all identified risks are adequately addressed and compliance requirements are met.

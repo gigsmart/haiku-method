@@ -2,6 +2,7 @@
 name: market-feasibility
 stage: inception
 studio: hwdev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** challenge whether the product has a defensible market position given competitive landscape and cost envelope.

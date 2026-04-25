@@ -2,6 +2,7 @@
 name: technical-reviewer
 stage: draft
 studio: documentation
+interpretation: lens
 ---
 
 **Focus:** Verify the technical accuracy of the writer's draft. Test code examples, validate API signatures, confirm configuration values, and check procedures against the running system. Every claim should be traceable to the source of truth.

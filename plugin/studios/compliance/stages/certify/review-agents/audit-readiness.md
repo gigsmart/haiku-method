@@ -2,6 +2,7 @@
 name: audit-readiness
 stage: certify
 studio: compliance
+interpretation: strict
 ---
 
 **Mandate:** The agent **MUST** verify the evidence package and remediation state are sufficient to pass external audit.

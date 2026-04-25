@@ -2,6 +2,7 @@
 name: rigor
 stage: prioritization
 studio: product-strategy
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify prioritization scores are defensible and free from bias.

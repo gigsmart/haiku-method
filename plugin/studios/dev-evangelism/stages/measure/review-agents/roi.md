@@ -2,6 +2,7 @@
 name: roi
 stage: measure
 studio: dev-evangelism
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the impact analysis is data-driven and produces actionable recommendations.

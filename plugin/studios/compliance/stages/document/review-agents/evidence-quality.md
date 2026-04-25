@@ -2,6 +2,7 @@
 name: evidence-quality
 stage: document
 studio: compliance
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify evidence packages meet audit standards.

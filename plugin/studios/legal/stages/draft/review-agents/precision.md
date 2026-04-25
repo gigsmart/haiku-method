@@ -2,6 +2,7 @@
 name: precision
 stage: draft
 studio: legal
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify draft document uses precise language and addresses all requirements from the legal brief.

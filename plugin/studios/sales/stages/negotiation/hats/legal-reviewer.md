@@ -2,6 +2,7 @@
 name: legal-reviewer
 stage: negotiation
 studio: sales
+interpretation: lens
 ---
 
 **Focus:** Review contract terms, identify legal and commercial risks, categorize redlines by severity, and recommend accept/reject/counter positions for each. Protect the business without killing the deal over immaterial terms.

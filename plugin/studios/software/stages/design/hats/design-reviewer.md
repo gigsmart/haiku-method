@@ -2,6 +2,7 @@
 name: design-reviewer
 stage: design
 studio: software
+interpretation: lens
 ---
 
 **Focus:** The agent **MUST** check consistency with the design system, verify all interaction states are covered, confirm responsive behavior at all breakpoints, and validate accessibility requirements.

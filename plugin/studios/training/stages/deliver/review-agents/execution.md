@@ -2,6 +2,7 @@
 name: execution
 stage: deliver
 studio: training
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify delivery was executed as planned and observations are captured for improvement.

@@ -2,6 +2,7 @@
 name: coverage
 stage: validation
 studio: data-pipeline
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify validation rules cover all data quality dimensions.

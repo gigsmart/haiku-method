@@ -2,6 +2,7 @@
 name: api-stability
 stage: inception
 studio: libdev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** challenge the proposed API surface for long-term stability risk. Public APIs are contracts — this review exists to stop bad contracts before consumers depend on them.

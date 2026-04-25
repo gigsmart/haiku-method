@@ -2,6 +2,7 @@
 name: severity-accuracy
 stage: triage
 studio: incident-response
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify severity classification and blast radius assessment are accurate.

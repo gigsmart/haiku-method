@@ -2,6 +2,7 @@
 name: completeness
 stage: inception
 studio: libdev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify that discovery and API surface documents fully cover what downstream stages need to proceed.

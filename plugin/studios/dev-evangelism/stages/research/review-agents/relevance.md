@@ -2,6 +2,7 @@
 name: relevance
 stage: research
 studio: dev-evangelism
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify research targets genuine developer needs and credible topic opportunities.

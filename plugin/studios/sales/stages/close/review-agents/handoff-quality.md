@@ -2,6 +2,7 @@
 name: handoff-quality
 stage: close
 studio: sales
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the deal close and customer success handoff are complete.

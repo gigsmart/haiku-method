@@ -2,6 +2,7 @@
 name: effectiveness
 stage: remediate
 studio: compliance
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify remediations actually close the identified gaps.

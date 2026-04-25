@@ -2,6 +2,7 @@
 name: terms-review
 stage: negotiation
 studio: sales
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify negotiated terms protect business interests while meeting prospect needs.

@@ -2,6 +2,7 @@
 name: clarity
 stage: reporting
 studio: finance
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify financial reports are clear, accurate, and appropriate for their target audience.

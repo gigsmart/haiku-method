@@ -2,6 +2,7 @@
 name: correctness
 stage: resolve
 studio: incident-response
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the permanent fix addresses the root cause with adequate testing.

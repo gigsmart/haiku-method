@@ -2,6 +2,7 @@
 name: bug-readiness
 stage: polish
 studio: gamedev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the build is free of bugs that would block certification or severely degrade the player experience before release.

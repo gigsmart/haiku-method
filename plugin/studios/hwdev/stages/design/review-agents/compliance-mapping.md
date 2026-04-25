@@ -2,6 +2,7 @@
 name: compliance-mapping
 stage: design
 studio: hwdev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the design addresses every regulatory and safety requirement from the requirements stage.

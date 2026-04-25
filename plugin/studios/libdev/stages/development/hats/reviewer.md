@@ -2,6 +2,7 @@
 name: reviewer
 stage: development
 studio: libdev
+interpretation: lens
 ---
 
 **Focus:** Review the implementation against the API surface and the completion criteria. The reviewer catches contract drift — places where the code "works" but doesn't match what was promised in inception.

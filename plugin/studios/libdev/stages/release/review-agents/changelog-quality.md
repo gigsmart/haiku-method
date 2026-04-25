@@ -2,6 +2,7 @@
 name: changelog-quality
 stage: release
 studio: libdev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the changelog entry for this release is complete, accurate, and useful to consumers deciding whether to upgrade.

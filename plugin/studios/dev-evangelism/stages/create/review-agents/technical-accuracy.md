@@ -2,6 +2,7 @@
 name: technical-accuracy
 stage: create
 studio: dev-evangelism
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify all technical content is accurate, runnable, and trustworthy.

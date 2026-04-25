@@ -2,6 +2,7 @@
 name: reach
 stage: publish
 studio: dev-evangelism
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify distribution covers the target audience effectively across planned channels.

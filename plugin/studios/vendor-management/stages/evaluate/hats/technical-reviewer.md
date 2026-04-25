@@ -2,6 +2,7 @@
 name: technical-reviewer
 stage: evaluate
 studio: vendor-management
+interpretation: lens
 ---
 
 **Focus:** Validate vendor technical claims through proof-of-concept testing and reference verification.

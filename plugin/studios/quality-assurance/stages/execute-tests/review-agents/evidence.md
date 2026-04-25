@@ -2,6 +2,7 @@
 name: evidence
 stage: execute-tests
 studio: quality-assurance
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify test execution is complete with evidence-backed results and properly documented defects.

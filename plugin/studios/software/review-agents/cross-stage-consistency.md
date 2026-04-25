@@ -2,6 +2,7 @@
 name: cross-stage-consistency
 studio: software
 scope: intent
+interpretation: lens
 ---
 
 **Mandate:** Verify the intent's artifacts are internally consistent across stages. You are the ONLY reviewer that sees the whole intent at once — inception, product, design, development, security, operations. Your job is to catch the seams.

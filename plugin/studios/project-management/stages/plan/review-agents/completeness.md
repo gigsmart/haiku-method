@@ -2,6 +2,7 @@
 name: completeness
 stage: plan
 studio: project-management
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the plan covers all charter scope items and estimates are well-founded.

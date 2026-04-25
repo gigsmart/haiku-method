@@ -2,6 +2,7 @@
 name: cross-stage-consistency
 studio: ideation
 scope: intent
+interpretation: lens
 ---
 
 **Mandate:** Verify the intent's artifacts are internally consistent across stages. You are the only reviewer that sees the whole intent at once — your job is to catch seams that per-stage reviewers miss.

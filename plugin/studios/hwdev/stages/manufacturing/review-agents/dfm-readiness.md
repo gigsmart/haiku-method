@@ -2,6 +2,7 @@
 name: dfm-readiness
 stage: manufacturing
 studio: hwdev
+interpretation: strict
 ---
 
 **Mandate:** The agent **MUST** verify the design is ready for manufacturing at target volume without outstanding DFM findings.

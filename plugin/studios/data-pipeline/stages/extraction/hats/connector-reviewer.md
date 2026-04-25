@@ -2,6 +2,7 @@
 name: connector-reviewer
 stage: extraction
 studio: data-pipeline
+interpretation: lens
 ---
 
 **Focus:** Review extraction implementations for reliability, idempotency, and operational safety. Verify that connectors handle schema drift, network failures, and partial extractions without data loss or duplication.

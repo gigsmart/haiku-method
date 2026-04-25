@@ -2,6 +2,7 @@
 name: completeness
 stage: intake
 studio: legal
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** verify the legal brief captures all relevant facts and the risk assessment is thorough.

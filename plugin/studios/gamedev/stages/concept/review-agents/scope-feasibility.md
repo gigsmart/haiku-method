@@ -2,6 +2,7 @@
 name: scope-feasibility
 stage: concept
 studio: gamedev
+interpretation: lens
 ---
 
 **Mandate:** The agent **MUST** challenge whether the scope is achievable for the stated budget class and timeframe. Games ship late because scope was never defensible in the first place.
