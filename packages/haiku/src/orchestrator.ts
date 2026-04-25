@@ -8016,7 +8016,7 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					"",
 					"- **Missing inputs**: unit declares a sweep/audit but its `inputs:` list only covers a subset of files the rule must apply to. Flag when enforcement scope < rule scope.",
 					"- **Prose-only gates**: `quality_gates:` entries that are strings instead of executable `{name, command}` objects. These won't actually enforce anything — the FSM skips them.",
-					"- **Unfalsifiable criteria**: 'responsive design done' vs 'breakpoints at 375/768/1280 with screenshots'. Gates must be measurable.",
+					"- **Unfalsifiable criteria**: 'responsive design done' vs 'breakpoints at 375/768/1280 with screenshots'. Gates must be measurable. Also flag criteria that LOOK concrete but have no apparent verification path — neither a `quality_gates:` entry, nor a review-agent mandate, nor a stage-appropriate approval condition (visual approval for design, behavioral test for product) plausibly covers them. Name each such criterion and propose a pairing in the suggested fix.",
 					"- **Sibling conflicts** between pending units — watch for any of these shapes, not just same-output drift:",
 					"  - **Same-output drift**: two units produce or modify the same output (file path, schema, route, artifact) under different rules.",
 					"  - **Contradictory criteria**: two units describe the same component or behavior but their acceptance criteria diverge (one says `p95 < 100ms`, another says `async, no latency target`).",
