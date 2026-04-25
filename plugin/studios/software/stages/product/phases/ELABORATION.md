@@ -9,7 +9,7 @@ criteria_focus: product
 
 ## Criteria Guidance
 
-Every acceptance criterion **MUST** be paired with a command or condition that proves it. Product criteria are verified by **behavioral testing** — automated tests (e.g. Cucumber `.feature` scenarios, integration tests, contract tests) that assert the system behaves as specified. The FSM rejects prose-only criteria; if a criterion can't be expressed as a behavioral test scenario or a structural check, it's a spec gap — surface it via `ask_user_visual_question`, do not paper over with prose.
+Product criteria are verified by **behavioral testing** — automated tests (e.g. Cucumber `.feature` scenarios, integration tests, contract tests) that assert the system behaves as specified.
 
 ### Good criteria — concrete and verifiable
 
@@ -28,9 +28,9 @@ When generating criteria for this stage, focus on behavioral verification:
 - "Handles errors" — which errors? What's the expected response?
 - "Data is validated" — against which schema? What error format?
 
-### Bad criteria — specific but unverifiable
+### Bad criteria — product-specific unverifiable
+
+(In addition to the universal unverifiable shapes called out in the FSM contracts.)
 
 - "Behavior is intuitive" — needs a usability-test pass with a stated success-rate threshold
-- "Performance is acceptable" — needs a numeric threshold AND a measurement command (e.g. `p95 latency < 200ms`)
-- "Error messages are user-friendly" — needs a UX-review pass or a literal allow-list of acceptable phrasings
-- "Coverage is comprehensive" — needs a structural check counting scenarios against the user-facing capability list, not a subjective judgment
+- "Coverage is comprehensive across the user-facing capability list" — needs a structural check counting scenarios against the capability list, not a subjective judgment

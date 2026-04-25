@@ -22,7 +22,7 @@ During elaboration, the agent **MUST** create **multiple low-fidelity wireframe 
 
 ## Criteria Guidance
 
-Every acceptance criterion **MUST** be paired with a verifiable condition. Design criteria are verified by **visual approval** — a reviewer inspects the deliverable against the criterion, not by command-exit-code. The FSM still rejects prose-only criteria; the condition can be a structural check (counting screen variants, asserting tokens-only colors via grep) or a reviewer-applied condition stated precisely enough that two reviewers would reach the same verdict.
+Design criteria are verified by **visual approval** — a reviewer inspects the deliverable against the criterion, not by command-exit-code. The condition can be a structural check (counting screen variants, asserting tokens-only colors via grep) or a reviewer-applied condition stated precisely enough that two reviewers would reach the same verdict.
 
 ### Good criteria — concrete and verifiable
 
@@ -44,10 +44,10 @@ When generating criteria for this stage, focus on verifiable design deliverables
 - "It's responsive" — at which breakpoints? With what behavior?
 - "Accessible" — to which standard? WCAG A, AA, AAA?
 
-### Bad criteria — specific but unverifiable
+### Bad criteria — design-specific unverifiable
+
+(In addition to the universal unverifiable shapes called out in the FSM contracts.)
 
 - "Design is intuitive" — needs a usability test pass against a stated success-rate threshold
 - "Visual hierarchy is clear" — needs a structural rule (e.g. heading scale, contrast progression) the reviewer can apply consistently
 - "Brand feels right" — needs a brand-guideline document to compare against, not a subjective vibe check
-
-If a criterion can't be expressed as a structural check or a precisely-stated reviewer condition, it's a spec gap — surface it via `ask_user_visual_question`, do not paper over with prose.
