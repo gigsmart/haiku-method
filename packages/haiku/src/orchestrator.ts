@@ -6039,7 +6039,7 @@ function buildRunInstructions(
 						"## Scope (STRICT)",
 						"",
 						`- You research **only** the axis defined by the "${a.name}" template. Other discovery artifacts in this stage are being researched by **sibling subagents in parallel** — do NOT investigate adjacent domains, do NOT pre-empt their work, do NOT leave notes for them.`,
-						"- If you encounter information that belongs in a sibling artifact, IGNORE it. The sibling will surface it. Cross-pollinating findings creates merge conflicts at the integrator step.",
+						"- If you encounter information that belongs primarily in a sibling artifact, do NOT write it to the sibling's file path — that creates merge conflicts at the integrator step. Note it briefly as a *context boundary* in your own artifact (e.g. *\"depends on auth model — see security artifact\"*) and let the sibling agent author the substance. Cross-cutting constraints that genuinely shape multiple axes (security boundaries, hard dependencies) should be noted in your artifact too, in the boundary section, so they're not lost if the sibling misses them.",
 						"- Your write path is ONE file at the template's `location:`. Any other file write — sibling artifacts, intent.md, unit specs, knowledge files outside your `location:` — is a scope violation.",
 						"- Do NOT attempt to summarize or synthesize across sibling artifacts. The elaborate phase does that on the next FSM tick, after all discovery merges back.",
 						"",
@@ -6104,17 +6104,19 @@ function buildRunInstructions(
 				[
 					"## Approach Selection (before decomposing units)",
 					"",
-					"If this stage has a meaningful architectural choice in front of it (e.g. *which* data model, *which* auth strategy, *which* deployment topology), pause and propose **2–3 approaches** before drafting units. Each approach gets:",
+					"If this stage has a meaningful architectural choice in front of it (e.g. *which* data model, *which* auth strategy, *which* deployment topology), pause and articulate **2–3 approaches** before drafting units. Each approach gets:",
 					"",
 					"- one-sentence description of what's built and how",
 					"- the tradeoff axis the choice turns on (speed/safety, cost/flexibility, reversibility, etc.)",
 					"- a recommendation with one-sentence justification",
 					"",
-					`Use \`ask_user_visual_question\` to let the user pick. Only after the user picks (or you've stated explicitly that no architectural choice exists at this stage) should you draft units.`,
+					elaboration === "collaborative"
+						? `**In collaborative mode:** Use \`ask_user_visual_question\` to let the user pick. Record the resolved choice via \`haiku_decision_record\` (source: \`user\`). Only after the user picks (or you've stated explicitly that no architectural choice exists at this stage) should you draft units.`
+						: "**In autonomous mode:** Choose the approach independently and state your rationale in one sentence. Do NOT prompt the user — autonomous mode means the agent decides. If the choice has cross-cutting risk, surface it inline in the elaborate output so a reviewer can challenge it later.",
 					"",
 					"**Skip this only when:** discovery has already narrowed to a single forced approach, OR the stage's work is mechanical (no architectural choice — e.g. a runbook against a fixed deployment pipeline). In that case, state the forced approach in one sentence in the elaborate output and proceed to unit decomposition.",
 					"",
-					"**Do NOT** dump three full design docs as units and ask the user to pick later. The choice is upstream of decomposition; commit to one approach, then decompose it.",
+					"**Do NOT** dump three full design docs as units and ask the reviewer to pick later. The choice is upstream of decomposition; commit to one approach, then decompose it.",
 				].join("\n"),
 			)
 

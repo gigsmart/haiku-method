@@ -2227,6 +2227,24 @@ export interface StageIteration {
  *  must resolve. */
 export const MAX_STAGE_ITERATIONS = 2
 
+/**
+ * Maximum number of bolts (full hat-sequence iterations) a unit can run.
+ *
+ * Used by THREE distinct rejection paths — keep them coupled here so the
+ * limit doesn't silently diverge if one is tuned:
+ *   - `haiku_unit_advance_hat`: per-hat `run_quality_gates: true` auto-reject
+ *     when gates fail (counts as a bolt; same hat retries).
+ *   - `haiku_unit_reject_hat`: explicit reject by the agent (drops back one
+ *     hat, increments bolt).
+ *   - `haiku_unit_increment_bolt`: agent-driven increment (rare; legacy).
+ *
+ * Exceeding this cap surfaces `max_bolts_exceeded` to the user — the unit
+ * needs structural intervention (spec rewrite, manual revert, split), not
+ * another retry. Tune at this single source if the cap proves wrong in
+ * practice; do NOT inline a different number elsewhere.
+ */
+export const MAX_UNIT_BOLTS = 5
+
 /** Build a loop-detection signature from a list of feedback titles.
  *  Stable hash of the sorted, normalized title set. */
 export function computeFeedbackSignature(titles: string[]): string {
@@ -4899,11 +4917,15 @@ export function handleStateTool(
 			// Stop hook still runs gates as a backstop after the tool call
 			// completes — but with the boolean set, the auto-reject already
 			// fired here so the Stop hook sees a clean state.
-			{
+			if (currentHat) {
+				// Defer the intent.md read + frontmatter parse until we know we
+				// have a current hat — most advance_hat calls hit this path,
+				// but skipping the I/O for the no-hat edge case keeps the
+				// hot path lean.
 				const intentFile = `${intentDir(args.intent as string)}/intent.md`
 				const { data: iFm } = parseFrontmatter(readFileSync(intentFile, "utf8"))
 				const gateStudio = (iFm.studio as string) || ""
-				if (gateStudio && currentHat) {
+				if (gateStudio) {
 					const hatDefs = readHatDefs(gateStudio, advStage)
 					const hatDef = hatDefs[currentHat]
 					if (hatDef?.run_quality_gates === true) {
@@ -4913,16 +4935,15 @@ export function handleStateTool(
 						)
 						if (gateResult) {
 							const currentBolt = (unitFm.bolt as number) || 1
-							const MAX_BOLTS_GATE = 5
-							if (currentBolt + 1 > MAX_BOLTS_GATE) {
+							if (currentBolt + 1 > MAX_UNIT_BOLTS) {
 								return text(
 									JSON.stringify({
 										error: "max_bolts_exceeded",
 										reason: "quality_gate_auto_reject",
 										bolt: currentBolt,
-										max: MAX_BOLTS_GATE,
+										max: MAX_UNIT_BOLTS,
 										failures: gateResult.failures,
-										message: `Quality gates failed on hat '${currentHat}' and the unit has hit ${MAX_BOLTS_GATE} bolt iterations. Escalate to the user — the gates are catching real issues this hat cannot resolve in another bolt.\n\n${gateResult.failures.map((f) => `- ${f.name}: '${f.command}' exited ${f.exit_code}${f.output ? `\n  ${f.output.split("\n").slice(0, 3).join("\n  ")}` : ""}`).join("\n")}`,
+										message: `Quality gates failed on hat '${currentHat}' and the unit has hit ${MAX_UNIT_BOLTS} bolt iterations. Escalate to the user — the gates are catching real issues this hat cannot resolve in another bolt.\n\n${gateResult.failures.map((f) => `- ${f.name}: '${f.command}' exited ${f.exit_code}${f.output ? `\n  ${f.output.split("\n").slice(0, 3).join("\n  ")}` : ""}`).join("\n")}`,
 									}),
 								)
 							}
@@ -4985,7 +5006,7 @@ export function handleStateTool(
 								_push_warning: pushWarning(autoRejectGit) || undefined,
 							})
 							return text(
-								`FSM Result written to: ${resultPath}\n\nYOUR FINAL MESSAGE TO THE PARENT MUST BE EXACTLY ONE LINE:\n\nFSM Result: ${resultPath}\n\nDo NOT add prose or summary. Parent reads the file to drive the rebolt — gates failed (${gateResult.failures.map((f) => f.name).join(", ")}), bolt ${currentBolt + 1}/${MAX_BOLTS_GATE}, retrying ${currentHat}.`,
+								`FSM Result written to: ${resultPath}\n\nYOUR FINAL MESSAGE TO THE PARENT MUST BE EXACTLY ONE LINE:\n\nFSM Result: ${resultPath}\n\nDo NOT add prose or summary. Parent reads the file to drive the rebolt — gates failed (${gateResult.failures.map((f) => f.name).join(", ")}), bolt ${currentBolt + 1}/${MAX_UNIT_BOLTS}, retrying ${currentHat}.`,
 							)
 						}
 					}
@@ -5472,14 +5493,13 @@ export function handleStateTool(
 			// hatch. Must run before the scope gate so a repeatedly-rejected
 			// unit with a committed scope violation can still hit MAX_BOLTS
 			// and escalate to the user instead of deadlocking.
-			const MAX_BOLTS_FAIL = 5
-			if (currentBolt + 1 > MAX_BOLTS_FAIL) {
+			if (currentBolt + 1 > MAX_UNIT_BOLTS) {
 				return text(
 					JSON.stringify({
 						error: "max_bolts_exceeded",
 						bolt: currentBolt,
-						max: MAX_BOLTS_FAIL,
-						message: `Unit has exceeded ${MAX_BOLTS_FAIL} bolt iterations. Escalate to the user — this unit may need to be redesigned, split, or have a persistent scope violation manually reverted (\`git reset --hard $(git merge-base HEAD haiku/${args.intent as string}/${rejectStage})\` in the unit worktree).`,
+						max: MAX_UNIT_BOLTS,
+						message: `Unit has exceeded ${MAX_UNIT_BOLTS} bolt iterations. Escalate to the user — this unit may need to be redesigned, split, or have a persistent scope violation manually reverted (\`git reset --hard $(git merge-base HEAD haiku/${args.intent as string}/${rejectStage})\` in the unit worktree).`,
 					}),
 				)
 			}
@@ -5503,7 +5523,7 @@ export function handleStateTool(
 					: null
 				if (scopeResult) {
 					// Persisted counter of scope-violation returns from reject_hat.
-					// Accumulates across calls so MAX_BOLTS_FAIL trips even when
+					// Accumulates across calls so MAX_UNIT_BOLTS trips even when
 					// the agent never clears the violation. Reset to 0 on any
 					// successful scope-clean reject (see below).
 					const { data: attemptsFm } = parseFrontmatter(
@@ -5515,13 +5535,13 @@ export function handleStateTool(
 					setFrontmatterField(failPath, "scope_reject_attempts", newAttempts)
 					sealIntentState(args.intent as string)
 
-					if (newAttempts >= MAX_BOLTS_FAIL) {
+					if (newAttempts >= MAX_UNIT_BOLTS) {
 						return text(
 							JSON.stringify({
 								error: "max_bolts_exceeded",
 								reason: "persistent_scope_violation",
 								attempts: newAttempts,
-								max: MAX_BOLTS_FAIL,
+								max: MAX_UNIT_BOLTS,
 								violations: scopeResult.violations,
 								message: `Unit has hit ${newAttempts} consecutive scope-violation rejects. Escalate to the user. The worktree still contains out-of-scope commits that must be reverted manually: \`git reset --hard $(git merge-base HEAD haiku/${args.intent as string}/${rejectStage})\` in the unit worktree.`,
 							}),
@@ -5533,12 +5553,12 @@ export function handleStateTool(
 							error: "unit_scope_violation_on_reject",
 							bolt: currentBolt,
 							scope_reject_attempts: newAttempts,
-							max_attempts: MAX_BOLTS_FAIL,
+							max_attempts: MAX_UNIT_BOLTS,
 							violations: scopeResult.violations,
 							scope: scopeResult.scope,
 							message:
 								`Cannot reject hat: the unit worktree still contains ${scopeResult.violations.length} out-of-scope write(s) that must be reverted first. ` +
-								`Attempt ${newAttempts}/${MAX_BOLTS_FAIL} — after ${MAX_BOLTS_FAIL} scope-violation rejects, the FSM escalates to the user.\n\n` +
+								`Attempt ${newAttempts}/${MAX_UNIT_BOLTS} — after ${MAX_UNIT_BOLTS} scope-violation rejects, the FSM escalates to the user.\n\n` +
 								`Out-of-bounds files:\n${scopeResult.violations.map((v) => `  - ${v}`).join("\n")}\n\n` +
 								`Revert the out-of-bounds commits in the unit worktree: drop all unit commits with \`git reset --hard $(git merge-base HEAD haiku/${args.intent as string}/${rejectStage})\`, or amend a single file out with \`git rm <file> && git commit --amend --no-edit\`, or \`git revert --no-edit <commit-sha>\` for a whole commit. NOTE: \`git checkout HEAD -- <file>\` is a NO-OP on committed files and will not clear the violation. After the revert, call reject_hat again.`,
 						}),
@@ -5658,15 +5678,14 @@ export function handleStateTool(
 			const { data } = parseFrontmatter(readFileSync(path, "utf8"))
 			const current = (data.bolt as number) || 0
 
-			// Enforce max bolt limit
-			const MAX_BOLTS_INC = 5
-			if (current + 1 > MAX_BOLTS_INC) {
+			// Enforce max bolt limit (module-level MAX_UNIT_BOLTS)
+			if (current + 1 > MAX_UNIT_BOLTS) {
 				return text(
 					JSON.stringify({
 						error: "max_bolts_exceeded",
 						bolt: current,
-						max: MAX_BOLTS_INC,
-						message: `Unit has exceeded ${MAX_BOLTS_INC} bolt iterations. Escalate to the user — this unit may need to be redesigned or split.`,
+						max: MAX_UNIT_BOLTS,
+						message: `Unit has exceeded ${MAX_UNIT_BOLTS} bolt iterations. Escalate to the user — this unit may need to be redesigned or split.`,
 					}),
 				)
 			}
@@ -5766,6 +5785,15 @@ export function handleStateTool(
 						error: "options_too_few",
 						message:
 							"`options` must be an array of at least 2 concrete alternatives. A 'decision' with only one option isn't a decision — it's just doing the work. If the work is forced, use `no_decisions: true` with a rationale instead.",
+					}),
+				)
+			}
+
+			if (!options.includes(choice)) {
+				return text(
+					JSON.stringify({
+						error: "choice_not_in_options",
+						message: `\`choice\` must match one of the entries in \`options\`. Got choice=${JSON.stringify(choice)}; options=${JSON.stringify(options)}. The decision-log is provenance — recording a choice that wasn't in the presented alternatives corrupts the very property the log exists to preserve.`,
 					}),
 				)
 			}
