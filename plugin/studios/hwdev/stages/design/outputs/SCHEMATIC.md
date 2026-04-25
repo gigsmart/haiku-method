@@ -1,6 +1,6 @@
 ---
 name: schematic
-location: (tscircuit source tree — `.tsx` circuit code, with exported SVG/Gerbers alongside)
+location: (tscircuit source tree — `.tsx` circuit code, with rendered schematic SVG exported alongside)
 scope: repo
 format: artifact
 required: true
@@ -8,7 +8,7 @@ required: true
 
 # Schematic
 
-The complete electrical schematic, authored as [tscircuit](https://tscircuit.com) TypeScript/React code (`.tsx`). Components are expressed as composable elements with part numbers, values, and rationale for non-obvious choices. The circuit source is the authoritative artifact — rendered SVG and manufacturing exports are regenerated from it.
+The complete electrical schematic, authored as [tscircuit](https://tscircuit.com) TypeScript/React code (`.tsx`). Components are expressed as composable elements with part numbers, values, and rationale for non-obvious choices. The circuit source is the authoritative artifact — the rendered schematic SVG is regenerated from it. PCB layout and fabrication exports (Gerbers, drill, pick-and-place) are tracked separately under `outputs/PCB.md`.
 
 ## Content Guide
 
