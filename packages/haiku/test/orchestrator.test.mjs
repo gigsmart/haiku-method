@@ -759,7 +759,7 @@ Second intent body.
 		assert.strictEqual(result.stage, "plan")
 	})
 
-	test("enforces collaborative elaboration minimum turns", () => {
+	test("blocks advance in collaborative mode when decision_log is empty", () => {
 		const { projDir, slug, intentDirPath } = createProject("elaborate-collab", {
 			active_stage: "plan",
 			stageConfig: { plan: { elaboration: "collaborative" } },
@@ -771,10 +771,64 @@ Second intent body.
 		createUnit(intentDirPath, "plan", "unit-01-first")
 		process.chdir(projDir)
 
-		// First call — turn 1, should be insufficient
 		const result = runNext(slug)
 		assert.strictEqual(result.action, "elaboration_insufficient")
+		assert.strictEqual(result.decisions_recorded, 0)
+		// Counter still ticks (telemetry), but isn't the gate any more
 		assert.strictEqual(result.turns, 1)
+	})
+
+	test("allows advance in collaborative mode when decision_log is non-empty", () => {
+		const { projDir, slug, intentDirPath } = createProject(
+			"elaborate-collab-with-decision",
+			{
+				active_stage: "plan",
+				stageConfig: { plan: { elaboration: "collaborative" } },
+			},
+		)
+		createStageState(intentDirPath, "plan", {
+			phase: "elaborate",
+			elaboration_turns: 0,
+			decision_log: [
+				{
+					decision: "Auth strategy",
+					options: ["OAuth", "magic link"],
+					choice: "OAuth",
+					source: "user",
+					recorded_at: "2026-04-25T00:00:00.000Z",
+				},
+			],
+		})
+		createUnit(intentDirPath, "plan", "unit-01-first")
+		process.chdir(projDir)
+
+		const result = runNext(slug)
+		// With decision_log non-empty, the elaborate gate is satisfied;
+		// the FSM proceeds past it (specific action depends on stage config,
+		// but it should NOT be elaboration_insufficient)
+		assert.notStrictEqual(result.action, "elaboration_insufficient")
+	})
+
+	test("allows advance in collaborative mode when no_decisions is declared", () => {
+		const { projDir, slug, intentDirPath } = createProject(
+			"elaborate-collab-no-decisions",
+			{
+				active_stage: "plan",
+				stageConfig: { plan: { elaboration: "collaborative" } },
+			},
+		)
+		createStageState(intentDirPath, "plan", {
+			phase: "elaborate",
+			elaboration_turns: 0,
+			elaboration_no_decisions: true,
+			elaboration_no_decisions_rationale:
+				"Routine inception following the team template; no architectural choices remain.",
+		})
+		createUnit(intentDirPath, "plan", "unit-01-first")
+		process.chdir(projDir)
+
+		const result = runNext(slug)
+		assert.notStrictEqual(result.action, "elaboration_insufficient")
 	})
 
 	// ── runNext: unit naming validation ───────────────────────────────────────

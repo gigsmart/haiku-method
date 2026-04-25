@@ -4099,6 +4099,55 @@ export const stateToolDefs = [
 			required: ["intent", "stage", "unit"],
 		},
 	},
+	{
+		name: "haiku_decision_record",
+		description:
+			"Record an elaboration decision in the stage's decision_log, OR declare 'no architectural decisions in scope' for the stage. Used in collaborative-mode stages to track meaningful human-AI knowledge-unification moments instead of counting interaction turns. Each entry is an architectural choice the user picked between options, OR a choice the agent made and surfaced for veto-style approval. Padding questions don't count.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent: { type: "string" },
+				stage: {
+					type: "string",
+					description:
+						"Stage name. Defaults to the intent's active_stage when omitted.",
+				},
+				no_decisions: {
+					type: "boolean",
+					description:
+						"When true, declare that no architectural decisions are in scope for this stage. `rationale` (≥10 chars) is required. The agent should use this honestly when the work is purely conventional with no real choices to make.",
+				},
+				decision: {
+					type: "string",
+					description:
+						"Short title of the decision being recorded (required unless no_decisions=true). Example: 'Authentication strategy'.",
+				},
+				options: {
+					type: "array",
+					items: { type: "string" },
+					description:
+						"≥2 concrete alternatives considered (required unless no_decisions=true). A 'decision' with only one option isn't a decision — it's just doing the work.",
+				},
+				choice: {
+					type: "string",
+					description:
+						"The chosen option (required unless no_decisions=true). Should match one of the entries in `options`.",
+				},
+				source: {
+					type: "string",
+					enum: ["user", "autonomous-acknowledged"],
+					description:
+						"Who made the call. 'user' = the user picked between options the agent presented. 'autonomous-acknowledged' = the agent chose and surfaced the choice for veto-style approval (the user reviewed and didn't push back).",
+				},
+				rationale: {
+					type: "string",
+					description:
+						"Optional for decisions (recommended for future-reader provenance); required when no_decisions=true.",
+				},
+			},
+			required: ["intent"],
+		},
+	},
 	// Knowledge tools
 	{
 		name: "haiku_knowledge_list",
@@ -5632,6 +5681,131 @@ export function handleStateTool(
 				bolt: String(current + 1),
 			})
 			return text(String(current + 1))
+		}
+
+		case "haiku_decision_record": {
+			const intentArg = args.intent as string
+			const requestedStage = args.stage as string | undefined
+			const stage = requestedStage || resolveActiveStage(intentArg)
+			if (!stage) {
+				return text(
+					JSON.stringify({
+						error: "no_active_stage",
+						message:
+							"No stage specified and no active stage found on the intent.",
+					}),
+				)
+			}
+
+			const stageDir = join(intentDir(intentArg), "stages", stage)
+			const stateFile = join(stageDir, "state.json")
+			if (!existsSync(stateFile)) {
+				return text(
+					JSON.stringify({
+						error: "stage_state_missing",
+						message: `Stage state file not found: ${stateFile}`,
+					}),
+				)
+			}
+			const stageState = JSON.parse(readFileSync(stateFile, "utf8")) as Record<
+				string,
+				unknown
+			>
+
+			const noDecisions = args.no_decisions === true
+			const rationale = (args.rationale as string | undefined)?.trim()
+
+			if (noDecisions) {
+				if (!rationale || rationale.length < 10) {
+					return text(
+						JSON.stringify({
+							error: "rationale_required",
+							message:
+								"no_decisions=true requires a rationale of at least 10 characters explaining why no architectural decisions are in scope for this stage. State the convention or constraint that makes the work routine (e.g. 'all units follow the team's standard CRUD scaffolding; no architectural choices remain after design stage').",
+						}),
+					)
+				}
+				stageState.elaboration_no_decisions = true
+				stageState.elaboration_no_decisions_rationale = rationale
+				stageState.elaboration_no_decisions_at = timestamp()
+				writeJson(stateFile, stageState)
+				sealIntentState(intentArg)
+				emitTelemetry("haiku.elaboration.no_decisions_declared", {
+					intent: intentArg,
+					stage,
+				})
+				return text(
+					JSON.stringify({
+						ok: true,
+						intent: intentArg,
+						stage,
+						no_decisions: true,
+						rationale,
+					}),
+				)
+			}
+
+			const decision = (args.decision as string | undefined)?.trim()
+			const options = args.options as string[] | undefined
+			const choice = (args.choice as string | undefined)?.trim()
+			const source = args.source as string | undefined
+
+			if (!decision || !options || !choice || !source) {
+				return text(
+					JSON.stringify({
+						error: "missing_fields",
+						message:
+							"haiku_decision_record requires `decision`, `options`, `choice`, and `source` (or `no_decisions: true` with `rationale`).",
+					}),
+				)
+			}
+
+			if (!Array.isArray(options) || options.length < 2) {
+				return text(
+					JSON.stringify({
+						error: "options_too_few",
+						message:
+							"`options` must be an array of at least 2 concrete alternatives. A 'decision' with only one option isn't a decision — it's just doing the work. If the work is forced, use `no_decisions: true` with a rationale instead.",
+					}),
+				)
+			}
+
+			if (source !== "user" && source !== "autonomous-acknowledged") {
+				return text(
+					JSON.stringify({
+						error: "invalid_source",
+						message:
+							'`source` must be "user" (the user picked between the options) or "autonomous-acknowledged" (you chose and surfaced the choice for the user to veto, and they did not push back).',
+					}),
+				)
+			}
+
+			const log = ((stageState.decision_log as unknown[]) ||
+				[]) as Array<Record<string, unknown>>
+			log.push({
+				decision,
+				options,
+				choice,
+				source,
+				rationale: rationale || null,
+				recorded_at: timestamp(),
+			})
+			stageState.decision_log = log
+			writeJson(stateFile, stageState)
+			sealIntentState(intentArg)
+			emitTelemetry("haiku.decision.recorded", {
+				intent: intentArg,
+				stage,
+				source,
+			})
+			return text(
+				JSON.stringify({
+					ok: true,
+					intent: intentArg,
+					stage,
+					decision_count: log.length,
+				}),
+			)
 		}
 
 		// ── Knowledge ──

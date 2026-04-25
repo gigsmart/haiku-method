@@ -421,6 +421,8 @@ Both modes share three planning levels:
 
 The first two levels are collaborative because they define scope and success criteria — decisions that require human judgment. The third is AI-driven because it concerns implementation tactics within already-agreed boundaries.
 
+Collaboration is measured by **decisions**, not turns. Each collaborative stage maintains a `decision_log` of architectural choices: who picked, between what options, and why. A stage cannot advance until at least one decision is recorded — either user-resolved (the user picked between options the agent presented) or autonomous-acknowledged (the agent chose from clear conventions and surfaced the choice for veto-style approval, with the user accepting). When a stage has no architectural decisions in scope (purely conventional work following an established template), the agent honestly declares that and proceeds. This converts the metric from "frequency of engagement" to "moments where human knowledge actually shaped the plan" — operationalizing the *Knowledge Unification* in H·AI·K·U.
+
 ---
 
 ## 8. The Reference Implementation

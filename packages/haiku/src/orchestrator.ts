@@ -3082,15 +3082,28 @@ export function runNext(slug: string): OrchestratorAction {
 			// All feedback addressed + units validated — fall through to normal elaborate flow
 		}
 
-		// Enforce collaborative elaboration — minimum turn count
-		if (elaborationMode === "collaborative" && updatedTurns < 3) {
-			return {
-				action: "elaboration_insufficient",
-				intent: slug,
-				stage: currentStage,
-				turns: updatedTurns,
-				required: 3,
-				message: `Collaborative elaboration requires engaging the user. ${updatedTurns} turn(s) so far — engage the user at least ${3 - updatedTurns} more time(s) before finalizing units.`,
+		// Enforce collaborative elaboration — measure decisions, not turns.
+		//
+		// The prior turn-count gate (`elaboration_turns < 3`) was Goodhart-prone:
+		// agents padded with low-information questions to satisfy the counter.
+		// The new gate measures what we actually want — knowledge-unification
+		// moments where the human's input shaped the plan, OR an honest
+		// declaration that no architectural decisions are in scope. The
+		// `elaboration_turns` counter still ticks for telemetry, but it no
+		// longer gates advancement.
+		if (elaborationMode === "collaborative") {
+			const decisionLog = (stageState.decision_log as unknown[]) || []
+			const noDecisionsDeclared =
+				stageState.elaboration_no_decisions === true
+			if (decisionLog.length === 0 && !noDecisionsDeclared) {
+				return {
+					action: "elaboration_insufficient",
+					intent: slug,
+					stage: currentStage,
+					turns: updatedTurns,
+					decisions_recorded: decisionLog.length,
+					message: `Collaborative elaboration advances when (a) at least one decision has been recorded in the stage's \`decision_log\` via \`haiku_decision_record\`, OR (b) you have honestly declared that no architectural decisions are in scope via \`haiku_decision_record { no_decisions: true, rationale: "..." }\`. ${updatedTurns} turn(s) so far, 0 decisions recorded. A decision is a real architectural choice between concrete options — either user-resolved (the user picked) or autonomous-acknowledged (you chose and surfaced the choice for veto-style approval, the user did not push back). Padding questions don't count. If the work is genuinely conventional with no choices to make, declare no_decisions=true with a rationale.`,
+				}
 			}
 		}
 
@@ -6099,32 +6112,46 @@ function buildRunInstructions(
 			sections.push(
 				`## Scope\n\nAll units MUST be within this stage's domain. Work belonging to other stages goes in the discovery document, not in units.\n\n## Mechanics\n\n${
 					elaboration === "collaborative"
-						? "Mode: **collaborative** — you MUST engage the user iteratively before finalizing.\n\n" +
-							"## MANDATORY: Use tools for questions — NEVER plain text for structured choices\n\n" +
-							"When you have questions for the user, you MUST use the correct tool:\n\n" +
-							"| Question type | Tool | Example |\n" +
-							"|---|---|---|\n" +
-							`| Scope decisions, tradeoffs, A/B/C choices | \`AskUserQuestion\` with options[] | "Should we support X or Y?" |\n` +
-							"| Specs, comparisons, detailed options (markdown) | `ask_user_visual_question` MCP tool | Domain model review, architecture options |\n" +
-							"| Visual artifacts, wireframes, designs | `ask_user_visual_question` with image_paths | Side-by-side design comparison |\n" +
-							"| Design direction with previews | `pick_design_direction` MCP tool | Wireframe variants |\n" +
-							`| Simple open-ended clarification (no known options) | Conversation text | "Tell me more about the use case" |\n\n` +
-							"### ALWAYS provide pre-selected options\n\n" +
-							"When using `AskUserQuestion`, you MUST provide an `options` array with concrete choices the user can pick from. " +
-							"You already know the domain — translate your knowledge into selectable options instead of forcing the user to type freeform answers. " +
-							'Include an "Other (let me specify)" option when the list may not be exhaustive.\n\n' +
-							'**Good:** `AskUserQuestion({ question: "Which auth strategy?", options: ["OAuth 2.0 + PKCE", "Magic link (passwordless)", "SSO via SAML", "Other (let me specify)"] })`\n' +
-							'**Bad:** Typing "Which auth strategy should we use? We could do OAuth, magic links, or SSO..." as plain text.\n\n' +
-							"### One question per tool call — break up compound questions\n\n" +
-							"If you have multiple independent questions (e.g., auth strategy AND database choice AND caching layer), " +
-							"do NOT combine them into a single long message. Instead:\n" +
-							"- Use **separate `AskUserQuestion` calls** for each independent decision, OR\n" +
-							"- Use **one `ask_user_visual_question` call** with multiple entries in the `questions[]` array (each with its own options) when the decisions are related and benefit from being seen together\n\n" +
-							"Never dump multiple questions as numbered plain-text paragraphs.\n\n" +
-							`**Violation:** Outputting numbered questions, option lists, or "A) ... B) ... C) ..." as conversation text. ` +
-							"If you catch yourself typing options inline, STOP and use `AskUserQuestion` with an `options` array instead.\n\n"
-						: "Mode: **autonomous** — elaborate independently. When you DO need user input (blockers, ambiguity), " +
-							"use `AskUserQuestion` with pre-selected `options[]` — never plain-text option lists.\n\n"
+						? "Mode: **collaborative** — knowledge unification with the user happens at decision points, not as ritual. (H·AI·K·U = Human + AI Knowledge **Unification**.)\n\n" +
+							"### What collaboration means here\n\n" +
+							"This stage advances when at least one **decision** is recorded in the stage's `decision_log` (via `haiku_decision_record`), OR you honestly declare `no_decisions: true` with a rationale. A decision is a real architectural choice between concrete options — not a question for the sake of asking. Two valid sources:\n\n" +
+							"- **`source: \"user\"`** — you presented options the user couldn't reasonably resolve from the codebase, and they picked.\n" +
+							"- **`source: \"autonomous-acknowledged\"`** — you made the call from clear conventions and surfaced the choice for veto-style approval, and the user did not push back.\n\n" +
+							"Both count. The user feels meaningfully involved when they shape real decisions OR review and accept your reasoned choices — not when they're interrogated about defaults.\n\n" +
+							"### Quality bar for user-facing questions\n\n" +
+							"Every question to the user MUST clear this bar before being asked:\n\n" +
+							"- **Real decision**: it can't be answered by reading the codebase, manifest files, prior stages' outputs, or existing conventions.\n" +
+							"- **≥2 concrete options**: you've articulated the alternatives. *\"Should we add tests?\"* fails (one-option default). *\"Cypress or Playwright?\"* passes.\n" +
+							"- **Tradeoff axis**: each option carries a known tradeoff (speed/safety, cost/flexibility, reversibility, etc.). If all options are equivalent, the choice doesn't need user input.\n" +
+							"- **Records as a decision**: after the user picks, call `haiku_decision_record { decision, options, choice, source: \"user\", rationale? }`.\n\n" +
+							"#### Banned question patterns (do NOT ask these)\n\n" +
+							"- **Yes/no on defaults**: *\"Should we follow your existing patterns?\"* (obvious yes), *\"Want tests?\"* (covered by quality gates).\n" +
+							"- **Codebase-answerable**: *\"What test runner do you use?\"* — read `package.json` / `pyproject.toml` / `Cargo.toml`.\n" +
+							"- **Permission-asking**: *\"Is it OK if I extend the User model?\"* — make the choice and surface it autonomously instead.\n" +
+							"- **Confirmation-seeking**: *\"Does this approach sound good?\"* with no concrete alternatives to compare against.\n\n" +
+							"### One question at a time (NEVER batch)\n\n" +
+							"Even when you have multiple questions, ask ONE, wait for the answer, then ask the next. Cognition breaks down for both sides if a deeper conversation has to happen on each — batched questions get half-answers and lose context when any one branches.\n\n" +
+							"- **DO**: `AskUserQuestion({ question: \"Auth strategy?\", options: [...] })` → wait → `AskUserQuestion({ question: \"Database?\", options: [...] })`.\n" +
+							"- **DO NOT**: batch questions in a single `ask_user_visual_question` call with multiple entries in `questions[]`. The visual layout doesn't help if any one branches into a deeper conversation.\n" +
+							"- **DO NOT**: dump numbered questions as plain text (*\"1. Auth? 2. Database? 3. Caching?\"*). Use the structured tool, one at a time.\n\n" +
+							"### Surface autonomous decisions for veto-style approval\n\n" +
+							"For decisions you can resolve from the codebase or clear conventions, don't ask — **decide and surface**:\n\n" +
+							"1. State the decision: *\"I'm using `<library X>` for HTTP because `package.json` already includes it.\"*\n" +
+							"2. State the alternative considered: *\"(Considered `<library Y>`, but no existing usage.)\"*\n" +
+							"3. Invite veto: *\"Reply 'change' if you'd prefer otherwise.\"*\n" +
+							"4. If no pushback by the next turn, call `haiku_decision_record { source: \"autonomous-acknowledged\", ... }`.\n\n" +
+							"Most decisions in a routine stage should be autonomous-acknowledged; only the genuinely-unresolvable ones earn a user-facing question. The user gets agency without busy-work.\n\n" +
+							"### Honest no-decisions declaration\n\n" +
+							"If the work is purely conventional with NO architectural choices in scope (a doc update following an established style guide; a routine ops runbook against a fixed pipeline), call `haiku_decision_record { intent: \"...\", no_decisions: true, rationale: \"<why this stage has no choices>\" }` and proceed. **Faking a decision to satisfy the gate is the failure mode this design exists to prevent** — be honest.\n\n" +
+							"### Tools for asking (when a question is genuinely needed)\n\n" +
+							"| Question type | Tool |\n" +
+							"|---|---|\n" +
+							"| Scope decisions, tradeoffs, A/B/C choices | `AskUserQuestion` with `options[]` |\n" +
+							"| Specs, comparisons, detailed options (markdown) | `ask_user_visual_question` MCP tool |\n" +
+							"| Visual artifacts, wireframes, designs | `ask_user_visual_question` with `image_paths` |\n" +
+							"| Design direction with previews | `pick_design_direction` MCP tool |\n\n" +
+							"Always provide pre-selected `options[]`. Include an *\"Other (let me specify)\"* option when the list may not be exhaustive. Never dump option lists as plain conversation text.\n\n"
+						: "Mode: **autonomous** — elaborate independently. When you DO need user input (genuine blockers, ambiguity that the codebase can't resolve), use `AskUserQuestion` with pre-selected `options[]` — never plain-text option lists. Autonomous mode does not require `haiku_decision_record` calls; the gate only enforces decisions in collaborative mode.\n\n"
 				}**Elaboration produces the PLAN, not the deliverables:**\n1. Research the problem space and write discovery artifacts to \`knowledge/\`\n2. Define units with scope, completion criteria, and dependencies — NOT the actual work product\n   - A unit spec says WHAT will be produced and HOW to verify it\n   - The execution phase produces the actual deliverables\n   - Do NOT write full specs, schemas, or implementations during elaboration\n3. Write unit files to \`.haiku/intents/${slug}/stages/${stage}/units/\`\n4. Call \`haiku_run_next { intent: "${slug}" }\` — the orchestrator validates and opens the review gate\n\n**Unit file naming convention (REQUIRED):**\nFiles MUST be named \`unit-NN-slug.md\` where:\n- \`NN\` is a zero-padded sequence number (01, 02, 03...)\n- \`slug\` is a kebab-case descriptor (e.g., \`user-auth\`, \`data-model\`)\n- Example: \`unit-01-data-model.md\`, \`unit-02-api-endpoints.md\`\n\nFiles that don't match this pattern will not appear in the review UI and will block advancement.`,
 			)
 

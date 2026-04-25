@@ -1356,6 +1356,132 @@ body
 		)
 	})
 
+	// ── haiku_decision_record ────────────────────────────────────────────────
+
+	console.log("\n=== haiku_decision_record ===")
+
+	test("records a user-sourced decision", () => {
+		const result = handleStateTool("haiku_decision_record", {
+			intent: intentSlug,
+			stage: "inception",
+			decision: "Auth strategy",
+			options: ["OAuth 2.0 + PKCE", "Magic link", "SSO"],
+			choice: "OAuth 2.0 + PKCE",
+			source: "user",
+			rationale: "Mobile-first app, OAuth flows are well-supported",
+		})
+		const parsed = JSON.parse(getTextResult(result))
+		assert.strictEqual(parsed.ok, true)
+		assert.strictEqual(parsed.decision_count, 1)
+
+		// State file should have decision_log appended
+		const state = JSON.parse(
+			readFileSync(
+				join(intentDirPath, "stages", "inception", "state.json"),
+				"utf8",
+			),
+		)
+		assert.ok(Array.isArray(state.decision_log))
+		assert.strictEqual(state.decision_log.length, 1)
+		assert.strictEqual(state.decision_log[0].source, "user")
+		assert.strictEqual(state.decision_log[0].choice, "OAuth 2.0 + PKCE")
+	})
+
+	test("records an autonomous-acknowledged decision", () => {
+		const result = handleStateTool("haiku_decision_record", {
+			intent: intentSlug,
+			stage: "inception",
+			decision: "HTTP client library",
+			options: ["axios", "fetch (native)"],
+			choice: "axios",
+			source: "autonomous-acknowledged",
+		})
+		const parsed = JSON.parse(getTextResult(result))
+		assert.strictEqual(parsed.ok, true)
+		assert.strictEqual(parsed.decision_count, 2)
+	})
+
+	test("rejects decision with fewer than 2 options", () => {
+		const result = handleStateTool("haiku_decision_record", {
+			intent: intentSlug,
+			stage: "inception",
+			decision: "Forced choice",
+			options: ["only one"],
+			choice: "only one",
+			source: "user",
+		})
+		const parsed = JSON.parse(getTextResult(result))
+		assert.strictEqual(parsed.error, "options_too_few")
+	})
+
+	test("rejects decision with invalid source", () => {
+		const result = handleStateTool("haiku_decision_record", {
+			intent: intentSlug,
+			stage: "inception",
+			decision: "Bad source",
+			options: ["a", "b"],
+			choice: "a",
+			source: "made-up-source",
+		})
+		const parsed = JSON.parse(getTextResult(result))
+		assert.strictEqual(parsed.error, "invalid_source")
+	})
+
+	test("rejects decision missing required fields", () => {
+		const result = handleStateTool("haiku_decision_record", {
+			intent: intentSlug,
+			stage: "inception",
+			decision: "Incomplete",
+			// missing options, choice, source
+		})
+		const parsed = JSON.parse(getTextResult(result))
+		assert.strictEqual(parsed.error, "missing_fields")
+	})
+
+	test("declares no_decisions with rationale", () => {
+		const result = handleStateTool("haiku_decision_record", {
+			intent: intentSlug,
+			stage: "inception",
+			no_decisions: true,
+			rationale:
+				"This stage follows the team's standard inception template; no architectural choices remain after the discovery doc.",
+		})
+		const parsed = JSON.parse(getTextResult(result))
+		assert.strictEqual(parsed.ok, true)
+		assert.strictEqual(parsed.no_decisions, true)
+
+		const state = JSON.parse(
+			readFileSync(
+				join(intentDirPath, "stages", "inception", "state.json"),
+				"utf8",
+			),
+		)
+		assert.strictEqual(state.elaboration_no_decisions, true)
+		assert.ok(state.elaboration_no_decisions_rationale.length > 10)
+	})
+
+	test("rejects no_decisions without rationale", () => {
+		const result = handleStateTool("haiku_decision_record", {
+			intent: intentSlug,
+			stage: "inception",
+			no_decisions: true,
+			// missing rationale
+		})
+		const parsed = JSON.parse(getTextResult(result))
+		assert.strictEqual(parsed.error, "rationale_required")
+	})
+
+	test("rejects no_decisions with too-short rationale", () => {
+		const result = handleStateTool("haiku_decision_record", {
+			intent: intentSlug,
+			stage: "inception",
+			no_decisions: true,
+			rationale: "no",
+		})
+		const parsed = JSON.parse(getTextResult(result))
+		assert.strictEqual(parsed.error, "rationale_required")
+	})
+
 	// ── unknown tool ──────────────────────────────────────────────────────────
 
 	console.log("\n=== unknown tool ===")
