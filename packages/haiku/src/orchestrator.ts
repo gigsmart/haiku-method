@@ -140,6 +140,9 @@ function resolveStudioFilePath(subpath: string): string | null {
 const FSM_CONTRACTS_ELABORATE_BLOCK = [
 	"### FSM Contracts (REQUIRED — global framework rules)",
 	"",
+	"> ## ⟁ NO UNIT ADVANCES WITHOUT A VERIFICATION PATH.",
+	"> Every acceptance criterion pairs with a command, condition, or review-agent mandate that proves it. No exceptions.",
+	"",
 	"These rules apply to **every studio and every stage**. They are enforced by the framework, not by prose. Re-stating them in per-studio files is forbidden (they would drift).",
 	"",
 	"#### Unit file naming",
@@ -230,6 +233,9 @@ const FSM_CONTRACTS_ELABORATE_BLOCK = [
 const FSM_CONTRACTS_EXECUTE_BLOCK = [
 	"### FSM Contracts (REQUIRED — reminder during execute)",
 	"",
+	"> ## ⟁ NO ADVANCE WITHOUT VERIFICATION.",
+	"> Run the gate command, read the exit code, *then* call `haiku_unit_advance_hat`. Hedged advances burn bolts on broken work.",
+	"",
 	"- The agent operates inside ONE hat at a time. Each hat runs in a fresh subagent with the hat's mandate loaded from `hats/{hat}.md`. Hat context does not leak across hats — that isolation is the framework's defense against self-reinforcing errors.",
 	"- After the hat's work is done, the subagent calls `haiku_unit_advance_hat` (success) or `haiku_unit_reject_hat { reason }` (failure). The FSM writes the result; the subagent does not.",
 	"- Quality gates run automatically at the end of the hat sequence (last hat's `haiku_unit_advance_hat`). A failing gate at unit completion blocks the advance with a concrete error — fix the failure, don't retry the tool call.",
@@ -245,13 +251,16 @@ const FSM_CONTRACTS_EXECUTE_BLOCK = [
 	"",
 	'- "I\'ll skip the gate just this once" — the gate is the contract; bypass is a scope violation.',
 	'- "I\'ll touch the related file too while I\'m here" — out-of-scope edits create regressions other hats cannot see; if it\'s broken, log it via the next review.',
-	'- "The build probably passes, I\'ll claim done" — re-run the gate command and read the exit code before calling `haiku_unit_advance_hat`.',
+	'- **Did you re-run the gate command and read the exit code 0?** If not, you don\'t know whether the build/tests/lints actually pass — "probably" isn\'t evidence. Re-run before calling `haiku_unit_advance_hat`.',
 	'- "Another hat\'s responsibility overlaps with mine, I\'ll cover it" — stay in your lane; another hat will catch what you skip.',
 	'- "The user said go fast, so I\'ll abbreviate the work" — speed comes from fewer rejections, not skipped steps.',
 ].join("\n")
 
 const FSM_CONTRACTS_REVIEW_BLOCK = [
 	"### FSM Contracts (REQUIRED — reminder during review)",
+	"",
+	"> ## ⟁ REVIEWERS LOG, NEVER EDIT.",
+	"> Your only output channel is `haiku_feedback`. Any file write is a scope violation, regardless of how trivial the fix looks.",
 	"",
 	"- Review agents MUST NOT write, edit, or create any file. Their ONLY output channel is `haiku_feedback`. Any file write is a scope violation.",
 	"- Conditional review: each agent's `applies_to:` frontmatter (glob list) scopes it to matching output kinds. The FSM filters agents whose scope doesn't match; agents without `applies_to:` always run.",
@@ -263,7 +272,7 @@ const FSM_CONTRACTS_REVIEW_BLOCK = [
 	"",
 	'- "This finding is trivial, I\'ll just fix it myself" — file write = scope violation; log it as feedback no matter how small.',
 	'- "The mandate doesn\'t quite cover this, but it\'s clearly wrong" — if it\'s in your mandate\'s spirit, log it; if not, leave it for another agent.',
-	'- "I\'ll skip reading the artifact and trust the diff" — read both; the diff lies about deletions and unchanged context.',
+	"- **Did you open the artifact at HEAD, or are you reading the diff alone?** The diff lies about deletions, renames, and unchanged-but-relevant context. Read both — the diff for what changed, the artifact for the surrounding code that constrains the change.",
 	'- "I\'ll batch related concerns into one finding" — atomic findings let the fix loop dispatch in parallel; merged findings serialize.',
 	'- "This finding\'s root cause is upstream, I\'ll route it through this stage\'s hats anyway" — set `upstream_stage:` so the framework surfaces it; this stage\'s hats cannot fix the wrong stage\'s artifacts.',
 	'- "It\'s not on my checklist, so I\'ll skip it" — if your mandate has `interpretation: lens`, the checklist is examples; the mandate is the lens. In-spirit findings count.',
@@ -273,6 +282,9 @@ const FSM_CONTRACTS_REVIEW_BLOCK = [
 
 const FSM_CONTRACTS_FIX_LOOP_BLOCK = [
 	"### FSM Contracts (REQUIRED — reminder during fix loop)",
+	"",
+	"> ## ⟁ NO FIX WITHOUT INVESTIGATION.",
+	"> Read the artifact, verify the finding, state the gap *before* editing. Bolts spent on guesses don't come back.",
 	"",
 	"- The fix loop runs the stage's `fix_hats:` sequence against every eligible pending finding in parallel. Each finding's hat chain is serial (e.g. designer → feedback-assessor); chains run in parallel across findings. The feedback file IS the scope — do NOT synthesize a new unit spec.",
 	'- Every hat in the sequence reads the feedback body + the flagged artifact path and acts within its mandate. The sequence typically ends with a `feedback-assessor` hat that independently verifies the fix and, if satisfied, calls `haiku_feedback_update { status: "closed", closed_by: "fix-loop:<bolt-id>" }`.',
@@ -7389,8 +7401,8 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 						)
 					} else {
 						promptLines.push(
-							`${step++}. **Verify the finding before editing.** Read the flagged artifact at the file:line refs in the feedback body. Three failure modes route to \`haiku_feedback_reject\` instead of an edit:\n   - **Stale / misread**: the file no longer matches what the reviewer flagged, or the citation points at the wrong location → \`haiku_feedback_reject { intent: "${slug}", stage: "${fixStage}", feedback_id: "${fbId}", reason: "stale — <what changed>" }\` or \`"misread — <what they cited vs. what's there>"\`.\n   - **Ambiguous / unclear**: the body asserts a problem but doesn't specify what to change to, OR "what to change" could mean two different things, OR the desired state isn't expressed concretely enough to act on → \`haiku_feedback_reject { ... reason: "unclear — <specific ambiguity, e.g. 'asks for stricter validation but doesn't say which fields' or 'says rename but proposes two different names'>" }\`. Do NOT guess intent; an ambiguous finding the agent guesses on burns a bolt on a fix the reviewer didn't ask for.\n   - **Invalid**: the finding describes correct behavior or doesn't identify a real defect → \`haiku_feedback_reject { ... reason: "<concrete reason invalid>" }\`.\n\n   Otherwise the finding is actionable — proceed. Do NOT acknowledge the finding in prose ("good catch", "you're right"); the fix in code is the acknowledgement.`,
-							`${step++}. **Investigate.**\n   - Read the flagged artifact at the references in the feedback body. Establish the **current state** — what makes the finding true right now.\n   - Establish the **desired state** — what specifically would make the finding false.\n   - State the **gap** in one sentence. That's the root cause; the fix is a transition from current to desired.\n   - Look for a **comparable working sibling** — another artifact in this stage, an approved template, a passing test, a previously-shipped version, anything that demonstrates the desired state in a related context. Note the relevant differences. Skip this substep only if the artifact is genuinely greenfield with no comparable reference.${fixBolt > 1 ? `\n   - Bolt ${fixBolt} > 1: read \`git show HEAD\` for the prior bolt's edit. State why it did not close the gap and plan a different shape — repeating the prior approach is what the bolt cap exists to prevent. If you cannot identify a meaningfully different approach, call \`haiku_feedback_reject\` with reason "needs human escalation — N attempts converged on same surface fix" instead of editing.` : ""}`,
+							`${step++}. **Verify the finding before editing.** Read the flagged artifact at the file:line refs in the feedback body. Three failure modes route to \`haiku_feedback_reject\` instead of an edit:\n   - **Stale / misread**: the file no longer matches what the reviewer flagged, or the citation points at the wrong location → \`haiku_feedback_reject { intent: "${slug}", stage: "${fixStage}", feedback_id: "${fbId}", reason: "stale — <what changed>" }\` or \`"misread — <what they cited vs. what's there>"\`.\n   - **Ambiguous / unclear**: the body asserts a problem but doesn't specify what to change to, OR "what to change" could mean two different things, OR the desired state isn't expressed concretely enough to act on → \`haiku_feedback_reject { ... reason: "unclear — <specific ambiguity>" }\`. Do NOT guess intent; an ambiguous finding the agent guesses on burns a bolt on a fix the reviewer didn't ask for.\n     - ✗ Body says: *"the validation is weak"* → too vague to act on (which validation? weak how?). Reject with reason: *"unclear — 'weak validation' has no actionable target; need the specific input field and the rule that should reject it"*.\n     - ✗ Body says: *"rename it"* with two candidate names elsewhere in the body → two valid actions. Reject with reason: *"unclear — body proposes two different rename targets ('foo' and 'bar'); need disambiguation"*.\n     - ✓ Body says: *"the validation accepts negative quantities; it must reject them with HTTP 400 and message 'quantity must be positive'"* → actionable. Proceed.\n   - **Invalid**: the finding describes correct behavior or doesn't identify a real defect → \`haiku_feedback_reject { ... reason: "<concrete reason invalid>" }\`.\n\n   Otherwise the finding is actionable — proceed. Do NOT acknowledge the finding in prose ("good catch", "you're right"); the fix in code is the acknowledgement.`,
+							`${step++}. **Investigate.**\n   - Read the flagged artifact at the references in the feedback body. Establish the **current state** — what makes the finding true right now.\n   - Establish the **desired state** — what specifically would make the finding false.\n   - State the **gap** in one sentence. That's the root cause; the fix is a transition from current to desired.\n   - Look for a **comparable working sibling** — another artifact in this stage, an approved template, a passing test, a previously-shipped version, anything that demonstrates the desired state in a related context. Note the relevant differences. Skip this substep only if the artifact is genuinely greenfield with no comparable reference.${fixBolt > 1 ? `\n   - Bolt ${fixBolt} > 1: read \`git show HEAD\` for the prior bolt's edit. **Did you find a meaningfully different root cause from the prior attempt?** If yes, plan a different shape and proceed. If no, you're about to burn a bolt repeating the prior approach — call \`haiku_feedback_reject\` with reason "needs human escalation — N attempts converged on same surface fix" instead of editing.` : ""}`,
 							`${step++}. **Apply the fix** within your hat's mandate. Edit ONLY the artifact(s) flagged by the finding — out-of-scope edits are a scope violation; if you notice a separate issue, log it via \`haiku_feedback\` rather than editing it now. Save changes.`,
 							`${step++}. Return a one-line summary using a verb of completed action (\`edited X\`, \`added Y\`, \`updated Z\`). Zero hedging words (\`should\`, \`seems\`, \`probably\`, \`might\`).`,
 						)
@@ -7655,7 +7667,7 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					} else {
 						promptLines.push(
 							`${step++}. **Verify the finding before editing.** Read the flagged artifact(s) and check three failure modes routing to \`haiku_feedback_reject\` (omit \`stage\` — intent scope) instead of an edit:\n   - **Stale / misread**: the artifact no longer matches what the reviewer flagged, or the citation points at the wrong location → reason: \`"stale — <what changed>"\` or \`"misread — <what they cited vs. what's there>"\`.\n   - **Ambiguous / unclear**: the body asserts a studio-wide concern but doesn't specify what to change to, OR could be interpreted multiple ways, OR the desired studio standard isn't expressed concretely → reason: \`"unclear — <specific ambiguity>"\`. Do NOT guess; an ambiguous finding burns a bolt on a fix the reviewer didn't ask for.\n   - **Invalid**: the finding describes correct cross-stage behavior or doesn't identify a real defect → reason: \`"<concrete reason invalid>"\`.\n\n   Otherwise the finding is actionable — proceed. Do NOT acknowledge the finding in prose ("good catch", "you're right").`,
-							`${step++}. **Investigate.**\n   - Read the flagged artifact(s). Establish the **current state** — what makes the finding true right now.\n   - Establish the **desired state** — what specifically would make the finding false.\n   - State the **gap** in one sentence. That's the root cause; the fix is a transition from current to desired across whichever stages the finding spans.\n   - Look for a **comparable working sibling** — another stage's artifact that already meets the studio-wide standard, an approved template, a previously-shipped intent that handled this concern correctly. Note the relevant differences. Skip this substep only if the concern is genuinely novel with no comparable reference.${fixBolt > 1 ? `\n   - Bolt ${fixBolt} > 1: read \`git show HEAD\` for the prior bolt's edit. State why it did not close the gap and plan a different shape. If you cannot identify a meaningfully different approach, call \`haiku_feedback_reject\` with reason "needs human escalation — N attempts converged on same surface fix" instead of editing.` : ""}`,
+							`${step++}. **Investigate.**\n   - Read the flagged artifact(s). Establish the **current state** — what makes the finding true right now.\n   - Establish the **desired state** — what specifically would make the finding false.\n   - State the **gap** in one sentence. That's the root cause; the fix is a transition from current to desired across whichever stages the finding spans.\n   - Look for a **comparable working sibling** — another stage's artifact that already meets the studio-wide standard, an approved template, a previously-shipped intent that handled this concern correctly. Note the relevant differences. Skip this substep only if the concern is genuinely novel with no comparable reference.${fixBolt > 1 ? `\n   - Bolt ${fixBolt} > 1: read \`git show HEAD\` for the prior bolt's edit. **Did you find a meaningfully different root cause from the prior attempt?** If yes, plan a different shape and proceed. If no, call \`haiku_feedback_reject\` with reason "needs human escalation — N attempts converged on same surface fix" instead of editing.` : ""}`,
 							`${step++}. **Apply the fix** within your mandate. Edit ONLY the artifact(s) the finding flags — out-of-scope edits are a scope violation; log unrelated issues via \`haiku_feedback\` rather than editing them now. Save changes.`,
 							`${step++}. Return a one-line summary using a verb of completed action. Zero hedging (\`should\`, \`seems\`, \`probably\`, \`might\`).`,
 						)
