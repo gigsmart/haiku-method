@@ -203,7 +203,7 @@ const FSM_CONTRACTS_ELABORATE_BLOCK = [
 	"#### Unit content quality (validated at advance)",
 	"",
 	"- Placeholder strings are forbidden in unit specs and frontmatter. The FSM rejects unit advancement when any of these appear: `TBD`, `tbd`, `similar to`, `add error handling`, `etc.`, or a literal `...` placeholder. Either write the concrete value or surface it as a question.",
-	"- Every acceptance criterion MUST be testable: include the command or condition that proves it. `tests pass` is rejected; `pnpm test --run unit/foo.test.ts exits 0` is accepted.",
+	"- Every acceptance criterion MUST be testable: include the command or condition that proves it. `tests pass` is rejected; the verify-command must be concrete and exit-code-driven (e.g. `pnpm test --run path/to/file` exits 0, or `pytest tests/foo.py` exits 0, or `cargo test --test bar` exits 0 — match the project's actual stack).",
 	"- A criterion that cannot be expressed as a command/condition is a spec gap — surface it (`ask_user_visual_question` or reject the elaborate phase), do not paper over with prose.",
 	"",
 	"#### Red flags (STOP and re-read this contract if you catch yourself thinking)",
