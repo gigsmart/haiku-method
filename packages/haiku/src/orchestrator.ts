@@ -278,28 +278,11 @@ const FSM_CONTRACTS_FIX_LOOP_BLOCK = [
 	'- Every hat in the sequence reads the feedback body + the flagged artifact path and acts within its mandate. The sequence typically ends with a `feedback-assessor` hat that independently verifies the fix and, if satisfied, calls `haiku_feedback_update { status: "closed", closed_by: "fix-loop:<bolt-id>" }`.',
 	"- If the feedback-assessor is NOT satisfied, it leaves the feedback open (no `closed_by`, no status change). The FSM increments the bolt counter and may dispatch another loop, up to 3 bolts per finding. Exceeding 3 escalates to the human.",
 	"- A fix-loop hat is NOT a unit hat. Do NOT call `haiku_unit_advance_hat` or `haiku_unit_reject_hat` — those are for unit execution. The fix-loop is orchestrated by the parent; each fix hat completes its work and returns, and the parent calls `haiku_run_next` after every wave completes to advance.",
-	'- If a fix hat discovers the finding is actually invalid or already addressed, call `haiku_feedback_reject { reason: "<concrete reason>" }` instead of editing artifacts. A stale finding should be rejected, not silently dropped.',
 	"- Parallel chains may edit the same artifact concurrently. Each final hat validates closure independently — a chain whose fix was clobbered by another chain will leave its finding open, and the next bolt will retry. Budget is spent, not lost.",
 	"",
-	"#### Investigation before edit (REQUIRED on every fix bolt)",
+	"#### Per-hat action rules live in the subagent prompts",
 	"",
-	"- Before any edit, read the flagged artifact at the file:line refs in the feedback body. State the root cause in one sentence — what assumption or condition produces the finding.",
-	"- On bolt > 1: read the prior bolt's diff (`git log -1 --stat HEAD` and `git show HEAD`). State *why* the prior fix did not close the finding. Do NOT apply the same shape of fix again.",
-	"- If you cannot identify a root cause distinct from prior bolts: call `haiku_feedback_reject` with reason `\"needs human escalation — N attempts converged on same surface fix\"` instead of editing. Burning the bolt budget on the same approach is what the cap exists to prevent.",
-	"",
-	"#### Verify before fixing",
-	"",
-	"- Verify the finding against the artifact before editing. If the reviewer misread the file or the finding is stale, call `haiku_feedback_reject` — do NOT edit code to match an incorrect finding.",
-	'- Do NOT acknowledge the finding in prose ("good catch", "you\'re right", "great point"). The fix in code is the acknowledgement; agreement language wastes tokens and signals reflex over verification.',
-	"- Your one-line return MUST be a verb of completed action with zero hedging (`should`, `seems`, `probably`, `might`). Hedging means uncertainty — leave the feedback open and let the assessor decide, do not return hedged closure language.",
-	"",
-	"#### Red flags (STOP and re-read this contract if you catch yourself thinking)",
-	"",
-	'- "Bolt 1 didn\'t work, I\'ll try the same shape of fix harder" — converging on the same surface fix wastes the bolt budget; state a different root cause or reject and escalate.',
-	'- "Good catch, fixing now" — the fix in code is the acknowledgement; verify the finding against the artifact before editing.',
-	'- "The finding is wrong but I\'ll edit anyway to satisfy the assessor" — call `haiku_feedback_reject` with a concrete reason instead.',
-	'- "I\'ll fix this related issue I noticed" — out-of-scope; log a new finding via `haiku_feedback`, do not edit it now.',
-	'- "Another chain clobbered my edit, I\'ll close their finding too" — each chain validates its own finding; do not reach across chains.',
+	"This contract covers dispatch coordination, the bolt cap, and the per-finding scoping rule. The action-rules each fix-mode hat follows during its own work — investigate root cause before editing, verify the finding against the artifact before fixing (and `haiku_feedback_reject` if the finding is stale or invalid), no hedging in summaries, no out-of-scope edits — live as numbered steps in the per-hat subagent prompts emitted below. Every fix-mode hat reads its own rules; this block exists so the dispatching agent understands the contract its subagents will follow.",
 ].join("\n")
 
 /**
@@ -7379,8 +7362,10 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 						)
 					} else {
 						promptLines.push(
-							`${step++}. **Investigate before editing.** Read the flagged artifact at the file:line refs in the feedback body. State the root cause in one sentence.${fixBolt > 1 ? ` Bolt ${fixBolt} > 1: also read \`git show HEAD\` for the prior bolt's diff and state why that fix did not close the finding. Do NOT apply the same shape of fix again.` : ""}`,
-							`${step++}. Apply the fix within your hat's mandate. Edit ONLY the artifact(s) flagged by the finding — out-of-scope edits are a scope violation. Save changes. Return a one-line summary of what you changed (verb of completed action; zero hedging).`,
+							`${step++}. **Verify the finding before editing.** Read the flagged artifact at the file:line refs in the feedback body and confirm the finding describes a real defect. If the reviewer misread the file or the finding is stale, call \`haiku_feedback_reject { intent: "${slug}", stage: "${fixStage}", feedback_id: "${fbId}", reason: "<concrete reason>" }\` — do NOT edit code to match an incorrect finding. Do NOT acknowledge the finding in prose ("good catch", "you're right"); the fix in code is the acknowledgement.`,
+							`${step++}. **Investigate.** State the root cause in one sentence — what assumption or condition produces this finding.${fixBolt > 1 ? ` Bolt ${fixBolt} > 1: also read \`git show HEAD\` for the prior bolt's diff and state why that fix did not close the finding. Do NOT apply the same shape of fix again — if you cannot identify a different root cause, call \`haiku_feedback_reject\` with reason "needs human escalation — N attempts converged on same surface fix" instead of editing.` : ""}`,
+							`${step++}. **Apply the fix** within your hat's mandate. Edit ONLY the artifact(s) flagged by the finding — out-of-scope edits are a scope violation; if you notice a separate issue, log it via \`haiku_feedback\` rather than editing it now. Save changes.`,
+							`${step++}. Return a one-line summary using a verb of completed action (\`edited X\`, \`added Y\`, \`updated Z\`). Zero hedging words (\`should\`, \`seems\`, \`probably\`, \`might\`).`,
 						)
 					}
 
@@ -7642,8 +7627,10 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 						)
 					} else {
 						promptLines.push(
-							`${step++}. **Investigate before editing.** Read the flagged artifact(s). State the root cause in one sentence.${fixBolt > 1 ? ` Bolt ${fixBolt} > 1: also read \`git show HEAD\` for the prior bolt's diff and state why it did not close the finding. Do NOT repeat the same shape of fix.` : ""}`,
-							`${step++}. Apply the fix within your mandate. Edit ONLY the artifact(s) the finding flags. Save changes. Return a one-line summary (verb of completed action; zero hedging).`,
+							`${step++}. **Verify the finding before editing.** Read the flagged artifact(s) and confirm the finding describes a real defect at studio-wide scope. If stale or invalid, call \`haiku_feedback_reject { intent: "${slug}", feedback_id: "${fbId}", reason: "<concrete reason>" }\` (omit \`stage\`). Do NOT acknowledge the finding in prose ("good catch", "you're right").`,
+							`${step++}. **Investigate.** State the root cause in one sentence — what cross-stage assumption or studio-standard violation produces this finding.${fixBolt > 1 ? ` Bolt ${fixBolt} > 1: also read \`git show HEAD\` for the prior bolt's diff and state why that fix did not close the finding. Do NOT repeat the same shape — if you cannot identify a different root cause, call \`haiku_feedback_reject\` with reason "needs human escalation — N attempts converged on same surface fix" instead of editing.` : ""}`,
+							`${step++}. **Apply the fix** within your mandate. Edit ONLY the artifact(s) the finding flags — out-of-scope edits are a scope violation; log unrelated issues via \`haiku_feedback\` rather than editing them now. Save changes.`,
+							`${step++}. Return a one-line summary using a verb of completed action. Zero hedging (\`should\`, \`seems\`, \`probably\`, \`might\`).`,
 						)
 					}
 
