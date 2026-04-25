@@ -64,7 +64,7 @@ Lifecycle for games. Concept absorbs discovery (pitches and market fit are insep
 
 #### Hardware Development
 
-Lifecycle for hardware products — electronics, firmware, manufacturing. Unlike software, hardware has physical constraints, safety regulations, and a one-shot manufacturing gate. Requirements captures compliance upfront because it shapes every downstream decision.
+Lifecycle for hardware products — electronics, firmware, manufacturing. Unlike software, hardware has physical constraints, safety regulations, and a one-shot manufacturing gate. Requirements captures compliance upfront because it shapes every downstream decision. Design uses [tscircuit](https://tscircuit.com) — schematics and PCB layouts are authored as TypeScript/React code, previewed via `tsci dev`, and exported to Gerbers, pick-and-place, and BOM for manufacturing.
 
 | Property | Value |
 |----------|-------|
