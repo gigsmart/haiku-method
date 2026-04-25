@@ -551,6 +551,134 @@ try {
 	})
 
 	// =========================================================================
+	// Group 7b: Mandate interpretation block emission
+	// =========================================================================
+
+	await test("review dispatch injects LENS interpretation block when mandate declares interpretation: lens", async () => {
+		const { projDir, intentDirPath, slug, haikuRoot, studio } = createProject(
+			"g7b-interp-lens",
+			{
+				active_stage: "build",
+				stageConfig: {
+					build: { review: "auto", hats: ["coder"] },
+				},
+			},
+		)
+		// Override the auto-generated review-agent file with one that declares
+		// interpretation: lens. createProject doesn't take frontmatter overrides
+		// for agents, so write directly.
+		const agentsDir = join(haikuRoot, "studios", studio, "stages", "build", "review-agents")
+		mkdirSync(agentsDir, { recursive: true })
+		writeFileSync(
+			join(agentsDir, "consistency.md"),
+			`---
+name: consistency
+interpretation: lens
+---
+
+Check tokens, spacing, naming.
+`,
+		)
+		createStageState(intentDirPath, "build", { phase: "review" })
+		createUnit(intentDirPath, "build", "unit-01-impl", { status: "completed" })
+
+		process.chdir(projDir)
+		const result = await handleOrchestratorTool("haiku_run_next", {
+			intent: slug,
+		})
+		const responseText = expandPromptFiles(result.content[0].text)
+
+		assert.ok(
+			responseText.includes("Mandate interpretation: LENS"),
+			"Lens block should be injected when interpretation: lens is set",
+		)
+		assert.ok(
+			responseText.includes("In-spirit findings count"),
+			"Lens block body should appear",
+		)
+		assert.ok(
+			!responseText.includes("Mandate interpretation: STRICT"),
+			"Strict block should NOT be present for a lens mandate",
+		)
+	})
+
+	await test("review dispatch injects STRICT interpretation block when mandate declares interpretation: strict", async () => {
+		const { projDir, intentDirPath, slug, haikuRoot, studio } = createProject(
+			"g7b-interp-strict",
+			{
+				active_stage: "build",
+				stageConfig: {
+					build: { review: "auto", hats: ["coder"] },
+				},
+			},
+		)
+		const agentsDir = join(haikuRoot, "studios", studio, "stages", "build", "review-agents")
+		mkdirSync(agentsDir, { recursive: true })
+		writeFileSync(
+			join(agentsDir, "compliance.md"),
+			`---
+name: compliance
+interpretation: strict
+---
+
+PCI-DSS literal checklist.
+`,
+		)
+		createStageState(intentDirPath, "build", { phase: "review" })
+		createUnit(intentDirPath, "build", "unit-01-impl", { status: "completed" })
+
+		process.chdir(projDir)
+		const result = await handleOrchestratorTool("haiku_run_next", {
+			intent: slug,
+		})
+		const responseText = expandPromptFiles(result.content[0].text)
+
+		assert.ok(
+			responseText.includes("Mandate interpretation: STRICT"),
+			"Strict block should be injected when interpretation: strict is set",
+		)
+		assert.ok(
+			responseText.includes("literal checklist"),
+			"Strict block body should appear",
+		)
+		assert.ok(
+			!responseText.includes("Mandate interpretation: LENS"),
+			"Lens block should NOT be present for a strict mandate",
+		)
+	})
+
+	await test("review dispatch omits interpretation block when mandate has no interpretation field", async () => {
+		const { projDir, intentDirPath, slug } = createProject(
+			"g7b-interp-unset",
+			{
+				active_stage: "build",
+				stageConfig: {
+					build: {
+						review: "auto",
+						hats: ["coder"],
+						reviewAgents: {
+							"plain-agent": "No interpretation field set.",
+						},
+					},
+				},
+			},
+		)
+		createStageState(intentDirPath, "build", { phase: "review" })
+		createUnit(intentDirPath, "build", "unit-01-impl", { status: "completed" })
+
+		process.chdir(projDir)
+		const result = await handleOrchestratorTool("haiku_run_next", {
+			intent: slug,
+		})
+		const responseText = expandPromptFiles(result.content[0].text)
+
+		assert.ok(
+			!responseText.includes("Mandate interpretation:"),
+			"No interpretation block should be emitted when the field is unset (preserves backward compat)",
+		)
+	})
+
+	// =========================================================================
 	// Group 8: Additive elaborate mode
 	// =========================================================================
 

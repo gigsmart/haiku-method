@@ -254,6 +254,9 @@ const FSM_CONTRACTS_REVIEW_BLOCK = [
 	'- "I\'ll skip reading the artifact and trust the diff" — read both; the diff lies about deletions and unchanged context.',
 	'- "I\'ll batch related concerns into one finding" — atomic findings let the fix loop dispatch in parallel; merged findings serialize.',
 	'- "This finding\'s root cause is upstream, I\'ll route it through this stage\'s hats anyway" — set `upstream_stage:` so the framework surfaces it; this stage\'s hats cannot fix the wrong stage\'s artifacts.',
+	'- "It\'s not on my checklist, so I\'ll skip it" — if your mandate has `interpretation: lens`, the checklist is examples; the mandate is the lens. In-spirit findings count.',
+	'- "I was dispatched, I should find something" — out-of-mandate findings are noise; zero findings is a valid result for a clean review.',
+	'- "It passes the literal check but it\'s clearly wrong" — the spirit-violation IS the finding. State the spirit-violation explicitly in the body.',
 ].join("\n")
 
 const FSM_CONTRACTS_FIX_LOOP_BLOCK = [
@@ -286,6 +289,66 @@ const FSM_CONTRACTS_FIX_LOOP_BLOCK = [
 	'- "I\'ll fix this related issue I noticed" — out-of-scope; log a new finding via `haiku_feedback`, do not edit it now.',
 	'- "Another chain clobbered my edit, I\'ll close their finding too" — each chain validates its own finding; do not reach across chains.',
 ].join("\n")
+
+/**
+ * Read the `interpretation:` field from a hat-like frontmatter file.
+ * Returns "lens" | "strict" | undefined (unset).
+ *
+ * Universal field on hat/review-agent/fix-hat frontmatter. Default behavior
+ * (unset) preserves the prior dispatch prompt — no silent migration.
+ */
+function readInterpretation(
+	filePath: string | undefined,
+): "lens" | "strict" | undefined {
+	if (!filePath || !existsSync(filePath)) return undefined
+	try {
+		const { data } = parseFrontmatter(readFileSync(filePath, "utf8"))
+		const v = data.interpretation
+		if (v === "lens" || v === "strict") return v
+		return undefined
+	} catch {
+		return undefined
+	}
+}
+
+/**
+ * Build the interpretive block injected into a dispatch prompt right after
+ * the agent's mandate is inlined. Returns "" when interpretation is unset
+ * (no block emitted) so existing prompts stay byte-stable for hats/agents
+ * that don't opt in.
+ *
+ * Two modes:
+ *   - "lens" — mandate is a lens, not a checklist. In-spirit findings count;
+ *     out-of-mandate findings do not. Default for review-style work.
+ *   - "strict" — mandate is the literal checklist. Findings MUST tie to a
+ *     named item. For compliance / scope-limited reviews where false
+ *     positives carry weight.
+ */
+function buildInterpretationBlock(
+	mode: "lens" | "strict" | undefined,
+): string {
+	if (!mode) return ""
+	if (mode === "lens") {
+		return [
+			"## Mandate interpretation: LENS",
+			"",
+			"Your mandate above is a **lens**, not a checklist.",
+			"",
+			"- **In-spirit findings count.** A finding obviously within your mandate's lens but not listed as an explicit checklist item is IN scope. The mandate names representative concerns, not the exhaustive set.",
+			"- **Out-of-mandate findings are NOT in scope, even if visible.** If your glob matched a file but the change has nothing to do with your lens, return zero findings. Inventing findings to justify dispatch is a scope violation, not thoroughness.",
+			"- **Letter and spirit are not separable.** A change that technically passes a literal check but obviously violates what the check exists to enforce IS a finding. State the spirit-violation explicitly in the body so the fix loop knows what to address.",
+		].join("\n")
+	}
+	return [
+		"## Mandate interpretation: STRICT",
+		"",
+		"Your mandate above is a **literal checklist**.",
+		"",
+		'- Findings MUST be tied to a specific named item in your mandate. Do NOT extend to "in-spirit" issues — for this review, false positives carry the same weight as false negatives.',
+		"- If you see something concerning outside the checklist, do NOT log it through this agent. Log it through a different review agent if one exists, or surface it as an out-of-scope observation in your summary.",
+		"- Cite the specific checklist item each finding maps to in the `body:` field so the fix loop can verify scope.",
+	].join("\n")
+}
 
 /**
  * Render the parent's concurrency-capped dispatch discipline for a parallel
@@ -6313,7 +6376,13 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 			if (stagePath) prompt.push(inlineFile(stagePath, "Stage scope"))
 			if (executionPath)
 				prompt.push(inlineFile(executionPath, "Execute-phase focus"))
-			if (hatPath) prompt.push(inlineFile(hatPath, `Hat: ${hat}`))
+			if (hatPath) {
+				prompt.push(inlineFile(hatPath, `Hat: ${hat}`))
+				const hatInterp = buildInterpretationBlock(
+					readInterpretation(hatPath),
+				)
+				if (hatInterp) prompt.push("", hatInterp)
+			}
 			prompt.push(inlineFile(unitAbsPath, `Unit spec: ${unit}`))
 			if (outputsDir)
 				prompt.push(`- Stage output templates — \`${outputsDir}/\``)
@@ -6579,7 +6648,13 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					if (stagePath) prompt.push(inlineFile(stagePath, "Stage scope"))
 					if (executionPath)
 						prompt.push(inlineFile(executionPath, "Execute-phase focus"))
-					if (hatPath) prompt.push(inlineFile(hatPath, `Hat: ${firstHat}`))
+					if (hatPath) {
+						prompt.push(inlineFile(hatPath, `Hat: ${firstHat}`))
+						const hatInterp = buildInterpretationBlock(
+							readInterpretation(hatPath),
+						)
+						if (hatInterp) prompt.push("", hatInterp)
+					}
 					prompt.push(inlineFile(unitAbsPath, `Unit spec: ${unitName}`))
 					if (outputsDir)
 						prompt.push(`- Stage output templates — \`${outputsDir}/\``)
@@ -6891,7 +6966,13 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 				if (stagePath) prompt.push(inlineFile(stagePath, "Stage scope"))
 				if (executionPath)
 					prompt.push(inlineFile(executionPath, "Execute-phase focus"))
-				if (hatPath) prompt.push(inlineFile(hatPath, `Hat: ${hat}`))
+				if (hatPath) {
+					prompt.push(inlineFile(hatPath, `Hat: ${hat}`))
+					const hatInterp = buildInterpretationBlock(
+						readInterpretation(hatPath),
+					)
+					if (hatInterp) prompt.push("", hatInterp)
+				}
 				prompt.push(inlineFile(unitAbsPath, `Unit spec: ${unitName}`))
 				if (outputsDir)
 					prompt.push(`- Stage output templates — \`${outputsDir}/\``)
@@ -7041,6 +7122,8 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					"### Review Agent Fan-Out (REQUIRED)\n\n**Spawn exactly one subagent per review agent in parallel — no duplicates.** Each `<subagent>` block below is a complete prompt — relay verbatim. Prompts are path-based so the parent context stays small.\n",
 				)
 				for (const [name, mandatePath] of Object.entries(agentPaths)) {
+					const interpretation = readInterpretation(mandatePath)
+					const interpretiveBlock = buildInterpretationBlock(interpretation)
 					const reviewLines: string[] = [
 						`You are the **${name}** review agent for stage "${stage}" of intent "${slug}".`,
 						"",
@@ -7048,6 +7131,11 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 						"Your review mandate is embedded in this prompt.",
 						"",
 						inlineFile(mandatePath, `Mandate: ${name}`),
+					]
+					if (interpretiveBlock) {
+						reviewLines.push("", interpretiveBlock)
+					}
+					reviewLines.push(
 						"",
 						"## Write scope (STRICT)",
 						"**You MUST NOT write, edit, or create any file.** Your ONLY output channel is the `haiku_feedback` MCP tool. If you're tempted to fix an issue yourself, log it as feedback instead. Any file write is a scope violation.",
@@ -7055,7 +7143,7 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 						"## Instructions",
 						"",
 						"1. Use your mandate (above) as the lens for this review.",
-					]
+					)
 					let reviewStep = 2
 					if (isGitRepo()) {
 						reviewLines.push(
@@ -7232,6 +7320,10 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					}
 					if (hatPath && existsSync(hatPath)) {
 						promptLines.push(inlineFile(hatPath, `Hat mandate: ${hat}`))
+						const fixInterp = buildInterpretationBlock(
+							readInterpretation(hatPath),
+						)
+						if (fixInterp) promptLines.push("", fixInterp)
 					}
 					// Inline the feedback body so the subagent reads the finding
 					// directly from its prompt — no fan-out read required.
@@ -7337,6 +7429,8 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 			for (const name of agents) {
 				const mandatePath = agentPaths[name]
 				if (!mandatePath) continue
+				const interpretation = readInterpretation(mandatePath)
+				const interpretiveBlock = buildInterpretationBlock(interpretation)
 				const reviewLines: string[] = [
 					`You are the **${name}** studio-level review agent for intent "${slug}".`,
 					"",
@@ -7344,6 +7438,11 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					"Your review mandate is embedded in this prompt. You audit the WHOLE intent — every stage's artifacts — against the studio's standards.",
 					"",
 					inlineFile(mandatePath, `Mandate: ${name}`),
+				]
+				if (interpretiveBlock) {
+					reviewLines.push("", interpretiveBlock)
+				}
+				reviewLines.push(
 					"",
 					"## Write scope (STRICT)",
 					"**You MUST NOT write, edit, or create any file.** Your ONLY output channel is the `haiku_feedback` MCP tool. If you're tempted to fix an issue yourself, log it as feedback instead. Any file write is a scope violation.",
@@ -7357,7 +7456,7 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					"2. Review through your mandate's lens.",
 					`3. For each issue you find, call \`haiku_feedback({ intent: "${slug}", title: "<short>", body: "<full with file:line refs>", origin: "studio-review", author: "${name}" })\`. Omit \`stage\` to log at intent scope. Include \`upstream_stage: "<name>"\` only if the finding's root cause lives in a single stage.`,
 					"4. Return only a summary count of how many findings you logged.",
-				]
+				)
 				const prompt = reviewLines.join("\n")
 				const studioReviewModel = resolveReviewAgentModel({
 					mandatePath,
@@ -7487,6 +7586,10 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 					)
 					if (hatPath && existsSync(hatPath)) {
 						promptLines.push(inlineFile(hatPath, `Fix-hat mandate: ${hat}`))
+						const studioFixInterp = buildInterpretationBlock(
+							readInterpretation(hatPath),
+						)
+						if (studioFixInterp) promptLines.push("", studioFixInterp)
 					}
 					if (existsSync(fbAbsPath)) {
 						promptLines.push(
