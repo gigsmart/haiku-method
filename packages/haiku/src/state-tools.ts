@@ -46,6 +46,7 @@ import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
 import { sealIntentState } from "./state-integrity.js"
 import {
 	listStudios,
+	readHatDefs,
 	readOperationDefs,
 	readReflectionDefs,
 	readStageArtifactDefs,
@@ -4826,6 +4827,121 @@ export function handleStateTool(
 			const currentIdx = stageHats.indexOf(currentHat)
 			const nextIdx = currentIdx + 1
 			const isLastHat = nextIdx >= stageHats.length
+
+			// ── Per-hat opt-in quality gates with auto-reject ─────────────
+			// A hat may declare `run_quality_gates: true` in its frontmatter.
+			// When the agent calls advance_hat from such a hat, the FSM runs
+			// the unit's quality_gates BEFORE allowing the transition. On
+			// failure, the FSM auto-rejects the hat (bolt+1, same hat retries)
+			// rather than returning an error and asking the agent to fix-and-
+			// retry. This eliminates the agent decision point ("is this gate
+			// failure something I fix here, or do I reject_hat?") — gate fail
+			// always means "this hat's output didn't pass; same hat, next bolt."
+			//
+			// Opt-in by hat (not unit-wide) so early hats like a planner that
+			// haven't produced verifiable artifacts yet don't trip on gates
+			// the builder will satisfy later. The builder hat is the typical
+			// declarer.
+			//
+			// Runs harness-agnostic: hookless harnesses already run gates at
+			// the LAST hat's advance unconditionally (see below); this layer
+			// adds an EARLIER opt-in checkpoint AND swaps the failure mode
+			// from agent-retry to auto-reject. For Claude Code (hooks), the
+			// Stop hook still runs gates as a backstop after the tool call
+			// completes — but with the boolean set, the auto-reject already
+			// fired here so the Stop hook sees a clean state.
+			{
+				const intentFile = `${intentDir(args.intent as string)}/intent.md`
+				const { data: iFm } = parseFrontmatter(readFileSync(intentFile, "utf8"))
+				const gateStudio = (iFm.studio as string) || ""
+				if (gateStudio && currentHat) {
+					const hatDefs = readHatDefs(gateStudio, advStage)
+					const hatDef = hatDefs[currentHat]
+					if (hatDef?.run_quality_gates === true) {
+						const gateResult = runInlineQualityGates(
+							args.intent as string,
+							advPath,
+						)
+						if (gateResult) {
+							const currentBolt = (unitFm.bolt as number) || 1
+							const MAX_BOLTS_GATE = 5
+							if (currentBolt + 1 > MAX_BOLTS_GATE) {
+								return text(
+									JSON.stringify({
+										error: "max_bolts_exceeded",
+										reason: "quality_gate_auto_reject",
+										bolt: currentBolt,
+										max: MAX_BOLTS_GATE,
+										failures: gateResult.failures,
+										message: `Quality gates failed on hat '${currentHat}' and the unit has hit ${MAX_BOLTS_GATE} bolt iterations. Escalate to the user — the gates are catching real issues this hat cannot resolve in another bolt.\n\n${gateResult.failures.map((f) => `- ${f.name}: '${f.command}' exited ${f.exit_code}${f.output ? `\n  ${f.output.split("\n").slice(0, 3).join("\n  ")}` : ""}`).join("\n")}`,
+									}),
+								)
+							}
+
+							const reason = `auto-reject: quality_gate_failed (${gateResult.failures.map((f) => f.name).join(", ")})`
+							completeUnitIteration(advPath, "reject", reason)
+							setFrontmatterField(advPath, "hat", currentHat)
+							setFrontmatterField(advPath, "bolt", currentBolt + 1)
+							setFrontmatterField(advPath, "hat_started_at", timestamp())
+							startUnitIteration(advPath, currentHat)
+							sealIntentState(args.intent as string)
+							{
+								const sf = args.state_file as string | undefined
+								if (sf)
+									logSessionEvent(sf, {
+										event: "hat_auto_rejected_gate",
+										intent: args.intent,
+										stage: advStage,
+										unit: args.unit,
+										hat: currentHat,
+										bolt: currentBolt + 1,
+										failed_gates: gateResult.failures.map((f) => f.name),
+									})
+							}
+							emitTelemetry("haiku.hat.auto_reject_gate", {
+								intent: args.intent as string,
+								stage: advStage,
+								unit: args.unit as string,
+								hat: currentHat,
+								bolt: String(currentBolt + 1),
+								failed_gate_count: String(gateResult.failures.length),
+							})
+							const autoRejectGit = gitCommitState(
+								`haiku: auto-reject ${args.unit as string} on ${currentHat} (gate fail) — bolt ${currentBolt + 1}`,
+							)
+							syncSessionMetadata(
+								args.intent as string,
+								args.state_file as string | undefined,
+							)
+							const resultPath = resultPathFor({
+								unit: args.unit as string,
+								hat: currentHat,
+								bolt: currentBolt,
+							})
+							writeResultFile(resultPath, {
+								action: "continue_unit",
+								intent: args.intent,
+								stage: advStage,
+								unit: args.unit,
+								hat: currentHat,
+								bolt: currentBolt + 1,
+								reason,
+								_auto_rejected: "quality_gate_failed",
+								_failed_gates: gateResult.failures.map((f) => ({
+									name: f.name,
+									command: f.command,
+									exit_code: f.exit_code,
+									output: f.output.split("\n").slice(0, 5).join("\n"),
+								})),
+								_push_warning: pushWarning(autoRejectGit) || undefined,
+							})
+							return text(
+								`FSM Result written to: ${resultPath}\n\nYOUR FINAL MESSAGE TO THE PARENT MUST BE EXACTLY ONE LINE:\n\nFSM Result: ${resultPath}\n\nDo NOT add prose or summary. Parent reads the file to drive the rebolt — gates failed (${gateResult.failures.map((f) => f.name).join(", ")}), bolt ${currentBolt + 1}/${MAX_BOLTS_GATE}, retrying ${currentHat}.`,
+							)
+						}
+					}
+				}
+			}
 
 			if (isLastHat) {
 				// ── AUTO-COMPLETE: This was the last hat ──

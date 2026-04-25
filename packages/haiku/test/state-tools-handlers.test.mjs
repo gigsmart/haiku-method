@@ -198,6 +198,192 @@ Analysis stage.
 `,
 )
 
+// ── Per-hat run_quality_gates auto-reject fixture ─────────────────────────
+// Multi-hat stage where the middle hat (`builder`) declares
+// run_quality_gates: true. advance_hat from builder runs the unit's
+// quality_gates; failure auto-rejects (bolt+1, same hat); success advances.
+mkdirSync(join(haikuRoot, "studios", "software", "stages", "gated", "hats"), {
+	recursive: true,
+})
+writeFileSync(
+	join(haikuRoot, "studios", "software", "stages", "gated", "STAGE.md"),
+	`---
+name: gated
+hats: [planner, builder, reviewer]
+unit_types: [research]
+---
+
+Gated stage with builder running quality gates.
+`,
+)
+writeFileSync(
+	join(
+		haikuRoot,
+		"studios",
+		"software",
+		"stages",
+		"gated",
+		"hats",
+		"planner.md",
+	),
+	`---
+name: planner
+stage: gated
+studio: software
+---
+
+Planner.
+`,
+)
+writeFileSync(
+	join(
+		haikuRoot,
+		"studios",
+		"software",
+		"stages",
+		"gated",
+		"hats",
+		"builder.md",
+	),
+	`---
+name: builder
+stage: gated
+studio: software
+run_quality_gates: true
+---
+
+Builder with gate enforcement.
+`,
+)
+writeFileSync(
+	join(
+		haikuRoot,
+		"studios",
+		"software",
+		"stages",
+		"gated",
+		"hats",
+		"reviewer.md",
+	),
+	`---
+name: reviewer
+stage: gated
+studio: software
+---
+
+Reviewer.
+`,
+)
+mkdirSync(join(intentDirPath, "stages", "gated", "units"), { recursive: true })
+writeFileSync(
+	join(intentDirPath, "stages", "gated", "state.json"),
+	JSON.stringify(
+		{
+			stage: "gated",
+			status: "active",
+			phase: "execute",
+			started_at: "2026-04-04T18:05:00Z",
+			completed_at: null,
+			gate_entered_at: null,
+			gate_outcome: null,
+		},
+		null,
+		2,
+	),
+)
+// Builder hat, gates that fail — should auto-reject (bolt+1, same hat)
+writeFileSync(
+	join(intentDirPath, "stages", "gated", "units", "unit-01-gates-fail.md"),
+	`---
+name: unit-01-gates-fail
+type: research
+status: active
+depends_on: []
+bolt: 1
+hat: builder
+hat_started_at: 2020-01-01T00:00:00Z
+quality_gates:
+  - name: always-fail
+    command: "false"
+outputs:
+  - knowledge/findings.md
+---
+
+## Completion Criteria
+
+- [x] Gates fail
+`,
+)
+// Builder hat, gates that pass — should advance normally to reviewer
+writeFileSync(
+	join(intentDirPath, "stages", "gated", "units", "unit-02-gates-pass.md"),
+	`---
+name: unit-02-gates-pass
+type: research
+status: active
+depends_on: []
+bolt: 1
+hat: builder
+hat_started_at: 2020-01-01T00:00:00Z
+quality_gates:
+  - name: always-pass
+    command: "true"
+outputs:
+  - knowledge/findings.md
+---
+
+## Completion Criteria
+
+- [x] Gates pass
+`,
+)
+// Builder hat at bolt 5, gates fail — should hit max_bolts_exceeded
+writeFileSync(
+	join(intentDirPath, "stages", "gated", "units", "unit-03-gates-cap.md"),
+	`---
+name: unit-03-gates-cap
+type: research
+status: active
+depends_on: []
+bolt: 5
+hat: builder
+hat_started_at: 2020-01-01T00:00:00Z
+quality_gates:
+  - name: always-fail
+    command: "false"
+outputs:
+  - knowledge/findings.md
+---
+
+## Completion Criteria
+
+- [x] Gates exhaust
+`,
+)
+// Planner hat (no boolean), gates that would fail — should advance normally
+writeFileSync(
+	join(intentDirPath, "stages", "gated", "units", "unit-04-no-boolean.md"),
+	`---
+name: unit-04-no-boolean
+type: research
+status: active
+depends_on: []
+bolt: 1
+hat: planner
+hat_started_at: 2020-01-01T00:00:00Z
+quality_gates:
+  - name: always-fail
+    command: "false"
+outputs:
+  - knowledge/findings.md
+---
+
+## Completion Criteria
+
+- [x] Gates skipped because hat opts out
+`,
+)
+
 // Create second intent for list testing
 const intent2Dir = join(haikuRoot, "intents", "second-intent")
 mkdirSync(intent2Dir, { recursive: true })
@@ -245,10 +431,21 @@ providers:
 `,
 )
 
-// Stub git so gitCommitState doesn't fail or actually commit
+// Stub git so gitCommitState doesn't fail or actually commit. `rev-parse
+// --show-toplevel` returns the current working directory so callers like
+// runInlineQualityGates resolve a usable cwd; everything else exits 0.
 process.env.PATH = `${join(tmp, "fake-bin")}:${process.env.PATH}`
 mkdirSync(join(tmp, "fake-bin"), { recursive: true })
-writeFileSync(join(tmp, "fake-bin", "git"), "#!/bin/sh\nexit 0\n")
+writeFileSync(
+	join(tmp, "fake-bin", "git"),
+	`#!/bin/sh
+if [ "$1" = "rev-parse" ] && [ "$2" = "--show-toplevel" ]; then
+  pwd
+  exit 0
+fi
+exit 0
+`,
+)
 chmodSync(join(tmp, "fake-bin", "git"), 0o755)
 
 process.chdir(projDir)
@@ -1033,6 +1230,130 @@ body
 			/* non-JSON success response is fine */
 		}
 		assert.ok(!errored, `expected success, got: ${text}`)
+	})
+
+	// ── haiku_unit_advance_hat: per-hat run_quality_gates auto-reject ─────────
+
+	console.log("\n=== haiku_unit_advance_hat: run_quality_gates auto-reject ===")
+
+	test("auto-rejects when builder hat with run_quality_gates fails gates", () => {
+		const result = handleStateTool("haiku_unit_advance_hat", {
+			intent: intentSlug,
+			unit: "unit-01-gates-fail",
+		})
+		const text = getTextResult(result)
+		// Response is the FSM Result envelope path; the persisted state should
+		// show bolt+1, hat unchanged.
+		const fmRaw = readFileSync(
+			join(
+				intentDirPath,
+				"stages",
+				"gated",
+				"units",
+				"unit-01-gates-fail.md",
+			),
+			"utf8",
+		)
+		const fm = fmRaw.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? ""
+		assert.ok(
+			/^bolt: 2$/m.test(fm),
+			`expected bolt: 2 after auto-reject, got: ${fm}`,
+		)
+		assert.ok(
+			/^hat: builder$/m.test(fm),
+			`expected hat to remain builder, got: ${fm}`,
+		)
+		assert.ok(
+			text.includes("FSM Result written to:"),
+			`expected FSM Result envelope, got: ${text}`,
+		)
+		assert.ok(
+			text.includes("gates failed") || text.includes("always-fail"),
+			`expected gate-fail context in envelope, got: ${text}`,
+		)
+	})
+
+	test("advances normally when builder hat with run_quality_gates passes gates", () => {
+		const result = handleStateTool("haiku_unit_advance_hat", {
+			intent: intentSlug,
+			unit: "unit-02-gates-pass",
+		})
+		const text = getTextResult(result)
+		// Response is JSON error or success — gates passed, so advance
+		// proceeds. The unit's hat should now be reviewer (the next hat),
+		// bolt should remain 1.
+		const fmRaw = readFileSync(
+			join(
+				intentDirPath,
+				"stages",
+				"gated",
+				"units",
+				"unit-02-gates-pass.md",
+			),
+			"utf8",
+		)
+		const fm = fmRaw.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? ""
+		assert.ok(
+			/^bolt: 1$/m.test(fm),
+			`expected bolt to remain 1 after gate-pass advance, got: ${fm}`,
+		)
+		assert.ok(
+			/^hat: reviewer$/m.test(fm),
+			`expected hat to advance to reviewer, got: ${fm}`,
+		)
+		// Should NOT contain auto-reject markers
+		assert.ok(
+			!text.includes("always-fail"),
+			`expected no gate-fail context, got: ${text}`,
+		)
+	})
+
+	test("returns max_bolts_exceeded when run_quality_gates fail at bolt 5", () => {
+		const result = handleStateTool("haiku_unit_advance_hat", {
+			intent: intentSlug,
+			unit: "unit-03-gates-cap",
+		})
+		const parsed = JSON.parse(getTextResult(result))
+		assert.strictEqual(parsed.error, "max_bolts_exceeded")
+		assert.strictEqual(parsed.reason, "quality_gate_auto_reject")
+		assert.strictEqual(parsed.bolt, 5)
+		assert.ok(
+			Array.isArray(parsed.failures) && parsed.failures.length > 0,
+			"expected failures array",
+		)
+	})
+
+	test("hats without run_quality_gates do not trigger gate auto-reject", () => {
+		const result = handleStateTool("haiku_unit_advance_hat", {
+			intent: intentSlug,
+			unit: "unit-04-no-boolean",
+		})
+		const text = getTextResult(result)
+		const fmRaw = readFileSync(
+			join(
+				intentDirPath,
+				"stages",
+				"gated",
+				"units",
+				"unit-04-no-boolean.md",
+			),
+			"utf8",
+		)
+		const fm = fmRaw.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? ""
+		// Planner doesn't declare the boolean, so gates aren't checked
+		// here — advance proceeds despite the always-fail gate definition.
+		assert.ok(
+			/^bolt: 1$/m.test(fm),
+			`expected bolt to remain 1 (no auto-reject), got: ${fm}`,
+		)
+		assert.ok(
+			/^hat: builder$/m.test(fm),
+			`expected hat to advance to builder (next), got: ${fm}`,
+		)
+		assert.ok(
+			!text.includes("always-fail"),
+			`expected no gate-fail context (gates skipped), got: ${text}`,
+		)
 	})
 
 	// ── unknown tool ──────────────────────────────────────────────────────────

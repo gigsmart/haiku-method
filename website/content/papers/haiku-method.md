@@ -344,6 +344,8 @@ The distinction matters because criteria that can be checked by running a comman
 
 Quality gates are declared as structured, executable entries in the unit's frontmatter — each with a `name`, a shell `command`, and optionally a working `dir`. The framework runs each gate at advance_hat time; a non-zero exit blocks the advance. Prose-only gate descriptions belong in the unit body, not in the frontmatter, because the framework cannot enforce prose. Critically, gate commands must scope to the *full stage artifact directory* (the rule domain), not only to the files the unit declares in its `inputs:` list (the unit's read scope). When enforcement scope is narrower than rule scope, regressions accumulate on files no single unit audited — a pattern the adversarial reviewer catches and the pre-execution review catches earlier still.
 
+Per-hat opt-in tightens this further. A hat may declare `run_quality_gates: true` in its frontmatter; when it does, gates run on *that* hat's advance — not just the last hat's — and a failure auto-rejects to the same hat with the bolt counter incremented. The agent does not choose between fix-and-retry and reject_hat; the framework decides. This makes "this hat produces verifiable artifacts" part of the hat's definition of done. The bolt cap (5 per unit) bounds retries; exhaustion escalates to a human, not another bolt.
+
 ### Backpressure
 
 Quality gates create **backpressure**: the framework pushes back against premature completion. When the building agent signals that it is done, the harness intercepts and runs verification. If gates fail, the agent cannot stop — it must address the failure.

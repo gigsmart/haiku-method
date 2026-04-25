@@ -71,6 +71,7 @@ export interface HatDef {
 	content: string // full markdown body (without frontmatter)
 	agent_type?: string // e.g., "general-purpose", "plan", custom
 	model?: string // e.g., "opus", "sonnet", "haiku"
+	run_quality_gates?: boolean // when true, advance_hat from this hat runs the unit's quality_gates and auto-rejects (bolt+1) on failure
 	raw: string // full file content
 }
 
@@ -93,6 +94,7 @@ export function readHatDefs(
 				content: body,
 				agent_type: (data.agent_type as string) || undefined,
 				model: (data.model as string) || undefined,
+				run_quality_gates: data.run_quality_gates === true ? true : undefined,
 				raw,
 			}
 		}
