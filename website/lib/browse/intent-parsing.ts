@@ -24,6 +24,12 @@ export interface StageStateJson {
 	startedAt: string | null
 	completedAt: string | null
 	gateOutcome: string | null
+	/** Raw `status` field from state.json — authoritative source for stage
+	 *  status when present (written by the orchestrator on the stage branch).
+	 *  Providers prefer this over the `active_stage` field in intent.md,
+	 *  which may lag for the first stage or when the intent branch hasn't
+	 *  been updated yet. */
+	stateStatus: "active" | "completed" | null
 }
 
 export const EMPTY_STAGE_STATE: StageStateJson = {
@@ -31,6 +37,7 @@ export const EMPTY_STAGE_STATE: StageStateJson = {
 	startedAt: null,
 	completedAt: null,
 	gateOutcome: null,
+	stateStatus: null,
 }
 
 /** Decode a stage's `state.json` text. Returns the empty default when
@@ -42,11 +49,19 @@ export function parseStageStateJson(
 	if (!rawJson) return EMPTY_STAGE_STATE
 	try {
 		const s = JSON.parse(rawJson) as Record<string, unknown>
+		const rawStatus = typeof s.status === "string" ? s.status : null
+		const stateStatus: "active" | "completed" | null =
+			rawStatus === "active"
+				? "active"
+				: rawStatus === "completed"
+					? "completed"
+					: null
 		return {
 			phase: typeof s.phase === "string" ? s.phase : "",
 			startedAt: typeof s.started_at === "string" ? s.started_at : null,
 			completedAt: typeof s.completed_at === "string" ? s.completed_at : null,
 			gateOutcome: typeof s.gate_outcome === "string" ? s.gate_outcome : null,
+			stateStatus,
 		}
 	} catch {
 		return EMPTY_STAGE_STATE

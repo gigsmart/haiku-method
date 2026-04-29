@@ -460,12 +460,16 @@ export class GitHubProvider implements BrowseProvider {
 		const stateEntry = stageChildren.find(
 			(e) => e.name === "state.json" && e.type === "blob",
 		)
-		const { phase, startedAt, completedAt, gateOutcome } = parseStageStateJson(
-			stateEntry?.object?.text,
-		)
+		const { phase, startedAt, completedAt, gateOutcome, stateStatus } =
+			parseStageStateJson(stateEntry?.object?.text)
 
+		// state.json.status is authoritative (written by the orchestrator on the
+		// stage branch). Fall back to active_stage from intent.md when absent —
+		// the intent branch may lag for the first stage of a new intent.
 		let status: "pending" | "active" | "complete" = "pending"
-		if (stageName === activeStage) status = "active"
+		if (stateStatus === "active") status = "active"
+		else if (stateStatus === "completed") status = "complete"
+		else if (stageName === activeStage) status = "active"
 		else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage))
 			status = "complete"
 
@@ -757,8 +761,10 @@ export class GitHubProvider implements BrowseProvider {
 					},
 					branchesCacheKey,
 				)
+			// refPrefix is "refs/heads/haiku/${slug}/" so node.name is just the
+			// final segment (e.g. "main" or "design"), not the full branch name.
 			const mainNode = branchesData?.repository?.refs?.nodes?.find(
-				(n) => n?.name === `${slug}/main`,
+				(n) => n?.name === "main",
 			)
 			const pr = mainNode?.associatedPullRequests.nodes?.[0]
 			const prMeta = pr
@@ -771,13 +777,14 @@ export class GitHubProvider implements BrowseProvider {
 			this.intentMetaMap.set(slug, { branch: branchName, ...prMeta })
 
 			for (const node of branchesData?.repository?.refs?.nodes ?? []) {
-				if (!node || node.name === `${slug}/main`) continue
-				const parts = node.name.split("/")
-				const stageName = parts[parts.length - 1]
+				if (!node || node.name === "main") continue
+				// node.name is relative to the slug-specific prefix, so it's just
+				// the stage name. Reconstruct the full branch name with the slug.
+				const stageName = node.name
 				if (!stageName) continue
 				const stagePr = node.associatedPullRequests.nodes?.[0]
 				this.stageBranchMap.set(`${slug}/${stageName}`, {
-					branch: `haiku/${node.name}`,
+					branch: `haiku/${slug}/${stageName}`,
 					prUrl: stagePr?.url ?? null,
 					prStatus: stagePr?.state.toLowerCase() ?? null,
 					prNumber: stagePr?.number ?? null,

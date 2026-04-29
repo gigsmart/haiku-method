@@ -602,12 +602,16 @@ export class GitLabProvider implements BrowseProvider {
 		}
 
 		// state.json — shared parsing keeps gitlab + github in sync
-		const { phase, startedAt, completedAt, gateOutcome } = parseStageStateJson(
-			data.blobByPath.get(`${stagePath}/state.json`),
-		)
+		const { phase, startedAt, completedAt, gateOutcome, stateStatus } =
+			parseStageStateJson(data.blobByPath.get(`${stagePath}/state.json`))
 
+		// state.json.status is authoritative (written by the orchestrator on the
+		// stage branch). Fall back to active_stage from intent.md when absent —
+		// the intent branch may lag for the first stage of a new intent.
 		let status: "pending" | "active" | "complete" = "pending"
-		if (stageName === activeStage) status = "active"
+		if (stateStatus === "active") status = "active"
+		else if (stateStatus === "completed") status = "complete"
+		else if (stageName === activeStage) status = "active"
 		else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage))
 			status = "complete"
 

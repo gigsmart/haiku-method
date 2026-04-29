@@ -1,3 +1,4 @@
+import { parseStageStateJson } from "./intent-parsing"
 import { parseSettingsYaml } from "./resolve-links"
 import type {
 	BrowseProvider,
@@ -176,24 +177,20 @@ export class LocalProvider implements BrowseProvider {
 			const stateRaw = await this.readFile(
 				`.haiku/intents/${slug}/stages/${stageName}/state.json`,
 			)
-			let stagePhase = ""
-			let stageStartedAt: string | null = null
-			let stageCompletedAt: string | null = null
-			let gateOutcome: string | null = null
-			if (stateRaw) {
-				try {
-					const stateData = JSON.parse(stateRaw)
-					stagePhase = stateData.phase || ""
-					stageStartedAt = stateData.started_at || null
-					stageCompletedAt = stateData.completed_at || null
-					gateOutcome = stateData.gate_outcome || null
-				} catch {
-					/* ignore */
-				}
-			}
+			const {
+				phase: stagePhase,
+				startedAt: stageStartedAt,
+				completedAt: stageCompletedAt,
+				gateOutcome,
+				stateStatus,
+			} = parseStageStateJson(stateRaw)
 
+			// state.json.status is authoritative (written by the orchestrator on the
+			// stage branch). Fall back to active_stage from intent.md when absent.
 			let status: "pending" | "active" | "complete" = "pending"
-			if (stageName === activeStage) status = "active"
+			if (stateStatus === "active") status = "active"
+			else if (stateStatus === "completed") status = "complete"
+			else if (stageName === activeStage) status = "active"
 			else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage))
 				status = "complete"
 
