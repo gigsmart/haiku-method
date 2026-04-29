@@ -11,8 +11,6 @@
 
 set -e
 
-prev_head="$1"
-new_head="$2"
 branch_flag="$3"
 
 # Only branch checkouts. File-level checkouts pass flag 0.
@@ -72,19 +70,21 @@ fi
 worktree_name=$(printf '%s' "$target_branch" | tr '/' '-')
 worktree_dir="$primary_root/.claude/worktrees/$worktree_name"
 
-if git worktree add --quiet "$worktree_dir" "$target_branch" 2>/dev/null; then
+mkdir -p "$primary_root/.claude/worktrees"
+
+worktree_err=$(git worktree add --quiet "$worktree_dir" "$target_branch" 2>&1) && {
   cat >&2 <<EOF
 
 ✋ primary worktree pinned to '$default_branch' — bounced back from '$target_branch'.
    created linked worktree:
        cd "$worktree_dir"
 EOF
-else
+} || {
   cat >&2 <<EOF
 
 ✋ primary worktree pinned to '$default_branch' — bounced back from '$target_branch'.
    tried to auto-create worktree at: $worktree_dir
-   (failed — path may already exist or branch is held by another worktree;
+   (failed — ${worktree_err:-path may already exist or branch is held by another worktree};
     run \`git worktree list\` to inspect)
 EOF
-fi
+}

@@ -18,8 +18,8 @@ cat >&2 <<EOF
    primary is pinned to the default branch (post-checkout hook); branch
    work — including commits — must happen in a linked worktree:
 
-       git worktree add ../<dir> <branch>          # existing branch
-       git worktree add -b <branch> ../<dir>       # new branch off HEAD
+       git worktree add .claude/worktrees/<dir> <branch>          # existing branch
+       git worktree add -b <branch> .claude/worktrees/<dir>       # new branch off HEAD
 
 EOF
 
