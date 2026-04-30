@@ -74,7 +74,11 @@ try {
 			"should be JSON",
 		)
 		const body = await res.json()
-		assert.strictEqual(typeof body.mcp_version, "string", "mcp_version is string")
+		assert.strictEqual(
+			typeof body.mcp_version,
+			"string",
+			"mcp_version is string",
+		)
 		assert.strictEqual(
 			typeof body.plugin_version,
 			"string",

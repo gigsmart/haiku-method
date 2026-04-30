@@ -445,7 +445,7 @@ function renderElaborate(ctx: PromptBuilderContext): string {
 			join(studio, "stages", stage, "STAGE.md"),
 		)
 
-		let fanOutText = `## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${discoveryArtifacts.length} discovery artifact${plural}: ${artifactNames}.\n\n**Spawn one subagent per artifact** using the EXACT content between \`<subagent>\` tags as the prompt. Each subagent writes inside its own isolation worktree — the workflow engine merges their work back into the stage branch on the next \`haiku_run_next\`.\n\n${batchDispatchDirective(discoveryArtifacts.length, "discovery subagents")}\n\n`
+		let fanOutText = `## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${discoveryArtifacts.length} discovery artifact${plural}: ${artifactNames}.\n\n**Spawn one subagent per artifact** using the \`prompt_file\` attribute on each \`<subagent>\` block — pass \`"Read <prompt_file> and execute its instructions exactly."\` as the spawn prompt (substituting the attribute's path). Each subagent writes inside its own isolation worktree — the workflow engine merges their work back into the stage branch on the next \`haiku_run_next\`.\n\n${batchDispatchDirective(discoveryArtifacts.length, "discovery subagents")}\n\n`
 
 		for (const a of discoveryArtifacts) {
 			const wt = createDiscoveryWorktree(slug, stage, a.name)
@@ -512,7 +512,7 @@ function renderElaborate(ctx: PromptBuilderContext): string {
 		const elabBgLine = getCapabilities().subagents.backgroundSpawn
 			? ' Each `<subagent>` carries `background="true"` — pass `run_in_background: true` to the Task tool so the parent thread stays responsive while discovery agents run.'
 			: ""
-		fanOutText += `### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn each subagent above using the EXACT content between \`<subagent>\` tags as the prompt.${elabBgLine} When ALL subagents return, call \`haiku_run_next { intent: "${slug}" }\` — the workflow engine merges their isolation worktrees back into the stage branch (resolving conflicts via the integrator if needed) and then emits the unit-decomposition instructions. **Do NOT proceed to decomposition in this response** — wait for the next workflow tick so the merged knowledge artifacts are visible.`
+		fanOutText += `### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn each subagent above using the \`prompt_file\` attribute — pass \`"Read <prompt_file> and execute its instructions exactly."\` as the spawn prompt (substituting the attribute's path). Do NOT include the \`<subagent>\` block body itself in the spawn prompt.${elabBgLine} When ALL subagents return, call \`haiku_run_next { intent: "${slug}" }\` — the workflow engine merges their isolation worktrees back into the stage branch (resolving conflicts via the integrator if needed) and then emits the unit-decomposition instructions. **Do NOT proceed to decomposition in this response** — wait for the next workflow tick so the merged knowledge artifacts are visible.`
 
 		sections.push(fanOutText)
 
