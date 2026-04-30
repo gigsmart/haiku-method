@@ -1,27 +1,31 @@
 import type { ReactNode } from "react"
 
-interface Props {
+type CardCommonProps = {
 	children: ReactNode
 	className?: string
 	id?: string
-	/**
-	 * Render the card as a semantic landmark instead of a `<div>`. Set to
-	 * `"article"` for the primary readable region of a tab (reader-mode TTS
-	 * locks onto `<article>`), or `"section"` for a labelled chunk inside an
-	 * article. Pair with `ariaLabelledBy` referencing a `SectionHeading id`.
-	 */
-	as?: "div" | "article" | "section"
-	ariaLabelledBy?: string
 }
 
-export function Card({
-	children,
-	className = "",
-	id,
-	as = "div",
-	ariaLabelledBy,
-}: Props) {
-	const Tag = as
+/**
+ * Discriminated by `as`: when the card is a landmark (`article` / `section`),
+ * `ariaLabelledBy` is required (an unlabeled landmark is worse for AT
+ * navigation than a plain `<div>`); when it's a plain `<div>`, the prop is
+ * forbidden so it can't drift in unnoticed.
+ */
+type CardProps =
+	| (CardCommonProps & { as?: "div"; ariaLabelledBy?: never })
+	| (CardCommonProps & {
+			as: "article" | "section"
+			ariaLabelledBy: string
+	  })
+
+export function Card(props: CardProps) {
+	const { children, className = "", id } = props
+	const Tag = props.as ?? "div"
+	const ariaLabelledBy =
+		props.as === "article" || props.as === "section"
+			? props.ariaLabelledBy
+			: undefined
 	return (
 		<Tag
 			id={id}
