@@ -11,7 +11,16 @@
 		},
 		"default_export_target": {
 			"type": "string",
-			"enum": ["react", "vue", "svelte", "html", "flutter", "swiftui", "compose", "react-native"],
+			"enum": [
+				"react",
+				"vue",
+				"svelte",
+				"html",
+				"flutter",
+				"swiftui",
+				"compose",
+				"react-native"
+			],
 			"default": "react",
 			"description": "Default framework target for code export"
 		},

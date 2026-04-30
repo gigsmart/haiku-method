@@ -192,15 +192,27 @@
 			"allOf": [
 				{
 					"if": { "properties": { "type": { "const": "notion" } } },
-					"then": { "properties": { "config": { "$ref": "providers/notion.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/notion.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "confluence" } } },
-					"then": { "properties": { "config": { "$ref": "providers/confluence.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/confluence.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "google-docs" } } },
-					"then": { "properties": { "config": { "$ref": "providers/google-docs.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/google-docs.schema.json" }
+						}
+					}
 				}
 			]
 		},
@@ -227,19 +239,33 @@
 			"allOf": [
 				{
 					"if": { "properties": { "type": { "const": "jira" } } },
-					"then": { "properties": { "config": { "$ref": "providers/jira.schema.json" } } }
+					"then": {
+						"properties": { "config": { "$ref": "providers/jira.schema.json" } }
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "linear" } } },
-					"then": { "properties": { "config": { "$ref": "providers/linear.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/linear.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "github-issues" } } },
-					"then": { "properties": { "config": { "$ref": "providers/github-issues.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/github-issues.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "gitlab-issues" } } },
-					"then": { "properties": { "config": { "$ref": "providers/gitlab-issues.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/gitlab-issues.schema.json" }
+						}
+					}
 				}
 			]
 		},
@@ -249,7 +275,15 @@
 			"properties": {
 				"type": {
 					"type": "string",
-					"enum": ["canva", "openpencil", "pencil", "penpot", "excalidraw", "figma", "auto"],
+					"enum": [
+						"canva",
+						"openpencil",
+						"pencil",
+						"penpot",
+						"excalidraw",
+						"figma",
+						"auto"
+					],
 					"description": "Design provider type"
 				},
 				"config": {
@@ -266,27 +300,51 @@
 			"allOf": [
 				{
 					"if": { "properties": { "type": { "const": "canva" } } },
-					"then": { "properties": { "config": { "$ref": "providers/canva.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/canva.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "openpencil" } } },
-					"then": { "properties": { "config": { "$ref": "providers/openpencil.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/openpencil.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "pencil" } } },
-					"then": { "properties": { "config": { "$ref": "providers/pencil.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/pencil.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "penpot" } } },
-					"then": { "properties": { "config": { "$ref": "providers/penpot.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/penpot.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "excalidraw" } } },
-					"then": { "properties": { "config": { "$ref": "providers/excalidraw.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/excalidraw.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "figma" } } },
-					"then": { "properties": { "config": { "$ref": "providers/figma.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/figma.schema.json" }
+						}
+					}
 				}
 			]
 		},
@@ -313,15 +371,27 @@
 			"allOf": [
 				{
 					"if": { "properties": { "type": { "const": "slack" } } },
-					"then": { "properties": { "config": { "$ref": "providers/slack.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/slack.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "teams" } } },
-					"then": { "properties": { "config": { "$ref": "providers/teams.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/teams.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "discord" } } },
-					"then": { "properties": { "config": { "$ref": "providers/discord.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/discord.schema.json" }
+						}
+					}
 				}
 			]
 		},
@@ -348,11 +418,19 @@
 			"allOf": [
 				{
 					"if": { "properties": { "type": { "const": "salesforce" } } },
-					"then": { "properties": { "config": { "$ref": "providers/salesforce.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/salesforce.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "hubspot" } } },
-					"then": { "properties": { "config": { "$ref": "providers/hubspot.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/hubspot.schema.json" }
+						}
+					}
 				}
 			]
 		},
@@ -379,15 +457,27 @@
 			"allOf": [
 				{
 					"if": { "properties": { "type": { "const": "notion" } } },
-					"then": { "properties": { "config": { "$ref": "providers/notion.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/notion.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "confluence" } } },
-					"then": { "properties": { "config": { "$ref": "providers/confluence.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/confluence.schema.json" }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "type": { "const": "google-docs" } } },
-					"then": { "properties": { "config": { "$ref": "providers/google-docs.schema.json" } } }
+					"then": {
+						"properties": {
+							"config": { "$ref": "providers/google-docs.schema.json" }
+						}
+					}
 				}
 			]
 		},

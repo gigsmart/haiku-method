@@ -19,14 +19,16 @@
 			"additionalProperties": {
 				"type": "string"
 			},
-			"examples": [{
-				"Prospecting": "research",
-				"Qualification": "qualification",
-				"Proposal/Price Quote": "proposal",
-				"Negotiation/Review": "negotiation",
-				"Closed Won": "close",
-				"Closed Lost": "close"
-			}]
+			"examples": [
+				{
+					"Prospecting": "research",
+					"Qualification": "qualification",
+					"Proposal/Price Quote": "proposal",
+					"Negotiation/Review": "negotiation",
+					"Closed Won": "close",
+					"Closed Lost": "close"
+				}
+			]
 		},
 		"sync_activities": {
 			"type": "boolean",

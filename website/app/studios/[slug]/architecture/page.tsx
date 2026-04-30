@@ -51,7 +51,9 @@ export default async function StudioArchitecturePage({ params }: Props) {
 					{titleCase(studio.name)}
 				</Link>
 				<span className="text-stone-300 dark:text-stone-600">/</span>
-				<span className="font-semibold text-stone-900 dark:text-white">Architecture</span>
+				<span className="font-semibold text-stone-900 dark:text-white">
+					Architecture
+				</span>
 			</nav>
 			<ArchitectureMap initialStudioDir={slug} />
 		</>

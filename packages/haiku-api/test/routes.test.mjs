@@ -15,10 +15,12 @@ import { describe, summary, test } from "./helpers.mjs"
 
 const here = dirname(fileURLToPath(import.meta.url))
 const repoRoot = resolve(here, "..", "..", "..")
+
 // Route literals were originally all in packages/haiku/src/http.ts. After
 // the god-file breakup (#245) they moved into packages/haiku/src/http/*.ts
 // — read both so the fingerprint scan still covers the full surface.
 import { readdirSync } from "node:fs"
+
 const httpTsPath = join(repoRoot, "packages", "haiku", "src", "http.ts")
 const httpDir = join(repoRoot, "packages", "haiku", "src", "http")
 let httpSrc = readFileSync(httpTsPath, "utf8")

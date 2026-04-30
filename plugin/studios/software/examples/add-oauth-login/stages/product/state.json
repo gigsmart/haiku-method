@@ -1,9 +1,7 @@
 {
-  "stage": "product",
-  "status": "complete",
-  "current_unit": null,
-  "completed_units": [
-    "unit-01-auth-spec"
-  ],
-  "iteration": 0
+	"stage": "product",
+	"status": "complete",
+	"current_unit": null,
+	"completed_units": ["unit-01-auth-spec"],
+	"iteration": 0
 }

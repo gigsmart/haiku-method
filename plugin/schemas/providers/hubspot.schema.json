@@ -15,14 +15,16 @@
 			"additionalProperties": {
 				"type": "string"
 			},
-			"examples": [{
-				"appointmentscheduled": "research",
-				"qualifiedtobuy": "qualification",
-				"presentationscheduled": "proposal",
-				"decisionmakerboughtin": "negotiation",
-				"closedwon": "close",
-				"closedlost": "close"
-			}]
+			"examples": [
+				{
+					"appointmentscheduled": "research",
+					"qualifiedtobuy": "qualification",
+					"presentationscheduled": "proposal",
+					"decisionmakerboughtin": "negotiation",
+					"closedwon": "close",
+					"closedlost": "close"
+				}
+			]
 		},
 		"sync_activities": {
 			"type": "boolean",

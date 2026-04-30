@@ -29,7 +29,9 @@
 				"type": "array",
 				"items": { "type": "string" }
 			},
-			"examples": [{ "backend": ["Elixir"], "frontend": ["React", "TypeScript"] }]
+			"examples": [
+				{ "backend": ["Elixir"], "frontend": ["React", "TypeScript"] }
+			]
 		},
 		"story_points": {
 			"type": "string",

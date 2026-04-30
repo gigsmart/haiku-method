@@ -7,7 +7,13 @@
 	"properties": {
 		"provider": {
 			"type": "string",
-			"enum": ["pagerduty", "opsgenie", "datadog", "prometheus-alertmanager", "none"],
+			"enum": [
+				"pagerduty",
+				"opsgenie",
+				"datadog",
+				"prometheus-alertmanager",
+				"none"
+			],
 			"description": "Alerting/on-call provider"
 		},
 		"routing": {

@@ -731,6 +731,7 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 										>
 											haiku_run_next
 										</button>
+										{/* biome-ignore lint/a11y/useSemanticElements: contains block-level children (ng-head, ng-branch-row) illegal inside a real <button> per HTML5 phrasing-content rules */}
 										<div
 											className="nested-gate"
 											role="button"
@@ -850,6 +851,7 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 															<div className="cyl-body">
 																{stage.hats.map((h, hi) => (
 																	<Fragment key={h}>
+																		{/* biome-ignore lint/a11y/useSemanticElements: contains block-level children (ng-head, ng-branch-row) illegal inside a real <button> per HTML5 phrasing-content rules */}
 																		<div
 																			role="button"
 																			tabIndex={0}
@@ -978,6 +980,7 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 									>
 										haiku_run_next
 									</button>
+									{/* biome-ignore lint/a11y/useSemanticElements: contains block-level children (ng-head, ng-branch-row) illegal inside a real <button> per HTML5 phrasing-content rules */}
 									<div
 										className="nested-gate"
 										role="button"

@@ -11,7 +11,7 @@ interface ModalProps {
 }
 
 const FOCUSABLE_SELECTOR = [
-	'a[href]',
+	"a[href]",
 	"button:not([disabled])",
 	"textarea:not([disabled])",
 	"input:not([disabled])",
@@ -19,7 +19,13 @@ const FOCUSABLE_SELECTOR = [
 	'[tabindex]:not([tabindex="-1"])',
 ].join(",")
 
-export function Modal({ open, title, subtitle, children, onClose }: ModalProps) {
+export function Modal({
+	open,
+	title,
+	subtitle,
+	children,
+	onClose,
+}: ModalProps) {
 	const dialogRef = useRef<HTMLDivElement>(null)
 	const previousFocus = useRef<HTMLElement | null>(null)
 
@@ -117,6 +123,12 @@ export function HtmlBlock({
 	className?: string
 	style?: React.CSSProperties
 }) {
-	// biome-ignore lint/security/noDangerouslySetInnerHtml: trusted prototype copy
-	return <div className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />
+	return (
+		<div
+			className={className}
+			style={style}
+			// biome-ignore lint/security/noDangerouslySetInnerHtml: trusted prototype copy
+			dangerouslySetInnerHTML={{ __html: html }}
+		/>
+	)
 }

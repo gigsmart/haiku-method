@@ -90,7 +90,9 @@ export function renderMarkdown(src: string | null | undefined): string {
 		}
 		if (/^>\s/.test(raw)) {
 			flushList()
-			out.push(`<blockquote>${renderInline(raw.replace(/^>\s/, ""))}</blockquote>`)
+			out.push(
+				`<blockquote>${renderInline(raw.replace(/^>\s/, ""))}</blockquote>`,
+			)
 			continue
 		}
 		flushList()
@@ -105,7 +107,11 @@ export function renderMarkdown(src: string | null | undefined): string {
 export function shortHat(name: string): string {
 	if (name.length <= 8) return name
 	const parts = name.split(/[-_ ]+/)
-	if (parts.length > 1) return parts.map((p) => p[0] || "").join("").toUpperCase()
+	if (parts.length > 1)
+		return parts
+			.map((p) => p[0] || "")
+			.join("")
+			.toUpperCase()
 	return `${name.slice(0, 6)}…`
 }
 
@@ -129,11 +135,22 @@ export function gateFromReview(review: unknown): {
 		if (review.includes("ask")) options.push("approve", "request changes")
 		if (review.includes("external")) options.push("external")
 		if (review.includes("await")) options.push("await")
-		return { label, type: label, options: options.length ? options : ["advance"] }
+		return {
+			label,
+			type: label,
+			options: options.length ? options : ["advance"],
+		}
 	}
-	if (review === "ask") return { label: "ask", type: "ask", options: ["approve", "request changes"] }
-	if (review === "external") return { label: "external", type: "external", options: ["external"] }
-	if (review === "await") return { label: "await", type: "await", options: ["await"] }
+	if (review === "ask")
+		return {
+			label: "ask",
+			type: "ask",
+			options: ["approve", "request changes"],
+		}
+	if (review === "external")
+		return { label: "external", type: "external", options: ["external"] }
+	if (review === "await")
+		return { label: "await", type: "await", options: ["await"] }
 	return { label: String(review), type: String(review), options: ["advance"] }
 }
 
@@ -143,7 +160,10 @@ export function formatInputs(inputs: unknown): string[] {
 		.map((i) => {
 			if (!i || typeof i !== "object") return String(i)
 			const stage = (i as { stage?: string }).stage ?? ""
-			const kind = (i as { discovery?: string; output?: string }).discovery ?? (i as { output?: string }).output ?? ""
+			const kind =
+				(i as { discovery?: string; output?: string }).discovery ??
+				(i as { output?: string }).output ??
+				""
 			return stage && kind ? `${stage}.${kind}` : kind || stage || ""
 		})
 		.filter(Boolean) as string[]
@@ -163,8 +183,14 @@ export function demoWavesAndUnits(hatCount: number): {
 	const waves =
 		unitCount >= 3
 			? [
-					{ label: "wave 1", units: units.slice(0, unitCount - 1).map((u) => u.id) },
-					{ label: "wave 2", units: units.slice(unitCount - 1).map((u) => u.id) },
+					{
+						label: "wave 1",
+						units: units.slice(0, unitCount - 1).map((u) => u.id),
+					},
+					{
+						label: "wave 2",
+						units: units.slice(unitCount - 1).map((u) => u.id),
+					},
 				]
 			: [{ label: "wave 1", units: units.map((u) => u.id) }]
 	return { waves, units }
@@ -181,7 +207,10 @@ export function effectiveMode(
 	return idx < continuousFromIdx ? "discrete" : "continuous"
 }
 
-export function branchName(stageNameLower: string, mode: "continuous" | "discrete" | "auto"): string {
+export function branchName(
+	stageNameLower: string,
+	mode: "continuous" | "discrete" | "auto",
+): string {
 	return mode === "discrete"
 		? `haiku/{slug}/${stageNameLower}`
 		: "haiku/{slug}/main"

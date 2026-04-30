@@ -7,7 +7,14 @@
 	"properties": {
 		"provider": {
 			"type": "string",
-			"enum": ["prometheus", "datadog", "cloudwatch", "newrelic", "otel", "none"],
+			"enum": [
+				"prometheus",
+				"datadog",
+				"cloudwatch",
+				"newrelic",
+				"otel",
+				"none"
+			],
 			"description": "Monitoring provider"
 		},
 		"dashboards": {

@@ -1,174 +1,174 @@
 {
-  "archetypes": [
-    {
-      "id": "brutalist",
-      "name": "Brutalist",
-      "description": "High contrast, raw borders, monospace type, asymmetric grids. Inspired by brutalist web design — no decoration, maximum impact.",
-      "tokens": {
-        "color_primary": "#000000",
-        "color_background": "#ffffff",
-        "color_accent": "#ff0000",
-        "color_text": "#000000",
-        "color_muted": "#666666",
-        "font_heading": "'Courier New', Courier, monospace",
-        "font_body": "'Courier New', Courier, monospace",
-        "font_size_base": "16px",
-        "line_height": "1.5",
-        "border_radius": "0px",
-        "border_width": "3px",
-        "border_color": "#000000",
-        "shadow": "none",
-        "spacing_unit": "8px",
-        "spacing_section": "48px"
-      },
-      "layout_guidelines": "Use asymmetric grids with intentional misalignment. Favor single-column layouts with occasional off-grid elements. Generous use of negative space juxtaposed with dense text blocks. No rounded containers or soft edges.",
-      "typography_guidelines": "Monospace for everything. Uppercase headings with tight letter-spacing. Body text at standard size. Use font-weight extremes: either bold 700+ or normal 400. Avoid italics. Oversized display text for hero sections.",
-      "component_guidelines": "Buttons: solid background, no border-radius, thick borders. Cards: raw bordered rectangles, no shadows, no hover effects beyond color inversion. Forms: plain inputs with bottom-border only. Navigation: text-only, uppercase, spaced apart.",
-      "default_parameters": {
-        "density": 60,
-        "expressiveness": 80,
-        "shape_language": 10,
-        "color_mood": 30
-      },
-      "preview_html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Brutalist Preview</title></head>\n<body style=\"margin:0;padding:0;background:#fff;color:#000;font-family:'Courier New',Courier,monospace;\">\n\n<!-- Nav -->\n<nav style=\"display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:3px solid #000;\">\n  <span style=\"font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:4px;\">STUDIO</span>\n  <div style=\"display:flex;gap:24px;\">\n    <a href=\"#\" style=\"color:#000;text-decoration:none;text-transform:uppercase;font-size:12px;letter-spacing:2px;\">Work</a>\n    <a href=\"#\" style=\"color:#000;text-decoration:none;text-transform:uppercase;font-size:12px;letter-spacing:2px;\">About</a>\n    <a href=\"#\" style=\"color:#000;text-decoration:none;text-transform:uppercase;font-size:12px;letter-spacing:2px;\">Contact</a>\n  </div>\n</nav>\n\n<!-- Hero -->\n<section style=\"padding:48px 24px;\">\n  <h1 style=\"font-size:48px;font-weight:700;text-transform:uppercase;letter-spacing:-1px;margin:0 0 16px 0;line-height:1.1;\">Raw Design.<br>No Compromise.</h1>\n  <p style=\"font-size:14px;max-width:400px;line-height:1.6;margin:0 0 24px 0;color:#666;\">Stripped to essentials. Every element earns its place or gets removed.</p>\n</section>\n\n<!-- Card -->\n<div style=\"margin:0 24px;border:3px solid #000;padding:24px;\">\n  <h2 style=\"font-size:18px;text-transform:uppercase;letter-spacing:2px;margin:0 0 12px 0;\">Project Alpha</h2>\n  <p style=\"font-size:13px;line-height:1.5;margin:0 0 16px 0;color:#666;\">A study in contrasts. Black on white. Structure over ornament. The grid speaks for itself.</p>\n  <button style=\"background:#000;color:#fff;border:none;padding:10px 24px;font-family:'Courier New',monospace;font-size:12px;text-transform:uppercase;letter-spacing:2px;cursor:pointer;\">View Project</button>\n</div>\n\n<!-- Form -->\n<div style=\"margin:24px;\">\n  <label style=\"display:block;font-size:11px;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;\">Email</label>\n  <input type=\"email\" placeholder=\"you@example.com\" style=\"width:280px;padding:8px 0;border:none;border-bottom:3px solid #000;font-family:'Courier New',monospace;font-size:14px;outline:none;background:transparent;\" />\n</div>\n\n<!-- Accent bar -->\n<div style=\"height:6px;background:#ff0000;margin-top:48px;\"></div>\n\n</body>\n</html>"
-    },
-    {
-      "id": "editorial",
-      "name": "Editorial",
-      "description": "Magazine-inspired layouts with serif headings, generous whitespace, and refined typography. Elegant, content-first design with subtle warm accents.",
-      "tokens": {
-        "color_primary": "#1a1a1a",
-        "color_background": "#f8f7f4",
-        "color_accent": "#c5a572",
-        "color_text": "#1a1a1a",
-        "color_muted": "#8a8580",
-        "font_heading": "Georgia, 'Times New Roman', serif",
-        "font_body": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        "font_size_base": "17px",
-        "line_height": "1.7",
-        "border_radius": "2px",
-        "border_width": "1px",
-        "border_color": "#d4cfc7",
-        "shadow": "0 1px 3px rgba(0,0,0,0.06)",
-        "spacing_unit": "12px",
-        "spacing_section": "72px"
-      },
-      "layout_guidelines": "Wide margins, generous line lengths (60-75 characters). Use pull quotes and dropcaps to break long content. Two or three column grids for article layouts. Whitespace is a primary design element. Asymmetric balance over rigid symmetry.",
-      "typography_guidelines": "Serif for headings, sans-serif for body. Headings at moderate sizes with normal weight. Body text at 17px+ for readability. Generous line-height (1.7+). Use italic for emphasis, small-caps for labels. Subtle letter-spacing on uppercase elements.",
-      "component_guidelines": "Buttons: understated, text-based with subtle borders. Cards: minimal borders or none, separated by whitespace. Hover states are subtle color shifts, not dramatic transforms. Forms: clean inputs with thin borders and warm focus rings. Navigation: clean horizontal bar, no background color.",
-      "default_parameters": {
-        "density": 25,
-        "expressiveness": 65,
-        "shape_language": 40,
-        "color_mood": 50
-      },
-      "preview_html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Editorial Preview</title></head>\n<body style=\"margin:0;padding:0;background:#f8f7f4;color:#1a1a1a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n\n<!-- Nav -->\n<nav style=\"display:flex;justify-content:space-between;align-items:center;padding:20px 40px;border-bottom:1px solid #d4cfc7;\">\n  <span style=\"font-family:Georgia,serif;font-size:22px;font-weight:400;letter-spacing:1px;\">The Review</span>\n  <div style=\"display:flex;gap:28px;\">\n    <a href=\"#\" style=\"color:#1a1a1a;text-decoration:none;font-size:14px;\">Features</a>\n    <a href=\"#\" style=\"color:#1a1a1a;text-decoration:none;font-size:14px;\">Culture</a>\n    <a href=\"#\" style=\"color:#1a1a1a;text-decoration:none;font-size:14px;\">Archive</a>\n  </div>\n</nav>\n\n<!-- Hero -->\n<section style=\"padding:72px 40px;max-width:640px;\">\n  <p style=\"font-size:12px;text-transform:uppercase;letter-spacing:2px;color:#c5a572;margin:0 0 12px 0;\">Featured Essay</p>\n  <h1 style=\"font-family:Georgia,serif;font-size:40px;font-weight:400;line-height:1.2;margin:0 0 20px 0;\">The Art of Thoughtful Design</h1>\n  <p style=\"font-size:17px;line-height:1.7;margin:0;color:#8a8580;\">When restraint meets intention, every detail carries weight. A meditation on whitespace, proportion, and the courage to leave things out.</p>\n</section>\n\n<!-- Card -->\n<div style=\"margin:0 40px;padding:28px;border:1px solid #d4cfc7;border-radius:2px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.06);max-width:560px;\">\n  <p style=\"font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#c5a572;margin:0 0 8px 0;\">Latest</p>\n  <h2 style=\"font-family:Georgia,serif;font-size:24px;font-weight:400;margin:0 0 12px 0;\">Margins of Meaning</h2>\n  <p style=\"font-size:15px;line-height:1.7;margin:0 0 20px 0;color:#8a8580;\">The space between elements speaks as loudly as the elements themselves. An exploration of editorial negative space.</p>\n  <button style=\"background:transparent;color:#1a1a1a;border:1px solid #d4cfc7;border-radius:2px;padding:8px 20px;font-size:13px;font-family:inherit;cursor:pointer;letter-spacing:0.5px;\">Read More</button>\n</div>\n\n<!-- Form -->\n<div style=\"margin:40px;max-width:400px;\">\n  <label style=\"display:block;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#8a8580;margin-bottom:8px;\">Subscribe</label>\n  <input type=\"email\" placeholder=\"your@email.com\" style=\"width:280px;padding:10px 12px;border:1px solid #d4cfc7;border-radius:2px;font-size:15px;font-family:inherit;outline:none;background:#fff;\" />\n</div>\n\n</body>\n</html>"
-    },
-    {
-      "id": "dense",
-      "name": "Dense / Utilitarian",
-      "description": "Packed information density, dark theme, monospace data displays, minimal chrome. Built for dashboards, dev tools, and data-heavy interfaces.",
-      "tokens": {
-        "color_primary": "#e0e0e0",
-        "color_background": "#1e1e1e",
-        "color_accent": "#4fc3f7",
-        "color_text": "#e0e0e0",
-        "color_muted": "#888888",
-        "font_heading": "'SF Mono', 'Fira Code', 'Cascadia Code', monospace",
-        "font_body": "'SF Mono', 'Fira Code', 'Cascadia Code', monospace",
-        "font_size_base": "13px",
-        "line_height": "1.4",
-        "border_radius": "3px",
-        "border_width": "1px",
-        "border_color": "#333333",
-        "shadow": "none",
-        "spacing_unit": "6px",
-        "spacing_section": "24px"
-      },
-      "layout_guidelines": "Maximize information density. Use compact grids, split panes, and tabbed interfaces. Minimal padding between elements. Sidebar + main content pattern. Fixed headers and footers for persistent controls. No decorative whitespace.",
-      "typography_guidelines": "Monospace for all text. Small base font (13px). Tight line-height (1.4). Use color rather than size to establish hierarchy — accent color for interactive elements, muted gray for secondary info. All-caps labels at 10px with letter-spacing.",
-      "component_guidelines": "Buttons: compact, low-contrast backgrounds, subtle borders. Cards: thin bordered containers on slightly lighter background. Tables are a primary layout pattern. Forms: dark inputs with subtle focus rings in accent color. Status indicators and badges over icons. Navigation: vertical sidebar with compact items.",
-      "default_parameters": {
-        "density": 90,
-        "expressiveness": 15,
-        "shape_language": 20,
-        "color_mood": 40
-      },
-      "preview_html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Dense Preview</title></head>\n<body style=\"margin:0;padding:0;background:#1e1e1e;color:#e0e0e0;font-family:'SF Mono','Fira Code','Cascadia Code',monospace;font-size:13px;\">\n\n<!-- Nav -->\n<nav style=\"display:flex;justify-content:space-between;align-items:center;padding:8px 16px;border-bottom:1px solid #333;background:#252525;\">\n  <span style=\"font-size:13px;font-weight:600;color:#4fc3f7;\">sys::monitor</span>\n  <div style=\"display:flex;gap:16px;\">\n    <a href=\"#\" style=\"color:#888;text-decoration:none;font-size:11px;text-transform:uppercase;letter-spacing:1px;\">Dash</a>\n    <a href=\"#\" style=\"color:#888;text-decoration:none;font-size:11px;text-transform:uppercase;letter-spacing:1px;\">Logs</a>\n    <a href=\"#\" style=\"color:#888;text-decoration:none;font-size:11px;text-transform:uppercase;letter-spacing:1px;\">Config</a>\n  </div>\n</nav>\n\n<!-- Header -->\n<section style=\"padding:16px;\">\n  <h1 style=\"font-size:16px;font-weight:600;margin:0 0 4px 0;color:#e0e0e0;\">System Overview</h1>\n  <p style=\"font-size:11px;margin:0;color:#888;\">Last updated: 2 min ago &middot; 4 nodes active &middot; 0 alerts</p>\n</section>\n\n<!-- Card -->\n<div style=\"margin:0 16px;padding:12px;border:1px solid #333;border-radius:3px;background:#252525;\">\n  <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;\">\n    <span style=\"font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#4fc3f7;\">cpu usage</span>\n    <span style=\"font-size:11px;color:#888;\">avg 47%</span>\n  </div>\n  <div style=\"background:#333;border-radius:2px;height:6px;margin-bottom:8px;\"><div style=\"background:#4fc3f7;border-radius:2px;height:6px;width:47%;\"></div></div>\n  <div style=\"display:flex;gap:24px;font-size:11px;color:#888;\">\n    <span>node-01: <span style=\"color:#e0e0e0;\">52%</span></span>\n    <span>node-02: <span style=\"color:#e0e0e0;\">41%</span></span>\n    <span>node-03: <span style=\"color:#e0e0e0;\">48%</span></span>\n  </div>\n</div>\n\n<!-- Second card -->\n<div style=\"margin:8px 16px;padding:12px;border:1px solid #333;border-radius:3px;background:#252525;\">\n  <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;\">\n    <span style=\"font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#4fc3f7;\">memory</span>\n    <span style=\"font-size:11px;color:#888;\">12.4 / 32 GB</span>\n  </div>\n  <div style=\"background:#333;border-radius:2px;height:6px;\"><div style=\"background:#4fc3f7;border-radius:2px;height:6px;width:39%;\"></div></div>\n</div>\n\n<!-- Form -->\n<div style=\"margin:16px;\">\n  <label style=\"display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:4px;\">Filter</label>\n  <input type=\"text\" placeholder=\"query...\" style=\"width:200px;padding:6px 8px;border:1px solid #333;border-radius:3px;font-family:inherit;font-size:12px;background:#252525;color:#e0e0e0;outline:none;\" />\n  <button style=\"margin-left:6px;padding:6px 12px;background:#333;color:#e0e0e0;border:1px solid #444;border-radius:3px;font-family:inherit;font-size:11px;cursor:pointer;\">Run</button>\n</div>\n\n</body>\n</html>"
-    },
-    {
-      "id": "playful",
-      "name": "Playful / Warm",
-      "description": "Rounded corners, vibrant gradients, warm colors, and generous shadows. Friendly, approachable design for consumer products and creative tools.",
-      "tokens": {
-        "color_primary": "#6366f1",
-        "color_background": "#fef3c7",
-        "color_accent": "#f472b6",
-        "color_text": "#1e1b4b",
-        "color_muted": "#7c7399",
-        "font_heading": "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
-        "font_body": "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
-        "font_size_base": "16px",
-        "line_height": "1.6",
-        "border_radius": "16px",
-        "border_width": "0px",
-        "border_color": "transparent",
-        "shadow": "0 4px 16px rgba(99,102,241,0.15)",
-        "spacing_unit": "12px",
-        "spacing_section": "56px"
-      },
-      "layout_guidelines": "Flowing layouts with generous padding. Use overlapping elements and subtle rotations for playfulness. Card-based layouts with ample spacing between items. Center-aligned hero sections. Rounded containers and pill-shaped elements throughout.",
-      "typography_guidelines": "Sans-serif throughout, with rounded/geometric typefaces preferred. Headings at larger sizes with semi-bold weight. Body text at comfortable reading size. Use color to add warmth — gradient text for hero headings. Friendly, conversational tone in UI copy.",
-      "component_guidelines": "Buttons: pill-shaped with gradients or vibrant solid fills, soft shadows on hover. Cards: high border-radius, soft shadows, white or cream backgrounds. Hover states include scale transforms and shadow deepening. Forms: rounded inputs with pastel focus rings. Emoji and icons as decorative accents. Navigation: rounded pill links with hover background.",
-      "default_parameters": {
-        "density": 40,
-        "expressiveness": 90,
-        "shape_language": 85,
-        "color_mood": 75
-      },
-      "preview_html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Playful Preview</title></head>\n<body style=\"margin:0;padding:0;background:#fef3c7;color:#1e1b4b;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;\">\n\n<!-- Nav -->\n<nav style=\"display:flex;justify-content:space-between;align-items:center;padding:16px 32px;\">\n  <span style=\"font-size:22px;font-weight:700;background:linear-gradient(135deg,#6366f1,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;\">sparkle</span>\n  <div style=\"display:flex;gap:8px;\">\n    <a href=\"#\" style=\"color:#1e1b4b;text-decoration:none;font-size:14px;font-weight:500;padding:8px 16px;border-radius:20px;background:rgba(99,102,241,0.08);\">Features</a>\n    <a href=\"#\" style=\"color:#1e1b4b;text-decoration:none;font-size:14px;font-weight:500;padding:8px 16px;border-radius:20px;\">Pricing</a>\n    <a href=\"#\" style=\"color:#1e1b4b;text-decoration:none;font-size:14px;font-weight:500;padding:8px 16px;border-radius:20px;\">Blog</a>\n  </div>\n</nav>\n\n<!-- Hero -->\n<section style=\"padding:56px 32px;text-align:center;\">\n  <h1 style=\"font-size:42px;font-weight:700;line-height:1.2;margin:0 0 16px 0;\">Create Something<br><span style=\"background:linear-gradient(135deg,#6366f1,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;\">Wonderful</span></h1>\n  <p style=\"font-size:17px;line-height:1.6;margin:0 auto 28px auto;max-width:480px;color:#7c7399;\">Tools that feel like play. Build, share, and delight your audience with interfaces that spark joy.</p>\n  <button style=\"background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;padding:14px 32px;border-radius:24px;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:0 4px 16px rgba(99,102,241,0.3);\">Get Started Free</button>\n</section>\n\n<!-- Card -->\n<div style=\"margin:0 32px;padding:28px;border-radius:16px;background:#fff;box-shadow:0 4px 16px rgba(99,102,241,0.15);max-width:440px;\">\n  <div style=\"width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#f472b6,#fbbf24);margin-bottom:16px;\"></div>\n  <h2 style=\"font-size:20px;font-weight:600;margin:0 0 8px 0;\">Lightning Fast</h2>\n  <p style=\"font-size:15px;line-height:1.6;margin:0;color:#7c7399;\">Everything loads instantly. No spinners, no waiting. Just smooth, delightful interactions from start to finish.</p>\n</div>\n\n<!-- Form -->\n<div style=\"margin:32px;max-width:400px;\">\n  <label style=\"display:block;font-size:13px;font-weight:500;color:#7c7399;margin-bottom:6px;\">Your email</label>\n  <input type=\"email\" placeholder=\"hello@example.com\" style=\"width:260px;padding:12px 16px;border:2px solid transparent;border-radius:12px;font-size:15px;font-family:inherit;outline:none;background:#fff;box-shadow:0 2px 8px rgba(99,102,241,0.1);\" />\n</div>\n\n</body>\n</html>"
-    }
-  ],
-  "parameters": [
-    {
-      "id": "density",
-      "name": "Density",
-      "description": "Controls information density — from airy layouts with generous whitespace to packed interfaces maximizing content per viewport.",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "low_label": "Airy",
-      "high_label": "Packed"
-    },
-    {
-      "id": "expressiveness",
-      "name": "Expressiveness",
-      "description": "Controls visual personality — from strict and minimal design language to bold, decorative, and playful elements.",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "low_label": "Strict",
-      "high_label": "Expressive"
-    },
-    {
-      "id": "shape_language",
-      "name": "Shape Language",
-      "description": "Controls geometric style — from sharp angular elements with hard edges to soft rounded forms with generous border-radius.",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "low_label": "Sharp",
-      "high_label": "Rounded"
-    },
-    {
-      "id": "color_mood",
-      "name": "Color Mood",
-      "description": "Controls color temperature — from cool desaturated tones to warm vibrant hues.",
-      "min": 0,
-      "max": 100,
-      "step": 5,
-      "low_label": "Cool",
-      "high_label": "Warm"
-    }
-  ]
+	"archetypes": [
+		{
+			"id": "brutalist",
+			"name": "Brutalist",
+			"description": "High contrast, raw borders, monospace type, asymmetric grids. Inspired by brutalist web design — no decoration, maximum impact.",
+			"tokens": {
+				"color_primary": "#000000",
+				"color_background": "#ffffff",
+				"color_accent": "#ff0000",
+				"color_text": "#000000",
+				"color_muted": "#666666",
+				"font_heading": "'Courier New', Courier, monospace",
+				"font_body": "'Courier New', Courier, monospace",
+				"font_size_base": "16px",
+				"line_height": "1.5",
+				"border_radius": "0px",
+				"border_width": "3px",
+				"border_color": "#000000",
+				"shadow": "none",
+				"spacing_unit": "8px",
+				"spacing_section": "48px"
+			},
+			"layout_guidelines": "Use asymmetric grids with intentional misalignment. Favor single-column layouts with occasional off-grid elements. Generous use of negative space juxtaposed with dense text blocks. No rounded containers or soft edges.",
+			"typography_guidelines": "Monospace for everything. Uppercase headings with tight letter-spacing. Body text at standard size. Use font-weight extremes: either bold 700+ or normal 400. Avoid italics. Oversized display text for hero sections.",
+			"component_guidelines": "Buttons: solid background, no border-radius, thick borders. Cards: raw bordered rectangles, no shadows, no hover effects beyond color inversion. Forms: plain inputs with bottom-border only. Navigation: text-only, uppercase, spaced apart.",
+			"default_parameters": {
+				"density": 60,
+				"expressiveness": 80,
+				"shape_language": 10,
+				"color_mood": 30
+			},
+			"preview_html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Brutalist Preview</title></head>\n<body style=\"margin:0;padding:0;background:#fff;color:#000;font-family:'Courier New',Courier,monospace;\">\n\n<!-- Nav -->\n<nav style=\"display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:3px solid #000;\">\n  <span style=\"font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:4px;\">STUDIO</span>\n  <div style=\"display:flex;gap:24px;\">\n    <a href=\"#\" style=\"color:#000;text-decoration:none;text-transform:uppercase;font-size:12px;letter-spacing:2px;\">Work</a>\n    <a href=\"#\" style=\"color:#000;text-decoration:none;text-transform:uppercase;font-size:12px;letter-spacing:2px;\">About</a>\n    <a href=\"#\" style=\"color:#000;text-decoration:none;text-transform:uppercase;font-size:12px;letter-spacing:2px;\">Contact</a>\n  </div>\n</nav>\n\n<!-- Hero -->\n<section style=\"padding:48px 24px;\">\n  <h1 style=\"font-size:48px;font-weight:700;text-transform:uppercase;letter-spacing:-1px;margin:0 0 16px 0;line-height:1.1;\">Raw Design.<br>No Compromise.</h1>\n  <p style=\"font-size:14px;max-width:400px;line-height:1.6;margin:0 0 24px 0;color:#666;\">Stripped to essentials. Every element earns its place or gets removed.</p>\n</section>\n\n<!-- Card -->\n<div style=\"margin:0 24px;border:3px solid #000;padding:24px;\">\n  <h2 style=\"font-size:18px;text-transform:uppercase;letter-spacing:2px;margin:0 0 12px 0;\">Project Alpha</h2>\n  <p style=\"font-size:13px;line-height:1.5;margin:0 0 16px 0;color:#666;\">A study in contrasts. Black on white. Structure over ornament. The grid speaks for itself.</p>\n  <button style=\"background:#000;color:#fff;border:none;padding:10px 24px;font-family:'Courier New',monospace;font-size:12px;text-transform:uppercase;letter-spacing:2px;cursor:pointer;\">View Project</button>\n</div>\n\n<!-- Form -->\n<div style=\"margin:24px;\">\n  <label style=\"display:block;font-size:11px;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;\">Email</label>\n  <input type=\"email\" placeholder=\"you@example.com\" style=\"width:280px;padding:8px 0;border:none;border-bottom:3px solid #000;font-family:'Courier New',monospace;font-size:14px;outline:none;background:transparent;\" />\n</div>\n\n<!-- Accent bar -->\n<div style=\"height:6px;background:#ff0000;margin-top:48px;\"></div>\n\n</body>\n</html>"
+		},
+		{
+			"id": "editorial",
+			"name": "Editorial",
+			"description": "Magazine-inspired layouts with serif headings, generous whitespace, and refined typography. Elegant, content-first design with subtle warm accents.",
+			"tokens": {
+				"color_primary": "#1a1a1a",
+				"color_background": "#f8f7f4",
+				"color_accent": "#c5a572",
+				"color_text": "#1a1a1a",
+				"color_muted": "#8a8580",
+				"font_heading": "Georgia, 'Times New Roman', serif",
+				"font_body": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+				"font_size_base": "17px",
+				"line_height": "1.7",
+				"border_radius": "2px",
+				"border_width": "1px",
+				"border_color": "#d4cfc7",
+				"shadow": "0 1px 3px rgba(0,0,0,0.06)",
+				"spacing_unit": "12px",
+				"spacing_section": "72px"
+			},
+			"layout_guidelines": "Wide margins, generous line lengths (60-75 characters). Use pull quotes and dropcaps to break long content. Two or three column grids for article layouts. Whitespace is a primary design element. Asymmetric balance over rigid symmetry.",
+			"typography_guidelines": "Serif for headings, sans-serif for body. Headings at moderate sizes with normal weight. Body text at 17px+ for readability. Generous line-height (1.7+). Use italic for emphasis, small-caps for labels. Subtle letter-spacing on uppercase elements.",
+			"component_guidelines": "Buttons: understated, text-based with subtle borders. Cards: minimal borders or none, separated by whitespace. Hover states are subtle color shifts, not dramatic transforms. Forms: clean inputs with thin borders and warm focus rings. Navigation: clean horizontal bar, no background color.",
+			"default_parameters": {
+				"density": 25,
+				"expressiveness": 65,
+				"shape_language": 40,
+				"color_mood": 50
+			},
+			"preview_html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Editorial Preview</title></head>\n<body style=\"margin:0;padding:0;background:#f8f7f4;color:#1a1a1a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n\n<!-- Nav -->\n<nav style=\"display:flex;justify-content:space-between;align-items:center;padding:20px 40px;border-bottom:1px solid #d4cfc7;\">\n  <span style=\"font-family:Georgia,serif;font-size:22px;font-weight:400;letter-spacing:1px;\">The Review</span>\n  <div style=\"display:flex;gap:28px;\">\n    <a href=\"#\" style=\"color:#1a1a1a;text-decoration:none;font-size:14px;\">Features</a>\n    <a href=\"#\" style=\"color:#1a1a1a;text-decoration:none;font-size:14px;\">Culture</a>\n    <a href=\"#\" style=\"color:#1a1a1a;text-decoration:none;font-size:14px;\">Archive</a>\n  </div>\n</nav>\n\n<!-- Hero -->\n<section style=\"padding:72px 40px;max-width:640px;\">\n  <p style=\"font-size:12px;text-transform:uppercase;letter-spacing:2px;color:#c5a572;margin:0 0 12px 0;\">Featured Essay</p>\n  <h1 style=\"font-family:Georgia,serif;font-size:40px;font-weight:400;line-height:1.2;margin:0 0 20px 0;\">The Art of Thoughtful Design</h1>\n  <p style=\"font-size:17px;line-height:1.7;margin:0;color:#8a8580;\">When restraint meets intention, every detail carries weight. A meditation on whitespace, proportion, and the courage to leave things out.</p>\n</section>\n\n<!-- Card -->\n<div style=\"margin:0 40px;padding:28px;border:1px solid #d4cfc7;border-radius:2px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.06);max-width:560px;\">\n  <p style=\"font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#c5a572;margin:0 0 8px 0;\">Latest</p>\n  <h2 style=\"font-family:Georgia,serif;font-size:24px;font-weight:400;margin:0 0 12px 0;\">Margins of Meaning</h2>\n  <p style=\"font-size:15px;line-height:1.7;margin:0 0 20px 0;color:#8a8580;\">The space between elements speaks as loudly as the elements themselves. An exploration of editorial negative space.</p>\n  <button style=\"background:transparent;color:#1a1a1a;border:1px solid #d4cfc7;border-radius:2px;padding:8px 20px;font-size:13px;font-family:inherit;cursor:pointer;letter-spacing:0.5px;\">Read More</button>\n</div>\n\n<!-- Form -->\n<div style=\"margin:40px;max-width:400px;\">\n  <label style=\"display:block;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#8a8580;margin-bottom:8px;\">Subscribe</label>\n  <input type=\"email\" placeholder=\"your@email.com\" style=\"width:280px;padding:10px 12px;border:1px solid #d4cfc7;border-radius:2px;font-size:15px;font-family:inherit;outline:none;background:#fff;\" />\n</div>\n\n</body>\n</html>"
+		},
+		{
+			"id": "dense",
+			"name": "Dense / Utilitarian",
+			"description": "Packed information density, dark theme, monospace data displays, minimal chrome. Built for dashboards, dev tools, and data-heavy interfaces.",
+			"tokens": {
+				"color_primary": "#e0e0e0",
+				"color_background": "#1e1e1e",
+				"color_accent": "#4fc3f7",
+				"color_text": "#e0e0e0",
+				"color_muted": "#888888",
+				"font_heading": "'SF Mono', 'Fira Code', 'Cascadia Code', monospace",
+				"font_body": "'SF Mono', 'Fira Code', 'Cascadia Code', monospace",
+				"font_size_base": "13px",
+				"line_height": "1.4",
+				"border_radius": "3px",
+				"border_width": "1px",
+				"border_color": "#333333",
+				"shadow": "none",
+				"spacing_unit": "6px",
+				"spacing_section": "24px"
+			},
+			"layout_guidelines": "Maximize information density. Use compact grids, split panes, and tabbed interfaces. Minimal padding between elements. Sidebar + main content pattern. Fixed headers and footers for persistent controls. No decorative whitespace.",
+			"typography_guidelines": "Monospace for all text. Small base font (13px). Tight line-height (1.4). Use color rather than size to establish hierarchy — accent color for interactive elements, muted gray for secondary info. All-caps labels at 10px with letter-spacing.",
+			"component_guidelines": "Buttons: compact, low-contrast backgrounds, subtle borders. Cards: thin bordered containers on slightly lighter background. Tables are a primary layout pattern. Forms: dark inputs with subtle focus rings in accent color. Status indicators and badges over icons. Navigation: vertical sidebar with compact items.",
+			"default_parameters": {
+				"density": 90,
+				"expressiveness": 15,
+				"shape_language": 20,
+				"color_mood": 40
+			},
+			"preview_html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Dense Preview</title></head>\n<body style=\"margin:0;padding:0;background:#1e1e1e;color:#e0e0e0;font-family:'SF Mono','Fira Code','Cascadia Code',monospace;font-size:13px;\">\n\n<!-- Nav -->\n<nav style=\"display:flex;justify-content:space-between;align-items:center;padding:8px 16px;border-bottom:1px solid #333;background:#252525;\">\n  <span style=\"font-size:13px;font-weight:600;color:#4fc3f7;\">sys::monitor</span>\n  <div style=\"display:flex;gap:16px;\">\n    <a href=\"#\" style=\"color:#888;text-decoration:none;font-size:11px;text-transform:uppercase;letter-spacing:1px;\">Dash</a>\n    <a href=\"#\" style=\"color:#888;text-decoration:none;font-size:11px;text-transform:uppercase;letter-spacing:1px;\">Logs</a>\n    <a href=\"#\" style=\"color:#888;text-decoration:none;font-size:11px;text-transform:uppercase;letter-spacing:1px;\">Config</a>\n  </div>\n</nav>\n\n<!-- Header -->\n<section style=\"padding:16px;\">\n  <h1 style=\"font-size:16px;font-weight:600;margin:0 0 4px 0;color:#e0e0e0;\">System Overview</h1>\n  <p style=\"font-size:11px;margin:0;color:#888;\">Last updated: 2 min ago &middot; 4 nodes active &middot; 0 alerts</p>\n</section>\n\n<!-- Card -->\n<div style=\"margin:0 16px;padding:12px;border:1px solid #333;border-radius:3px;background:#252525;\">\n  <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;\">\n    <span style=\"font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#4fc3f7;\">cpu usage</span>\n    <span style=\"font-size:11px;color:#888;\">avg 47%</span>\n  </div>\n  <div style=\"background:#333;border-radius:2px;height:6px;margin-bottom:8px;\"><div style=\"background:#4fc3f7;border-radius:2px;height:6px;width:47%;\"></div></div>\n  <div style=\"display:flex;gap:24px;font-size:11px;color:#888;\">\n    <span>node-01: <span style=\"color:#e0e0e0;\">52%</span></span>\n    <span>node-02: <span style=\"color:#e0e0e0;\">41%</span></span>\n    <span>node-03: <span style=\"color:#e0e0e0;\">48%</span></span>\n  </div>\n</div>\n\n<!-- Second card -->\n<div style=\"margin:8px 16px;padding:12px;border:1px solid #333;border-radius:3px;background:#252525;\">\n  <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;\">\n    <span style=\"font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#4fc3f7;\">memory</span>\n    <span style=\"font-size:11px;color:#888;\">12.4 / 32 GB</span>\n  </div>\n  <div style=\"background:#333;border-radius:2px;height:6px;\"><div style=\"background:#4fc3f7;border-radius:2px;height:6px;width:39%;\"></div></div>\n</div>\n\n<!-- Form -->\n<div style=\"margin:16px;\">\n  <label style=\"display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:4px;\">Filter</label>\n  <input type=\"text\" placeholder=\"query...\" style=\"width:200px;padding:6px 8px;border:1px solid #333;border-radius:3px;font-family:inherit;font-size:12px;background:#252525;color:#e0e0e0;outline:none;\" />\n  <button style=\"margin-left:6px;padding:6px 12px;background:#333;color:#e0e0e0;border:1px solid #444;border-radius:3px;font-family:inherit;font-size:11px;cursor:pointer;\">Run</button>\n</div>\n\n</body>\n</html>"
+		},
+		{
+			"id": "playful",
+			"name": "Playful / Warm",
+			"description": "Rounded corners, vibrant gradients, warm colors, and generous shadows. Friendly, approachable design for consumer products and creative tools.",
+			"tokens": {
+				"color_primary": "#6366f1",
+				"color_background": "#fef3c7",
+				"color_accent": "#f472b6",
+				"color_text": "#1e1b4b",
+				"color_muted": "#7c7399",
+				"font_heading": "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
+				"font_body": "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
+				"font_size_base": "16px",
+				"line_height": "1.6",
+				"border_radius": "16px",
+				"border_width": "0px",
+				"border_color": "transparent",
+				"shadow": "0 4px 16px rgba(99,102,241,0.15)",
+				"spacing_unit": "12px",
+				"spacing_section": "56px"
+			},
+			"layout_guidelines": "Flowing layouts with generous padding. Use overlapping elements and subtle rotations for playfulness. Card-based layouts with ample spacing between items. Center-aligned hero sections. Rounded containers and pill-shaped elements throughout.",
+			"typography_guidelines": "Sans-serif throughout, with rounded/geometric typefaces preferred. Headings at larger sizes with semi-bold weight. Body text at comfortable reading size. Use color to add warmth — gradient text for hero headings. Friendly, conversational tone in UI copy.",
+			"component_guidelines": "Buttons: pill-shaped with gradients or vibrant solid fills, soft shadows on hover. Cards: high border-radius, soft shadows, white or cream backgrounds. Hover states include scale transforms and shadow deepening. Forms: rounded inputs with pastel focus rings. Emoji and icons as decorative accents. Navigation: rounded pill links with hover background.",
+			"default_parameters": {
+				"density": 40,
+				"expressiveness": 90,
+				"shape_language": 85,
+				"color_mood": 75
+			},
+			"preview_html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Playful Preview</title></head>\n<body style=\"margin:0;padding:0;background:#fef3c7;color:#1e1b4b;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;\">\n\n<!-- Nav -->\n<nav style=\"display:flex;justify-content:space-between;align-items:center;padding:16px 32px;\">\n  <span style=\"font-size:22px;font-weight:700;background:linear-gradient(135deg,#6366f1,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;\">sparkle</span>\n  <div style=\"display:flex;gap:8px;\">\n    <a href=\"#\" style=\"color:#1e1b4b;text-decoration:none;font-size:14px;font-weight:500;padding:8px 16px;border-radius:20px;background:rgba(99,102,241,0.08);\">Features</a>\n    <a href=\"#\" style=\"color:#1e1b4b;text-decoration:none;font-size:14px;font-weight:500;padding:8px 16px;border-radius:20px;\">Pricing</a>\n    <a href=\"#\" style=\"color:#1e1b4b;text-decoration:none;font-size:14px;font-weight:500;padding:8px 16px;border-radius:20px;\">Blog</a>\n  </div>\n</nav>\n\n<!-- Hero -->\n<section style=\"padding:56px 32px;text-align:center;\">\n  <h1 style=\"font-size:42px;font-weight:700;line-height:1.2;margin:0 0 16px 0;\">Create Something<br><span style=\"background:linear-gradient(135deg,#6366f1,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;\">Wonderful</span></h1>\n  <p style=\"font-size:17px;line-height:1.6;margin:0 auto 28px auto;max-width:480px;color:#7c7399;\">Tools that feel like play. Build, share, and delight your audience with interfaces that spark joy.</p>\n  <button style=\"background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;padding:14px 32px;border-radius:24px;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:0 4px 16px rgba(99,102,241,0.3);\">Get Started Free</button>\n</section>\n\n<!-- Card -->\n<div style=\"margin:0 32px;padding:28px;border-radius:16px;background:#fff;box-shadow:0 4px 16px rgba(99,102,241,0.15);max-width:440px;\">\n  <div style=\"width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#f472b6,#fbbf24);margin-bottom:16px;\"></div>\n  <h2 style=\"font-size:20px;font-weight:600;margin:0 0 8px 0;\">Lightning Fast</h2>\n  <p style=\"font-size:15px;line-height:1.6;margin:0;color:#7c7399;\">Everything loads instantly. No spinners, no waiting. Just smooth, delightful interactions from start to finish.</p>\n</div>\n\n<!-- Form -->\n<div style=\"margin:32px;max-width:400px;\">\n  <label style=\"display:block;font-size:13px;font-weight:500;color:#7c7399;margin-bottom:6px;\">Your email</label>\n  <input type=\"email\" placeholder=\"hello@example.com\" style=\"width:260px;padding:12px 16px;border:2px solid transparent;border-radius:12px;font-size:15px;font-family:inherit;outline:none;background:#fff;box-shadow:0 2px 8px rgba(99,102,241,0.1);\" />\n</div>\n\n</body>\n</html>"
+		}
+	],
+	"parameters": [
+		{
+			"id": "density",
+			"name": "Density",
+			"description": "Controls information density — from airy layouts with generous whitespace to packed interfaces maximizing content per viewport.",
+			"min": 0,
+			"max": 100,
+			"step": 5,
+			"low_label": "Airy",
+			"high_label": "Packed"
+		},
+		{
+			"id": "expressiveness",
+			"name": "Expressiveness",
+			"description": "Controls visual personality — from strict and minimal design language to bold, decorative, and playful elements.",
+			"min": 0,
+			"max": 100,
+			"step": 5,
+			"low_label": "Strict",
+			"high_label": "Expressive"
+		},
+		{
+			"id": "shape_language",
+			"name": "Shape Language",
+			"description": "Controls geometric style — from sharp angular elements with hard edges to soft rounded forms with generous border-radius.",
+			"min": 0,
+			"max": 100,
+			"step": 5,
+			"low_label": "Sharp",
+			"high_label": "Rounded"
+		},
+		{
+			"id": "color_mood",
+			"name": "Color Mood",
+			"description": "Controls color temperature — from cool desaturated tones to warm vibrant hues.",
+			"min": 0,
+			"max": 100,
+			"step": 5,
+			"low_label": "Cool",
+			"high_label": "Warm"
+		}
+	]
 }
