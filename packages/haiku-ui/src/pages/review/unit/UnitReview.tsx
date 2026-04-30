@@ -177,8 +177,10 @@ export function UnitReview({
 					</div>
 
 					{combinedSpec ? (
-						<Card>
-							<SectionHeading>Spec -- Comment on text</SectionHeading>
+						<Card as="article" ariaLabelledBy="unit-spec-heading">
+							<SectionHeading id="unit-spec-heading">
+								Spec -- Comment on text
+							</SectionHeading>
 							<p className="text-xs text-stone-500 dark:text-stone-400 mb-3">
 								Select text to add inline comments.
 							</p>
@@ -259,20 +261,22 @@ export function UnitReview({
 			content: (
 				<>
 					{risks && (
-						<Card>
-							<SectionHeading>Risks</SectionHeading>
+						<Card as="article" ariaLabelledBy="unit-risks-heading">
+							<SectionHeading id="unit-risks-heading">Risks</SectionHeading>
 							<MarkdownViewer id="unit-risks">{risks}</MarkdownViewer>
 						</Card>
 					)}
 					{boundaries && (
-						<Card>
-							<SectionHeading>Boundaries (NOT in scope)</SectionHeading>
+						<Card as="article" ariaLabelledBy="unit-boundaries-heading">
+							<SectionHeading id="unit-boundaries-heading">
+								Boundaries (NOT in scope)
+							</SectionHeading>
 							<MarkdownViewer id="unit-boundaries">{boundaries}</MarkdownViewer>
 						</Card>
 					)}
 					{notes && (
-						<Card>
-							<SectionHeading>Notes</SectionHeading>
+						<Card as="article" ariaLabelledBy="unit-notes-heading">
+							<SectionHeading id="unit-notes-heading">Notes</SectionHeading>
 							<MarkdownViewer id="unit-notes">{notes}</MarkdownViewer>
 						</Card>
 					)}

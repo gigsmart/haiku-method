@@ -119,8 +119,10 @@ export function IntentReview({
 					</div>
 
 					{overviewMarkdown && (
-						<Card>
-							<SectionHeading>Overview -- Comment on text</SectionHeading>
+						<Card as="article" ariaLabelledBy="intent-overview-heading">
+							<SectionHeading id="intent-overview-heading">
+								Overview -- Comment on text
+							</SectionHeading>
 							<p className="text-xs text-stone-500 dark:text-stone-400 mb-3">
 								Select text to add inline comments.
 							</p>
@@ -317,19 +319,30 @@ export function IntentReview({
 			id: "domain",
 			label: "Domain Model",
 			content: domainSection ? (
-				<Card>
-					<SectionHeading>Domain Model</SectionHeading>
+				<Card as="article" ariaLabelledBy="intent-domain-heading">
+					<SectionHeading id="intent-domain-heading">
+						Domain Model
+					</SectionHeading>
 					<MarkdownViewer id="domain-overview">
 						{domainSection.content}
 					</MarkdownViewer>
-					{domainSection.subsections.map((sub, i) => (
-						<div key={sub.heading} className="mt-6">
-							<SectionHeading level={3}>{sub.heading}</SectionHeading>
-							<MarkdownViewer id={`domain-sub-${i}`}>
-								{sub.content}
-							</MarkdownViewer>
-						</div>
-					))}
+					{domainSection.subsections.map((sub, i) => {
+						const subId = `intent-domain-sub-${i}-heading`
+						return (
+							<section
+								key={sub.heading}
+								className="mt-6"
+								aria-labelledby={subId}
+							>
+								<SectionHeading level={3} id={subId}>
+									{sub.heading}
+								</SectionHeading>
+								<MarkdownViewer id={`domain-sub-${i}`}>
+									{sub.content}
+								</MarkdownViewer>
+							</section>
+						)
+					})}
 				</Card>
 			) : (
 				<Card>
