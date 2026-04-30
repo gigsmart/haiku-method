@@ -26,6 +26,7 @@ import {
 	createDiscoveryWorktree,
 	discoveryBranchName,
 } from "../../git-worktree.js"
+import { getCapabilities } from "../../harness.js"
 import {
 	buildOutputRequirements,
 	resolveIntentStages,
@@ -508,7 +509,10 @@ function renderElaborate(ctx: PromptBuilderContext): string {
 			})}\n\n`
 		}
 
-		fanOutText += `### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn each subagent above using the EXACT content between \`<subagent>\` tags as the prompt. When ALL subagents return, call \`haiku_run_next { intent: "${slug}" }\` — the workflow engine merges their isolation worktrees back into the stage branch (resolving conflicts via the integrator if needed) and then emits the unit-decomposition instructions. **Do NOT proceed to decomposition in this response** — wait for the next workflow tick so the merged knowledge artifacts are visible.`
+		const elabBgLine = getCapabilities().subagents.backgroundSpawn
+			? ' Each `<subagent>` carries `background="true"` — pass `run_in_background: true` to the Task tool so the parent thread stays responsive while discovery agents run.'
+			: ""
+		fanOutText += `### Parent Instructions (do NOT include in subagent prompts)\n\nSpawn each subagent above using the EXACT content between \`<subagent>\` tags as the prompt.${elabBgLine} When ALL subagents return, call \`haiku_run_next { intent: "${slug}" }\` — the workflow engine merges their isolation worktrees back into the stage branch (resolving conflicts via the integrator if needed) and then emits the unit-decomposition instructions. **Do NOT proceed to decomposition in this response** — wait for the next workflow tick so the merged knowledge artifacts are visible.`
 
 		sections.push(fanOutText)
 

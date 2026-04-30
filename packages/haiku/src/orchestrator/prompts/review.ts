@@ -5,6 +5,7 @@
 
 import { join } from "node:path"
 import { getMainlineBranch } from "../../git-worktree.js"
+import { getCapabilities } from "../../harness.js"
 import { findHaikuRoot, isGitRepo } from "../../state-tools.js"
 import {
 	filterReviewAgentsByScope,
@@ -124,11 +125,14 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 		}
 	}
 
+	const reviewBgLine = getCapabilities().subagents.backgroundSpawn
+		? ' Each `<subagent>` carries `background="true"` — pass `run_in_background: true` to the Task tool so the parent thread stays responsive while review agents run.'
+		: ""
 	sections.push(
 		[
 			"### Parent Instructions (do NOT include in subagent prompts)",
 			"",
-			`Spawn review subagents using the \`prompt_file\` attribute — pass \`"Read <prompt_file> and execute its instructions exactly."\` as the spawn prompt. They persist findings directly via haiku_feedback.`,
+			`Spawn review subagents using the \`prompt_file\` attribute — pass \`"Read <prompt_file> and execute its instructions exactly."\` as the spawn prompt. They persist findings directly via haiku_feedback.${reviewBgLine}`,
 			"",
 			batchDispatchDirective(Object.keys(agentPaths).length, "review agents"),
 			"",

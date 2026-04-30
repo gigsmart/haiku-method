@@ -281,6 +281,23 @@ try {
 		assert.strictEqual(buildPriorFeedbackRejectBlock(path), "")
 	})
 
+	test("returns empty when the rejected iteration has no reason text", () => {
+		const path = writeUnit("fb-rejected-no-reason", {
+			id: "FB-10",
+			status: "pending",
+			iterations: [
+				{
+					bolt: 1,
+					hat: "fix-assessor",
+					started_at: "2026-04-30T00:00:00Z",
+					completed_at: "2026-04-30T00:01:00Z",
+					result: "rejected",
+				},
+			],
+		})
+		assert.strictEqual(buildPriorFeedbackRejectBlock(path), "")
+	})
+
 	test("uses 'rejected' (feedback shape) not 'reject' (unit shape)", () => {
 		// Defensive: feedback iteration uses different result vocabulary.
 		// "reject" is unit-shape; the feedback block must NOT match it.

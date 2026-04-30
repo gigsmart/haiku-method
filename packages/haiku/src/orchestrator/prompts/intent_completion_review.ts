@@ -4,6 +4,7 @@
 // are logged at intent scope (no stage). The pre-tick triage gate
 // relocates any misplaced findings via `haiku_feedback_move`.
 
+import { getCapabilities } from "../../harness.js"
 import { readStudioReviewAgentPaths } from "../../studio-reader.js"
 import {
 	batchDispatchDirective,
@@ -81,11 +82,14 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 		)
 	}
 
+	const icrBgLine = getCapabilities().subagents.backgroundSpawn
+		? ' Each `<subagent>` carries `background="true"` — pass `run_in_background: true` to the Task tool so the parent thread stays responsive while review agents run.'
+		: ""
 	sections.push(
 		[
 			"### Parent Instructions (do NOT include in subagent prompts)",
 			"",
-			"Spawn review subagents using the `prompt_file` attribute. They persist findings directly via `haiku_feedback` at intent scope.",
+			`Spawn review subagents using the \`prompt_file\` attribute. They persist findings directly via \`haiku_feedback\` at intent scope.${icrBgLine}`,
 			"",
 			batchDispatchDirective(agents.length, "studio-level review agents"),
 			"",
