@@ -712,15 +712,12 @@ function OverviewTab({
 			</div>
 
 			<Card as="article" ariaLabelledBy="stage-summary-heading">
-				<h2
-					id="stage-summary-heading"
-					className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500 mb-1.5"
-				>
+				<SectionHeading id="stage-summary-heading" variant="eyebrow">
 					Stage Summary{" "}
 					<span className="font-normal normal-case text-stone-500">
 						(from studio definition)
 					</span>
-				</h2>
+				</SectionHeading>
 				<p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed">
 					{stageSummary ?? `No summary available for the ${stageName} stage.`}
 				</p>
@@ -1270,6 +1267,9 @@ function UnitDetailView({
 			"bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300 border-stone-200 dark:border-stone-700")
 		: ""
 	const cardFeedback = feedbackByUnit.get(current.slug) ?? []
+	// Slugs are typically already CSS-id-safe, but normalise defensively in
+	// case a future authoring tool relaxes the constraint.
+	const headingId = `unit-detail-heading-${current.slug.replace(/[^A-Za-z0-9_-]/g, "-")}`
 
 	return (
 		<>
@@ -1284,14 +1284,14 @@ function UnitDetailView({
 				hasNext={hasWalkNext}
 			/>
 			<article
-				aria-labelledby={`unit-detail-heading-${current.slug}`}
+				aria-labelledby={headingId}
 				className="bg-white dark:bg-stone-900 rounded-lg border-2 border-stone-200 dark:border-stone-700 overflow-hidden"
 			>
 				<div className="flex items-start gap-3 px-4 py-3 border-b border-stone-200 dark:border-stone-700">
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2 flex-wrap">
 							<h2
-								id={`unit-detail-heading-${current.slug}`}
+								id={headingId}
 								className="text-base font-bold text-stone-900 dark:text-stone-100 leading-tight break-words"
 							>
 								{current.title || current.slug}

@@ -37,22 +37,32 @@ export function Card(props: CardProps) {
 	)
 }
 
+/**
+ * `default` — the standard card heading (semibold, full text colour).
+ * `eyebrow` — small uppercase label used above light prose blocks (e.g.
+ * the stage-summary card). Both render real heading elements (`h2`/`h3`),
+ * so AT and reader-mode TTS can use them as landmarks.
+ */
+type SectionHeadingVariant = "default" | "eyebrow"
+
 export function SectionHeading({
 	children,
 	level = 2,
 	id,
+	variant = "default",
 }: {
 	children: ReactNode
 	level?: 2 | 3
 	id?: string
+	variant?: SectionHeadingVariant
 }) {
 	const Tag = level === 2 ? "h2" : "h3"
-	const size = level === 2 ? "text-lg" : "text-base"
+	const classes =
+		variant === "eyebrow"
+			? "text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500 mb-1.5"
+			: `${level === 2 ? "text-lg" : "text-base"} font-semibold mb-3 text-stone-900 dark:text-stone-100`
 	return (
-		<Tag
-			id={id}
-			className={`${size} font-semibold mb-3 text-stone-900 dark:text-stone-100`}
-		>
+		<Tag id={id} className={classes}>
 			{children}
 		</Tag>
 	)
