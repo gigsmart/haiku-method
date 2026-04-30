@@ -17,7 +17,6 @@ env:
 
 permissions:
   contents: write
-  id-token: write
 
 concurrency:
   group: version-bump
@@ -26,6 +25,10 @@ concurrency:
 jobs:
   bump-version:
     runs-on: ubuntu-latest
+    # id-token is required by npm Trusted Publishing; scoped to this job only
+    permissions:
+      contents: write
+      id-token: write
     # Skip if commit is from bot (prevent loops)
     if: github.actor != 'github-actions[bot]'
     steps:
@@ -120,6 +123,15 @@ jobs:
           ' "$MARKETPLACE_JSON" > "$MARKETPLACE_JSON.tmp"
           mv "$MARKETPLACE_JSON.tmp" "$MARKETPLACE_JSON"
 
+          # jq path assignment is a silent no-op when the selector matches
+          # nothing — verify the npm source version actually advanced so we
+          # don't ship a marketplace pinned to a stale version.
+          UPDATED_NPM_VERSION=$(jq -r '.plugins[] | select(.source.source == "npm") | .source.version' "$MARKETPLACE_JSON")
+          if [ "$UPDATED_NPM_VERSION" != "$NEW_VERSION" ]; then
+            echo "ERROR: marketplace.json npm source version is '$UPDATED_NPM_VERSION', expected '$NEW_VERSION'" >&2
+            exit 1
+          fi
+
           # Generate changelog (uses Claude CLI if available, falls back to commit list)
           chmod +x .github/scripts/generate-changelog.sh
           bash .github/scripts/generate-changelog.sh "." "$NEW_VERSION" "$CURRENT_VERSION"
@@ -135,7 +147,7 @@ jobs:
 
       # Trusted publishing requires npm >= 11.5.1; Node 22 ships with 10.9.7
       - name: Upgrade npm for trusted publishing
-        run: npm install -g npm@latest
+        run: npm install -g npm@11.5.1
 
       - name: Install dependencies
         run: npm ci
@@ -221,13 +233,13 @@ jobs:
         if: steps.commit.outputs.released == 'true'
         run: |
           VERSION="${{ steps.bump-version.outputs.new_version }}"
+          trap 'rm -f plugin/CHANGELOG.md' EXIT
           # Include CHANGELOG.md in the plugin package so /haiku:release-notes works
           cp CHANGELOG.md plugin/CHANGELOG.md
           zip -r "ai-dlc-plugin-${VERSION}.zip" plugin/ \
             -x "plugin/node_modules/*" \
             -x "plugin/*/node_modules/*" \
             -x "plugin/*/.tsbuildinfo"
-          rm -f plugin/CHANGELOG.md
 
       - name: Extract release notes
         if: steps.commit.outputs.released == 'true'
@@ -269,13 +281,12 @@ jobs:
         if: steps.commit.outputs.released == 'true'
         run: |
           VERSION="${{ steps.bump-version.outputs.new_version }}"
+          trap 'rm -f plugin/CHANGELOG.md' EXIT
           # Include CHANGELOG.md in the published tarball so /haiku:release-notes works
           cp CHANGELOG.md plugin/CHANGELOG.md
           # Skip publish if this version is already on the registry (idempotent retry)
           if npm view "haiku-method@${VERSION}" version >/dev/null 2>&1; then
             echo "haiku-method@${VERSION} already published — skipping"
-            rm -f plugin/CHANGELOG.md
             exit 0
           fi
-          npm publish ./plugin
-          rm -f plugin/CHANGELOG.md
+          npm publish ./plugin --provenance
