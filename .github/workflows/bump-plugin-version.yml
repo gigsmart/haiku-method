@@ -6,6 +6,7 @@ on:
       - main
     paths-ignore:
       - "plugin/.claude-plugin/plugin.json"
+      - "plugin/package.json"
       - ".claude-plugin/marketplace.json"
       - "plugin/bin/haiku"
       - "CHANGELOG.md"
@@ -16,6 +17,7 @@ env:
 
 permissions:
   contents: write
+  id-token: write
 
 concurrency:
   group: version-bump
@@ -76,6 +78,7 @@ jobs:
         run: |
           BUMP_TYPE="${{ steps.bump-type.outputs.type }}"
           PLUGIN_JSON="plugin/.claude-plugin/plugin.json"
+          PLUGIN_PKG_JSON="plugin/package.json"
           MARKETPLACE_JSON=".claude-plugin/marketplace.json"
 
           # Get current version
@@ -106,8 +109,15 @@ jobs:
           jq --arg version "$NEW_VERSION" '.version = $version' "$PLUGIN_JSON" > "$PLUGIN_JSON.tmp"
           mv "$PLUGIN_JSON.tmp" "$PLUGIN_JSON"
 
-          # Update marketplace.json metadata.version
-          jq --arg version "$NEW_VERSION" '.metadata.version = $version' "$MARKETPLACE_JSON" > "$MARKETPLACE_JSON.tmp"
+          # Update plugin/package.json (npm publish source of truth)
+          jq --arg version "$NEW_VERSION" '.version = $version' "$PLUGIN_PKG_JSON" > "$PLUGIN_PKG_JSON.tmp"
+          mv "$PLUGIN_PKG_JSON.tmp" "$PLUGIN_PKG_JSON"
+
+          # Update marketplace.json metadata.version + npm-source plugin version
+          jq --arg version "$NEW_VERSION" '
+            .metadata.version = $version
+            | (.plugins[] | select(.source.source == "npm") | .source.version) = $version
+          ' "$MARKETPLACE_JSON" > "$MARKETPLACE_JSON.tmp"
           mv "$MARKETPLACE_JSON.tmp" "$MARKETPLACE_JSON"
 
           # Generate changelog (uses Claude CLI if available, falls back to commit list)
@@ -121,6 +131,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: "https://registry.npmjs.org"
+
+      # Trusted publishing requires npm >= 11.5.1; Node 22 ships with 10.9.7
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: npm ci
@@ -171,7 +186,7 @@ jobs:
           fi
 
           # Add version files, changelog, and rebuilt MCP server bundle
-          git add plugin/.claude-plugin/plugin.json .claude-plugin/marketplace.json CHANGELOG.md plugin/bin/haiku
+          git add plugin/.claude-plugin/plugin.json plugin/package.json .claude-plugin/marketplace.json CHANGELOG.md plugin/bin/haiku
 
           # Create commit message
           COMMIT_MSG="chore(plugin): bump version ${{ steps.bump-version.outputs.old_version }} -> ${{ steps.bump-version.outputs.new_version }}"
@@ -245,3 +260,22 @@ jobs:
             --notes-file /tmp/release-notes.md \
             "ai-dlc-plugin-${VERSION}.zip#AI-DLC Plugin (zip)" \
             "haiku-mcp#MCP Server Binary"
+
+      # Authenticates via GitHub OIDC (npm Trusted Publishing). No NPM_TOKEN
+      # needed — configure the trusted publisher under the package's settings
+      # on npmjs.com (org=gigsmart, repo=haiku-method, workflow filename=
+      # bump-plugin-version.yml).
+      - name: Publish to npm
+        if: steps.commit.outputs.released == 'true'
+        run: |
+          VERSION="${{ steps.bump-version.outputs.new_version }}"
+          # Include CHANGELOG.md in the published tarball so /haiku:release-notes works
+          cp CHANGELOG.md plugin/CHANGELOG.md
+          # Skip publish if this version is already on the registry (idempotent retry)
+          if npm view "haiku-method@${VERSION}" version >/dev/null 2>&1; then
+            echo "haiku-method@${VERSION} already published — skipping"
+            rm -f plugin/CHANGELOG.md
+            exit 0
+          fi
+          npm publish ./plugin
+          rm -f plugin/CHANGELOG.md

@@ -1,3 +1,50 @@
 {
-	"private": true
+	"name": "haiku-method",
+	"version": "2.2.0",
+	"description": "H·AI·K·U methodology — universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation.",
+	"homepage": "https://haikumethod.ai",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/gigsmart/haiku-method.git",
+		"directory": "plugin"
+	},
+	"license": "Apache-2.0",
+	"author": {
+		"name": "GigSmart",
+		"url": "https://gigsmart.com"
+	},
+	"keywords": [
+		"haiku",
+		"haiku-method",
+		"claude-code",
+		"claude-code-plugin",
+		"lifecycle",
+		"orchestration",
+		"methodology",
+		"workflow",
+		"iteration",
+		"completion-criteria",
+		"hat-switching",
+		"context-preservation",
+		"human-ai-collaboration"
+	],
+	"files": [
+		".claude-plugin",
+		".mcp.json",
+		"bin",
+		"data",
+		"harnesses",
+		"hooks",
+		"lib",
+		"passes",
+		"providers",
+		"schemas",
+		"skills",
+		"studios",
+		"VALIDATION.md",
+		"CHANGELOG.md"
+	],
+	"publishConfig": {
+		"access": "public"
+	}
 }
