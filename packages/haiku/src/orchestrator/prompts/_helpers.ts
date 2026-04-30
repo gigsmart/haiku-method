@@ -155,6 +155,57 @@ export function buildPriorRejectBlock(unitFilePath: string): string {
 	return ""
 }
 
+/** Mirror of `buildPriorRejectBlock` for fix-loop prompts. Reads a
+ *  feedback file's `iterations:` frontmatter (shape: FeedbackIteration —
+ *  `result: "advanced" | "closed" | "reopened" | "rejected"`) and surfaces
+ *  the most-recent `rejected` entry's reason so a fix-loop bolt N+1 hat
+ *  knows what the previous attempt was rejected for (assessor reject,
+ *  fixer-side `haiku_feedback_reject`, etc).
+ *
+ *  Returns "" when no rejected iteration is found (first fix bolt, fresh
+ *  finding, missing file). */
+export function buildPriorFeedbackRejectBlock(
+	feedbackFilePath: string,
+): string {
+	if (!existsSync(feedbackFilePath)) return ""
+	let iters: Array<{
+		bolt?: unknown
+		hat?: unknown
+		completed_at?: unknown
+		result?: unknown
+		reason?: unknown
+	}> = []
+	try {
+		const { data } = parseFrontmatter(readFileSync(feedbackFilePath, "utf8"))
+		if (Array.isArray(data.iterations)) {
+			iters = data.iterations as typeof iters
+		}
+	} catch {
+		return ""
+	}
+	for (let i = iters.length - 1; i >= 0; i--) {
+		const it = iters[i]
+		if (!it) continue
+		if (!it.completed_at) continue
+		if (it.result !== "rejected") continue
+		if (typeof it.reason !== "string" || !it.reason.trim()) continue
+		const hatName = typeof it.hat === "string" ? it.hat : "previous fixer"
+		const boltStr = typeof it.bolt === "number" ? ` (bolt ${it.bolt})` : ""
+		return [
+			"## Prior fix-bolt rejection — address this before advancing",
+			"",
+			`The previous fix attempt's **${hatName}** hat${boltStr} was rejected with this reason:`,
+			"",
+			"~~~~",
+			it.reason.trim(),
+			"~~~~",
+			"",
+			"Treat each item as a hard requirement on this bolt: do NOT repeat the same approach the previous bolt took unless you've identified a meaningfully different root cause. Reference the items by name in your bolt summary and the commit message so the next assessor can verify closure.",
+		].join("\n")
+	}
+	return ""
+}
+
 /** Emit a `<subagent>` block whose body is a tmpfile pointer instead
  *  of an inlined prompt. The full prompt is written to a session-scoped
  *  tmpfile; the parent's instruction tells the spawning agent to read
@@ -172,16 +223,8 @@ export function emitSubagentDispatchBlock(opts: {
 	heading?: string
 	toolAttr?: boolean
 }): string {
-	const {
-		unit,
-		hat,
-		bolt,
-		agentType,
-		model,
-		promptBody,
-		heading,
-		toolAttr,
-	} = opts
+	const { unit, hat, bolt, agentType, model, promptBody, heading, toolAttr } =
+		opts
 	const { path, parentInstruction } = writeSubagentPrompt({
 		unit,
 		hat,

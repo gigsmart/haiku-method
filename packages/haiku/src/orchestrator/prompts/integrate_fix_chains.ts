@@ -5,6 +5,7 @@
 // stage resolved files. Capped at MAX_INTEGRATOR_ATTEMPTS per
 // chain.
 
+import { getCapabilities } from "../../harness.js"
 import { MAX_INTEGRATOR_ATTEMPTS } from "../../state-tools.js"
 import {
 	batchDispatchDirective,
@@ -89,10 +90,13 @@ export default definePromptBuilder(({ slug, action }) => {
 		)
 	}
 
+	const integrateBgLine = getCapabilities().subagents.backgroundSpawn
+		? '\nMap the `<subagent>` attributes to Task tool args: `type` → `subagent_type`; `background="true"` → `run_in_background: true` (always present on integrator dispatches — pass it through; the parent waits on results, so foreground would block this thread); `prompt_file` → prompt body is literally `"Read <path> and execute its instructions exactly."`.\n'
+		: ""
 	sections.push(
 		[
 			"### Parent Instructions (do NOT include in subagent prompts)",
-			"",
+			integrateBgLine,
 			batchDispatchDirective(integrateItems.length, "integrators"),
 			"",
 			`After every integrator returns, call \`haiku_run_next { intent: "${slug}" }\` — the workflow engine commits each resolution and forward-merges. If any chain still has unresolved markers, the workflow engine re-dispatches (up to attempt ${integrateMaxAttempts}). If a chain exhausts its integrator budget, it escalates to the human.`,

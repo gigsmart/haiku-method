@@ -11,7 +11,10 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-import { buildPriorRejectBlock } from "../src/orchestrator/prompts/_helpers.ts"
+import {
+	buildPriorFeedbackRejectBlock,
+	buildPriorRejectBlock,
+} from "../src/orchestrator/prompts/_helpers.ts"
 import { formatSubagentDispatchBlock } from "../src/subagent-prompt-file.ts"
 
 let passed = 0
@@ -117,7 +120,8 @@ try {
 					started_at: "2026-04-30T00:04:00Z",
 					completed_at: "2026-04-30T00:05:00Z",
 					result: "reject",
-					reason: "Two defects: enumerateTrackedSurface absPath bug; baseline keys not sorted.",
+					reason:
+						"Two defects: enumerateTrackedSurface absPath bug; baseline keys not sorted.",
 				},
 				{
 					hat: "builder",
@@ -213,6 +217,90 @@ try {
 		assert.ok(!out.includes("older reason"), "must not surface older reason")
 	})
 
+	// ── buildPriorFeedbackRejectBlock (fix-loop iteration shape) ──────────────
+
+	console.log("\n=== buildPriorFeedbackRejectBlock ===")
+
+	test("returns empty string when feedback file does not exist", () => {
+		assert.strictEqual(
+			buildPriorFeedbackRejectBlock(join(tmp, "no-such-fb.md")),
+			"",
+		)
+	})
+
+	test("surfaces the most recent rejected fix-loop iteration", () => {
+		const path = writeUnit("fb-rejected", {
+			id: "FB-07",
+			status: "pending",
+			iterations: [
+				{
+					bolt: 1,
+					hat: "fix-implementer",
+					started_at: "2026-04-30T00:00:00Z",
+					completed_at: "2026-04-30T00:01:00Z",
+					result: "advanced",
+				},
+				{
+					bolt: 1,
+					hat: "fix-assessor",
+					started_at: "2026-04-30T00:02:00Z",
+					completed_at: "2026-04-30T00:03:00Z",
+					result: "rejected",
+					reason: "Validation guard still missing on payload.qty",
+				},
+			],
+		})
+		const out = buildPriorFeedbackRejectBlock(path)
+		assert.match(out, /Prior fix-bolt rejection/)
+		assert.match(out, /fix-assessor/)
+		assert.match(out, /bolt 1/)
+		assert.match(out, /Validation guard still missing on payload\.qty/)
+	})
+
+	test("returns empty when no rejected iteration exists (only advanced/closed)", () => {
+		const path = writeUnit("fb-no-reject", {
+			id: "FB-08",
+			status: "closed",
+			iterations: [
+				{
+					bolt: 1,
+					hat: "fix-implementer",
+					started_at: "2026-04-30T00:00:00Z",
+					completed_at: "2026-04-30T00:01:00Z",
+					result: "advanced",
+				},
+				{
+					bolt: 1,
+					hat: "fix-assessor",
+					started_at: "2026-04-30T00:02:00Z",
+					completed_at: "2026-04-30T00:03:00Z",
+					result: "closed",
+				},
+			],
+		})
+		assert.strictEqual(buildPriorFeedbackRejectBlock(path), "")
+	})
+
+	test("uses 'rejected' (feedback shape) not 'reject' (unit shape)", () => {
+		// Defensive: feedback iteration uses different result vocabulary.
+		// "reject" is unit-shape; the feedback block must NOT match it.
+		const path = writeUnit("fb-wrong-result", {
+			id: "FB-09",
+			status: "pending",
+			iterations: [
+				{
+					bolt: 1,
+					hat: "fix-assessor",
+					started_at: "2026-04-30T00:00:00Z",
+					completed_at: "2026-04-30T00:01:00Z",
+					result: "reject", // unit-shape, should not match
+					reason: "should not surface — wrong result token",
+				},
+			],
+		})
+		assert.strictEqual(buildPriorFeedbackRejectBlock(path), "")
+	})
+
 	// ── formatSubagentDispatchBlock background attribute ──────────────────────
 
 	console.log("\n=== formatSubagentDispatchBlock background attribute ===")
@@ -223,8 +311,14 @@ try {
 			agentType: "general-purpose",
 			toolAttr: true,
 		})
-		assert.ok(!block.includes("background="), "default emission must not carry background attribute")
-		assert.match(block, /<subagent tool="Agent" type="general-purpose" prompt_file=/)
+		assert.ok(
+			!block.includes("background="),
+			"default emission must not carry background attribute",
+		)
+		assert.match(
+			block,
+			/<subagent tool="Agent" type="general-purpose" prompt_file=/,
+		)
 	})
 
 	test('emits background="true" when caller passes background: true', () => {
@@ -244,7 +338,10 @@ try {
 			toolAttr: true,
 			background: false,
 		})
-		assert.ok(!block.includes("background="), "background: false must not emit attribute")
+		assert.ok(
+			!block.includes("background="),
+			"background: false must not emit attribute",
+		)
 	})
 
 	test("background attribute follows model attribute in declaration order", () => {

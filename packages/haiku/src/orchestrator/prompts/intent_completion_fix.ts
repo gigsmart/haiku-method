@@ -8,6 +8,7 @@
 
 import { existsSync } from "node:fs"
 import { join } from "node:path"
+import { getCapabilities } from "../../harness.js"
 import {
 	findHaikuRoot,
 	isGitRepo,
@@ -17,6 +18,7 @@ import { readStudioFixHatPaths } from "../../studio-reader.js"
 import { writeNextRelaySidecar } from "../../subagent-prompt-file.js"
 import {
 	buildInterpretationBlock,
+	buildPriorFeedbackRejectBlock,
 	emitSubagentDispatchBlock,
 	inlineFile,
 	readInterpretation,
@@ -145,6 +147,8 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 				promptLines.push(
 					inlineFile(fbAbsPath, `Feedback: ${fbId} — ${fbTitle}`),
 				)
+				const priorReject = buildPriorFeedbackRejectBlock(fbAbsPath)
+				if (priorReject) promptLines.push("", priorReject)
 			}
 			promptLines.push(
 				"",
@@ -240,10 +244,13 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 		}
 	}
 
+	const icBgClause = getCapabilities().subagents.backgroundSpawn
+		? '`background="true"` → `run_in_background: true` (always present on fix-loop dispatches — pass it through; the parent waits on results, so foreground would block this thread); '
+		: ""
 	const icWaveLines: string[] = [
 		"### Parent Instructions",
 		"",
-		`Spawn each \`<subagent>\` block above using the Task tool: \`type\` → \`subagent_type\`; \`model\` → \`model\` (omit when absent); \`prompt_file\` → prompt body is literally \`"Read <path> and execute its instructions exactly."\`. Do not add anything beyond that one-line prompt body — the workflow engine owns the authoritative prompt at the file path.`,
+		`Spawn each \`<subagent>\` block above using the Task tool: \`type\` → \`subagent_type\`; \`model\` → \`model\` (omit when absent); ${icBgClause}\`prompt_file\` → prompt body is literally \`"Read <path> and execute its instructions exactly."\`. Do not add anything beyond that one-line prompt body — the workflow engine owns the authoritative prompt at the file path.`,
 		"",
 		`**Run all ${items.length} in parallel.** When each subagent returns, follow its return instruction. A returned subagent's final message will either include a literal \`<subagent>\` relay block (sourced from the \`next_subagent_dispatch_block\` field of its \`haiku_feedback_advance_hat\` tool response) — spawn that immediately as the next hop in the same chain — or a one-line summary ending with \`call haiku_run_next\`. Spawn relayed blocks before pulling more work; chain completion (no more relay blocks) is what frees a slot for the next pending finding.`,
 		"",
