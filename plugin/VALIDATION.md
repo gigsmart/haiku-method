@@ -231,7 +231,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 **Trigger:** User `/clear`s without stop hook, or starts a new session.
 
-- [ ] Session start hook (`inject-context`) reads committed artifacts
+- [ ] First `haiku_run_next` call returns full context (state, active stage/phase/hat/bolt)
 - [ ] Intent, stage, and unit state reconstructed from frontmatter and state.json
 - [ ] `haiku_run_next` returns the correct action based on persisted state
 - [ ] No work is lost — committed artifacts survive context resets
@@ -241,10 +241,14 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 
 ## Scenario 10: Migration from AI-DLC
 
-**Trigger:** Repo has `.ai-dlc/` intents, user opens Claude Code session.
+**Trigger:** User invokes `/haiku:migrate` (or runs `haiku migrate` directly). Migration is never automatic — see SessionStart in Scenario 13.
 
-- [ ] `inject-context` hook detects unmigrated `.ai-dlc/` intents
-- [ ] `haiku migrate` runs automatically
+- [ ] Bare `haiku migrate` is rejected with a candidate list and usage hint
+- [ ] `haiku migrate <slug>` defaults to dry-run; nothing is written
+- [ ] `haiku migrate <slug> --apply` writes only after user approval (skill enforces dry-run-then-confirm)
+- [ ] `--apply` refuses to run on a dirty git tree unless `--allow-dirty`
+- [ ] `--all` refuses if positional slugs are also passed (contradictory scopes)
+- [ ] Merged sub-intent slugs (e.g. `foo-dev`) are rejected with a hint at the base slug (`foo`)
 - [ ] Completed intents: migrated as historical records with checked criteria
 - [ ] Active intents: intent.md + knowledge migrated, stages reset for fresh start
 - [ ] Migrated intents include `stages:` field from studio definition
@@ -288,8 +292,7 @@ These must ALWAYS be true regardless of studio, stage, or user action.
 **Trigger:** Various Claude Code lifecycle events.
 
 ### SessionStart
-- [ ] `inject-context`: auto-migrates `.ai-dlc/` intents, injects full H·AI·K·U context
-- [ ] `ensure-deps`: no-op (Node is the only dependency)
+No SessionStart hooks are registered. `inject-context` and `ensure-deps` were removed in `c0357289` — the orchestrator returns equivalent context on the first `haiku_run_next` call, and `.ai-dlc/` migration is now an explicit user action via `/haiku:migrate` (never automatic).
 
 ### PreToolUse
 - [ ] `redirect-plan-mode`: blocks EnterPlanMode, suggests `/haiku:start`

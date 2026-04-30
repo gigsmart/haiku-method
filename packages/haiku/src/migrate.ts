@@ -1,10 +1,25 @@
 // migrate.ts — Migrate .ai-dlc/ intents to .haiku/ format
 //
-// Usage: haiku migrate [--dry-run]
+// Usage:
+//   haiku migrate <slug> [<slug>...]    # migrate specific intents (dry-run)
+//   haiku migrate --all                 # migrate every intent (dry-run)
+//   haiku migrate <slug> --apply        # actually write
+//   haiku migrate --all --apply         # actually write everything
+//
+// Flags:
+//   --apply         Actually write. Default is dry-run.
+//   --dry-run       Force dry-run (overrides --apply when both set).
+//   --all           Migrate every intent in .ai-dlc/.
+//   --force         Re-migrate intents that were already migrated.
+//   --allow-dirty   Skip the git-clean precheck before --apply.
+//
+// Bare `haiku migrate` is a refusal — picking a slug or --all is required, so
+// nobody accidentally rewrites every intent in a monorepo's .ai-dlc/ tree.
 //
 // Completed intents: migrate as historical records (completed development stage)
 // Active intents: migrate intent.md + knowledge, reset stages for fresh start
 
+import { execSync } from "node:child_process"
 import {
 	cpSync,
 	existsSync,
@@ -81,7 +96,20 @@ function gitLastCommitDate(path: string): string | null {
 }
 
 export async function runMigrate(args: string[]): Promise<void> {
-	const dryRun = args.includes("--dry-run")
+	const flags = new Set<string>()
+	const positionals: string[] = []
+	for (const arg of args) {
+		if (arg.startsWith("--")) flags.add(arg)
+		else positionals.push(arg)
+	}
+	const apply = flags.has("--apply")
+	// Default to dry-run; --apply must be set to actually write.
+	// --dry-run still wins if both are set, so `--apply --dry-run` is a no-op.
+	const dryRun = !apply || flags.has("--dry-run")
+	const all = flags.has("--all")
+	const allowDirty = flags.has("--allow-dirty")
+	const force = flags.has("--force")
+
 	const cwd = process.cwd()
 	const oldDir = join(cwd, ".ai-dlc")
 	const newDir = join(cwd, ".haiku", "intents")
@@ -99,6 +127,42 @@ export async function runMigrate(args: string[]): Promise<void> {
 	if (entries.length === 0) {
 		console.log("No intents found in .ai-dlc/. Nothing to migrate.")
 		return
+	}
+
+	// Refuse bare invocation. Without this guard `haiku migrate` rewrites every
+	// intent in .ai-dlc/, and a single commit then pollutes every open MR in a
+	// monorepo. Force the caller to name targets explicitly.
+	if (positionals.length === 0 && !all) {
+		const list = entries.map((s) => `  ${s}`).join("\n")
+		throw new Error(
+			`refusing to run without a slug or --all.\n\n` +
+				`Found ${entries.length} intent(s) in .ai-dlc/:\n${list}\n\n` +
+				`Usage:\n` +
+				`  haiku migrate <slug> [<slug>...]   # migrate specific intents (dry-run)\n` +
+				`  haiku migrate --all                # migrate everything (dry-run)\n` +
+				`  haiku migrate <slug> --apply       # actually write\n` +
+				`  haiku migrate --all --apply        # actually write everything`,
+		)
+	}
+
+	// --all and explicit slugs are contradictory. Reject rather than silently
+	// pick one — the user's intent is ambiguous.
+	if (all && positionals.length > 0) {
+		throw new Error(
+			`--all is incompatible with explicit slug(s): ${positionals.join(", ")}\n\n` +
+				`Pick one: name slugs OR pass --all.`,
+		)
+	}
+
+	if (positionals.length > 0) {
+		const unknown = positionals.filter((s) => !entries.includes(s))
+		if (unknown.length > 0) {
+			const list = entries.map((s) => `  ${s}`).join("\n")
+			throw new Error(
+				`unknown intent slug(s): ${unknown.join(", ")}\n\n` +
+					`Available in .ai-dlc/:\n${list}`,
+			)
+		}
 	}
 
 	// Group multi-pass intents: detect slugs ending in -dev, -product, -design, -tests
@@ -154,10 +218,56 @@ export async function runMigrate(args: string[]): Promise<void> {
 	}
 
 	// Filter out merged slugs — they'll be processed as part of their base intent
-	const primarySlugs = entries.filter((s) => !mergedSlugs.has(s))
+	const allPrimarySlugs = entries.filter((s) => !mergedSlugs.has(s))
+
+	if (positionals.length > 0) {
+		const merged = positionals.filter((s) => mergedSlugs.has(s))
+		if (merged.length > 0) {
+			const bases = merged.map((m) => {
+				for (const [base, list] of mergeMap)
+					if (list.includes(m)) return `${m} → ${base}`
+				return m
+			})
+			throw new Error(
+				`merged sub-intent(s) cannot be migrated directly: ${merged.join(", ")}\n\n` +
+					`Migrate the base intent instead — sub-intents fold in automatically:\n  ${bases.join("\n  ")}`,
+			)
+		}
+	}
+
+	const primarySlugs =
+		positionals.length > 0
+			? allPrimarySlugs.filter((s) => positionals.includes(s))
+			: allPrimarySlugs
+
+	// Refuse to write into a dirty git tree. Easy to undo a migration that
+	// landed in a clean tree (`git restore .`); much harder when migration
+	// output is interleaved with the user's in-progress work. The check is
+	// skipped silently if git isn't installed or this isn't a repo — the
+	// dirty-tree refusal lives outside the try/catch so it can't be confused
+	// with a git-runtime error.
+	if (!dryRun && !allowDirty) {
+		let porcelain: string | null = null
+		try {
+			porcelain = execSync("git status --porcelain", {
+				encoding: "utf8",
+				cwd,
+				timeout: 5000,
+			}).trim()
+		} catch {
+			// git missing or not a repo — skip the precheck.
+		}
+		if (porcelain) {
+			throw new Error(
+				`refusing to apply with uncommitted changes in the working tree.\n\n` +
+					`Commit or stash first, or pass --allow-dirty.\n\n${porcelain}`,
+			)
+		}
+	}
 
 	console.log(
-		`Found ${entries.length} intent(s) to migrate (${primarySlugs.length} primary, ${mergedSlugs.size} merged).\n`,
+		`Found ${entries.length} intent(s) in .ai-dlc/ (${allPrimarySlugs.length} primary, ${mergedSlugs.size} merged).\n` +
+			`Migrating ${primarySlugs.length} primary intent(s)${dryRun ? " (DRY RUN — pass --apply to write)" : ""}.\n`,
 	)
 
 	let migrated = 0
@@ -166,8 +276,6 @@ export async function runMigrate(args: string[]): Promise<void> {
 	for (const slug of primarySlugs) {
 		const srcDir = join(oldDir, slug)
 		const destDir = join(newDir, slug)
-
-		const force = args.includes("--force")
 
 		// Skip if already migrated — unless --force or missing stages
 		if (existsSync(destDir)) {
@@ -450,7 +558,7 @@ export async function runMigrate(args: string[]): Promise<void> {
 	console.log(`\nMigration complete: ${migrated} migrated, ${skipped} skipped.`)
 	if (dryRun) {
 		console.log(
-			"(Dry run — no files were written. Run without --dry-run to migrate.)",
+			"(Dry run — no files were written. Re-run with --apply to migrate.)",
 		)
 	} else {
 		console.log("\nNext steps:")
