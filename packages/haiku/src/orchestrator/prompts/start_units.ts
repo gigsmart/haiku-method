@@ -257,17 +257,22 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 			)
 		}
 
-		sections.push(
-			[
-				"### Parent Instructions",
-				"",
-				`Spawn each \`<subagent>\` block above using the Task tool: \`type\` → \`subagent_type\`; \`model\` → \`model\` (omit when absent); \`prompt_file\` → prompt body is literally \`"Read <path> and execute its instructions exactly."\`. Do not add anything beyond that one-line prompt body — the workflow engine owns the authoritative prompt at the file path.`,
-				"",
-				`**Run all ${units.length} in parallel.** Each subagent's final message will be one of: (a) \`Workflow Result: <path>\` — read that JSON file, then call \`haiku_run_next { intent: "${slug}" }\`; (b) plaintext "job ends here" — another subagent in the wave will produce the structured result; do NOT dispatch yet; (c) anything else (non-compliant) — fall back to calling \`haiku_run_next { intent: "${slug}" }\`. \`haiku_run_next\` returns the next thing to do — either another subagent block to spawn, or a terminal action. You do not need to track which subagent is on which step or maintain any per-unit state — the workflow engine derives all of that from on-disk state and gives you the next instruction.`,
-				"",
-				`Stop driving only when \`haiku_run_next\` returns a terminal action (\`gate_review\`, \`escalate\`, \`intent_complete\`, or \`error\`).`,
-			].join("\n"),
-		)
+		{
+			const bgClause = parallelCaps.subagents.backgroundSpawn
+				? '`background="true"` → `run_in_background: true` (always present on hat dispatches — pass it through; the parent waits on results, so foreground would block this thread); '
+				: ""
+			sections.push(
+				[
+					"### Parent Instructions",
+					"",
+					`Spawn each \`<subagent>\` block above using the Task tool: \`type\` → \`subagent_type\`; \`model\` → \`model\` (omit when absent); ${bgClause}\`prompt_file\` → prompt body is literally \`"Read <path> and execute its instructions exactly."\`. Do not add anything beyond that one-line prompt body — the workflow engine owns the authoritative prompt at the file path.`,
+					"",
+					`**Run all ${units.length} in parallel.** Each subagent's final message will be one of: (a) \`Workflow Result: <path>\` — read that JSON file, then call \`haiku_run_next { intent: "${slug}" }\`; (b) plaintext "job ends here" — another subagent in the wave will produce the structured result; do NOT dispatch yet; (c) anything else (non-compliant) — fall back to calling \`haiku_run_next { intent: "${slug}" }\`. \`haiku_run_next\` returns the next thing to do — either another subagent block to spawn, or a terminal action. You do not need to track which subagent is on which step or maintain any per-unit state — the workflow engine derives all of that from on-disk state and gives you the next instruction.`,
+					"",
+					`Stop driving only when \`haiku_run_next\` returns a terminal action (\`gate_review\`, \`escalate\`, \`intent_complete\`, or \`error\`).`,
+				].join("\n"),
+			)
+		}
 	} else {
 		// Subagentless harness: sequential execution in current context.
 		// Surface stage scope, hat, and upstream paths for the parent

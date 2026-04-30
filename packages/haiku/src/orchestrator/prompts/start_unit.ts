@@ -35,6 +35,7 @@ import {
 import {
 	buildInlineSubagentContext,
 	buildInterpretationBlock,
+	buildPriorRejectBlock,
 	emitSubagentDispatchBlock,
 	inlineFile,
 	readInterpretation,
@@ -239,9 +240,14 @@ export default definePromptBuilder(({ slug, studio, action, dir }) => {
 					toolAttr: true,
 				}),
 			)
-			sections.push(
-				"### Parent Instructions (do NOT include in subagent prompt)\n\nAfter the assessor returns: call `haiku_run_next { intent: ... }`. If it approved, the workflow engine has marked the unit's claimed feedback items as `closed`. If it rejected, the unit has bolted back to the first hat and the feedback items remain `pending`.",
-			)
+			{
+				const bgLine = unitCaps.subagents.backgroundSpawn
+					? '\n- `background="true"` → `run_in_background: true` argument (always present on hat dispatches — pass it through; the parent has nothing to do until the subagent finishes, so foreground would block this thread for no reason)'
+					: ""
+				sections.push(
+					`### Parent Instructions (do NOT include in subagent prompt)\n\nSpawn the subagent with the Task tool. Map the \`<subagent>\` block attributes to the tool parameters **exactly**:\n\n- \`type="..."\` → \`subagent_type\` argument\n- \`model="..."\` → \`model\` argument (OMIT the \`model\` arg when the attribute is absent — do NOT pass a default)${bgLine}\n- \`prompt_file="..."\` → the prompt body is the literal string \`"Read <path> and execute its instructions exactly."\` (substitute \`<path>\` with the attribute value)\n\nAfter the assessor returns: call \`haiku_run_next { intent: ... }\`. If it approved, the workflow engine has marked the unit's claimed feedback items as \`closed\`. If it rejected, the unit has bolted back to the first hat and the feedback items remain \`pending\`.`,
+				)
+			}
 		} else {
 			if (inlineCtx) sections.push(inlineCtx)
 			sections.push(
@@ -284,6 +290,9 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 	}
 	prompt.push(inlineFile(unitAbsPath, `Unit spec: ${unit}`))
 	if (outputsDir) prompt.push(`- Stage output templates — \`${outputsDir}/\``)
+
+	const priorRejectBlock = buildPriorRejectBlock(unitFile)
+	if (priorRejectBlock) prompt.push("", priorRejectBlock)
 
 	if (unitInputPaths.length > 0) {
 		prompt.push(
@@ -352,9 +361,14 @@ If a command times out, do NOT retry blindly — diagnose why (hanging test, net
 			}),
 		)
 
-		sections.push(
-			'### Parent Instructions (do NOT include in subagent prompt)\n\nSpawn the subagent with the Task tool. Map the `<subagent>` block attributes to the tool parameters **exactly**:\n\n- `type="..."` → `subagent_type` argument\n- `model="..."` → `model` argument (OMIT the `model` arg when the attribute is absent — do NOT pass a default)\n- `prompt_file="..."` → the prompt body is the literal string `"Read <path> and execute its instructions exactly."` (substitute `<path>` with the attribute value)\n\nPassing the `model` attribute is non-negotiable when it\'s present — the workflow engine resolved the tier from the unit/hat/stage/studio cascade and the wrong tier undermines the whole selection logic.\n\n**When the subagent returns, its final message will be one of:**\n- `Workflow Result: <path>` — read that JSON file and act on its `action` field. Valid actions: `continue_unit` (spawn next subagent for same unit), `start_units` (dispatch wave), `advance_phase`, `review`, `advance_stage`, `intent_complete`, `blocked`. For unit-level actions, call `haiku_run_next { intent: ... }` to get the workflow engine\'s canonical next step (the result file and run_next return the same data; run_next is the authoritative drive step).\n- Plaintext "job ends here" message — another subagent in the wave will produce the structured result; do not dispatch yet.\n- Anything else (subagent non-compliant) — fall back: call `haiku_run_next { intent: ... }`.\n\nDo NOT stop until run_next returns `gate_review`, `advance_stage → intent_complete`, `intent_complete`, or `error`.',
-		)
+		{
+			const bgLine = unitCaps.subagents.backgroundSpawn
+				? '\n- `background="true"` → `run_in_background: true` argument (always present on hat dispatches — pass it through; the parent has nothing to do until the subagent finishes, so foreground would block this thread for no reason)'
+				: ""
+			sections.push(
+				`### Parent Instructions (do NOT include in subagent prompt)\n\nSpawn the subagent with the Task tool. Map the \`<subagent>\` block attributes to the tool parameters **exactly**:\n\n- \`type="..."\` → \`subagent_type\` argument\n- \`model="..."\` → \`model\` argument (OMIT the \`model\` arg when the attribute is absent — do NOT pass a default)${bgLine}\n- \`prompt_file="..."\` → the prompt body is the literal string \`"Read <path> and execute its instructions exactly."\` (substitute \`<path>\` with the attribute value)\n\nPassing the \`model\` attribute is non-negotiable when it's present — the workflow engine resolved the tier from the unit/hat/stage/studio cascade and the wrong tier undermines the whole selection logic.\n\n**When the subagent returns, its final message will be one of:**\n- \`Workflow Result: <path>\` — read that JSON file and act on its \`action\` field. Valid actions: \`continue_unit\` (spawn next subagent for same unit), \`start_units\` (dispatch wave), \`advance_phase\`, \`review\`, \`advance_stage\`, \`intent_complete\`, \`blocked\`. For unit-level actions, call \`haiku_run_next { intent: ... }\` to get the workflow engine's canonical next step (the result file and run_next return the same data; run_next is the authoritative drive step).\n- Plaintext "job ends here" message — another subagent in the wave will produce the structured result; do not dispatch yet.\n- Anything else (subagent non-compliant) — fall back: call \`haiku_run_next { intent: ... }\`.\n\nDo NOT stop until run_next returns \`gate_review\`, \`advance_stage → intent_complete\`, \`intent_complete\`, or \`error\`.`,
+			)
+		}
 	} else {
 		// Subagentless: direct execution in current context.
 		if (inlineCtx) sections.push(inlineCtx)

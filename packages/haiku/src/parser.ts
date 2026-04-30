@@ -1,3 +1,4 @@
+import type { Dirent } from "node:fs"
 import { readdir, readFile } from "node:fs/promises"
 import { basename, join, relative, resolve } from "node:path"
 import {
@@ -343,7 +344,7 @@ export interface OutputArtifact {
  *  whatever root they care about. Non-fatal on missing dir. */
 async function walkArtifactsDir(dir: string): Promise<string[]> {
 	const out: string[] = []
-	let entries: Awaited<ReturnType<typeof readdir>>
+	let entries: Dirent<string>[]
 	try {
 		entries = await readdir(dir, { withFileTypes: true })
 	} catch {
@@ -450,7 +451,7 @@ async function parseUnitOutputs(
 	const out: Array<{ absPath: string; artifact: OutputArtifact }> = []
 	const intentDirAbs = resolve(intentDir)
 	const intentDirAbsSlash = `${intentDirAbs}/`
-	let stageEntries: Awaited<ReturnType<typeof readdir>>
+	let stageEntries: Dirent<string>[]
 	try {
 		stageEntries = await readdir(join(intentDir, "stages"), {
 			withFileTypes: true,
@@ -548,7 +549,7 @@ async function walkStageDirRecursive(
 	currentRel: string = "",
 ): Promise<Array<{ absPath: string; relFromStage: string }>> {
 	const out: Array<{ absPath: string; relFromStage: string }> = []
-	let entries: Awaited<ReturnType<typeof readdir>>
+	let entries: Dirent<string>[]
 	try {
 		entries = await readdir(stageDir, { withFileTypes: true })
 	} catch {

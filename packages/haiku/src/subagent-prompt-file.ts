@@ -194,16 +194,33 @@ export function formatSubagentDispatchBlock(opts: {
 	model?: string | null
 	heading?: string
 	toolAttr?: boolean
+	/** When true, emit `background="true"` on the `<subagent>` block. The
+	 *  parent's only job after dispatch is wait → read result file → call
+	 *  `haiku_run_next`, so background dispatch frees the parent thread to
+	 *  keep talking to the user. Caller must gate this on the active
+	 *  harness's `subagents.backgroundSpawn` capability — passing it for a
+	 *  harness that doesn't support background spawning would emit guidance
+	 *  the parent can't follow. */
+	background?: boolean
 }): string {
-	const { path, parentInstruction, agentType, model, heading, toolAttr } = opts
+	const {
+		path,
+		parentInstruction,
+		agentType,
+		model,
+		heading,
+		toolAttr,
+		background = false,
+	} = opts
 	const instruction =
 		parentInstruction ??
 		`Read the file at \`${path}\` and execute its instructions exactly. The file is the complete, canonical subagent prompt authored by the workflow engine — do not paraphrase or skip any of it.`
 	const tool = toolAttr ? ` tool="Agent"` : ""
 	const modelAttr = model ? ` model="${model}"` : ""
+	const bgAttr = background ? ` background="true"` : ""
 	const h = heading ?? "## Subagent Dispatch (MANDATORY — relay verbatim)"
 	return (
-		`${h}\n\n<subagent${tool} type="${agentType}"${modelAttr}` +
+		`${h}\n\n<subagent${tool} type="${agentType}"${modelAttr}${bgAttr}` +
 		` prompt_file="${path}">\n${instruction}\n</subagent>`
 	)
 }
