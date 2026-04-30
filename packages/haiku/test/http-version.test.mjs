@@ -84,13 +84,19 @@ try {
 		assert.ok(body.plugin_version.length > 0, "plugin_version is non-empty")
 	})
 
-	await test("does not require auth (version is non-sensitive metadata)", async () => {
-		// No Authorization header — should still 200. Reviewers reach the
-		// SPA via a tunnel-auth JWT in the URL fragment, but the version
-		// endpoint is fetched in `useEffect` before any session context
-		// is loaded, so it cannot rely on the JWT being present.
-		const res = await fetch(`${baseUrl}/api/version`)
+	await test("returns Cache-Control: no-store and ignores auth headers", async () => {
+		// Auth middleware must not intercept this endpoint — the SPA fetches
+		// it before any session context is loaded. Also verify Cache-Control
+		// so browsers and proxies never serve a stale version badge.
+		const res = await fetch(`${baseUrl}/api/version`, {
+			headers: { Authorization: "Bearer invalid-token" },
+		})
 		assert.strictEqual(res.status, 200)
+		assert.strictEqual(
+			res.headers.get("cache-control"),
+			"no-store",
+			"should set Cache-Control: no-store",
+		)
 	})
 } finally {
 	try {
