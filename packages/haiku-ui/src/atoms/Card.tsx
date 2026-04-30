@@ -6,12 +6,7 @@ type CardCommonProps = {
 	id?: string
 }
 
-/**
- * Discriminated by `as`: when the card is a landmark (`article` / `section`),
- * `ariaLabelledBy` is required (an unlabeled landmark is worse for AT
- * navigation than a plain `<div>`); when it's a plain `<div>`, the prop is
- * forbidden so it can't drift in unnoticed.
- */
+// Discriminated so a landmark `as` value can't compile without `ariaLabelledBy` — an unlabelled landmark hurts AT more than a plain div.
 type CardProps =
 	| (CardCommonProps & { as?: "div"; ariaLabelledBy?: never })
 	| (CardCommonProps & {
@@ -37,12 +32,6 @@ export function Card(props: CardProps) {
 	)
 }
 
-/**
- * `default` — the standard card heading (semibold, full text colour).
- * `eyebrow` — small uppercase label used above light prose blocks (e.g.
- * the stage-summary card). Both render real heading elements (`h2`/`h3`),
- * so AT and reader-mode TTS can use them as landmarks.
- */
 type SectionHeadingVariant = "default" | "eyebrow"
 
 export function SectionHeading({
