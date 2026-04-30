@@ -10,6 +10,7 @@
  * `usePageTitle(...)` hook in `./PageTitleContext`.
  */
 
+import { useEffect, useState } from "react"
 import { FooterBar, Main } from "../a11y"
 import { Header } from "../molecules/Header"
 import { PageTitleProvider, useShellTitle } from "./PageTitleContext"
@@ -60,7 +61,42 @@ export function NotFoundShell(): React.ReactElement {
 	)
 }
 
+/**
+ * Pull the running MCP + plugin version from `/api/version` and render
+ * a small badge in the footer. Lets reviewers see which binary is
+ * serving the page when behavior diverges from CHANGELOG / docs.
+ *
+ * Failure mode is silent: a fetch error (offline, route not yet
+ * registered on an old binary, etc.) just hides the badge. The footer
+ * still renders the H·AI·K·U attribution.
+ */
+function useRunningVersion(): { mcp: string; plugin: string } | null {
+	const [v, setV] = useState<{ mcp: string; plugin: string } | null>(null)
+	useEffect(() => {
+		let cancelled = false
+		fetch("/api/version", { headers: { "bypass-tunnel-reminder": "1" } })
+			.then((r) => (r.ok ? r.json() : null))
+			.then((data) => {
+				if (cancelled || !data) return
+				if (
+					typeof data.mcp_version === "string" &&
+					typeof data.plugin_version === "string"
+				) {
+					setV({ mcp: data.mcp_version, plugin: data.plugin_version })
+				}
+			})
+			.catch(() => {
+				/* silent — badge stays hidden */
+			})
+		return () => {
+			cancelled = true
+		}
+	}, [])
+	return v
+}
+
 export function ShellFooter(): React.ReactElement {
+	const version = useRunningVersion()
 	return (
 		<FooterBar className="mt-12 pb-8 text-center text-xs text-stone-600 dark:text-stone-300">
 			Powered by{" "}
@@ -73,6 +109,22 @@ export function ShellFooter(): React.ReactElement {
 				H·AI·K·U
 			</a>{" "}
 			— Human + AI Knowledge Unification
+			{version && (
+				<>
+					{" · "}
+					<span
+						className="text-stone-500 dark:text-stone-400 font-mono"
+						title={
+							version.mcp === version.plugin
+								? `MCP + plugin: ${version.mcp}`
+								: `MCP: ${version.mcp} · plugin: ${version.plugin}`
+						}
+					>
+						v{version.mcp}
+						{version.mcp !== version.plugin && ` (plugin v${version.plugin})`}
+					</span>
+				</>
+			)}
 		</FooterBar>
 	)
 }
