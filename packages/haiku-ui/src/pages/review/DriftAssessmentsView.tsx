@@ -337,12 +337,45 @@ function CorruptRow({
 	)
 }
 
+/** Render either the image at `url` or a "Preview not available"
+ *  fallback. Swaps to the fallback when `url` is null (no SHA on the
+ *  finding) AND when the `<img>` itself fires `onError` — covers the
+ *  extension-mismatched case (e.g. a PDF renamed to `.png`) where the
+ *  engine's magic-byte sniff refused to retain a sidecar but the SPA's
+ *  extension-based heuristic still reached for an `<img>`. The route
+ *  returns 404; the browser fires `error`; the broken-icon UI is
+ *  replaced with the same italic fallback the no-URL branch shows. */
+function ImageOrFallback({
+	url,
+	alt,
+}: {
+	url: string | null
+	alt: string
+}): React.ReactElement {
+	const [failed, setFailed] = useState(false)
+	if (!url || failed) {
+		return (
+			<p className="text-xs italic text-stone-500 dark:text-stone-400">
+				Preview not available.
+			</p>
+		)
+	}
+	return (
+		<img
+			src={url}
+			alt={alt}
+			onError={() => setFailed(true)}
+			className="block w-full h-auto rounded-md border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800"
+		/>
+	)
+}
+
 /** Render before/after thumbnails for an image-pathed finding. Uses
  *  the baseline-content route for both sides — the engine writes the
  *  after-sha sidecar at finding-emission time so the SPA can render
  *  immediately, before the agent classifies. Falls back to "preview
- *  not available" text when either side returns 404 (e.g. the file
- *  was deleted or the engine is from a pre-image version). */
+ *  not available" text when either side returns 404 (extension-vs-
+ *  bytes mismatch, deleted file, or engine from a pre-image version). */
 function ImageDiffPreview({
 	intentSlug,
 	finding,
@@ -365,33 +398,13 @@ function ImageDiffPreview({
 					<figcaption className="text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
 						Before
 					</figcaption>
-					{beforeUrl ? (
-						<img
-							src={beforeUrl}
-							alt={`Before: ${finding.path}`}
-							className="block w-full h-auto rounded-md border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800"
-						/>
-					) : (
-						<p className="text-xs italic text-stone-500 dark:text-stone-400">
-							Preview not available.
-						</p>
-					)}
+					<ImageOrFallback url={beforeUrl} alt={`Before: ${finding.path}`} />
 				</figure>
 				<figure className="space-y-1">
 					<figcaption className="text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
 						After
 					</figcaption>
-					{afterUrl ? (
-						<img
-							src={afterUrl}
-							alt={`After: ${finding.path}`}
-							className="block w-full h-auto rounded-md border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800"
-						/>
-					) : (
-						<p className="text-xs italic text-stone-500 dark:text-stone-400">
-							Preview not available.
-						</p>
-					)}
+					<ImageOrFallback url={afterUrl} alt={`After: ${finding.path}`} />
 				</figure>
 			</div>
 		</div>

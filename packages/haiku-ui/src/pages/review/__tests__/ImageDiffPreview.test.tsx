@@ -174,4 +174,20 @@ describe("ImageDiffPreview", () => {
 		expandFirstRow()
 		expect(screen.getAllByTestId("image-diff-preview").length).toBe(2)
 	})
+
+	it("img onError (404 from extension/bytes mismatch) → swaps to fallback text", () => {
+		render(
+			<DriftAssessmentsView intentSlug="demo" assessments={[makeRecord()]} />,
+		)
+		expandFirstRow()
+		const preview = screen.getByTestId("image-diff-preview")
+		const imgs = preview.querySelectorAll("img")
+		expect(imgs.length).toBe(2)
+		// Simulate the route returning 404 — e.g. a PDF renamed to .png
+		// where the engine's magic-byte sniff refused to retain a sidecar.
+		fireEvent.error(imgs[0])
+		fireEvent.error(imgs[1])
+		expect(preview.querySelectorAll("img").length).toBe(0)
+		expect(preview.textContent ?? "").toMatch(/Preview not available/i)
+	})
 })
