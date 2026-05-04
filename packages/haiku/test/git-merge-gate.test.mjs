@@ -62,7 +62,11 @@ function makeGitRepo() {
 	git("git config user.email test@example.com")
 	git("git config user.name Test")
 	git("git commit --allow-empty -m init")
-	return { root, git, cleanup: () => rmSync(root, { recursive: true, force: true }) }
+	return {
+		root,
+		git,
+		cleanup: () => rmSync(root, { recursive: true, force: true }),
+	}
 }
 
 function writeIntent(root, slug, frontmatter) {
@@ -103,7 +107,10 @@ test("completed+advanced stage NOT merged stays current", () => {
 		_resetIsGitRepoForTests()
 
 		const haikuRoot = join(root, ".haiku")
-		writeIntent(root, "gate-test", { studio: "software", active_stage: "inception" })
+		writeIntent(root, "gate-test", {
+			studio: "software",
+			active_stage: "inception",
+		})
 		writeStageState(root, "gate-test", "inception", {
 			stage: "inception",
 			status: "completed",
@@ -137,7 +144,10 @@ test("completed+advanced stage IS merged advances past it to next", () => {
 		_resetIsGitRepoForTests()
 
 		const haikuRoot = join(root, ".haiku")
-		writeIntent(root, "gate-merged", { studio: "software", active_stage: "inception" })
+		writeIntent(root, "gate-merged", {
+			studio: "software",
+			active_stage: "inception",
+		})
 		writeStageState(root, "gate-merged", "inception", {
 			stage: "inception",
 			status: "completed",
@@ -339,7 +349,11 @@ test("copies feedback files from stage branch onto intent main", () => {
 			pathPrefix,
 			"carry inception feedback to intent main",
 		)
-		assert.strictEqual(result.ok, true, `expected ok=true, got: ${result.message}`)
+		assert.strictEqual(
+			result.ok,
+			true,
+			`expected ok=true, got: ${result.message}`,
+		)
 		assert.strictEqual(
 			result.paths_copied.length,
 			1,

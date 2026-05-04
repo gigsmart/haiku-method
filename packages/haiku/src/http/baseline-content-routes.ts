@@ -68,9 +68,7 @@ function streamBaselineFile(
 	reply.send(createReadStream(absPath))
 }
 
-export function registerBaselineContentRoutes(
-	instance: FastifyInstance,
-): void {
+export function registerBaselineContentRoutes(instance: FastifyInstance): void {
 	instance.get<{
 		Params: { intent: string; stage: string; sha256: string }
 	}>(

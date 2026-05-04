@@ -32,8 +32,8 @@
 //     Write/Edit/MultiEdit equivalent.
 
 import { isAbsolute, join } from "node:path"
-import { findHaikuRoot } from "../../state-tools.js"
 import { stampAgentWriteForPath } from "../../orchestrator/workflow/stamp-agent-write.js"
+import { findHaikuRoot } from "../../state-tools.js"
 import { defineTool, validateSlugArgs } from "../define.js"
 
 function errorResponse(code: string, message: string) {

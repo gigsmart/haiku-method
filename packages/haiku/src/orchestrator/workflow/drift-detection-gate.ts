@@ -33,8 +33,8 @@ import {
 	enumerateTrackedSurface,
 	isBaselineThrashing,
 	isBinarySync,
-	isImageBinarySync,
 	isDriftDetectionDisabled,
+	isImageBinarySync,
 	readActionLogSync,
 	readBaseline,
 	readBaselineAckMarker,
@@ -768,11 +768,7 @@ export function runDriftDetectionGate(
 		const agentLogEntry = actionLogEntries.find(
 			(e) => e.path === entry.pathRel && e.entry_type === "agent_write",
 		)
-		if (
-			!humanLogEntry &&
-			agentLogEntry &&
-			agentLogEntry.sha === currentSha
-		) {
+		if (!humanLogEntry && agentLogEntry && agentLogEntry.sha === currentSha) {
 			// Agent stamped this write and the file still matches that SHA —
 			// silently absorb into the baseline, no finding emitted. The
 			// `markBaselineDirty + writeBaselineSync` post-loop already

@@ -32,9 +32,8 @@ import { join } from "node:path"
 
 const tmp = mkdtempSync(join(tmpdir(), "haiku-agent-write-"))
 
-const stampAgentWriteHook = (
-	await import("../src/hooks/stamp-agent-write.ts")
-).default
+const stampAgentWriteHook = (await import("../src/hooks/stamp-agent-write.ts"))
+	.default
 
 const { runDriftDetectionGate } = await import(
 	"../src/orchestrator/workflow/drift-detection-gate.ts"
@@ -89,10 +88,7 @@ function makeIntentDir(name, opts = {}) {
 	mkdirSync(join(intentDir, "knowledge"), { recursive: true })
 	// Establish a stage state.json with iteration so getCurrentTickCounter
 	// returns a known value rather than 0.
-	writeFileSync(
-		join(stageDir, "state.json"),
-		JSON.stringify({ iteration: 3 }),
-	)
+	writeFileSync(join(stageDir, "state.json"), JSON.stringify({ iteration: 3 }))
 	return { intentDir, stage }
 }
 
