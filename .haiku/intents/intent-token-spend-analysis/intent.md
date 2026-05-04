@@ -9,6 +9,7 @@ stages:
   - development
   - security
   - release
+active_stage: inception
 ---
 
 # Add intent token spend analysis
