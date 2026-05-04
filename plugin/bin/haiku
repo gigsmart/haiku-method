@@ -6,10 +6,10 @@
 #     via bun (preferred) or npx tsx, so edits hot-reload on next MCP restart
 #     without rebuilding.
 #   - In a production install (npm tarball or github clone of just the plugin):
-#     exec the bundled JS sibling at plugin/bin/haiku.js via node.
+#     exec the bundled JS sibling at plugin/bin/haiku.mjs via node.
 #
 # This file is ALWAYS the bin entry. It is never overwritten by the build —
-# the build emits plugin/bin/haiku.js as a separate artifact, which is
+# the build emits plugin/bin/haiku.mjs as a separate artifact, which is
 # committed to git so github-sourced installs work without a build step.
 set -euo pipefail
 HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
