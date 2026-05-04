@@ -746,12 +746,53 @@ export function runDriftDetectionGate(
 		}
 
 		// Determine author class from action log (ARCHITECTURE.md §6.2).
-		const logEntry = actionLogEntries.find(
+		// `agent_write` (stamped by the stamp-agent-write PostToolUse hook
+		// when the agent uses Write/Edit/MultiEdit on a tracked-surface
+		// path) closes the bleed window where the agent's own edit to a
+		// human-originated file would otherwise inherit the baseline's
+		// `human-implicit` attribution. When the agent's stamped SHA
+		// matches the on-disk SHA, the agent has already accounted for
+		// the write — silently update the baseline and skip emitting a
+		// finding (the agent doesn't need to classify its own deliberate
+		// writes, the same way `haiku_unit_write` writes never enter the
+		// surface in the first place).
+		const humanLogEntry = actionLogEntries.find(
 			(e) => e.path === entry.pathRel && e.entry_type === "human_write",
 		)
+		const agentLogEntry = actionLogEntries.find(
+			(e) => e.path === entry.pathRel && e.entry_type === "agent_write",
+		)
+		if (
+			!humanLogEntry &&
+			agentLogEntry &&
+			agentLogEntry.sha === currentSha
+		) {
+			// Agent stamped this write and the file still matches that SHA —
+			// silently absorb into the baseline, no finding emitted. The
+			// `markBaselineDirty + writeBaselineSync` post-loop already
+			// covers the persistence side.
+			baseline.entries.set(entry.pathRel, {
+				...baselineEntry,
+				sha256: currentSha,
+				bytes: currentBytes,
+				mtime_ns: currentMtimeNs,
+				is_binary: currentBinary,
+				author_class: "agent",
+				acknowledged_at: new Date().toISOString(),
+				acknowledged_via: "agent-write",
+			})
+			baselineDirty = true
+			continue
+		}
 		// authorClass is carried into the finding so the assessment handler
 		// can populate the DriftFinding and Assessment records accurately.
-		const authorClass = logEntry ? "human-via-mcp" : baselineEntry.author_class
+		// Priority: human_write (MCP) > agent_write (stale, e.g. agent wrote
+		// then human re-edited) > baseline fallback.
+		const authorClass = humanLogEntry
+			? "human-via-mcp"
+			: agentLogEntry
+				? "agent"
+				: baselineEntry.author_class
 
 		// Build diff for text files. Write a lazy sidecar for unchanged files
 		// so "before" content is available when the file eventually changes.

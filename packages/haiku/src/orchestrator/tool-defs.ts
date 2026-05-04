@@ -320,4 +320,24 @@ export const orchestratorToolDefs = [
 			required: ["intent_slug", "path", "content"],
 		},
 	},
+	{
+		name: "haiku_record_agent_write",
+		description:
+			"Record an agent_write entry in the intent's action log for a tracked-surface file the agent just wrote via the harness's Write/Edit tool. Use only on harnesses that don't fire PostToolUse hooks (i.e., NOT Claude Code — on CC, the `stamp-agent-write` hook does this automatically). The next drift-gate tick will silently absorb the change into the baseline so the agent isn't asked to classify its own deliberate writes. Tracked-surface paths: stages/<X>/{artifacts,outputs,knowledge,discovery}/... and intent-root knowledge/.... Workflow-managed paths (units/, feedback/, state.json, intent.md) and paths outside the intent dir don't need (and won't get) a stamp.",
+		inputSchema: {
+			type: "object" as const,
+			properties: {
+				intent_slug: {
+					type: "string",
+					description: "Slug of the intent that owns the file you just wrote.",
+				},
+				path: {
+					type: "string",
+					description:
+						"Path of the file you just wrote. Either intent-relative (e.g. stages/design/artifacts/spec.md) or absolute. The tool resolves it against the intent dir and verifies it falls inside the drift-tracked surface before stamping.",
+				},
+			},
+			required: ["intent_slug", "path"],
+		},
+	},
 ]

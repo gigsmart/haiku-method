@@ -19,6 +19,7 @@ import guardWorkflowFields from "./guard-workflow-fields.js"
 import injectStateFile from "./inject-state-file.js"
 import promptGuard from "./prompt-guard.js"
 import redirectPlanMode from "./redirect-plan-mode.js"
+import stampAgentWrite from "./stamp-agent-write.js"
 import type { HookDef } from "./types.js"
 import workflowGuard from "./workflow-guard.js"
 
@@ -29,6 +30,7 @@ const HOOKS: readonly HookDef[] = [
 	injectStateFile,
 	promptGuard,
 	redirectPlanMode,
+	stampAgentWrite,
 	workflowGuard,
 ] as const
 
