@@ -33,6 +33,7 @@ import {
 	enumerateTrackedSurface,
 	isBaselineThrashing,
 	isBinarySync,
+	isImageBinarySync,
 	isDriftDetectionDisabled,
 	readActionLogSync,
 	readBaseline,
@@ -708,8 +709,13 @@ export function runDriftDetectionGate(
 			// No change — happy path. Lazily write the content sidecar so that
 			// "before" content is available the next time this file changes.
 			// Intent-scope entries (stageOwner === null) get a sidecar at the
-			// intent level to survive stage transitions.
-			if (!currentBinary && !baselineEntry.is_binary) {
+			// intent level to survive stage transitions. Images bypass the
+			// "is_binary" guard — opaque binaries (fonts, archives, PDFs)
+			// still skip because there's nothing useful to render diff-side.
+			const sidecarEligible =
+				(!currentBinary && !baselineEntry.is_binary) ||
+				isImageBinarySync(entry.absPath)
+			if (sidecarEligible) {
 				const isIntentScope = entry.stageOwner === null
 				const sidecarPath = isIntentScope
 					? baselineIntentContentPath(intentDir, currentSha)

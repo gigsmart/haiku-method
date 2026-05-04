@@ -18,6 +18,7 @@ import Fastify, { type FastifyInstance } from "fastify"
 import { DEFAULT_BODY_MAX_BYTES } from "haiku-api"
 import { review } from "./config.js"
 import { registerAssessmentsRoutes } from "./http/assessments-routes.js"
+import { registerBaselineContentRoutes } from "./http/baseline-content-routes.js"
 import { registerCsrfRoutes } from "./http/csrf.js"
 import { registerDefaultRoutes } from "./http/default-routes.js"
 import { e2eOnSend, extractSessionIdFromPath } from "./http/e2e.js"
@@ -301,6 +302,7 @@ async function buildApp(): Promise<FastifyInstance> {
 
 	// ── Drift-assessment read endpoints ───────────────────────────────
 	registerAssessmentsRoutes(instance)
+	registerBaselineContentRoutes(instance)
 
 	// ── WebSocket upgrade ──────────────────────────────────────────────
 	registerWsUpgrade(instance)

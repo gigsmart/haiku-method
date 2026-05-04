@@ -206,15 +206,19 @@ export async function writeBaseline(
 	// Write content sidecars so diff generation can read "before" content
 	// without relying on git (which uses SHA-1, not SHA-256).
 	// Intent-scope entries (stage === null) get a sidecar at the intent level.
+	// Skip opaque binaries (fonts, archives, PDFs) — nothing visual to
+	// render and the bytes would just bloat the sidecar dir. Images are
+	// retained even though they're binary so the SPA can show before/after
+	// thumbnails for visual drift diffs.
 	for (const [, entry] of baseline.entries) {
-		if (entry.is_binary) continue
+		const filePath = join(intentDir, entry.path)
+		if (entry.is_binary && !isImageBinarySync(filePath)) continue
 		const isIntentScope = entry.stage === null
 		const sidecarPath = isIntentScope
 			? baselineIntentContentPath(intentDir, entry.sha256)
 			: baselineContentPath(intentDir, stage, entry.sha256)
 		if (existsSync(sidecarPath)) continue
 		try {
-			const filePath = join(intentDir, entry.path)
 			if (!existsSync(filePath)) continue
 			const buf = readFileSync(filePath)
 			const computedSha = createHash("sha256").update(buf).digest("hex")
@@ -491,6 +495,85 @@ export function computeFileSha256Sync(absolutePath: string): string {
 	return hash.digest("hex")
 }
 
+/** Image kinds drift detection can render visual diffs for. Detected by
+ *  magic-byte sniff (extension is unreliable — `foo.png` may be a JPEG).
+ *  SVG is text and never trips `isBinary`, so it's not in this list — the
+ *  text-diff path already handles it. */
+export type ImageKind = "png" | "jpeg" | "gif" | "webp" | "avif"
+
+const IMAGE_MAGIC_PREFIXES: Array<{ kind: ImageKind; prefix: number[] }> = [
+	{ kind: "png", prefix: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] },
+	{ kind: "jpeg", prefix: [0xff, 0xd8, 0xff] },
+	{ kind: "gif", prefix: [0x47, 0x49, 0x46, 0x38] },
+]
+
+/** Detect image kind by magic bytes. Returns the kind for PNG/JPEG/GIF
+ *  by their first-bytes signature, "webp" for the RIFF...WEBP container,
+ *  "avif" for the ftyp...avif box, or null when no image signature
+ *  matches. The first 16 bytes are enough for every supported kind.
+ *
+ *  Used by the drift-detection subsystem to retain baseline content
+ *  sidecars for images even though they're binary — the SPA can render
+ *  before/after thumbnails for visual diff. Opaque binaries (fonts,
+ *  archives, PDFs) still skip the sidecar; nothing useful to render. */
+export function detectImageKindSync(absolutePath: string): ImageKind | null {
+	try {
+		const st = statSync(absolutePath)
+		if (st.size < 12) return null
+		const buf = Buffer.alloc(16)
+		const fd = openSync(absolutePath, "r")
+		try {
+			readSync(fd, buf, 0, 16, 0)
+		} finally {
+			closeSync(fd)
+		}
+		for (const { kind, prefix } of IMAGE_MAGIC_PREFIXES) {
+			if (prefix.every((b, i) => buf[i] === b)) return kind
+		}
+		// WebP: "RIFF" .... "WEBP" — bytes 0-3 = R/I/F/F, 8-11 = W/E/B/P.
+		if (
+			buf[0] === 0x52 &&
+			buf[1] === 0x49 &&
+			buf[2] === 0x46 &&
+			buf[3] === 0x46 &&
+			buf[8] === 0x57 &&
+			buf[9] === 0x45 &&
+			buf[10] === 0x42 &&
+			buf[11] === 0x50
+		) {
+			return "webp"
+		}
+		// AVIF: ftyp box at byte 4 = "ftyp", brand at byte 8 = "avif" or
+		// the heif-derived "mif1" / "msf1" containers carrying AVIF
+		// payloads. We accept "avif" / "avis" / "mif1" / "msf1" as a
+		// reasonable surface — a SPA <img> render handles all four.
+		if (
+			buf[4] === 0x66 &&
+			buf[5] === 0x74 &&
+			buf[6] === 0x79 &&
+			buf[7] === 0x70
+		) {
+			const brand = buf.subarray(8, 12).toString("ascii")
+			if (
+				brand === "avif" ||
+				brand === "avis" ||
+				brand === "mif1" ||
+				brand === "msf1"
+			) {
+				return "avif"
+			}
+		}
+		return null
+	} catch {
+		return null
+	}
+}
+
+/** Convenience: true iff `detectImageKindSync` returns a non-null kind. */
+export function isImageBinarySync(absolutePath: string): boolean {
+	return detectImageKindSync(absolutePath) !== null
+}
+
 /** Synchronous binary-detection heuristic. Mirror of the async `isBinary`
  *  but uses sync I/O. Same algorithm: null byte in first 8192 bytes OR
  *  UTF-8 decode failure. */
@@ -550,15 +633,19 @@ export function writeBaselineSync(
 	// Write content sidecars so diff generation can read "before" content
 	// without relying on git (which uses SHA-1, not SHA-256).
 	// Intent-scope entries (stage === null) get a sidecar at the intent level.
+	// Skip opaque binaries (fonts, archives, PDFs) — nothing visual to
+	// render and the bytes would just bloat the sidecar dir. Images are
+	// retained even though they're binary so the SPA can show before/after
+	// thumbnails for visual drift diffs.
 	for (const [, entry] of baseline.entries) {
-		if (entry.is_binary) continue
+		const filePath = join(intentDir, entry.path)
+		if (entry.is_binary && !isImageBinarySync(filePath)) continue
 		const isIntentScope = entry.stage === null
 		const sidecarPath = isIntentScope
 			? baselineIntentContentPath(intentDir, entry.sha256)
 			: baselineContentPath(intentDir, stage, entry.sha256)
 		if (existsSync(sidecarPath)) continue
 		try {
-			const filePath = join(intentDir, entry.path)
 			if (!existsSync(filePath)) continue
 			const buf = readFileSync(filePath)
 			const computedSha = createHash("sha256").update(buf).digest("hex")
