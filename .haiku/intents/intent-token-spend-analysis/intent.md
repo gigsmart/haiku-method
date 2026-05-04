@@ -1,9 +1,14 @@
 ---
-title: "Add intent token spend analysis"
-studio: ""
+title: Add intent token spend analysis
+studio: libdev
 mode: continuous
 status: active
-created_at: 2026-05-04T21:54:27Z
+created_at: '2026-05-04'
+stages:
+  - inception
+  - development
+  - security
+  - release
 ---
 
 # Add intent token spend analysis
