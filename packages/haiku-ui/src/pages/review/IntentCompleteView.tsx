@@ -127,8 +127,8 @@ export function IntentCompleteView({
 				{!isFullyComplete && (
 					<p className="text-sm text-stone-700 dark:text-stone-300 mt-2">
 						Awaiting merge of{" "}
-						<code className="font-mono">{intentMainBranch}</code> into the repo's
-						mainline. The merge is the only remaining action — no further{" "}
+						<code className="font-mono">{intentMainBranch}</code> into the
+						repo's mainline. The merge is the only remaining action — no further{" "}
 						<code className="font-mono">haiku_run_next</code> tick needed to
 						seal.
 					</p>

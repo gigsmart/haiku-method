@@ -25,7 +25,6 @@ import { createHash } from "node:crypto"
 import { existsSync, readFileSync } from "node:fs"
 import { actionLogPath, appendActionLogEntry } from "./action-log.js"
 import { canonicalisePath, getCurrentTickCounter } from "./drift-baseline.js"
-import { nextEntryId } from "./write-audit.js"
 
 export interface StampAgentWriteResult {
 	stamped: boolean
@@ -133,7 +132,11 @@ export async function stampAgentWriteForPath(
 		? getCurrentTickCounter(decomp.intentDir, decomp.stageOwner)
 		: getCurrentTickCounter(decomp.intentDir)
 	const seq = nextActionLogSequenceNumber(decomp.intentDir)
-	const entryId = nextEntryId(tickCounter, seq)
+	// `AGW-` prefix (Agent Write) keeps the audit trail unambiguous —
+	// the `human_write` path uses `HWM-`, and mixing prefixes would
+	// require disambiguating against `entry_type` on every read.
+	const nn = String(seq).padStart(2, "0")
+	const entryId = `AGW-${tickCounter}-${nn}`
 	const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
 	const tickScope: "stage" | "intent" = decomp.stageOwner ? "stage" : "intent"
 	const canonical = canonicalisePath(decomp.pathRel)

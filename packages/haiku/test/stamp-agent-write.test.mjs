@@ -136,6 +136,9 @@ await test("stage-scoped artifact write → agent_write entry stamped", async ()
 	assert.strictEqual(entries[0].author_class, "agent")
 	assert.strictEqual(entries[0].tick_counter, 3)
 	assert.strictEqual(entries[0].tick_scope, "stage")
+	// entry_id uses the AGW- prefix to disambiguate from human_write's
+	// HWM- prefix in the audit log.
+	assert.match(entries[0].entry_id, /^AGW-3-\d{2,}$/)
 })
 
 await test("intent-scope knowledge write → agent_write at intent tick scope", async () => {
@@ -341,6 +344,60 @@ await test("agent_write with stale SHA → finding emitted, author_class=agent",
 	assert.strictEqual(finding.after_sha256, sha256(humanOverwrite))
 })
 
+await test("two agent_write entries in one tick → newest SHA wins (findLast)", async () => {
+	const { intentDir, stage } = makeIntentDir("g04")
+	const haikuRoot = makeHaikuRoot("g04")
+	const artifactsDir = join(intentDir, "stages", stage, "artifacts")
+	const relPath = `stages/${stage}/artifacts/spec.md`
+	const original = "# original\n"
+	const agentFirst = "# agent's first attempt\n"
+	const agentSecond = "# agent's second attempt\n"
+	writeFileSync(join(artifactsDir, "spec.md"), original)
+	const anchorContent = "anchor"
+	const anchorPath = `stages/${stage}/artifacts/anchor.txt`
+	writeFileSync(join(artifactsDir, "anchor.txt"), anchorContent)
+	await writeBaseline(intentDir, stage, {
+		entries: new Map([
+			[relPath, makeBaselineEntry(relPath, original)],
+			[anchorPath, makeBaselineEntry(anchorPath, anchorContent)],
+		]),
+	})
+
+	// Agent stamps SHA-A (the first attempt's SHA), then re-writes the
+	// file in the same tick and stamps SHA-B (the second attempt). The
+	// second entry is the one whose SHA matches the on-disk bytes; the
+	// gate must use `findLast` to pick it up.
+	await appendActionLogEntry(intentDir, 1, {
+		entry_type: "agent_write",
+		path: relPath,
+		sha: sha256(agentFirst),
+		author_class: "agent",
+		timestamp: new Date().toISOString(),
+		claimed_author_id: null,
+		human_author_id: null,
+		entry_id: "AGW-1-01",
+		tick_counter: 1,
+		tick_scope: "stage",
+	})
+	writeFileSync(join(artifactsDir, "spec.md"), agentSecond)
+	await appendActionLogEntry(intentDir, 1, {
+		entry_type: "agent_write",
+		path: relPath,
+		sha: sha256(agentSecond),
+		author_class: "agent",
+		timestamp: new Date().toISOString(),
+		claimed_author_id: null,
+		human_author_id: null,
+		entry_id: "AGW-1-02",
+		tick_counter: 1,
+		tick_scope: "stage",
+	})
+
+	const result = runDriftDetectionGate(makeCtx(intentDir, haikuRoot, stage))
+	const finding = (result.findings ?? []).find((f) => f.path === relPath)
+	assert.ok(!finding, "no finding emitted — newest stamp matches on-disk SHA")
+})
+
 await test("human_write present alongside agent_write → human-via-mcp wins", async () => {
 	const { intentDir, stage } = makeIntentDir("g03")
 	const haikuRoot = makeHaikuRoot("g03")
@@ -504,6 +561,26 @@ await test("MCP tool rejects missing intent_slug", async () => {
 	)
 	assert.strictEqual(result.isError, true)
 	assert.strictEqual(payload.code, "missing_intent_slug")
+})
+
+await test("MCP tool rejects absolute path that escapes the intent dir", async () => {
+	const { haikuRoot, intentsDir } = setupHaikuRoot("mcp06")
+	const slug = "demo-mcp06"
+	const otherSlug = "other-intent"
+	mkdirSync(join(intentsDir, slug, "stages", "design", "artifacts"), {
+		recursive: true,
+	})
+	const otherDir = join(intentsDir, otherSlug, "stages", "design", "artifacts")
+	mkdirSync(otherDir, { recursive: true })
+	const escapePath = join(otherDir, "evil.md")
+	writeFileSync(escapePath, "x")
+
+	const { result, payload } = await callTool(
+		{ intent_slug: slug, path: escapePath },
+		haikuRoot,
+	)
+	assert.strictEqual(result.isError, true)
+	assert.strictEqual(payload.code, "path_outside_intent")
 })
 
 await test("MCP tool rejects path-traversal in intent_slug", async () => {

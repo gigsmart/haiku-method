@@ -31,6 +31,7 @@
 //     discovery}/...` or intent-root `knowledge/...`) via the harness's
 //     Write/Edit/MultiEdit equivalent.
 
+import { realpathSync } from "node:fs"
 import { isAbsolute, join } from "node:path"
 import { stampAgentWriteForPath } from "../../orchestrator/workflow/stamp-agent-write.js"
 import { findHaikuRoot } from "../../state-tools.js"
@@ -91,6 +92,34 @@ export default defineTool({
 		const root = findHaikuRoot()
 		const intentDir = join(root, "intents", slug)
 		const absPath = isAbsolute(path) ? path : join(intentDir, path)
+
+		// Bounds-check absolute paths against the slug-bound intent dir.
+		// Without this, a crafted absolute path could stamp another
+		// intent's action log even though the request named slug `A`.
+		// Use realpath canonicalisation to defeat symlink games (and to
+		// reconcile macOS's `/var` → `/private/var` aliasing). The
+		// trailing slash anchor prevents `intents/foo` from matching
+		// `intents/foo-bar/...`.
+		const realIntent = (() => {
+			try {
+				return realpathSync(intentDir)
+			} catch {
+				return intentDir
+			}
+		})()
+		const realAbs = (() => {
+			try {
+				return realpathSync(absPath)
+			} catch {
+				return absPath
+			}
+		})()
+		if (!realAbs.startsWith(`${realIntent}/`) && realAbs !== realIntent) {
+			return errorResponse(
+				"path_outside_intent",
+				`Absolute path '${path}' resolves outside the intent dir for slug '${slug}'. Either pass an intent-relative path or an absolute path inside ${realIntent}/.`,
+			)
+		}
 
 		const result = await stampAgentWriteForPath(absPath)
 

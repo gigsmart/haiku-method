@@ -20,6 +20,24 @@ import { StageBanner } from "./-stage-banner"
 function StageLayout(): React.ReactElement {
 	const { stage } = Route.useParams()
 	const { session, sessionId, activeStage } = useReviewContext()
+	// Hooks must run unconditionally (rules-of-hooks) before any early
+	// return — even one we know will eject the component. The
+	// terminal-intent redirect lives below the hook block; the
+	// useEffect/useRef/useState above are cheap and harmless on the
+	// terminal-intent branch (the Navigate fires before they observe
+	// anything, and React tears them down on unmount).
+	const bannerRef = useRef<HTMLDivElement>(null)
+	const [bannerHeight, setBannerHeight] = useState<number | null>(null)
+	useEffect(() => {
+		const el = bannerRef.current
+		if (!el) return
+		const measure = () => setBannerHeight(el.getBoundingClientRect().height)
+		measure()
+		const obs = new ResizeObserver(measure)
+		obs.observe(el)
+		return () => obs.disconnect()
+	}, [])
+
 	// Terminal-intent guard: when the intent is in
 	// `awaiting_completion_review` or `status: completed`, deep links
 	// to `/stages/<X>` would render with the stage banner highlighting
@@ -46,24 +64,6 @@ function StageLayout(): React.ReactElement {
 	const stagePhase = stageStates[stage]?.phase ?? null
 	const gateModes = resolveGateModes(session.gate_type)
 	const gateBadges = gateModes.map(gateBadgeCopy)
-
-	// Keep the Tab list from sliding under the sticky StageBanner by
-	// publishing the banner's actual rendered height into the scope's
-	// `--header-height` CSS variable. `<Tabs>` sticks at
-	// `top: var(--header-height)`, and the banner itself varies in
-	// height (phase stepper + wrapping gate badges), so a hard-coded
-	// value gets it wrong in the banner's taller states.
-	const bannerRef = useRef<HTMLDivElement>(null)
-	const [bannerHeight, setBannerHeight] = useState<number | null>(null)
-	useEffect(() => {
-		const el = bannerRef.current
-		if (!el) return
-		const measure = () => setBannerHeight(el.getBoundingClientRect().height)
-		measure()
-		const obs = new ResizeObserver(measure)
-		obs.observe(el)
-		return () => obs.disconnect()
-	}, [])
 
 	const scopeStyle = bannerHeight
 		? ({ "--header-height": `${bannerHeight}px` } as React.CSSProperties)

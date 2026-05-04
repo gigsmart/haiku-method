@@ -762,12 +762,27 @@ export function runDriftDetectionGate(
 		// finding (the agent doesn't need to classify its own deliberate
 		// writes, the same way `haiku_unit_write` writes never enter the
 		// surface in the first place).
-		const humanLogEntry = actionLogEntries.find(
-			(e) => e.path === entry.pathRel && e.entry_type === "human_write",
-		)
-		const agentLogEntry = actionLogEntries.find(
-			(e) => e.path === entry.pathRel && e.entry_type === "agent_write",
-		)
+		// Walk the log backwards (newest first) so the most recent entry
+		// per type wins. The action log is append-only, so on a multi-
+		// tick or same-tick re-write the *latest* SHA is what matches the
+		// on-disk bytes. Earlier rev used `Array.find` which returned the
+		// oldest match — that broke same-tick double-writes (agent
+		// stamps SHA_A then SHA_B; current bytes are SHA_B; find picked
+		// SHA_A; SHA mismatch → false positive) and cross-tick intent-
+		// scope writes through `readIntentScopeActionLogSync` (which
+		// unions every tick's entries). `findLast` would be cleaner but
+		// requires ES2023 lib; this hand-rolled loop works on the
+		// current ES2022 target.
+		let humanLogEntry: (typeof actionLogEntries)[number] | undefined
+		let agentLogEntry: (typeof actionLogEntries)[number] | undefined
+		for (let i = actionLogEntries.length - 1; i >= 0; i--) {
+			const e = actionLogEntries[i]
+			if (e.path !== entry.pathRel) continue
+			if (!humanLogEntry && e.entry_type === "human_write") humanLogEntry = e
+			else if (!agentLogEntry && e.entry_type === "agent_write")
+				agentLogEntry = e
+			if (humanLogEntry && agentLogEntry) break
+		}
 		if (!humanLogEntry && agentLogEntry && agentLogEntry.sha === currentSha) {
 			// Agent stamped this write and the file still matches that SHA —
 			// silently absorb into the baseline, no finding emitted. The
@@ -808,6 +823,33 @@ export function runDriftDetectionGate(
 					entry.absPath,
 				)
 			: null
+
+		// For image findings, persist the after-side bytes to a sidecar
+		// addressed by the new SHA so the SPA's assessment view can render
+		// before/after thumbnails immediately — without waiting for
+		// classification to update the baseline. Cheap (one fs write per
+		// modified image), and the bytes are already in memory's path
+		// (we just hashed them). Skips text files (the unified diff is
+		// the visual diff) and opaque binaries (nothing to render).
+		if (currentBinary && isImageBinarySync(entry.absPath)) {
+			const isIntentScope = entry.stageOwner === null
+			const afterSidecar = isIntentScope
+				? baselineIntentContentPath(intentDir, currentSha)
+				: baselineContentPath(intentDir, activeStage, currentSha)
+			if (!existsSync(afterSidecar)) {
+				try {
+					const buf = readFileSync(entry.absPath)
+					if (isIntentScope) {
+						writeBaselineIntentContentSync(intentDir, currentSha, buf)
+					} else {
+						writeBaselineContentSync(intentDir, activeStage, currentSha, buf)
+					}
+				} catch {
+					// Non-fatal — the SPA will fall back to "image preview not
+					// available" if the after-sidecar is absent.
+				}
+			}
+		}
 
 		findings.push({
 			path: entry.pathRel,
