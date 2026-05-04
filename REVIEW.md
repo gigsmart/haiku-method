@@ -45,11 +45,12 @@ Flag any usage that confuses these distinct concepts:
 
 ## Plugin-Specific
 
-### Binary (`packages/haiku/` → `plugin/bin/haiku`)
-- Source lives in `packages/haiku/` — only the compiled binary ships in `plugin/`
+### Binary (`packages/haiku/` → `plugin/bin/haiku.mjs`)
+- Source lives in `packages/haiku/` — only the compiled bundle ships in `plugin/bin/haiku.mjs`
+- `plugin/bin/haiku` is a bash dispatcher that runs the source via `bun`/`tsx` in dev checkouts and the bundle via `node` in production installs
 - The binary handles: MCP server, hooks, and migration
 - Zero external runtime dependencies (no jq, yq, npm install)
-- Build: `cd packages/haiku && npm run build` → `plugin/bin/haiku` (~485KB minified)
+- Build: `cd packages/haiku && npm run build` → `plugin/bin/haiku.mjs`
 
 ### Skills
 - Must reference MCP tools (`haiku_run_next`, `haiku_unit_start`, etc.) — not shell functions

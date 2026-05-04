@@ -7,7 +7,7 @@
 		"build": "node scripts/build-mcp.mjs",
 		"build:spa": "node scripts/bundle-haiku-ui.mjs",
 		"export:workflow-diagrams": "npx tsx scripts/export-workflow-diagrams.mjs",
-		"postbuild": "if [ -n \"$SENTRY_AUTH_TOKEN\" ]; then sentry-cli sourcemaps upload --url ${SENTRY_URL:-https://sentry.ops.gigsmart.com} --org ${SENTRY_ORG:-gigsmart} --project haiku-mcp --release haiku-mcp@$(node -e \"process.stdout.write(require('../../plugin/.claude-plugin/plugin.json').version)\") ../../plugin/bin/haiku.map && sentry-cli sourcemaps upload --url ${SENTRY_URL:-https://sentry.ops.gigsmart.com} --org ${SENTRY_ORG:-gigsmart} --project haiku-spa --release haiku-spa@$(node -e \"process.stdout.write(require('../../plugin/.claude-plugin/plugin.json').version)\") review-app/dist/assets/; fi; rm -f ../../plugin/bin/haiku.map",
+		"postbuild": "if [ -n \"$SENTRY_AUTH_TOKEN\" ]; then sentry-cli sourcemaps upload --url ${SENTRY_URL:-https://sentry.ops.gigsmart.com} --org ${SENTRY_ORG:-gigsmart} --project haiku-mcp --release haiku-mcp@$(node -e \"process.stdout.write(require('../../plugin/.claude-plugin/plugin.json').version)\") ../../plugin/bin/haiku.mjs.map && sentry-cli sourcemaps upload --url ${SENTRY_URL:-https://sentry.ops.gigsmart.com} --org ${SENTRY_ORG:-gigsmart} --project haiku-spa --release haiku-spa@$(node -e \"process.stdout.write(require('../../plugin/.claude-plugin/plugin.json').version)\") review-app/dist/assets/; fi; rm -f ../../plugin/bin/haiku.mjs.map",
 		"typecheck": "tsc --noEmit",
 		"test": "node test/run-all.mjs",
 		"test:parse": "node test/state-tools.test.mjs",

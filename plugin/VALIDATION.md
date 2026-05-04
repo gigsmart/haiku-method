@@ -326,8 +326,8 @@ No SessionStart hooks are registered. `inject-context` and `ensure-deps` were re
 - [ ] `haiku hook <name>`: executes the named hook
 - [ ] `haiku migrate`: migrates `.ai-dlc/` to `.haiku/`
 - [ ] Unknown command: exits with error and usage message
-- [ ] Binary is a single file at `plugin/bin/haiku` (~1.1MB minified, includes review SPA inlined)
-- [ ] Shebang (`#!/usr/bin/env node`) makes it directly executable
+- [ ] Bundle is a single file at `plugin/bin/haiku.mjs` (~5MB minified, includes review SPA inlined). `plugin/bin/haiku` is a bash dispatcher that selects bundle vs source.
+- [ ] Bundle shebang (`#!/usr/bin/env node`) makes `plugin/bin/haiku.mjs` directly executable
 - [ ] Zero external dependencies at runtime (no jq, yq, or npm install)
 
 ---

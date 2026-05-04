@@ -156,7 +156,7 @@ Use `/haiku:scaffold` to generate any of these.
 ```bash
 cd packages/haiku
 npm install
-npm run build     # builds to plugin/bin/haiku
+npm run build     # builds bundle to plugin/bin/haiku.mjs
 npm run typecheck
 npm test
 ```

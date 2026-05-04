@@ -26,7 +26,7 @@ import { fileURLToPath } from "node:url"
 const __dir = dirname(fileURLToPath(import.meta.url))
 const root = join(__dir, "..")
 const repoRoot = join(root, "..", "..")
-const outfile = join(repoRoot, "plugin", "bin", "haiku")
+const outfile = join(repoRoot, "plugin", "bin", "haiku.mjs")
 
 function runStep(name, cmd, args, skipEnv) {
 	if (skipEnv && process.env[skipEnv] === "1") {

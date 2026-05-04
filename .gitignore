@@ -63,4 +63,4 @@ terraform.tfvars
 .haiku/worktrees/
 .haiku/**/baseline-content/
 bun.lock
-plugin/bin/haiku.map
+plugin/bin/haiku.mjs.map

@@ -12,11 +12,7 @@
     {
       "name": "haiku",
       "description": "H·AI·K·U methodology — universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation.",
-      "source": {
-        "source": "npm",
-        "package": "haiku-method",
-        "version": "3.6.0"
-      },
+      "source": "./plugin",
       "category": "Pattern",
       "keywords": [
         "haiku",

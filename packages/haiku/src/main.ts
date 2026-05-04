@@ -5,7 +5,8 @@
 //   haiku mcp            → MCP server mode (stdio)
 //   haiku hook <name>    → Hook execution mode
 //
-// Built from packages/haiku/, compiled to plugin/bin/haiku
+// Built from packages/haiku/, compiled to plugin/bin/haiku.mjs (the bash
+// dispatcher at plugin/bin/haiku selects bundle vs source at invocation time).
 
 import { flush as flushSentry, reportError } from "./sentry.js"
 

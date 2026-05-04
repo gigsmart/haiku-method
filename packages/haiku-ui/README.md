@@ -38,7 +38,7 @@ consecutive bursts + real-rAF flushes → 2 renders; see
 ```sh
 # 1) run the MCP (bundles this package and serves it on :7777):
 npm run build -w haiku
-node ../haiku/plugin/bin/haiku --http 7777
+../haiku/plugin/bin/haiku --http 7777
 
 # 2) in a second terminal, run this package's dev server (hot reload):
 npm run dev -w haiku-ui

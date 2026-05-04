@@ -1,37 +1,38 @@
 #!/usr/bin/env bash
-# Dev shim for plugin/bin/haiku.
+# H·AI·K·U MCP server entry — auto-detects dev checkout vs production install.
 #
-# Runs the H·AI·K·U MCP server directly from TypeScript source via `tsx`
-# so local development picks up source changes without rebuilding. The
-# source has no Bun-specific APIs; node + tsx is sufficient. `bun` is
-# preferred when present (faster startup) but not required.
+# Behavior:
+#   - In a dev checkout (packages/haiku/src/main.ts present): exec the source
+#     via bun (preferred) or npx tsx, so edits hot-reload on next MCP restart
+#     without rebuilding.
+#   - In a production install (npm tarball or github clone of just the plugin):
+#     exec the bundled JS sibling at plugin/bin/haiku.js via node.
 #
-# This shim is the committed form of plugin/bin/haiku. The build step
-# (npm run --prefix packages/haiku build) overwrites it with a bundled
-# JS binary at npm-publish time only — the bundle is restored from git
-# by `postpack` and is NEVER committed to the repo.
-#
-# Required tools on dev machines (any one of):
-#   - bun (https://bun.sh)
-#   - node + npm (tsx is a devDependency, resolved via `npx tsx`)
-#
-# Production (npm-installed) users do NOT need either: the published
-# tarball ships the bundled binary in place of this shim.
+# This file is ALWAYS the bin entry. It is never overwritten by the build —
+# the build emits plugin/bin/haiku.js as a separate artifact, which is
+# committed to git so github-sourced installs work without a build step.
 set -euo pipefail
 HERE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SOURCE_ENTRY="$HERE/../../packages/haiku/src/main.ts"
-if [ ! -f "$SOURCE_ENTRY" ]; then
-  echo "haiku dev shim: cannot find $SOURCE_ENTRY" >&2
-  echo "If you installed haiku-method via npm, the bundled binary should have replaced this shim." >&2
-  echo "If you are developing in a checkout, run from the repo root and confirm packages/haiku exists." >&2
+BUNDLE="$HERE/haiku.mjs"
+
+if [ -f "$SOURCE_ENTRY" ]; then
+  if command -v bun >/dev/null 2>&1; then
+    exec bun "$SOURCE_ENTRY" "$@"
+  fi
+  if command -v npx >/dev/null 2>&1; then
+    exec npx tsx "$SOURCE_ENTRY" "$@"
+  fi
+  echo "haiku: dev checkout detected at $SOURCE_ENTRY but neither 'bun' nor 'npx' is on PATH." >&2
+  echo "Install bun (https://bun.sh) or node (which provides npx)." >&2
   exit 1
 fi
-if command -v bun >/dev/null 2>&1; then
-  exec bun "$SOURCE_ENTRY" "$@"
+
+if [ -f "$BUNDLE" ]; then
+  exec node "$BUNDLE" "$@"
 fi
-if command -v npx >/dev/null 2>&1; then
-  exec npx tsx "$SOURCE_ENTRY" "$@"
-fi
-echo "haiku dev shim: neither 'bun' nor 'npx' is on PATH." >&2
-echo "Install bun (https://bun.sh) or node (which provides npx)." >&2
+
+echo "haiku: cannot locate source ($SOURCE_ENTRY) or bundle ($BUNDLE)." >&2
+echo "If you installed via npm or cloned from github, the bundle should sit next to this script." >&2
+echo "If you are developing in a checkout, run from the repo root and confirm packages/haiku exists." >&2
 exit 1

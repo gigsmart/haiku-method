@@ -49,9 +49,5 @@
   ],
   "publishConfig": {
     "access": "public"
-  },
-  "scripts": {
-    "prepack": "npm run --prefix ../packages/haiku build",
-    "postpack": "git checkout -- ./bin/haiku"
   }
 }

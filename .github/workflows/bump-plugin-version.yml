@@ -9,6 +9,7 @@ on:
       - "plugin/package.json"
       - ".claude-plugin/marketplace.json"
       - "plugin/bin/haiku"
+      - "plugin/bin/haiku.mjs"
       - "CHANGELOG.md"
       - "website/**"
 
@@ -116,21 +117,12 @@ jobs:
           jq --arg version "$NEW_VERSION" '.version = $version' "$PLUGIN_PKG_JSON" > "$PLUGIN_PKG_JSON.tmp"
           mv "$PLUGIN_PKG_JSON.tmp" "$PLUGIN_PKG_JSON"
 
-          # Update marketplace.json metadata.version + npm-source plugin version
-          jq --arg version "$NEW_VERSION" '
-            .metadata.version = $version
-            | (.plugins[] | select(.source.source == "npm") | .source.version) = $version
-          ' "$MARKETPLACE_JSON" > "$MARKETPLACE_JSON.tmp"
+          # Update marketplace.json metadata.version (informational). Plugin
+          # version pinning lives in plugin/.claude-plugin/plugin.json — the
+          # git-subdir source resolves the plugin from this repo, and Claude
+          # Code refreshes when plugin.json's version field changes.
+          jq --arg version "$NEW_VERSION" '.metadata.version = $version' "$MARKETPLACE_JSON" > "$MARKETPLACE_JSON.tmp"
           mv "$MARKETPLACE_JSON.tmp" "$MARKETPLACE_JSON"
-
-          # jq path assignment is a silent no-op when the selector matches
-          # nothing — verify the npm source version actually advanced so we
-          # don't ship a marketplace pinned to a stale version.
-          UPDATED_NPM_VERSION=$(jq -r '.plugins[] | select(.source.source == "npm") | .source.version' "$MARKETPLACE_JSON")
-          if [ "$UPDATED_NPM_VERSION" != "$NEW_VERSION" ]; then
-            echo "ERROR: marketplace.json npm source version is '$UPDATED_NPM_VERSION', expected '$NEW_VERSION'" >&2
-            exit 1
-          fi
 
           # Generate changelog (uses Claude CLI if available, falls back to commit list)
           chmod +x .github/scripts/generate-changelog.sh
@@ -178,35 +170,45 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
-      # Note: the MCP server bundle is NOT built here. plugin/bin/haiku is a
-      # committed dev shim that runs the TypeScript source via `bun`. The
-      # bundled binary is produced on-demand by the npm prepack hook
-      # (`plugin/package.json: scripts.prepack`) and restored from git by
-      # postpack — it is never committed to the repo. The "Package plugin"
-      # and "Create GitHub Release" steps below build it explicitly when
-      # they need the standalone binary for the release tarball.
+      # Build the MCP server bundle BEFORE the commit step so the bumped
+      # plugin version is baked into the binary and the bundle lands in
+      # the same release commit. plugin/bin/haiku.mjs is committed to git
+      # so github-source installs (via marketplace.json git-subdir) work
+      # without requiring users to build anything.
+      - name: Build MCP server bundle
+        run: npm run --prefix packages/haiku build
+        env:
+          SENTRY_DSN_REVIEW_SPA: ${{ steps.sentry.outputs.dsn_spa }}
+          HAIKU_SENTRY_DSN_MCP: ${{ steps.sentry.outputs.dsn_mcp }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_URL: https://sentry.ops.gigsmart.com
+          SENTRY_ORG: gigsmart
 
       - name: Commit version bump
         id: commit
         run: |
-          # Check if there are any changes to commit
-          if git diff --quiet; then
+          # Stage version files, changelog, and the freshly-built bundle.
+          git add \
+            plugin/.claude-plugin/plugin.json \
+            plugin/package.json \
+            .claude-plugin/marketplace.json \
+            CHANGELOG.md \
+            plugin/bin/haiku.mjs
+
+          # Bail out if nothing actually changed (idempotent retry safety).
+          if git diff --cached --quiet; then
             echo "No version changes to commit"
             echo "released=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-
-          # Add version files and changelog. plugin/bin/haiku is the dev
-          # shim and stays as the shim in the commit — the bundle ships
-          # via npm pack's prepack hook and never lands on main.
-          git add plugin/.claude-plugin/plugin.json plugin/package.json .claude-plugin/marketplace.json CHANGELOG.md
 
           # Create commit message
           COMMIT_MSG="chore(plugin): bump version ${{ steps.bump-version.outputs.old_version }} -> ${{ steps.bump-version.outputs.new_version }}"
 
           git commit -m "$COMMIT_MSG"
 
-          # Clean unstaged build artifacts so rebase can proceed
+          # Clean unstaged build byproducts (workflow diagrams, etc.) so
+          # rebase can proceed cleanly. The bundle is already in HEAD.
           git checkout -- . 2>/dev/null || true
           git clean -fd 2>/dev/null || true
 
@@ -229,22 +231,6 @@ jobs:
           TAG="v${{ steps.bump-version.outputs.new_version }}"
           git tag -f "$TAG"
           git push -f origin "$TAG"
-
-      # Build the MCP bundle for release artifacts. plugin/bin/haiku is the
-      # committed shim; this step temporarily replaces it with the bundled
-      # binary so the release zip + GitHub-release "MCP Server Binary"
-      # asset contain the runnable bundle. The npm publish step below
-      # runs prepack (rebuilds, idempotent) and postpack (restores the
-      # shim from git) — leaving the working tree clean.
-      - name: Build MCP server bundle for release artifacts
-        if: steps.commit.outputs.released == 'true'
-        run: npm run --prefix packages/haiku build
-        env:
-          SENTRY_DSN_REVIEW_SPA: ${{ steps.sentry.outputs.dsn_spa }}
-          HAIKU_SENTRY_DSN_MCP: ${{ steps.sentry.outputs.dsn_mcp }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_URL: https://sentry.ops.gigsmart.com
-          SENTRY_ORG: gigsmart
 
       - name: Package plugin
         if: steps.commit.outputs.released == 'true'
@@ -280,8 +266,10 @@ jobs:
         run: |
           VERSION="${{ steps.bump-version.outputs.new_version }}"
           TAG="v${VERSION}"
-          # Copy standalone binary for direct download (used by auto-updater)
-          cp plugin/bin/haiku haiku-mcp
+          # Copy standalone binary for direct download (used by auto-updater).
+          # plugin/bin/haiku.mjs is the bundled JS with #!/usr/bin/env node
+          # shebang — directly executable on unix.
+          cp plugin/bin/haiku.mjs haiku-mcp
           # Delete existing release on retry to ensure idempotency
           gh release delete "$TAG" -y 2>/dev/null || true
           gh release create "$TAG" \
