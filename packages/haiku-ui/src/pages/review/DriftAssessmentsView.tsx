@@ -337,14 +337,8 @@ function CorruptRow({
 	)
 }
 
-/** Render either the image at `url` or a "Preview not available"
- *  fallback. Swaps to the fallback when `url` is null (no SHA on the
- *  finding) AND when the `<img>` itself fires `onError` — covers the
- *  extension-mismatched case (e.g. a PDF renamed to `.png`) where the
- *  engine's magic-byte sniff refused to retain a sidecar but the SPA's
- *  extension-based heuristic still reached for an `<img>`. The route
- *  returns 404; the browser fires `error`; the broken-icon UI is
- *  replaced with the same italic fallback the no-URL branch shows. */
+// Fallback covers null url + 404 (extension/bytes mismatch swallowed by
+// magic-byte sniff) so neither path leaves a broken-image icon.
 function ImageOrFallback({
 	url,
 	alt,
