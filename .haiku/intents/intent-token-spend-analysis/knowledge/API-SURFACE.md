@@ -101,6 +101,7 @@ One MCP tool. No CLI. No HTTP route. The agent (or any MCP client) invokes it vi
         "events_parsed",
         "events_skipped_unparseable",
         "events_skipped_no_usage",
+        "events_skipped_duplicate",
         "subagent_correlation",
       ],
     },
@@ -395,6 +396,8 @@ For `haiku_token_spend` specifically, every one of the following is a major-vers
 - Changing the default time window in a way that produces a different report for the same inputs (yes, this is breaking — silent drift in totals is exactly the failure mode this contract exists to prevent).
 - Changing the model-family normalization rule for `by_model[].model` — collapsing what was two buckets into one, or splitting one into two.
 - Changing the `dispatch_id` derivation rule. Consumers may persist these for trend tracking; rotating the formula invalidates every stored id.
+- Removing or renaming any of the four `coverage` counters (`events_parsed`, `events_skipped_unparseable`, `events_skipped_no_usage`, `events_skipped_duplicate`), or violating the partition invariant (`total_lines_read == events_parsed + events_skipped_unparseable + events_skipped_no_usage + events_skipped_duplicate`).
+- Changing the "first occurrence wins" dedup rule or removing the lexicographic file-list sort guarantee. Both are load-bearing for byte-identity determinism (unit-04 guarantee).
 
 ### What is **not** a breaking change
 
@@ -426,6 +429,9 @@ Deprecated fields stay in the response, with their documented semantics, for one
   - The model-family normalization rule.
   - The skill name `/haiku:burn`.
   - The SPA route `/intents/{slug}/burn` and the export routes `/intents/{slug}/burn.json`, `/intents/{slug}/burn.md`.
+  - All four `coverage` counters: `events_parsed`, `events_skipped_unparseable`, `events_skipped_no_usage`, `events_skipped_duplicate`. All four are required and form a partition invariant: their sum equals `total_lines_read` for any input.
+  - The "first occurrence wins" dedup rule: the first event with a given `(session_id, message_id, request_id)` fingerprint is counted; subsequent occurrences are counted in `events_skipped_duplicate`. This rule, combined with lexicographic file-list ordering, is load-bearing for the byte-identity guarantee from unit-04.
+  - The lexicographic file-list ordering: parent session files sorted lexicographically under `~/.claude/projects/<project_slug>/`; subagent files sorted lexicographically per `subagents/` directory. Required to make `events_skipped_duplicate` deterministic across runs.
 - **Experimental** — opt-in only, may change without a major bump.
   - `include_raw_events` input + `events[]` output.
   - Any future field guarded by a similar opt-in flag.
