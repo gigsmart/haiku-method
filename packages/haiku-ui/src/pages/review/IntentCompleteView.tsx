@@ -22,9 +22,27 @@
  */
 
 import type { DiscoveredReviewUrl } from "haiku-api"
+import { withAuthQuery } from "../../api/auth"
 import type { IntentFrontmatter } from "../../parsed"
+import type { OutputArtifact } from "../../types"
+import { DeclaringUnitsBanner } from "./shared/DeclaringUnitsBanner"
 
 export type { DiscoveredReviewUrl }
+
+const TUNNEL_ASSET_PREFIXES = [
+	"/files/",
+	"/mockups/",
+	"/wireframe/",
+	"/stage-artifacts/",
+	"/question-image/",
+]
+
+function authedAssetUrl(url: string | undefined | null): string {
+	if (!url) return ""
+	return TUNNEL_ASSET_PREFIXES.some((p) => url.startsWith(p))
+		? withAuthQuery(url)
+		: url
+}
 
 export interface IntentCompleteViewStageState {
 	status?: string
@@ -48,6 +66,13 @@ export interface IntentCompleteViewProps {
 	 *  explicit URL — common when the user opens the PR via `gh pr
 	 *  create` or the GitHub UI directly. */
 	discoveredReviewUrl?: DiscoveredReviewUrl | null
+	/** Output artifacts across every stage. Surfaced as a click-out
+	 *  list at the final intent gate so reviewers can walk through
+	 *  the deliverables before approving the merge. */
+	outputArtifacts?: OutputArtifact[]
+	/** Map of intent-relative output path → declaring unit slugs.
+	 *  Renders the "Declared by" banner above each output entry. */
+	outputDeclaredBy?: Record<string, string[]>
 }
 
 function formatTimestamp(value: string | undefined | null): string {
@@ -69,6 +94,8 @@ export function IntentCompleteView({
 	stageOrder,
 	deliveryReviewUrl,
 	discoveredReviewUrl,
+	outputArtifacts,
+	outputDeclaredBy,
 }: IntentCompleteViewProps): React.ReactElement {
 	// Resolution: explicit (agent-recorded) wins; otherwise the
 	// raw-git discovered URL. Both are equally clickable but the
@@ -174,6 +201,26 @@ export function IntentCompleteView({
 				)}
 			</section>
 
+			{outputArtifacts && outputArtifacts.length > 0 && (
+				<section
+					data-testid="intent-complete-outputs"
+					className="rounded-lg border-2 border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-5 py-4"
+				>
+					<p className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500 mb-3">
+						Intent outputs ({outputArtifacts.length})
+					</p>
+					<p className="text-sm text-stone-600 dark:text-stone-300 mb-4 leading-snug">
+						Walk through the deliverables before approving the merge. Each entry
+						opens the file in a new tab; the "Declared by" badges link back to
+						the unit that owned each output.
+					</p>
+					<IntentCompleteOutputs
+						outputArtifacts={outputArtifacts}
+						outputDeclaredBy={outputDeclaredBy}
+					/>
+				</section>
+			)}
+
 			<section className="rounded-lg border-2 border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-5 py-4">
 				<p className="text-xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-500 mb-3">
 					Stage roll-up
@@ -231,6 +278,79 @@ export function IntentCompleteView({
 					</table>
 				</div>
 			</section>
+		</div>
+	)
+}
+
+// ── Intent-complete outputs walkthrough ──────────────────────────────────
+//
+// Click-out list of every output artifact across the intent. Grouped
+// by stage so the reader can scan each stage's deliverables in turn.
+// Each entry shows the file path, a "Declared by" banner pointing at
+// the unit(s) that owned it, and a click-out link to view the actual
+// file. No inline commenting at the terminal phase — feedback flows
+// through the FeedbackSidebar like any other intent-level review.
+
+function IntentCompleteOutputs({
+	outputArtifacts,
+	outputDeclaredBy,
+}: {
+	outputArtifacts: OutputArtifact[]
+	outputDeclaredBy?: Record<string, string[]>
+}): React.ReactElement {
+	const stageOrder: string[] = []
+	const byStage = new Map<string, OutputArtifact[]>()
+	for (const a of outputArtifacts) {
+		if (!byStage.has(a.stage)) {
+			byStage.set(a.stage, [])
+			stageOrder.push(a.stage)
+		}
+		byStage.get(a.stage)?.push(a)
+	}
+
+	return (
+		<div className="space-y-6">
+			{stageOrder.map((stage) => {
+				const items = byStage.get(stage) || []
+				return (
+					<div key={stage}>
+						<h3 className="text-sm font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 mb-2">
+							{stage.charAt(0).toUpperCase() + stage.slice(1)} ({items.length})
+						</h3>
+						<ul className="space-y-2 m-0 p-0 list-none">
+							{items.map((a) => {
+								const url = a.relativePath ? authedAssetUrl(a.relativePath) : ""
+								return (
+									<li
+										key={`${a.stage}-${a.name}`}
+										className="rounded-md border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/40 px-3 py-2"
+									>
+										<div className="flex items-center justify-between gap-2 mb-1">
+											<span className="font-mono text-sm text-stone-900 dark:text-stone-100 break-all">
+												{a.name}
+											</span>
+											{url && (
+												<a
+													href={url}
+													target="_blank"
+													rel="noopener noreferrer"
+													className="shrink-0 text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline"
+												>
+													Open &#8599;
+												</a>
+											)}
+										</div>
+										<DeclaringUnitsBanner
+											intentRelativePath={a.intentRelativePath}
+											declaredBy={outputDeclaredBy}
+										/>
+									</li>
+								)
+							})}
+						</ul>
+					</div>
+				)
+			})}
 		</div>
 	)
 }

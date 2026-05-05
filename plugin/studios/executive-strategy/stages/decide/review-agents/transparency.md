@@ -1,4 +1,5 @@
 ---
+model: opus
 interpretation: lens
 ---
 **Mandate:** The agent **MUST** verify the decision process is transparent and the recommendation is supported by evidence.

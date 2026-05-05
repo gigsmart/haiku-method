@@ -1594,9 +1594,31 @@ function repairAllBranches(autoApply: boolean): {
 					} catch {
 						// push failed — still continue with local repair
 					}
+				} else {
+					// Structured failure (conflict or other) — record into
+					// the repair report so the operator sees it instead of
+					// the consolidation silently no-op'ing. Conflict path
+					// includes the file list; other failures show the raw
+					// git error.
+					const detail = result.isConflict
+						? `Merge conflict consolidating into haiku/${slug}/main on ${result.conflictFiles?.length ?? 0} file(s): ${(result.conflictFiles ?? []).join(", ")}. Resolve on haiku/${slug}/main, commit, then re-run /haiku:repair.`
+						: `Failed to consolidate stage branches into haiku/${slug}/main: ${result.message}`
+					summaries.push({
+						slug,
+						branch: `haiku/${slug}/main`,
+						scanned: 0,
+						applied: [],
+						remaining: [],
+						committed: false,
+						pushed: false,
+						merged: false,
+						pushError: detail,
+					})
 				}
 			} catch (err) {
-				// Consolidation failed — record so it appears in the repair report
+				// Consolidation threw (rare — `consolidateStageBranches`
+				// returns structured results, but a layer above could
+				// throw). Record so it appears in the repair report.
 				summaries.push({
 					slug,
 					branch: `haiku/${slug}/main`,
@@ -3356,13 +3378,14 @@ function validateUnitQualityGateShapes(
 // interpretation. Each rule has a specific failure mode that maps to a
 // concrete error message for the caller.
 
-// ── Unit frontmatter — SCHEMA IS THE SSOT ─────────────────────────────────
+// ── Schemas + field-name constants ────────────────────────────────────────
 //
-// `UNIT_FRONTMATTER_SCHEMA` below is plain JSONSchema and is the single
-// source of truth for what an agent can submit via haiku_unit_write.
-// AJV validates input against it — no custom field-by-field code for
-// the static rules. The compiled validator at `validateUnitSchema`
-// runs on every haiku_unit_write call.
+// JSONSchema definitions (the SSOT for unit / intent / stage_state /
+// feedback frontmatter shapes) and their derived
+// `AGENT_AUTHORABLE_*_FIELDS` / `FSM_DRIVEN_*_FIELDS` constants live
+// in `./state/schemas/` — one file per schema, plus a barrel. They
+// were extracted from this file as the first step of breaking up the
+// god file — pure data, zero behavior, no fs/git deps.
 //
 // What JSONSchema covers (enforced by AJV):
 //   - allow-list of properties + per-field types
@@ -3379,267 +3402,121 @@ function validateUnitQualityGateShapes(
 //   - body placeholder strings (needs body inspection)
 //   - ghost-FB closes references (needs FB list)
 
-export const UNIT_FRONTMATTER_SCHEMA = {
-	type: "object",
-	properties: {
-		title: {
-			type: "string",
-			minLength: 1,
-			description:
-				"Unit title — non-empty string. Defaults to first H1 in the body, or to the unit name.",
-		},
-		depends_on: {
-			type: "array",
-			items: { type: "string" },
-			description:
-				"Names of sibling units in the SAME stage that must complete before this one. Each entry must resolve to an actual sibling. No self-reference. No cycles. (Cross-sibling and cycle checks are runtime — they need the full stage DAG, not expressible in this schema.)",
-		},
-		inputs: {
-			type: "array",
-			items: {
-				type: "string",
-				// Path-shape check: must be a non-empty string with no
-				// embedded whitespace, must contain a `/` (any path) or `.`
-				// (file extension), and must NOT contain `:` or `,` or
-				// sentence-style punctuation. Catches freeform-text entries
-				// like "ACCEPTANCE-CRITERIA: must define edge cases" that
-				// aren't really paths.
-				pattern: "^[^\\s:,]+(?:/[^\\s:,]+)*$",
-			},
-			description:
-				"Cross-stage inputs this unit reads — paths to artifacts produced by prior stages. Each entry MUST be a file/dir path (no whitespace, no colons or commas, no prose).",
-		},
-		outputs: {
-			type: "array",
-			items: {
-				type: "string",
-				// Same path-shape check as inputs. The advance gate verifies
-				// each output path actually exists as a file at unit
-				// completion (see runInlineQualityGates / outputs-empty
-				// check), so freeform sentences would slip past the
-				// non-empty check before this pattern-validation gate
-				// rejected them.
-				pattern: "^[^\\s:,]+(?:/[^\\s:,]+)*$",
-			},
-			description:
-				"Artifacts this unit produces. Each entry MUST be a real file path (no whitespace, no colons or commas, no prose) — the gate verifies the path exists on disk at unit completion. Use `inputs:` if you mean to declare what the unit READS; use the body's `## Completion Criteria` section if you mean to declare prose-style success conditions.",
-		},
-		quality_gates: {
-			type: "array",
-			items: {
-				type: "object",
-				properties: {
-					name: { type: "string" },
-					command: { type: "string" },
-					dir: { type: "string" },
-				},
-				required: ["name", "command"],
-			},
-			description:
-				"Build-class only: list of `{name, command, dir?}` executable gate objects. Run at advance_hat time; non-zero exit blocks. Prose strings are silently skipped — they give no enforcement.",
-		},
-		model: {
-			type: "string",
-			enum: ["haiku", "sonnet", "opus"],
-			description:
-				"Subagent tier for this unit's hats. `haiku` = mechanical, `sonnet` = standard (default), `opus` = deep reasoning. Cascade: unit > hat > stage > studio.",
-		},
-		closes: {
-			type: "array",
-			items: { type: "string" },
-			description:
-				"On revisit iterations, list of FB IDs this unit addresses (e.g. `[FB-01, FB-03]`). Every pending FB must be claimed by some unit's `closes:` to allow advancement.",
-		},
-		applicable_skills: {
-			type: "array",
-			items: { type: "string" },
-			description:
-				"Skill slugs (slash-command names without the leading `/`) identified as relevant for this unit during elaboration. The elaborator populates this from the installed skill registry. Hat subagent prompts surface these automatically so subagents know which skills to reach for.",
-		},
-	},
-	// workflow-driven fields. Agents MUST NOT set these — the workflow engine owns
-	// transitions via haiku_unit_advance_hat / haiku_unit_reject_hat /
-	// haiku_unit_increment_bolt (which call setFrontmatterField directly,
-	// bypassing the agent-facing tools). AJV's propertyNames check rejects
-	// any of these at validate time; strict MCP clients reject at parse
-	// time before the call goes out. `hat_started_at` and
-	// `scope_reject_attempts` are workflow-internal counters touched only
-	// by advance_hat / reject_hat — listed here so haiku_unit_write and
-	// haiku_unit_set both refuse to set them.
-	propertyNames: {
-		not: {
-			enum: [
-				"status",
-				"hat",
-				"bolt",
-				"iterations",
-				"started_at",
-				"completed_at",
-				"hat_started_at",
-				"scope_reject_attempts",
-			],
-		},
-	},
-	// Stage-specific fields are allowed (per-stage `phases/ELABORATION.md`
-	// documents them). Schema can't enumerate stage-specific fields
-	// without reading every stage def.
-	additionalProperties: true,
-}
+export {
+	AGENT_AUTHORABLE_INTENT_FIELDS,
+	AGENT_AUTHORABLE_UNIT_FIELDS,
+	CREATE_TIME_FB_FIELDS,
+	ERROR_OUTPUT_SCHEMA,
+	FSM_DRIVEN_FB_FIELDS,
+	FSM_DRIVEN_INTENT_FIELDS,
+	FSM_DRIVEN_UNIT_FIELDS,
+	INTENT_FRONTMATTER_SCHEMA,
+	OK_OUTPUT_SCHEMA,
+	STAGE_STATE_FIELDS,
+	STAGE_STATE_SCHEMA,
+	UNIT_FRONTMATTER_SCHEMA,
+	validateIntentFrontmatterSchema as validateIntentSchema,
+	validateUnitFrontmatterSchema as validateUnitSchema,
+} from "./state/schemas/index.js"
 
-// AJV-compiled validator — instantiated once at module load. Runs on every
-// haiku_unit_write call. Returns boolean + populates `validateUnitSchema.errors`.
-const ajv = new Ajv({ allErrors: true, strict: false })
-const validateUnitSchema = ajv.compile(UNIT_FRONTMATTER_SCHEMA)
-
-// Field-name lists used by tool descriptions and dispatch contracts.
-// These read DIRECTLY from the schema — JSONSchema is the SSOT, these
-// are just convenience accessors so callers don't repeat the path.
-export const AGENT_AUTHORABLE_UNIT_FIELDS = Object.keys(
-	UNIT_FRONTMATTER_SCHEMA.properties,
-) as ReadonlyArray<string>
-
-export const FSM_DRIVEN_UNIT_FIELDS = UNIT_FRONTMATTER_SCHEMA.propertyNames.not
-	.enum as ReadonlyArray<string>
-
-// ── Feedback frontmatter — reference (no input schema) ────────────────────
-//
-// haiku_feedback_write is body-only — there is no input schema for FB
-// frontmatter to be the SSOT for. These constants are pure documentation,
-// consumed only by the fix-loop dispatch contract so fix-mode hats know
-// what FM fields they'll see when reading FB context. If a future tool
-// needs to accept FB FM input, it should bring its own schema and these
-// constants would derive from it (matching the unit pattern above).
-
-export const FSM_DRIVEN_FB_FIELDS = [
-	"status",
-	"hat",
-	"bolt",
-	"iterations",
-	"closed_by",
-	"integrator_attempts",
-	"replies",
-	"triaged_at",
-] as const
-
-export const CREATE_TIME_FB_FIELDS = [
-	"title",
-	"origin",
-	"author",
-	"author_type",
-	"created_at",
-	"iteration",
-	"visit",
-	"source_ref",
-	"resolution",
-	"attachment",
-	"inline_anchor",
-] as const
-
-// ── Intent frontmatter — SCHEMA IS THE SSOT ───────────────────────────────
-//
-// Mirrors plugin/schemas/intent.schema.json. AJV-validated when an agent
-// calls haiku_intent_set; the `propertyNames.not.enum` list rejects
-// engine-only fields the workflow engine owns (status, active_stage,
-// phase, completion_review_*, completed_at, etc).
-//
-// This is parallel to UNIT_FRONTMATTER_SCHEMA — same SSOT pattern.
-
-export const INTENT_FRONTMATTER_SCHEMA = {
-	type: "object",
-	properties: {
-		title: { type: "string", minLength: 1 },
-		mode: {
-			type: "string",
-			enum: ["continuous", "discrete", "autopilot", "discrete-hybrid"],
-		},
-		skip_stages: { type: "array", items: { type: "string" } },
-		intent_completion_review: { type: "boolean" },
-		// `studio` is set on creation by haiku_select_studio and is
-		// immutable thereafter — accepted by AJV (so tests building
-		// fixtures don't fail) but rejected by the haiku_intent_set
-		// handler with a dedicated `intent_field_immutable` code.
-		studio: { type: "string" },
-	},
-	propertyNames: {
-		not: {
-			enum: [
-				// Engine-managed lifecycle fields
-				"status",
-				"active_stage",
-				"phase",
-				"started_at",
-				"completed_at",
-				"created_at",
-				// Completion-review state machine
-				"completion_review_dispatched",
-				"completion_review_skipped",
-				"completion_review_entered_at",
-				"completion_review_dispatched_at",
-				// Engine-derived collections
-				"stages",
-				"composite",
-				"intent_reviewed",
-				// Archive lifecycle (toggle via haiku_intent_archive / _unarchive)
-				"archived",
-				"archived_at",
-				// Parent-link (creation-time only)
-				"follows",
-				// Legacy alias for mode
-				"autopilot",
-			],
-		},
-	},
-	additionalProperties: true,
-}
-
-const validateIntentSchema = ajv.compile(INTENT_FRONTMATTER_SCHEMA)
-
-export const AGENT_AUTHORABLE_INTENT_FIELDS = Object.keys(
-	INTENT_FRONTMATTER_SCHEMA.properties,
-) as ReadonlyArray<string>
-
-export const FSM_DRIVEN_INTENT_FIELDS = INTENT_FRONTMATTER_SCHEMA.propertyNames
-	.not.enum as ReadonlyArray<string>
-
-const INTENT_IMMUTABLE_FIELDS: ReadonlyArray<string> = ["studio"]
-
-// ── Stage state.json — SCHEMA IS THE SSOT ─────────────────────────────────
-//
-// Mirrors plugin/schemas/stage.schema.json. Stage state is entirely
-// engine-managed — there are no agent-authorable fields. The schema
-// exists so haiku_stage_set can reject every call with a clear
-// `stage_field_engine_only` code instead of silently accepting writes
-// that bypass workflow lifecycle invariants. The handler validates
-// structure before writing so future engine-internal callers (or
-// careful manual recovery flows) get type-safety.
-
-export const STAGE_STATE_SCHEMA = {
-	type: "object",
-	properties: {
-		stage: { type: "string" },
-		status: {
-			type: "string",
-			enum: ["pending", "active", "completed", "blocked"],
-		},
-		phase: {
-			type: "string",
-			enum: ["", "elaborate", "execute", "review", "gate"],
-		},
-		started_at: { type: ["string", "null"] },
-		completed_at: { type: ["string", "null"] },
-		gate_entered_at: { type: ["string", "null"] },
-		gate_outcome: { type: ["string", "null"] },
-		visits: { type: "integer", minimum: 0 },
-		iterations: { type: "array" },
-		elaboration_turns: { type: "integer", minimum: 0 },
-		decision_log: { type: "array" },
-	},
-	additionalProperties: true,
-}
-
-export const STAGE_STATE_FIELDS = Object.keys(
-	STAGE_STATE_SCHEMA.properties,
-) as ReadonlyArray<string>
+import { stateAjv as stateAjvForErrorText } from "./state/schemas/_ajv.js"
+import {
+	AGENT_AUTHORABLE_INTENT_FIELDS,
+	AGENT_AUTHORABLE_UNIT_FIELDS,
+	CREATE_TIME_FB_FIELDS,
+	FSM_DRIVEN_FB_FIELDS,
+	FSM_DRIVEN_INTENT_FIELDS,
+	FSM_DRIVEN_UNIT_FIELDS,
+	HAIKU_BACKLOG_INPUT_SCHEMA,
+	HAIKU_CAPACITY_INPUT_SCHEMA,
+	HAIKU_DECISION_RECORD_INPUT_SCHEMA,
+	HAIKU_EMPTY_INPUT_SCHEMA,
+	HAIKU_FEEDBACK_ADVANCE_HAT_INPUT_SCHEMA,
+	HAIKU_FEEDBACK_DELETE_INPUT_SCHEMA,
+	HAIKU_FEEDBACK_INPUT_SCHEMA,
+	HAIKU_FEEDBACK_LIST_INPUT_SCHEMA,
+	HAIKU_FEEDBACK_MOVE_INPUT_SCHEMA,
+	HAIKU_FEEDBACK_READ_INPUT_SCHEMA,
+	HAIKU_FEEDBACK_REJECT_HAT_INPUT_SCHEMA,
+	HAIKU_FEEDBACK_REJECT_INPUT_SCHEMA,
+	HAIKU_FEEDBACK_UPDATE_INPUT_SCHEMA,
+	HAIKU_FEEDBACK_WRITE_INPUT_SCHEMA,
+	HAIKU_INTENT_GET_INPUT_SCHEMA,
+	HAIKU_INTENT_LIST_INPUT_SCHEMA,
+	HAIKU_INTENT_SET_INPUT_SCHEMA,
+	HAIKU_KNOWLEDGE_LIST_INPUT_SCHEMA,
+	HAIKU_KNOWLEDGE_READ_INPUT_SCHEMA,
+	HAIKU_RECONCILIATION_ACKNOWLEDGE_INPUT_SCHEMA,
+	HAIKU_REFLECT_INPUT_SCHEMA,
+	HAIKU_RELEASE_NOTES_INPUT_SCHEMA,
+	HAIKU_REPAIR_INPUT_SCHEMA,
+	HAIKU_REVIEW_INPUT_SCHEMA,
+	HAIKU_REVIEW_OPEN_INPUT_SCHEMA,
+	HAIKU_SEED_INPUT_SCHEMA,
+	HAIKU_SETTINGS_GET_INPUT_SCHEMA,
+	HAIKU_SETTINGS_SET_INPUT_SCHEMA,
+	HAIKU_STAGE_GET_INPUT_SCHEMA,
+	HAIKU_STAGE_SET_INPUT_SCHEMA,
+	HAIKU_STUDIO_GET_INPUT_SCHEMA,
+	HAIKU_STUDIO_STAGE_GET_INPUT_SCHEMA,
+	HAIKU_UNIT_ADVANCE_HAT_INPUT_SCHEMA,
+	HAIKU_UNIT_DELETE_INPUT_SCHEMA,
+	HAIKU_UNIT_INCREMENT_BOLT_INPUT_SCHEMA,
+	HAIKU_UNIT_LIST_INPUT_SCHEMA,
+	HAIKU_UNIT_READ_INPUT_SCHEMA,
+	HAIKU_UNIT_REJECT_HAT_INPUT_SCHEMA,
+	HAIKU_UNIT_SET_INPUT_SCHEMA,
+	HAIKU_UNIT_START_INPUT_SCHEMA,
+	HAIKU_UNIT_WRITE_INPUT_SCHEMA,
+	INTENT_IMMUTABLE_FIELDS,
+	UNIT_FRONTMATTER_SCHEMA,
+	validateHaikuBacklogInputSchema,
+	validateHaikuCapacityInputSchema,
+	validateHaikuDecisionRecordInputSchema,
+	validateHaikuEmptyInputSchema,
+	validateHaikuFeedbackAdvanceHatInputSchema,
+	validateHaikuFeedbackDeleteInputSchema,
+	validateHaikuFeedbackInputSchema,
+	validateHaikuFeedbackListInputSchema,
+	validateHaikuFeedbackMoveInputSchema,
+	validateHaikuFeedbackReadInputSchema,
+	validateHaikuFeedbackRejectHatInputSchema,
+	validateHaikuFeedbackRejectInputSchema,
+	validateHaikuFeedbackUpdateInputSchema,
+	validateHaikuFeedbackWriteInputSchema,
+	validateHaikuIntentGetInputSchema,
+	validateHaikuIntentListInputSchema,
+	validateHaikuIntentSetInputSchema,
+	validateHaikuKnowledgeListInputSchema,
+	validateHaikuKnowledgeReadInputSchema,
+	validateHaikuReconciliationAcknowledgeInputSchema,
+	validateHaikuReflectInputSchema,
+	validateHaikuReleaseNotesInputSchema,
+	validateHaikuRepairInputSchema,
+	validateHaikuReviewInputSchema,
+	validateHaikuSeedInputSchema,
+	validateHaikuSettingsGetInputSchema,
+	validateHaikuSettingsSetInputSchema,
+	validateHaikuStageGetInputSchema,
+	validateHaikuStageSetInputSchema,
+	validateHaikuStudioGetInputSchema,
+	validateHaikuStudioStageGetInputSchema,
+	validateHaikuUnitAdvanceHatInputSchema,
+	validateHaikuUnitDeleteInputSchema,
+	validateHaikuUnitIncrementBoltInputSchema,
+	validateHaikuUnitListInputSchema,
+	validateHaikuUnitReadInputSchema,
+	validateHaikuUnitRejectHatInputSchema,
+	validateHaikuUnitSetInputSchema,
+	validateHaikuUnitStartInputSchema,
+	validateHaikuUnitWriteInputSchema,
+	validateIntentFrontmatterSchema as validateIntentSchema,
+	validateUnitFrontmatterSchema as validateUnitSchema,
+} from "./state/schemas/index.js"
+import {
+	jsonSchemaOf,
+	validateToolInput,
+} from "./state/schemas/inputs/_validate.js"
 
 // ── Settings.yml — schema loaded from plugin/schemas/settings.schema.json ─
 //
@@ -3705,44 +3582,6 @@ function validateSettingsCandidate(data: unknown): boolean {
 }
 function settingsValidationErrors(): unknown[] {
 	return _validateSettingsErrors ? _validateSettingsErrors() : []
-}
-
-// ── Output schema fragments (reused across tool defs) ─────────────────────
-//
-// Per MCP spec 2025-06-18 §Tool Result, when a tool declares an
-// outputSchema, the server MUST emit `structuredContent` matching it.
-// Tools below either compose these fragments or define their own shape.
-// The `reply()` helper inside handleStateTool wraps a payload as both
-// stringified text content (backwards compat) and structuredContent.
-
-// Standard error envelope. Returned (with isError: true) when a handler
-// rejects the call for a structured reason. The `error` field is a
-// stable named code (e.g. `frontmatter_validation_failed`,
-// `feedback_not_found`, `lifecycle_violation`); `message` is human-
-// readable remediation guidance.
-export const ERROR_OUTPUT_SCHEMA = {
-	type: "object",
-	properties: {
-		error: { type: "string", description: "Stable named error code." },
-		message: {
-			type: "string",
-			description: "Human-readable remediation guidance.",
-		},
-	},
-	required: ["error", "message"],
-	additionalProperties: true,
-}
-
-// Standard ok envelope for confirmation-style writes. Tools that mutate
-// state and return only a confirmation message use this.
-export const OK_OUTPUT_SCHEMA = {
-	type: "object",
-	properties: {
-		ok: { type: "boolean", const: true },
-		message: { type: "string" },
-	},
-	required: ["ok", "message"],
-	additionalProperties: true,
 }
 
 /**
@@ -4256,6 +4095,39 @@ let _runNext:
 	| null = null
 export function setRunNextHandler(handler: typeof _runNext): void {
 	_runNext = handler
+}
+
+/**
+ * Callback for synthesizing a per-unit `continue_unit` dispatch when a
+ * unit advances mid-wave. The unit (not the hat) holds its wave slot,
+ * so when its current hat finishes the parent should fire the next hat
+ * for THIS unit immediately — without round-tripping through
+ * `haiku_run_next` (which would return a wave-wide `continue_units`
+ * covering siblings whose subagents are still in flight).
+ *
+ * The handler synthesizes the action, calls `buildRunInstructions`
+ * internally so the rendered prompt is written to a tmpfile and
+ * `prompt_file` is stamped onto the action, and returns the mutated
+ * action. `advance_hat` then writes that action into the result file
+ * the subagent points the parent at.
+ *
+ * Registered by orchestrator.ts at module load. Set to `null` if
+ * orchestrator hasn't loaded yet (defensive — caller falls back to a
+ * plaintext "advanced" message).
+ */
+let _buildContinueDispatch:
+	| ((
+			slug: string,
+			stage: string,
+			unit: string,
+			hat: string,
+			bolt: number,
+	  ) => { action: string; [key: string]: unknown })
+	| null = null
+export function setBuildContinueDispatchHandler(
+	handler: typeof _buildContinueDispatch,
+): void {
+	_buildContinueDispatch = handler
 }
 
 /** Resolve the active stage for an intent from its frontmatter */
@@ -5815,16 +5687,26 @@ export function listInstalledSkills(): InstalledSkill[] {
 
 // ── Tool definitions ───────────────────────────────────────────────────────
 
-export const stateToolDefs = [
+/** Public shape of a state-tool definition entry. Declared explicitly
+ *  so the `stateToolDefs` array's exported type doesn't leak
+ *  TypeBox-branded internal types (Kind / OptionalKind / etc.) from
+ *  the schemas referenced via `inputSchema:`. The MCP SDK accepts a
+ *  plain `Record<string, unknown>` for the schema slots, so widening
+ *  via `jsonSchemaOf()` at each call site keeps the runtime correct
+ *  while this annotation keeps the type clean. */
+export interface StateToolDef {
+	name: string
+	description: string
+	inputSchema: Record<string, unknown>
+	outputSchema?: Record<string, unknown>
+}
+
+export const stateToolDefs: StateToolDef[] = [
 	// Intent tools
 	{
 		name: "haiku_intent_get",
 		description: "Read a field from an intent's frontmatter",
-		inputSchema: {
-			type: "object" as const,
-			properties: { slug: { type: "string" }, field: { type: "string" } },
-			required: ["slug", "field"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_INTENT_GET_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -5847,16 +5729,7 @@ export const stateToolDefs = [
 	{
 		name: "haiku_intent_list",
 		description: "List all intents in the workspace",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				include_archived: {
-					type: "boolean",
-					description:
-						"When true, include archived intents in the result and add an 'archived' field to each response object. Defaults to false.",
-				},
-			},
-		},
+		inputSchema: jsonSchemaOf(HAIKU_INTENT_LIST_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -5882,15 +5755,7 @@ export const stateToolDefs = [
 	{
 		name: "haiku_stage_get",
 		description: "Read a field from a stage's state",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string" },
-				stage: { type: "string" },
-				field: { type: "string" },
-			},
-			required: ["intent", "stage", "field"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_STAGE_GET_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -5911,40 +5776,8 @@ export const stateToolDefs = [
 	// state-integrity, etc.) but agents can no longer reach it through MCP.
 	{
 		name: "haiku_unit_set",
-		description: `Set a field in a unit's frontmatter. \`value\` MUST match the field's declared type in the unit FM schema — array for \`inputs:\` / \`outputs:\` / \`depends_on:\` / \`closes:\` / \`quality_gates:\`, string for \`title:\` / \`model:\`. The handler validates per-field at runtime and rejects mismatches with \`field_type_mismatch\` so type drift never lands in YAML. Field-type contract (from UNIT_FRONTMATTER_SCHEMA): ${Object.entries(
-			UNIT_FRONTMATTER_SCHEMA.properties as Record<
-				string,
-				{ type?: string | string[] }
-			>,
-		)
-			.map(([k, v]) => {
-				const t = Array.isArray(v.type) ? v.type.join("|") : v.type
-				return `\`${k}\` → ${t}`
-			})
-			.join(", ")}.`,
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string" },
-				stage: { type: "string" },
-				unit: { type: "string" },
-				field: {
-					type: "string",
-					description: `Frontmatter field name. Agent-authorable fields: ${AGENT_AUTHORABLE_UNIT_FIELDS.join(", ")}. FSM-driven fields (${FSM_DRIVEN_UNIT_FIELDS.join(", ")}) are workflow engine-owned and rejected here.`,
-				},
-				value: {
-					// Multi-type so the MCP advertises every shape the tool can
-					// accept; the handler validates per-field against the unit
-					// FM schema and rejects mismatches. An agent setting an
-					// array field MUST pass an array — JSON-stringified arrays
-					// are no longer silently parsed.
-					type: ["string", "array", "number", "boolean", "null", "object"],
-					description:
-						"The field's new value. MUST match the field's declared type in UNIT_FRONTMATTER_SCHEMA — pass an array for array-typed fields, a string for string-typed, etc. Mismatches return `field_type_mismatch` with the expected type so the agent can correct the call. Native types only; stringified JSON is rejected.",
-				},
-			},
-			required: ["intent", "stage", "unit", "field", "value"],
-		},
+		description: `Set a field in a unit's frontmatter. \`value\` MUST match the field's declared type in the unit FM schema — array for \`inputs:\` / \`outputs:\` / \`depends_on:\` / \`closes:\` / \`quality_gates:\`, string for \`title:\` / \`model:\`. The handler validates per-field at runtime and rejects mismatches with \`field_type_mismatch\` so type drift never lands in YAML. Agent-authorable fields: ${AGENT_AUTHORABLE_UNIT_FIELDS.join(", ")}. FSM-driven (rejected): ${FSM_DRIVEN_UNIT_FIELDS.join(", ")}.`,
+		inputSchema: jsonSchemaOf(HAIKU_UNIT_SET_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -5963,11 +5796,7 @@ export const stateToolDefs = [
 	{
 		name: "haiku_unit_list",
 		description: "List all units in a stage with their status",
-		inputSchema: {
-			type: "object" as const,
-			properties: { intent: { type: "string" }, stage: { type: "string" } },
-			required: ["intent", "stage"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_UNIT_LIST_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -5996,11 +5825,7 @@ export const stateToolDefs = [
 		name: "haiku_unit_start",
 		description:
 			"Mark a unit as started. The system resolves the stage and first hat internally.",
-		inputSchema: {
-			type: "object" as const,
-			properties: { intent: { type: "string" }, unit: { type: "string" } },
-			required: ["intent", "unit"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_UNIT_START_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6017,11 +5842,7 @@ export const stateToolDefs = [
 		name: "haiku_unit_advance_hat",
 		description:
 			"Advance a unit to the next hat in the sequence. When called on the last hat, auto-completes the unit and progresses the workflow engine. The system resolves the current hat, next hat, and stage internally.",
-		inputSchema: {
-			type: "object" as const,
-			properties: { intent: { type: "string" }, unit: { type: "string" } },
-			required: ["intent", "unit"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_UNIT_ADVANCE_HAT_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6055,19 +5876,7 @@ export const stateToolDefs = [
 		name: "haiku_unit_reject_hat",
 		description:
 			"Reject the current hat's work — moves back to the previous hat and increments bolt. Pass `reason` so the unit's iteration history records why the hat was rejected (what failed, which criterion wasn't met).",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string" },
-				unit: { type: "string" },
-				reason: {
-					type: "string",
-					description:
-						"Short explanation of why the current hat's output was rejected (e.g. 'touch targets <44px on mobile', 'missing dark-mode tokens'). Recorded in the unit's iterations history.",
-				},
-			},
-			required: ["intent", "unit"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_UNIT_REJECT_HAT_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6086,15 +5895,7 @@ export const stateToolDefs = [
 	{
 		name: "haiku_unit_increment_bolt",
 		description: "Increment a unit's bolt counter (new iteration cycle)",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string" },
-				stage: { type: "string" },
-				unit: { type: "string" },
-			},
-			required: ["intent", "stage", "unit"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_UNIT_INCREMENT_BOLT_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6108,15 +5909,7 @@ export const stateToolDefs = [
 		name: "haiku_unit_read",
 		description:
 			"Read a unit's body content (and title). Returns ONLY the body and title — frontmatter is workflow engine-internal and not exposed to agents per the architecture's FM-is-workflow engine-only rule. Use this when a hat needs to read another unit's substance (sibling references, prior-stage knowledge artifacts) without interpreting FM. Returns { title, body } as JSON.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string" },
-				stage: { type: "string" },
-				unit: { type: "string" },
-			},
-			required: ["intent", "stage", "unit"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_UNIT_READ_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6138,15 +5931,7 @@ export const stateToolDefs = [
 		name: "haiku_unit_delete",
 		description:
 			"Delete a unit. ONLY permitted when the unit's status is `pending`. Active and completed units are immutable per the forward-only lifecycle rule — once a unit has informed downstream work, deleting it would silently invalidate that work. Returns an error naming the rule when called against a non-pending unit.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string" },
-				stage: { type: "string" },
-				unit: { type: "string" },
-			},
-			required: ["intent", "stage", "unit"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_UNIT_DELETE_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6165,32 +5950,7 @@ export const stateToolDefs = [
 Allowed FM fields (agent-authorable): ${AGENT_AUTHORABLE_UNIT_FIELDS.join(", ")} — plus any stage-specific fields the per-stage \`phases/ELABORATION.md\` documents.
 
 Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidden\`): ${FSM_DRIVEN_UNIT_FIELDS.join(", ")}.`,
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string" },
-				stage: { type: "string" },
-				unit: {
-					type: "string",
-					description:
-						"Unit name without `.md` extension, e.g. `unit-01-foo`. Convention: `unit-NN-slug` with zero-padded NN.",
-				},
-				body: {
-					type: "string",
-					description:
-						"Full markdown body of the unit. Must be substantive (no placeholders like TBD, TODO, '...').",
-				},
-				// Schema is the SSOT (defined in UNIT_FRONTMATTER_SCHEMA).
-				// AJV validates input against it on every call; this
-				// inputSchema reference is what strict MCP clients use to
-				// reject malformed calls before they go out.
-				frontmatter: {
-					...UNIT_FRONTMATTER_SCHEMA,
-					description: `Optional frontmatter. Allowed: ${AGENT_AUTHORABLE_UNIT_FIELDS.join(", ")}, plus stage-specific. Forbidden (workflow-driven, validator returns \`fsm_field_forbidden\`): ${FSM_DRIVEN_UNIT_FIELDS.join(", ")}.`,
-				},
-			},
-			required: ["intent", "stage", "unit", "body"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_UNIT_WRITE_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6235,23 +5995,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_reconciliation_acknowledge",
 		description:
 			"Acknowledge upstream-artifact divergences detected by the pre-elaboration reconciliation gate. Records the decision in the stage's decision_log so the gate falls through on the next tick. Use this when the divergence is intentional (e.g. the upstream artifacts describe different surfaces that genuinely need different names). When the divergence is unintentional, edit the upstream artifacts to reconcile and re-run haiku_run_next instead — do NOT acknowledge to skip the work.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string" },
-				stage: {
-					type: "string",
-					description:
-						"Stage name. Defaults to the intent's active_stage when omitted.",
-				},
-				rationale: {
-					type: "string",
-					description:
-						"Rationale (≥10 chars) explaining why this divergence is intentional and acceptable.",
-				},
-			},
-			required: ["intent", "rationale"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_RECONCILIATION_ACKNOWLEDGE_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6267,50 +6011,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_decision_record",
 		description:
 			"Record an elaboration decision in the stage's decision_log, OR declare 'no architectural decisions in scope' for the stage. Used in collaborative-mode stages to track meaningful human-AI knowledge-unification moments instead of counting interaction turns. Each entry is an architectural choice the user picked between options, OR a choice the agent made and surfaced for veto-style approval. Padding questions don't count.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string" },
-				stage: {
-					type: "string",
-					description:
-						"Stage name. Defaults to the intent's active_stage when omitted.",
-				},
-				no_decisions: {
-					type: "boolean",
-					description:
-						"When true, declare that no architectural decisions are in scope for this stage. `rationale` (≥10 chars) is required. The agent should use this honestly when the work is purely conventional with no real choices to make.",
-				},
-				decision: {
-					type: "string",
-					description:
-						"Short title of the decision being recorded (required unless no_decisions=true). Example: 'Authentication strategy'.",
-				},
-				options: {
-					type: "array",
-					items: { type: "string" },
-					description:
-						"≥2 concrete alternatives considered (required unless no_decisions=true). A 'decision' with only one option isn't a decision — it's just doing the work.",
-				},
-				choice: {
-					type: "string",
-					description:
-						"The chosen option (required unless no_decisions=true). Should match one of the entries in `options`.",
-				},
-				source: {
-					type: "string",
-					enum: ["user", "autonomous-acknowledged"],
-					description:
-						"Who made the call. 'user' = the user picked between options the agent presented. 'autonomous-acknowledged' = the agent chose and surfaced the choice for veto-style approval (the user reviewed and didn't push back).",
-				},
-				rationale: {
-					type: "string",
-					description:
-						"Optional for decisions (recommended for future-reader provenance); required when no_decisions=true.",
-				},
-			},
-			required: ["intent"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_DECISION_RECORD_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6324,11 +6025,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 	{
 		name: "haiku_knowledge_list",
 		description: "List knowledge artifacts for an intent",
-		inputSchema: {
-			type: "object" as const,
-			properties: { intent: { type: "string" } },
-			required: ["intent"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_KNOWLEDGE_LIST_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6340,11 +6037,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 	{
 		name: "haiku_knowledge_read",
 		description: "Read a knowledge artifact",
-		inputSchema: {
-			type: "object" as const,
-			properties: { intent: { type: "string" }, name: { type: "string" } },
-			required: ["intent", "name"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_KNOWLEDGE_READ_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6361,7 +6054,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		description:
 			"List all Claude Code skills (slash commands) installed in the user's environment — plugin root, project-local (.claude/skills/), and global (~/.claude/plugins/*/skills/). " +
 			"The elaborator calls this to annotate units with `applicable_skills:` frontmatter; hat subagent prompts surface those skills automatically.",
-		inputSchema: { type: "object" as const, properties: {} },
+		inputSchema: jsonSchemaOf(HAIKU_EMPTY_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6394,7 +6087,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_studio_list",
 		description:
 			"List all available studios with their description, stages, and category. Project-level studios (.haiku/studios/) override built-in ones on name collision.",
-		inputSchema: { type: "object" as const, properties: {} },
+		inputSchema: jsonSchemaOf(HAIKU_EMPTY_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6421,11 +6114,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_studio_get",
 		description:
 			"Read a studio's STUDIO.md — returns frontmatter fields and body text. Resolves project-level override first, then built-in.",
-		inputSchema: {
-			type: "object" as const,
-			properties: { studio: { type: "string" } },
-			required: ["studio"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_STUDIO_GET_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6450,11 +6139,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_studio_stage_get",
 		description:
 			"Read a stage's STAGE.md from a studio — returns frontmatter fields (hats, review, requires, produces) and body text. Resolves project-level override first, then built-in.",
-		inputSchema: {
-			type: "object" as const,
-			properties: { studio: { type: "string" }, stage: { type: "string" } },
-			required: ["studio", "stage"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_STUDIO_STAGE_GET_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6473,17 +6158,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_settings_get",
 		description:
 			"Read a field from .haiku/settings.yml (e.g. studio, stack.compute, providers, workspace, default_announcements, review_agents, operations_runtime). Returns empty string if not set.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				field: {
-					type: "string",
-					description:
-						"Dot-separated path (e.g. 'studio', 'stack.compute', 'review_agents')",
-				},
-			},
-			required: ["field"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_SETTINGS_GET_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6498,22 +6173,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_settings_set",
 		description:
 			"Set a top-level field in .haiku/settings.yml. Validated against plugin/schemas/settings.schema.json. Pass `null` to delete a field. Use this instead of editing the file directly — Edit/Write/MultiEdit on .haiku/settings.yml is denied by the workflow-fields hook.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				field: {
-					type: "string",
-					description:
-						"Top-level field name (e.g. 'studio', 'mockup_format', 'visual_review'). Nested paths are not supported — pass the whole top-level object to replace it.",
-				},
-				value: {
-					type: ["string", "array", "number", "boolean", "null", "object"],
-					description:
-						"New value. Must validate against the field's declared shape in settings.schema.json. Pass null to delete the field.",
-				},
-			},
-			required: ["field", "value"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_SETTINGS_SET_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6527,22 +6187,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 	{
 		name: "haiku_intent_set",
 		description: `Set a frontmatter field on an intent's intent.md. Validated against INTENT_FRONTMATTER_SCHEMA. Agent-authorable fields: ${AGENT_AUTHORABLE_INTENT_FIELDS.join(", ")} (note 'studio' is immutable post-creation). Engine-only fields (${FSM_DRIVEN_INTENT_FIELDS.join(", ")}) are rejected — those are mutated by the workflow engine itself. Use this instead of editing intent.md directly — Edit/Write/MultiEdit on intent.md is denied by the workflow-fields hook.`,
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string" },
-				field: {
-					type: "string",
-					description: `Frontmatter field name. Allowed: ${AGENT_AUTHORABLE_INTENT_FIELDS.filter((f) => !INTENT_IMMUTABLE_FIELDS.includes(f)).join(", ")}.`,
-				},
-				value: {
-					type: ["string", "array", "number", "boolean", "null", "object"],
-					description:
-						"New value. Must match the field's declared type in INTENT_FRONTMATTER_SCHEMA. Mismatches return `intent_field_type_mismatch`.",
-				},
-			},
-			required: ["intent", "field", "value"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_INTENT_SET_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6558,22 +6203,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_stage_set",
 		description:
 			"Set a field on a stage's state.json. Engine-internal — every field in STAGE_STATE_SCHEMA is workflow-managed (status, phase, started_at, completed_at, gate_entered_at, gate_outcome, visits, iterations, etc). Agent calls are rejected with `stage_field_engine_only`. Reserved for future engine-internal routing and operator break-glass paths.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string" },
-				stage: { type: "string" },
-				field: {
-					type: "string",
-					description: `Stage state field. Every field is engine-managed; agent calls are rejected. Schema fields: ${STAGE_STATE_FIELDS.join(", ")}.`,
-				},
-				value: {
-					type: ["string", "array", "number", "boolean", "null", "object"],
-					description: "New value. Must match the field's declared type.",
-				},
-			},
-			required: ["intent", "stage", "field", "value"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_STAGE_SET_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6591,7 +6221,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_dashboard",
 		description:
 			"Returns a formatted dashboard of all intents showing status, studio, active stage, mode, and per-stage status tables.",
-		inputSchema: { type: "object" as const, properties: {} },
+		inputSchema: jsonSchemaOf(HAIKU_EMPTY_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6607,15 +6237,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_capacity",
 		description:
 			"Returns a capacity report grouped by studio — completed/active counts and median bolt counts per stage.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				studio: {
-					type: "string",
-					description: "Optional: filter to a specific studio",
-				},
-			},
-		},
+		inputSchema: jsonSchemaOf(HAIKU_CAPACITY_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6635,11 +6257,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_reflect",
 		description:
 			"Returns detailed reflection data for an intent — per-stage summaries, unit completion counts, bolt counts, and analysis instructions.",
-		inputSchema: {
-			type: "object" as const,
-			properties: { intent: { type: "string" } },
-			required: ["intent"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_REFLECT_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: { message: { type: "string" } },
@@ -6649,15 +6267,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_review",
 		description:
 			"Runs a git diff against main/upstream and returns formatted pre-delivery code review instructions with diff, stats, review guidelines, and review-agent config.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: {
-					type: "string",
-					description: "Optional: intent slug for context",
-				},
-			},
-		},
+		inputSchema: jsonSchemaOf(HAIKU_REVIEW_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: { message: { type: "string" } },
@@ -6667,21 +6277,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_review_open",
 		description:
 			'Open an ad-hoc review pane in the browser for the active intent and BLOCK until the reviewer clicks Done or Request Changes (or the pane times out at 30min). The UI swaps Approve for Done/Close, shows an "Ad-hoc review" badge, and never mutates workflow engine state on its own. Return value is a concrete next-step instruction: on Done the tool returns "no changes requested"; on Request Changes it returns a nudge to call haiku_run_next so the durable feedback routes through the normal fix-loop / revisit path.',
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: {
-					type: "string",
-					description:
-						"Optional intent slug. Defaults to the sole active intent (errors if ambiguous).",
-				},
-				stage: {
-					type: "string",
-					description:
-						"Optional stage name to land the reviewer on. Defaults to the intent's active_stage.",
-				},
-			},
-		},
+		inputSchema: jsonSchemaOf(HAIKU_REVIEW_OPEN_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: { message: { type: "string" } },
@@ -6691,21 +6287,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_backlog",
 		description:
 			"Manage the backlog: list items, add new items, review items interactively, or promote items to intents.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				action: {
-					type: "string",
-					enum: ["list", "add", "review", "promote"],
-					description: "Defaults to `list`.",
-				},
-				description: {
-					type: "string",
-					description:
-						"Description for the new backlog item (used with action=add).",
-				},
-			},
-		},
+		inputSchema: jsonSchemaOf(HAIKU_BACKLOG_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6725,16 +6307,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_seed",
 		description:
 			"Manage seeds (future ideas): list by status, plant a new seed, or check planted seeds for trigger conditions.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				action: {
-					type: "string",
-					enum: ["list", "plant", "check"],
-					description: "Defaults to `list`.",
-				},
-			},
-		},
+		inputSchema: jsonSchemaOf(HAIKU_SEED_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: { message: { type: "string" } },
@@ -6745,45 +6318,11 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_feedback",
 		description:
 			'Create a feedback item for an intent. Writes a markdown file with frontmatter tracking status, origin, and author. Omit `stage` to log an intent-scope finding (used by the studio-level pre-intent-completion review layer). To request a stage rewind from the agent side (planner blocked, upstream gap, etc.), pass `stage: "<earlier-stage>"` and `resolution: "stage_revisit"` — the next `haiku_run_next` will route through the pre-tick gate and emit a `revisited` action. Revisit is a property of run_next mechanics, not a separate verb.',
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string", description: "Intent slug" },
-				stage: {
-					type: "string",
-					description:
-						"Stage name. Omit (or pass empty) to log an intent-scope finding from the studio-level review layer.",
-				},
-				title: {
-					type: "string",
-					description: "Short title for the feedback item (max 120 chars)",
-				},
-				body: {
-					type: "string",
-					description: "Markdown body describing the finding",
-				},
-				origin: {
-					type: "string",
-					description:
-						"Source: adversarial-review | studio-review | external-pr | external-mr | user-visual | user-chat | user-question | user-revisit | agent (default: agent)",
-				},
-				source_ref: {
-					type: "string",
-					description:
-						"Optional reference — PR URL, review agent name, annotation ID",
-				},
-				author: {
-					type: "string",
-					description: "Who created it (default: agent)",
-				},
-				resolution: {
-					type: "string",
-					description:
-						"Optional routing hint set at creation time. One of: `question` (reply, no code delta), `inline_fix` (one fix_hats bolt against this finding), `stage_revisit` (the next pre-tick gate reroutes the cursor to this stage's elaborate phase). Agent-authored stage_revisit FBs are how the agent expresses 'I need to go back' — write the FB at the target stage, set resolution=stage_revisit, call haiku_run_next.",
-				},
-			},
-			required: ["intent", "title", "body"],
-		},
+		// SCHEMA IS THE SSOT — defined in state/schemas/feedback.ts
+		// (HAIKU_FEEDBACK_INPUT_SCHEMA). The handler runs the same
+		// schema through AJV at entry so the MCP-runtime check and the
+		// engine's stable error codes can never drift.
+		inputSchema: jsonSchemaOf(HAIKU_FEEDBACK_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6805,36 +6344,13 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_feedback_update",
 		description:
 			"Update mutable fields on an existing feedback item. Agents cannot close human-authored feedback. Omit `stage` for intent-scope feedback.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string", description: "Intent slug" },
-				stage: {
-					type: "string",
-					description: "Stage name. Omit for intent-scope feedback.",
-				},
-				feedback_id: {
-					type: "string",
-					description: "FB-NN identifier or numeric prefix",
-				},
-				status: {
-					type: "string",
-					description:
-						"New status: pending | fixing | addressed | answered | closed | rejected",
-				},
-				closed_by: {
-					type: "string",
-					description:
-						"Identifier of who/what closed the feedback. For stage feedback: the unit slug whose work the feedback-assessor validated. For fix-loop closures: `fix-loop:<FB-ID>:bolt-<N>`. For intent-scope closures: `intent-fix:<FB-ID>:bolt-<N>`.",
-				},
-				resolution: {
-					type: "string",
-					description:
-						"Routing hint for the feedback resolver. One of: `question` (reply, no code delta), `inline_fix` (one fix_hats bolt against this finding), `stage_revisit` (re-loop the whole stage). Pass `null` / empty to clear. For cross-stage routing, call `haiku_feedback_move` to relocate the FB instead.",
-				},
-			},
-			required: ["intent", "feedback_id"],
-		},
+		// SCHEMA IS THE SSOT — defined in state/schemas/feedback.ts
+		// (HAIKU_FEEDBACK_UPDATE_INPUT_SCHEMA). Strict
+		// `additionalProperties: false` rejects any FSM-driven field
+		// (hat, bolt, iterations, integrator_attempts, replies,
+		// triaged_at) at the gate — agents may only touch the
+		// mutable fields the schema lists.
+		inputSchema: jsonSchemaOf(HAIKU_FEEDBACK_UPDATE_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6849,21 +6365,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_feedback_delete",
 		description:
 			"Delete a feedback file. Cannot delete pending items. Agents cannot delete human-authored items. Omit `stage` for intent-scope feedback.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string", description: "Intent slug" },
-				stage: {
-					type: "string",
-					description: "Stage name. Omit for intent-scope feedback.",
-				},
-				feedback_id: {
-					type: "string",
-					description: "FB-NN identifier or numeric prefix",
-				},
-			},
-			required: ["intent", "feedback_id"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_FEEDBACK_DELETE_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6877,27 +6379,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_feedback_move",
 		description:
 			'Triage placement for a feedback item. Pass `to_stage` equal to the source `stage` to confirm the FB belongs where it lives (sets `triaged_at` only). Pass a different `to_stage` to relocate it — the file moves to the target stage\'s feedback dir, gets renumbered to the next free FB-NN there, and `triaged_at` is set. Use "" for intent-scope (either source or target). Closed and rejected FBs are immutable; rejected with an error.',
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string", description: "Intent slug" },
-				stage: {
-					type: "string",
-					description:
-						'Current stage where the FB lives. Use "" for intent-scope feedback.',
-				},
-				feedback_id: {
-					type: "string",
-					description: "FB-NN identifier or numeric prefix",
-				},
-				to_stage: {
-					type: "string",
-					description:
-						'Target stage. Same as `stage` to confirm placement (no file move). Different to relocate. Use "" for intent-scope.',
-				},
-			},
-			required: ["intent", "feedback_id", "to_stage"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_FEEDBACK_MOVE_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6922,25 +6404,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_feedback_reject",
 		description:
 			"Reject an agent-authored feedback item with a reason. Sets status to rejected and appends rejection reason to body. Omit `stage` for intent-scope feedback.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string", description: "Intent slug" },
-				stage: {
-					type: "string",
-					description: "Stage name. Omit for intent-scope feedback.",
-				},
-				feedback_id: {
-					type: "string",
-					description: "FB-NN identifier or numeric prefix",
-				},
-				reason: {
-					type: "string",
-					description: "Explanation for why this feedback is being rejected",
-				},
-			},
-			required: ["intent", "feedback_id", "reason"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_FEEDBACK_REJECT_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6954,22 +6418,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_feedback_list",
 		description:
 			"List feedback items with optional filtering. Omit stage to list across all stages.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string", description: "Intent slug" },
-				stage: {
-					type: "string",
-					description: "Stage name (optional — omit to list all stages)",
-				},
-				status: {
-					type: "string",
-					description:
-						"Filter by status: pending | addressed | closed | rejected",
-				},
-			},
-			required: ["intent"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_FEEDBACK_LIST_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -6985,21 +6434,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 		name: "haiku_feedback_read",
 		description:
 			"Read a feedback file's body content (and title). Returns ONLY the body and title — frontmatter is workflow engine-internal and not exposed to agents per the architecture's FM-is-workflow engine-only rule. Use this when a fixer hat needs to read its own FB diagnosis or when a reviewer needs to read prior findings on the same artifact. Returns { title, body } as JSON. Omit `stage` to read an intent-scope FB.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string", description: "Intent slug" },
-				stage: {
-					type: "string",
-					description: "Stage name (optional — omit for intent-scope FBs)",
-				},
-				feedback_id: {
-					type: "string",
-					description: "Feedback ID, e.g. FB-01",
-				},
-			},
-			required: ["intent", "feedback_id"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_FEEDBACK_READ_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -7018,26 +6453,7 @@ Frontmatter is workflow engine-controlled and cannot be set through this tool. F
   • Set at creation, immutable thereafter: ${CREATE_TIME_FB_FIELDS.join(", ")}
 
 Use haiku_feedback_update for status transitions and haiku_feedback_reject for rejections.`,
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string", description: "Intent slug" },
-				stage: {
-					type: "string",
-					description: "Stage name (optional — omit for intent-scope FBs)",
-				},
-				feedback_id: {
-					type: "string",
-					description: "Feedback ID, e.g. FB-01",
-				},
-				body: {
-					type: "string",
-					description:
-						"Full markdown body to write. Replaces the prior body entirely.",
-				},
-			},
-			required: ["intent", "feedback_id", "body"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_FEEDBACK_WRITE_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -7055,21 +6471,7 @@ Use haiku_feedback_update for status transitions and haiku_feedback_reject for r
 		name: "haiku_feedback_advance_hat",
 		description:
 			"Advance an FB to the next hat in the stage's `fix_hats:` sequence. Per the architecture's FB-as-unit model: each fixer hat operates on the FB body (via haiku_feedback_write) and then calls this tool to progress. When called on the last hat in the fix_hats sequence, the workflow engine auto-completes the FB (status → closed, closed_by recorded, iteration appended). Mirrors haiku_unit_advance_hat for FBs.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string", description: "Intent slug" },
-				stage: {
-					type: "string",
-					description: "Stage name (optional — omit for intent-scope FBs)",
-				},
-				feedback_id: {
-					type: "string",
-					description: "Feedback ID, e.g. FB-01",
-				},
-			},
-			required: ["intent", "feedback_id"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_FEEDBACK_ADVANCE_HAT_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -7089,26 +6491,7 @@ Use haiku_feedback_update for status transitions and haiku_feedback_reject for r
 		name: "haiku_feedback_reject_hat",
 		description:
 			"Reject the current fix-hat's work on an FB — moves back to the previous hat and increments the FB's bolt counter. Pass `reason` so the FB's iteration history records why the hat was rejected. Mirrors haiku_unit_reject_hat for FBs.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: { type: "string", description: "Intent slug" },
-				stage: {
-					type: "string",
-					description: "Stage name (optional — omit for intent-scope FBs)",
-				},
-				feedback_id: {
-					type: "string",
-					description: "Feedback ID, e.g. FB-01",
-				},
-				reason: {
-					type: "string",
-					description:
-						"Short explanation of why the current hat's work was rejected (recorded in the FB iteration history).",
-				},
-			},
-			required: ["intent", "feedback_id"],
-		},
+		inputSchema: jsonSchemaOf(HAIKU_FEEDBACK_REJECT_HAT_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -7127,15 +6510,7 @@ Use haiku_feedback_update for status transitions and haiku_feedback_reject for r
 		name: "haiku_release_notes",
 		description:
 			"Extract release notes from CHANGELOG.md — a specific version or the 5 most recent entries.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				version: {
-					type: "string",
-					description: "Optional: specific version to extract (e.g. '1.2.0')",
-				},
-			},
-		},
+		inputSchema: jsonSchemaOf(HAIKU_RELEASE_NOTES_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -7153,25 +6528,7 @@ Use haiku_feedback_update for status transitions and haiku_feedback_reject for r
 		name: "haiku_repair",
 		description:
 			"Scan intents for metadata issues and auto-apply safe fixes. In a git repo, scans all intent branches sequentially, auto-applies safe fixes, syncs changes, and opens PRs/MRs for already-merged branches. In filesystem mode, scans intents in the current working directory. Also relocates any worktrees misplaced by older H·AI·K·U versions (which rooted `.haiku/worktrees/` at cwd instead of the primary repo) — clean worktrees are moved via `git worktree move`; dirty ones are reported for manual resolution. Pass `intent` to repair a single intent only. Pass `skip_branches: true` to force cwd-only mode in a git repo. Pass `apply: false` to scan without applying fixes.",
-		inputSchema: {
-			type: "object" as const,
-			properties: {
-				intent: {
-					type: "string",
-					description:
-						"Specific intent slug to scan in the current working directory (skips multi-branch mode)",
-				},
-				apply: {
-					type: "boolean",
-					description: "Auto-apply safe mechanical fixes (default: true)",
-				},
-				skip_branches: {
-					type: "boolean",
-					description:
-						"Force cwd-only mode even when in a git repo (default: false)",
-				},
-			},
-		},
+		inputSchema: jsonSchemaOf(HAIKU_REPAIR_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -7189,7 +6546,7 @@ Use haiku_feedback_update for status transitions and haiku_feedback_reject for r
 		description:
 			"Return the running MCP binary version and plugin version. " +
 			"MCP version is baked into the binary at build time; plugin version is read from plugin.json at runtime.",
-		inputSchema: { type: "object" as const, properties: {} },
+		inputSchema: jsonSchemaOf(HAIKU_EMPTY_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
 			properties: {
@@ -7281,6 +6638,12 @@ export function handleStateTool(
 	switch (name) {
 		// ── Intent ──
 		case "haiku_intent_get": {
+			const intentGetInputErr = validateToolInput(
+				args,
+				validateHaikuIntentGetInputSchema,
+				"haiku_intent_get",
+			)
+			if (intentGetInputErr) return intentGetInputErr
 			const file = join(intentDir(args.slug as string), "intent.md")
 			if (!existsSync(file)) {
 				return reply({ found: false, field: args.field as string, value: null })
@@ -7294,6 +6657,12 @@ export function handleStateTool(
 			})
 		}
 		case "haiku_intent_list": {
+			const intentListInputErr = validateToolInput(
+				args,
+				validateHaikuIntentListInputSchema,
+				"haiku_intent_list",
+			)
+			if (intentListInputErr) return intentListInputErr
 			const root = findHaikuRoot()
 			const intentsDir = join(root, "intents")
 			if (!existsSync(intentsDir)) return text("[]")
@@ -7327,6 +6696,12 @@ export function handleStateTool(
 
 		// ── Stage ──
 		case "haiku_stage_get": {
+			const stageGetInputErr = validateToolInput(
+				args,
+				validateHaikuStageGetInputSchema,
+				"haiku_stage_get",
+			)
+			if (stageGetInputErr) return stageGetInputErr
 			const path = stageStatePath(args.intent as string, args.stage as string)
 			const data = readJson(path)
 			const val = data[args.field as string]
@@ -7356,6 +6731,17 @@ export function handleStateTool(
 			)
 		}
 		case "haiku_unit_set": {
+			// SCHEMA IS THE SSOT — HAIKU_UNIT_SET_INPUT_SCHEMA enforces
+			// intent / stage / unit / field presence and rejects any
+			// arg the schema didn't declare. Field-level type validation
+			// against UNIT_FRONTMATTER_SCHEMA (gates 1–3 below) runs
+			// after this top-level pass.
+			const unitSetValidation = validateToolInput(
+				args,
+				validateHaikuUnitSetInputSchema,
+				"haiku_unit_set",
+			)
+			if (unitSetValidation) return unitSetValidation
 			// Gate order (each layer rejects with a distinct error code):
 			//   1. fsm_field_forbidden — field is workflow-driven; agents
 			//      MUST NOT set it. Mirrors the AJV propertyNames check on
@@ -7465,7 +6851,11 @@ export function handleStateTool(
 								error: "field_value_invalid",
 								field,
 								errors: fieldErrors,
-								message: `Field '${field}' value failed schema validation: ${ajv.errorsText(fieldErrors)}.`,
+								// AJV's `errorsText` is a pure formatter — reuse the
+								// shared `stateAjv` instance from
+								// ./state/schemas/_ajv.ts rather than keep a
+								// module-local Ajv alive only for error formatting.
+								message: `Field '${field}' value failed schema validation: ${stateAjvForErrorText.errorsText(fieldErrors)}.`,
 							},
 							{ isError: true },
 						)
@@ -7476,6 +6866,12 @@ export function handleStateTool(
 			return text("ok")
 		}
 		case "haiku_unit_list": {
+			const unitListInputErr = validateToolInput(
+				args,
+				validateHaikuUnitListInputSchema,
+				"haiku_unit_list",
+			)
+			if (unitListInputErr) return unitListInputErr
 			// Align branch before reading — unit files live on the stage branch.
 			// On intent-main, existsSync would return false and the caller would
 			// see an empty list even when units exist on the stage branch.
@@ -7503,6 +6899,12 @@ export function handleStateTool(
 			return reply({ units })
 		}
 		case "haiku_unit_start": {
+			const unitStartInputErr = validateToolInput(
+				args,
+				validateHaikuUnitStartInputSchema,
+				"haiku_unit_start",
+			)
+			if (unitStartInputErr) return unitStartInputErr
 			// Resolve stage and first hat internally
 			const stage = resolveActiveStage(args.intent as string)
 			if (!stage)
@@ -7612,6 +7014,12 @@ export function handleStateTool(
 			return text((scope ? `ok\n\n${scope}` : "ok") + pushWarning(gitResult))
 		}
 		case "haiku_unit_advance_hat": {
+			const advInputErr = validateToolInput(
+				args,
+				validateHaikuUnitAdvanceHatInputSchema,
+				"haiku_unit_advance_hat",
+			)
+			if (advInputErr) return advInputErr
 			// Align branch BEFORE findUnitFile — the unit spec lives on the stage
 			// branch, so lookups from intent-main spuriously report unit_not_found.
 			// Use active_stage as the best-guess stage to align; findUnitFile below
@@ -8367,11 +7775,22 @@ export function handleStateTool(
 				args.intent as string,
 				args.state_file as string | undefined,
 			)
-			// Internally call runNext — returns continue_unit with next hat context for the parent
-			if (_runNext) {
-				const next = _runNext(args.intent as string)
+			// Wave-slot semantics: the unit holds the wave slot, not the
+			// hat. When advancing mid-unit, synthesize a per-unit
+			// `continue_unit` dispatch (with the prompt rendered and
+			// `prompt_file` stamped here, not via a parent
+			// `haiku_run_next` round-trip). The parent fires the next
+			// hat for THIS unit instantly — siblings stay in flight.
+			if (_buildContinueDispatch) {
+				const action = _buildContinueDispatch(
+					args.intent as string,
+					advStage,
+					args.unit as string,
+					nextHat,
+					(unitFm.bolt as number) || 1,
+				)
 				const payload = injectPushWarning(
-					{ ...next, _hat_advanced: nextHat },
+					{ ...action, _hat_advanced: nextHat },
 					advGit,
 				)
 				const resultPath = resultPathFor({
@@ -8381,10 +7800,13 @@ export function handleStateTool(
 				})
 				writeResultFile(resultPath, payload)
 				return text(
-					`Workflow Result written to: ${resultPath}\n\nYOUR FINAL MESSAGE TO THE PARENT MUST BE EXACTLY ONE LINE:\n\nWorkflow Result: ${resultPath}\n\nDo NOT add prose, summary, or description. The parent reads the file to drive the next workflow action.`,
+					`Workflow Result written to: ${resultPath}\n\nYOUR FINAL MESSAGE TO THE PARENT MUST BE EXACTLY ONE LINE:\n\nWorkflow Result: ${resultPath}\n\nDo NOT add prose, summary, or description. The parent reads the file to dispatch the next hat for this unit directly — no haiku_run_next call needed.`,
 				)
 			}
 
+			// Defensive fallback — orchestrator hasn't loaded yet (test
+			// shims, partial bootstrap). Surface a plaintext signal the
+			// parent can route through `haiku_run_next` the legacy way.
 			const hatScope = resolveStageScope(args.intent as string, advStage)
 			return text(
 				(hatScope
@@ -8393,6 +7815,12 @@ export function handleStateTool(
 			)
 		}
 		case "haiku_unit_reject_hat": {
+			const rejectInputErr = validateToolInput(
+				args,
+				validateHaikuUnitRejectHatInputSchema,
+				"haiku_unit_reject_hat",
+			)
+			if (rejectInputErr) return rejectInputErr
 			// Align branch BEFORE findUnitFile — see haiku_unit_advance_hat for
 			// the rationale. Without this, a unit file that lives only on the
 			// stage branch spuriously returns unit_not_found when checkout is
@@ -8611,6 +8039,12 @@ export function handleStateTool(
 			}
 		}
 		case "haiku_unit_increment_bolt": {
+			const boltInputErr = validateToolInput(
+				args,
+				validateHaikuUnitIncrementBoltInputSchema,
+				"haiku_unit_increment_bolt",
+			)
+			if (boltInputErr) return boltInputErr
 			const boltBranchErr = enforceStageBranch(
 				args.intent as string,
 				args.stage as string,
@@ -8651,6 +8085,12 @@ export function handleStateTool(
 
 		// ── Unit body-only read (architecture rule §1.1: no FM exposed) ──
 		case "haiku_unit_read": {
+			const readInputErr = validateToolInput(
+				args,
+				validateHaikuUnitReadInputSchema,
+				"haiku_unit_read",
+			)
+			if (readInputErr) return readInputErr
 			const readBranchErr = enforceStageBranch(
 				args.intent as string,
 				args.stage as string,
@@ -8687,6 +8127,12 @@ export function handleStateTool(
 
 		// ── Unit delete (architecture rule §1.3: pending only) ──
 		case "haiku_unit_delete": {
+			const delInputErr = validateToolInput(
+				args,
+				validateHaikuUnitDeleteInputSchema,
+				"haiku_unit_delete",
+			)
+			if (delInputErr) return delInputErr
 			const delBranchErr = enforceStageBranch(
 				args.intent as string,
 				args.stage as string,
@@ -8741,6 +8187,12 @@ export function handleStateTool(
 		// only way agents can put a unit on disk. FM is validated; lifecycle
 		// is enforced; workflow-driven fields are stripped (the workflow engine owns them).
 		case "haiku_unit_write": {
+			const writeInputErr = validateToolInput(
+				args,
+				validateHaikuUnitWriteInputSchema,
+				"haiku_unit_write",
+			)
+			if (writeInputErr) return writeInputErr
 			const writeBranchErr = enforceStageBranch(
 				args.intent as string,
 				args.stage as string,
@@ -8910,6 +8362,12 @@ export function handleStateTool(
 		}
 
 		case "haiku_reconciliation_acknowledge": {
+			const reconAckInputErr = validateToolInput(
+				args,
+				validateHaikuReconciliationAcknowledgeInputSchema,
+				"haiku_reconciliation_acknowledge",
+			)
+			if (reconAckInputErr) return reconAckInputErr
 			const intentArg = args.intent as string
 			const requestedStage = args.stage as string | undefined
 			const stage = requestedStage || resolveActiveStage(intentArg)
@@ -8977,6 +8435,12 @@ export function handleStateTool(
 		}
 
 		case "haiku_decision_record": {
+			const decisionRecordInputErr = validateToolInput(
+				args,
+				validateHaikuDecisionRecordInputSchema,
+				"haiku_decision_record",
+			)
+			if (decisionRecordInputErr) return decisionRecordInputErr
 			const intentArg = args.intent as string
 			const requestedStage = args.stage as string | undefined
 			const stage = requestedStage || resolveActiveStage(intentArg)
@@ -9116,12 +8580,24 @@ export function handleStateTool(
 
 		// ── Knowledge ──
 		case "haiku_knowledge_list": {
+			const knowledgeListInputErr = validateToolInput(
+				args,
+				validateHaikuKnowledgeListInputSchema,
+				"haiku_knowledge_list",
+			)
+			if (knowledgeListInputErr) return knowledgeListInputErr
 			const dir = join(intentDir(args.intent as string), "knowledge")
 			if (!existsSync(dir)) return reply({ files: [] })
 			const files = readdirSync(dir).filter((f) => f.endsWith(".md"))
 			return reply({ files })
 		}
 		case "haiku_knowledge_read": {
+			const knowledgeReadInputErr = validateToolInput(
+				args,
+				validateHaikuKnowledgeReadInputSchema,
+				"haiku_knowledge_read",
+			)
+			if (knowledgeReadInputErr) return knowledgeReadInputErr
 			const path = join(
 				intentDir(args.intent as string),
 				"knowledge",
@@ -9139,11 +8615,23 @@ export function handleStateTool(
 
 		// ── Skills ──
 		case "haiku_skill_list": {
+			const skillListInputErr = validateToolInput(
+				args,
+				validateHaikuEmptyInputSchema,
+				"haiku_skill_list",
+			)
+			if (skillListInputErr) return skillListInputErr
 			return reply({ skills: listInstalledSkills() })
 		}
 
 		// ── Studio ──
 		case "haiku_studio_list": {
+			const studioListInputErr = validateToolInput(
+				args,
+				validateHaikuEmptyInputSchema,
+				"haiku_studio_list",
+			)
+			if (studioListInputErr) return studioListInputErr
 			// Unified discovery — listStudios covers both plugin and project studios,
 			// honors name/slug/aliases from frontmatter, and exposes help links.
 			const studios = listStudios().map((s) => ({
@@ -9162,6 +8650,12 @@ export function handleStateTool(
 			return reply({ studios })
 		}
 		case "haiku_studio_get": {
+			const studioGetInputErr = validateToolInput(
+				args,
+				validateHaikuStudioGetInputSchema,
+				"haiku_studio_get",
+			)
+			if (studioGetInputErr) return studioGetInputErr
 			const studio = resolveStudio(args.studio as string)
 			if (!studio) return reply({ found: false })
 			return reply({
@@ -9181,6 +8675,12 @@ export function handleStateTool(
 			})
 		}
 		case "haiku_studio_stage_get": {
+			const studioStageGetInputErr = validateToolInput(
+				args,
+				validateHaikuStudioStageGetInputSchema,
+				"haiku_studio_stage_get",
+			)
+			if (studioStageGetInputErr) return studioStageGetInputErr
 			const studio = resolveStudio(args.studio as string)
 			if (!studio) return reply({ found: false })
 			const sgName = args.stage as string
@@ -9200,6 +8700,12 @@ export function handleStateTool(
 
 		// ── Settings ──
 		case "haiku_settings_get": {
+			const settingsGetInputErr = validateToolInput(
+				args,
+				validateHaikuSettingsGetInputSchema,
+				"haiku_settings_get",
+			)
+			if (settingsGetInputErr) return settingsGetInputErr
 			const field = args.field as string
 			let settingsPath = ""
 			try {
@@ -9221,13 +8727,16 @@ export function handleStateTool(
 		}
 
 		case "haiku_settings_set": {
+			const settingsSetInputErr = validateToolInput(
+				args,
+				validateHaikuSettingsSetInputSchema,
+				"haiku_settings_set",
+			)
+			if (settingsSetInputErr) return settingsSetInputErr
 			const field = args.field as string
 			const value = args.value as unknown
 			const errOut = (error: string, message: string) =>
 				reply({ error, field, message }, { isError: true })
-			if (!field || typeof field !== "string") {
-				return errOut("settings_field_required", "`field` is required")
-			}
 			let settingsPath = ""
 			try {
 				settingsPath = join(findHaikuRoot(), "settings.yml")
@@ -9282,14 +8791,17 @@ export function handleStateTool(
 		}
 
 		case "haiku_intent_set": {
+			const intentSetInputErr = validateToolInput(
+				args,
+				validateHaikuIntentSetInputSchema,
+				"haiku_intent_set",
+			)
+			if (intentSetInputErr) return intentSetInputErr
 			const slug = args.intent as string
 			const field = args.field as string
 			const value = args.value as unknown
 			const errOut = (error: string, message: string) =>
 				reply({ error, intent: slug, field, message }, { isError: true })
-			if (!slug) return errOut("intent_required", "`intent` is required")
-			if (!field || typeof field !== "string")
-				return errOut("intent_field_required", "`field` is required")
 
 			// Reject FSM-driven fields up front with a stable code.
 			if ((FSM_DRIVEN_INTENT_FIELDS as readonly string[]).includes(field)) {
@@ -9358,14 +8870,18 @@ export function handleStateTool(
 		}
 
 		case "haiku_stage_set": {
+			const stageSetInputErr = validateToolInput(
+				args,
+				validateHaikuStageSetInputSchema,
+				"haiku_stage_set",
+			)
+			if (stageSetInputErr) return stageSetInputErr
 			const slug = args.intent as string
 			const stage = args.stage as string
 			const field = args.field as string
 			void args.value
 			const errOut = (error: string, message: string) =>
 				reply({ error, intent: slug, stage, field, message }, { isError: true })
-			if (!slug) return errOut("intent_required", "`intent` is required")
-			if (!stage) return errOut("stage_required", "`stage` is required")
 			if (!field || typeof field !== "string")
 				return errOut("stage_field_required", "`field` is required")
 
@@ -9381,6 +8897,12 @@ export function handleStateTool(
 
 		// ── Dashboard ──
 		case "haiku_dashboard": {
+			const dashboardInputErr = validateToolInput(
+				args,
+				validateHaikuEmptyInputSchema,
+				"haiku_dashboard",
+			)
+			if (dashboardInputErr) return dashboardInputErr
 			const empty = "No intents found. Use /haiku:start to create one."
 			let root: string
 			try {
@@ -9491,6 +9013,12 @@ export function handleStateTool(
 
 		// ── Capacity ──
 		case "haiku_capacity": {
+			const capacityInputErr = validateToolInput(
+				args,
+				validateHaikuCapacityInputSchema,
+				"haiku_capacity",
+			)
+			if (capacityInputErr) return capacityInputErr
 			const filterStudio = (args.studio as string) || ""
 			const studioField = filterStudio || null
 			let root: string
@@ -9583,6 +9111,12 @@ export function handleStateTool(
 
 		// ── Reflect ──
 		case "haiku_reflect": {
+			const reflectInputErr = validateToolInput(
+				args,
+				validateHaikuReflectInputSchema,
+				"haiku_reflect",
+			)
+			if (reflectInputErr) return reflectInputErr
 			const intentSlug = args.intent as string
 			let root: string
 			try {
@@ -9688,6 +9222,12 @@ export function handleStateTool(
 
 		// ── Review ──
 		case "haiku_review": {
+			const reviewInputErr = validateToolInput(
+				args,
+				validateHaikuReviewInputSchema,
+				"haiku_review",
+			)
+			if (reviewInputErr) return reviewInputErr
 			// Determine diff base — prefer the tracked upstream, fall back to the
 			// detected mainline (origin/HEAD-aware), then to a last-resort "main".
 			let base = getMainlineBranch()
@@ -9780,6 +9320,12 @@ export function handleStateTool(
 
 		// ── Backlog ──
 		case "haiku_backlog": {
+			const backlogInputErr = validateToolInput(
+				args,
+				validateHaikuBacklogInputSchema,
+				"haiku_backlog",
+			)
+			if (backlogInputErr) return backlogInputErr
 			const action = (args.action as string) || "list"
 			const md = (markdown: string) => reply({ markdown, action })
 			let root: string
@@ -9853,6 +9399,12 @@ export function handleStateTool(
 
 		// ── Seed ──
 		case "haiku_seed": {
+			const seedInputErr = validateToolInput(
+				args,
+				validateHaikuSeedInputSchema,
+				"haiku_seed",
+			)
+			if (seedInputErr) return seedInputErr
 			const action = (args.action as string) || "list"
 			let root: string
 			try {
@@ -9936,6 +9488,12 @@ export function handleStateTool(
 
 		// ── Release Notes ──
 		case "haiku_release_notes": {
+			const releaseNotesInputErr = validateToolInput(
+				args,
+				validateHaikuReleaseNotesInputSchema,
+				"haiku_release_notes",
+			)
+			if (releaseNotesInputErr) return releaseNotesInputErr
 			const version = (args.version as string) || ""
 			const versionField = version || null
 			const md = (markdown: string) =>
@@ -10006,6 +9564,12 @@ export function handleStateTool(
 		}
 
 		case "haiku_repair": {
+			const repairInputErr = validateToolInput(
+				args,
+				validateHaikuRepairInputSchema,
+				"haiku_repair",
+			)
+			if (repairInputErr) return repairInputErr
 			// ── Repair: scan intents for metadata issues ──
 			//
 			// Default behavior in a git repo: scan ALL intent branches sequentially
@@ -10094,9 +9658,21 @@ export function handleStateTool(
 
 		// ── Feedback ──
 		case "haiku_feedback": {
+			// SCHEMA IS THE SSOT — HAIKU_FEEDBACK_INPUT_SCHEMA enforces
+			// every static contract this handler used to check by hand:
+			// intent / title / body presence, title.length ≤ 120, origin
+			// enum, resolution enum, additionalProperties: false. The
+			// validator returns a structured `haiku_feedback_input_invalid`
+			// reply with field-level error details on failure — same
+			// shape every other AJV-gated tool uses.
+			const validation = validateToolInput(
+				args,
+				validateHaikuFeedbackInputSchema,
+				"haiku_feedback",
+			)
+			if (validation) return validation
+
 			const intent = args.intent as string
-			// `stage` is now optional — omit to log an intent-scope finding
-			// (used by the studio-level pre-intent-completion review layer).
 			const stage = (args.stage as string) || ""
 			const title = args.title as string
 			const body = args.body as string
@@ -10105,52 +9681,8 @@ export function handleStateTool(
 			const author = (args.author as string) || undefined
 			const resolution = (args.resolution as string) || undefined
 
-			// Validate resolution at creation time so agent-set values fail
-			// loudly instead of being silently coerced to null inside
-			// writeFeedbackFile.
-			if (
-				resolution !== undefined &&
-				!["question", "inline_fix", "stage_revisit"].includes(resolution)
-			) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error: resolution must be one of: question | inline_fix | stage_revisit (got: ${JSON.stringify(resolution)})`,
-						},
-					],
-					isError: true,
-				}
-			}
-
-			// Validation
-			if (!intent)
-				return {
-					content: [{ type: "text", text: "Error: intent is required" }],
-					isError: true,
-				}
-			if (!title)
-				return {
-					content: [{ type: "text", text: "Error: title is required" }],
-					isError: true,
-				}
-			if (!body)
-				return {
-					content: [{ type: "text", text: "Error: body is required" }],
-					isError: true,
-				}
-			if (title.length > 120)
-				return {
-					content: [
-						{
-							type: "text",
-							text: "Error: title must be 120 characters or fewer",
-						},
-					],
-					isError: true,
-				}
-
-			// Validate intent exists
+			// Intent-existence check is dynamic (filesystem state), not
+			// expressible in the input schema — keep it here.
 			const intentFile = join(intentDir(intent), "intent.md")
 			if (!existsSync(intentFile))
 				return {
@@ -10159,19 +9691,6 @@ export function handleStateTool(
 					],
 					isError: true,
 				}
-
-			// Validate origin enum
-			if (origin && !(FEEDBACK_ORIGINS as readonly string[]).includes(origin)) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: `Error: origin must be one of: ${FEEDBACK_ORIGINS.join(", ")}`,
-						},
-					],
-					isError: true,
-				}
-			}
 
 			// Branch enforcement — stage feedback lands on the stage branch;
 			// intent-scope feedback (stage omitted) lands on intent-main.
@@ -10227,22 +9746,25 @@ export function handleStateTool(
 		}
 
 		case "haiku_feedback_update": {
+			// SCHEMA IS THE SSOT — HAIKU_FEEDBACK_UPDATE_INPUT_SCHEMA
+			// enforces intent / feedback_id presence, status enum,
+			// resolution enum, FB-NN id pattern, and
+			// `additionalProperties: false` (rejects FSM-driven fields
+			// like hat / bolt / iterations / integrator_attempts /
+			// replies / triaged_at — those flow through dedicated
+			// tools, never haiku_feedback_update).
+			const updateValidation = validateToolInput(
+				args,
+				validateHaikuFeedbackUpdateInputSchema,
+				"haiku_feedback_update",
+			)
+			if (updateValidation) return updateValidation
+
 			const intent = args.intent as string
 			// `stage` is optional for intent-scope feedback (stage omitted on
 			// create → stage omitted on update/delete/reject).
 			const stage = (args.stage as string) || ""
 			const feedbackId = args.feedback_id as string
-
-			if (!intent)
-				return {
-					content: [{ type: "text", text: "Error: intent is required" }],
-					isError: true,
-				}
-			if (!feedbackId)
-				return {
-					content: [{ type: "text", text: "Error: feedback_id is required" }],
-					isError: true,
-				}
 
 			const updateFields: {
 				status?: string
@@ -10357,6 +9879,12 @@ export function handleStateTool(
 		}
 
 		case "haiku_feedback_delete": {
+			const fbDeleteInputErr = validateToolInput(
+				args,
+				validateHaikuFeedbackDeleteInputSchema,
+				"haiku_feedback_delete",
+			)
+			if (fbDeleteInputErr) return fbDeleteInputErr
 			const intent = args.intent as string
 			const stage = (args.stage as string) || ""
 			const feedbackId = args.feedback_id as string
@@ -10409,6 +9937,12 @@ export function handleStateTool(
 		}
 
 		case "haiku_feedback_move": {
+			const fbMoveInputErr = validateToolInput(
+				args,
+				validateHaikuFeedbackMoveInputSchema,
+				"haiku_feedback_move",
+			)
+			if (fbMoveInputErr) return fbMoveInputErr
 			const intent = args.intent as string
 			const stage = (args.stage as string) || ""
 			const feedbackId = args.feedback_id as string
@@ -10530,6 +10064,12 @@ export function handleStateTool(
 		}
 
 		case "haiku_feedback_reject": {
+			const fbRejectInputErr = validateToolInput(
+				args,
+				validateHaikuFeedbackRejectInputSchema,
+				"haiku_feedback_reject",
+			)
+			if (fbRejectInputErr) return fbRejectInputErr
 			const intent = args.intent as string
 			const stage = (args.stage as string) || ""
 			const feedbackId = args.feedback_id as string
@@ -10649,6 +10189,12 @@ export function handleStateTool(
 		}
 
 		case "haiku_feedback_list": {
+			const fbListInputErr = validateToolInput(
+				args,
+				validateHaikuFeedbackListInputSchema,
+				"haiku_feedback_list",
+			)
+			if (fbListInputErr) return fbListInputErr
 			const intent = args.intent as string
 			const stageFilt = (args.stage as string) || undefined
 			const statusFilt = (args.status as string) || undefined
@@ -10778,6 +10324,12 @@ export function handleStateTool(
 
 		// ── Feedback body-only read (architecture rule §1.1: no FM exposed) ──
 		case "haiku_feedback_read": {
+			const fbReadInputErr = validateToolInput(
+				args,
+				validateHaikuFeedbackReadInputSchema,
+				"haiku_feedback_read",
+			)
+			if (fbReadInputErr) return fbReadInputErr
 			const intentArg = args.intent as string
 			const stageArg = (args.stage as string) || ""
 			const fbId = args.feedback_id as string
@@ -10858,6 +10410,12 @@ export function handleStateTool(
 
 		// ── Feedback body write (architecture FB-as-unit, lifecycle-bound) ──
 		case "haiku_feedback_write": {
+			const fbWriteInputErr = validateToolInput(
+				args,
+				validateHaikuFeedbackWriteInputSchema,
+				"haiku_feedback_write",
+			)
+			if (fbWriteInputErr) return fbWriteInputErr
 			const intentArg = args.intent as string
 			const stageArg = (args.stage as string) || ""
 			const fbId = args.feedback_id as string
@@ -10957,6 +10515,12 @@ export function handleStateTool(
 		// and then calls advance to progress through the stage's fix_hats:
 		// sequence. When the last hat advances, the workflow engine auto-closes the FB.
 		case "haiku_feedback_advance_hat": {
+			const fbAdvanceHatInputErr = validateToolInput(
+				args,
+				validateHaikuFeedbackAdvanceHatInputSchema,
+				"haiku_feedback_advance_hat",
+			)
+			if (fbAdvanceHatInputErr) return fbAdvanceHatInputErr
 			const intentArg = args.intent as string
 			const stageArg = (args.stage as string) || ""
 			const fbId = args.feedback_id as string
@@ -11188,6 +10752,12 @@ export function handleStateTool(
 		}
 
 		case "haiku_feedback_reject_hat": {
+			const fbRejectHatInputErr = validateToolInput(
+				args,
+				validateHaikuFeedbackRejectHatInputSchema,
+				"haiku_feedback_reject_hat",
+			)
+			if (fbRejectHatInputErr) return fbRejectHatInputErr
 			const intentArg = args.intent as string
 			const stageArg = (args.stage as string) || ""
 			const fbId = args.feedback_id as string
@@ -11344,6 +10914,12 @@ export function handleStateTool(
 		}
 
 		case "haiku_version_info": {
+			const versionInfoInputErr = validateToolInput(
+				args,
+				validateHaikuEmptyInputSchema,
+				"haiku_version_info",
+			)
+			if (versionInfoInputErr) return versionInfoInputErr
 			const info: Record<string, string> = {
 				mcp_version: MCP_VERSION,
 				plugin_version: getPluginVersion(),

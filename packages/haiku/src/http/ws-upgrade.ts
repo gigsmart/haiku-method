@@ -10,6 +10,7 @@
 // reject.
 
 import type { FastifyInstance } from "fastify"
+import { subscribeIntent } from "../intent-broadcaster.js"
 import { getSession } from "../sessions.js"
 import { isRemoteReviewEnabled, verifyTunnelJWT } from "../tunnel.js"
 import {
@@ -17,6 +18,7 @@ import {
 	handleWebSocketMessage,
 	logClose,
 	MAX_WS_SESSIONS,
+	sendToWebSocket,
 	wsConnections,
 } from "./ws.js"
 
@@ -87,6 +89,29 @@ export function registerWsUpgrade(instance: FastifyInstance): void {
 				}
 				wsConnections.set(sessionId, socket)
 				logClose(`upgrade ACCEPT session=${sessionId}`)
+
+				// Subscribe to per-intent live-state events. The
+				// broadcaster fans out tick/state changes to every SPA
+				// tab watching this intent. Forward events as
+				// `intent-event` WS frames; SPA reduces them onto the
+				// cached session snapshot. Only review sessions get the
+				// subscription — question + design_direction are
+				// short-lived and don't need live state.
+				let unsubscribeIntent: (() => void) | null = null
+				const reviewSession = session.session_type === "review" ? session : null
+				if (reviewSession?.intent_slug) {
+					unsubscribeIntent = subscribeIntent(
+						reviewSession.intent_slug,
+						(event) => {
+							sendToWebSocket(sessionId, {
+								type: "intent-event",
+								session_id: sessionId,
+								event,
+							})
+						},
+					)
+				}
+
 				socket.on("message", (raw: Buffer | ArrayBuffer | Buffer[]) => {
 					if (!allowWsFrame(socket)) {
 						socket.close(1008, "rate limit")
@@ -103,10 +128,18 @@ export function registerWsUpgrade(instance: FastifyInstance): void {
 					if (wsConnections.get(sessionId) === socket) {
 						wsConnections.delete(sessionId)
 					}
+					if (unsubscribeIntent) {
+						unsubscribeIntent()
+						unsubscribeIntent = null
+					}
 				})
 				socket.on("error", () => {
 					if (wsConnections.get(sessionId) === socket) {
 						wsConnections.delete(sessionId)
+					}
+					if (unsubscribeIntent) {
+						unsubscribeIntent()
+						unsubscribeIntent = null
 					}
 				})
 			},

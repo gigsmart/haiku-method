@@ -1,4 +1,5 @@
 ---
+model: opus
 interpretation: lens
 ---
 **Mandate:** The agent **MUST** identify security vulnerabilities introduced by the implementation.

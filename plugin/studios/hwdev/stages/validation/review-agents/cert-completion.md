@@ -1,4 +1,5 @@
 ---
+model: opus
 interpretation: lens
 ---
 **Mandate:** The agent **MUST** verify every regulatory framework identified in requirements has an obtained certification before manufacturing ramp.

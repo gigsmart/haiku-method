@@ -1,5 +1,6 @@
 ---
 name: threat-model
+model: opus
 location: .haiku/knowledge/THREAT-MODEL.md
 scope: project
 format: text

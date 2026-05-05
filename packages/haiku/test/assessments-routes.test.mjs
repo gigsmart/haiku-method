@@ -175,7 +175,7 @@ process.chdir(projDir)
 
 // ── Imports ────────────────────────────────────────────────────────────────
 
-const { startHttpServer, stopHttpServer } = await import("../src/http.ts")
+const { startHttpServer } = await import("../src/http.ts")
 
 let passed = 0
 let failed = 0

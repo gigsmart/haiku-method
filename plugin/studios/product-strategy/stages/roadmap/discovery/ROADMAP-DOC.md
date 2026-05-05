@@ -1,4 +1,5 @@
 ---
+model: opus
 name: roadmap-doc
 location: .haiku/intents/{intent-slug}/knowledge/ROADMAP-DOC.md
 scope: intent

@@ -8,8 +8,8 @@
 //   node capture-playwright-worker.js '{"url":"http://localhost:3000","routes":"/,/about",...}'
 
 const { chromium } = require("playwright")
-const path = require("path")
-const fs = require("fs")
+const path = require("node:path")
+const fs = require("node:fs")
 
 const BREAKPOINT_NAMES = {
 	375: "mobile",
@@ -121,7 +121,7 @@ async function main() {
 		}
 
 		const manifestPath = path.join(outputDir, "manifest.json")
-		fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n")
+		fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
 		console.log(`  manifest: ${manifestPath}`)
 	} catch (err) {
 		console.error(

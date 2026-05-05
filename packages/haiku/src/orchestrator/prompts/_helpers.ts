@@ -15,8 +15,11 @@
 //   - inlineFile — strip frontmatter and emit a fenced inline block.
 //   - emitSubagentDispatchBlock — write the prompt to a tmpfile and
 //     emit the parent's `<subagent>` dispatch block.
-//   - resolveReviewAgentModel — cascade hat → stage → studio for the
-//     review/fix-hat model tier.
+//   - resolveStudioMandateModel — cascade mandate → stage → studio for any
+//     studio-author-time dispatch (review-agent, discovery template,
+//     studio fix-hat, integrator). The mandate file is optional — when
+//     omitted the cascade starts at the stage's `default_model:` (when
+//     a stage is provided) or the studio's `default_model:`.
 //   - buildInlineSubagentContext — hookless-harness inline context.
 //   - batchDispatchDirective — concurrency-cap discipline (slot pool
 //     vs batch-serial depending on harness capabilities).
@@ -25,7 +28,7 @@ import { existsSync, readFileSync } from "node:fs"
 import matter from "gray-matter"
 import { features } from "../../config.js"
 import { getCapabilities } from "../../harness.js"
-import { type ModelTier, resolveModel } from "../../model-selection.js"
+import { type ModelTier, sanitizeModel } from "../../model-selection.js"
 import {
 	MAX_CONCURRENT_SUBAGENTS,
 	parseFrontmatter,
@@ -242,31 +245,44 @@ export function emitSubagentDispatchBlock(opts: {
 	})
 }
 
-/** Resolve the model tier for a review-agent or studio-level fix-hat
- *  dispatch. Cascade: mandate file's own `model:` → stage
- *  `default_model:` (when stage is provided — skip for studio-level
- *  review agents) → studio `default_model:`. Returns undefined when
- *  the feature is disabled or nothing is declared, in which case the
- *  subagent inherits the parent model. Without a studio default this
- *  silently escalates every review pass to Opus — hence studios ship
- *  with `default_model: sonnet` so the floor is sonnet. */
-export function resolveReviewAgentModel(opts: {
-	mandatePath: string
+/** Resolve the model tier for any studio-author-time dispatch
+ *  (review-agent, discovery template, studio fix-hat, integrator).
+ *  Cascade: mandate file's own `model:` → stage `default_model:`
+ *  (when a stage is provided) → studio `default_model:`. Returns
+ *  undefined when the feature is disabled or nothing is declared,
+ *  in which case the subagent inherits the parent model. Studios
+ *  ship with `default_model: sonnet` so the floor is sonnet whenever
+ *  the cascade runs.
+ *
+ *  `mandatePath` is optional — integrators have no per-mandate file,
+ *  so they enter the cascade at the stage default. Reviewer/discovery
+ *  callers always pass a path; if the file is missing
+ *  `readModelFromPath` returns undefined and the cascade still
+ *  proceeds. */
+export function resolveStudioMandateModel(opts: {
+	mandatePath?: string
 	studio: string
 	stage?: string
 }): ModelTier | undefined {
 	if (!features.modelSelection) return undefined
 	const { mandatePath, studio, stage } = opts
-	const mandateModel = readModelFromPath(mandatePath)
-	const stageDef = stage ? readStageDef(studio, stage) : null
+	// Cascade evaluated lazily so a mandate-level hit doesn't pay for
+	// stage / studio file I/O. We don't go through `resolveModel` here
+	// because that helper takes eager values; the cascade order
+	// (mandate → stage → studio) is short enough to inline.
+	if (mandatePath) {
+		const mandateModel = readModelFromPath(mandatePath)
+		if (mandateModel) return mandateModel
+	}
+	if (stage) {
+		const stageDef = readStageDef(studio, stage)
+		const stageDefault = sanitizeModel(
+			stageDef?.data?.default_model as string | undefined,
+		)
+		if (stageDefault) return stageDefault
+	}
 	const studioData = readStudio(studio)
-	const { model } = resolveModel({
-		unit: undefined,
-		hat: mandateModel,
-		stage: stageDef?.data?.default_model as string | undefined,
-		studio: studioData?.data?.default_model as string | undefined,
-	})
-	return model
+	return sanitizeModel(studioData?.data?.default_model as string | undefined)
 }
 
 /** Build the per-subagent context block injected into unit/hat

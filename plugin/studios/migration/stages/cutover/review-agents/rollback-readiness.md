@@ -1,4 +1,5 @@
 ---
+model: opus
 interpretation: lens
 ---
 **Mandate:** The agent **MUST** verify the cutover plan includes viable rollback at every step.

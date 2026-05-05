@@ -1,4 +1,5 @@
 ---
+model: opus
 interpretation: lens
 ---
 **Mandate:** The agent **MUST** verify the library's dependency tree is audited and free of known-vulnerable dependencies before release.

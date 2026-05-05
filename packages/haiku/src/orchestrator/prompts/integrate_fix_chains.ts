@@ -10,6 +10,7 @@ import { MAX_INTEGRATOR_ATTEMPTS } from "../../state-tools.js"
 import {
 	batchDispatchDirective,
 	emitSubagentDispatchBlock,
+	resolveStudioMandateModel,
 } from "./_helpers.js"
 import { definePromptBuilder } from "./define.js"
 
@@ -23,11 +24,18 @@ interface IntegrateItem {
 	attempt: number
 }
 
-export default definePromptBuilder(({ slug, action }) => {
+export default definePromptBuilder(({ slug, studio, action }) => {
 	const integrateStage = action.stage as string | null
 	const integrateMaxAttempts =
 		(action.max_attempts as number) || MAX_INTEGRATOR_ATTEMPTS
 	const integrateItems = (action.items as IntegrateItem[]) || []
+	// All items in a wave share the same stage (or no stage, in the
+	// intent-completion case), so resolve once and reuse — don't push
+	// this into the per-item loop.
+	const integratorModel = resolveStudioMandateModel({
+		studio,
+		stage: integrateStage ?? undefined,
+	})
 
 	const sections: string[] = []
 	sections.push(
@@ -84,6 +92,7 @@ export default definePromptBuilder(({ slug, action }) => {
 				hat: "integrator",
 				bolt: it.attempt,
 				agentType: "general-purpose",
+				model: integratorModel,
 				promptBody: promptLines.join("\n"),
 				heading: `#### Subagent: \`integrator\``,
 			})}\n`,

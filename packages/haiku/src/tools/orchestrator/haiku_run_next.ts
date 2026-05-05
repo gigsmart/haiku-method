@@ -36,20 +36,9 @@ import type { OrchestratorAction as OrchestratorActionType } from "../../orchest
 import {
 	buildGuardResponse,
 	buildRunInstructions,
-	completeOrReviewIntent,
 	enrichActionWithPreview,
-	findIncompleteStages,
-	getElicitInput,
-	getOpenReviewAndWait,
-	isStagePreExecute,
-	listUnits,
+	getPrepareGateReview,
 	type OrchestratorAction,
-	resetFixLoopBolts,
-	workflowAdvancePhase,
-	workflowAdvanceStage,
-	workflowCompleteStage,
-	workflowIntentComplete,
-	writeReviewFeedbackFiles,
 } from "../../orchestrator.js"
 
 /** Single-source dispatch: one workflow tick → one action. Handles
@@ -68,17 +57,13 @@ function dispatchOrchestratorAction(slug: string): OrchestratorActionType {
 
 import { reportError } from "../../sentry.js"
 import { logSessionEvent } from "../../session-metadata.js"
-import { sealIntentState } from "../../state-integrity.js"
 import {
 	findHaikuRoot,
-	gitCommitState,
 	intentDir,
 	intentFromCurrentBranch,
-	isGitRepo,
 	listVisibleIntents,
 	parseFrontmatter,
 	readJson,
-	setFrontmatterField,
 	stageStatePath,
 	syncSessionMetadata,
 	validateBranch,
@@ -272,12 +257,18 @@ export default defineTool({
 			result.message = `${(result.message as string) || ""}\n\nIMPORTANT: Ask the user WHERE they submitted the work for review (PR URL, MR link, email, Slack channel, etc.). Record the URL by calling haiku_run_next { intent: "${slug}", external_review_url: "<url>" } so the workflow engine can track approval status.`
 		}
 
-		const _openReviewAndWait = getOpenReviewAndWait()
-		const _elicitInput = getElicitInput()
-
-		// Gate review: open review UI, block until user decides, process
-		// decision.
-		if (result.action === "gate_review" && _openReviewAndWait) {
+		// Gate review — non-blocking prepare path.
+		//
+		// Previously this entire block synchronously opened the review
+		// UI, blocked on `_openReviewAndWait` for up to 30 minutes, and
+		// processed the user's decision inline. That worked when the
+		// MCP host could auto-launch a browser, but silently hung any
+		// remote / headless / SSH / web-client / mobile-chat setup
+		// where the URL never reached the user. The decision dispatch
+		// now lives in the new haiku_await_gate tool; here we just
+		// create the session, surface the URL to the agent, and ask
+		// the agent to post the URL → call haiku_await_gate.
+		if (result.action === "gate_review") {
 			const stage = result.stage as string
 			const nextStage = result.next_stage as string | null
 			const nextPhase = result.next_phase as string | null
@@ -286,525 +277,92 @@ export default defineTool({
 			const intentDirPath = `.haiku/intents/${slug}`
 			if (stFile)
 				logSessionEvent(stFile, {
-					event: "gate_review_opened",
+					event: "gate_review_prepared",
 					intent: slug,
 					stage,
 					gate_type: gateType,
 				})
-			try {
-				const reviewResult = await _openReviewAndWait(
-					intentDirPath,
-					gateType,
-					// signal not threaded through MCP per-tool calls — fine,
-					// review UI handles its own cancel via WS close.
-					undefined,
-					{
-						gateContext,
-						stage,
-						nextStage,
-						nextPhase,
-					},
+
+			const _prepareGateReview = getPrepareGateReview()
+			if (!_prepareGateReview) {
+				return text(
+					"Gate-review prepare handler not registered — server.ts wiring is broken. File a bug.",
 				)
+			}
 
-				// Re-enforce stage branch after the await — the user may
-				// have manually checked out another branch during the
-				// review wait. Every downstream branch of this switch
-				// writes stage or intent state, so alignment must be
-				// re-verified here.
-				{
-					const postReviewGuard = ensureOnStageBranch(slug, stage)
-					if (!postReviewGuard.ok) {
-						return buildGuardResponse(
-							slug,
-							stage,
-							postReviewGuard,
-							"after review wait",
-						)
-					}
-				}
-
-				if (stFile)
-					logSessionEvent(stFile, {
-						event: "gate_decision",
-						intent: slug,
-						stage,
-						decision: reviewResult.decision,
-						feedback: reviewResult.feedback,
-					})
-				if (reviewResult.decision === "approved") {
-					// Final intent-completion review — the terminal bookend.
-					// Approval fires workflowIntentComplete and returns
-					// intent_complete.
-					if (gateContext === "intent_completion") {
-						const studioForCompletion =
-							(readFrontmatter(join(intentDir(slug), "intent.md"))
-								.studio as string) || ""
-						// Guard: all declared stages must be completed before sealing.
-						// This prevents the engine from marking an intent complete when
-						// the agent stopped calling haiku_run_next mid-workflow (e.g.,
-						// operations/security stages never ran because development's gate
-						// returned advance_stage and the agent never looped back).
-						const incompleteStages = findIncompleteStages(
-							slug,
-							studioForCompletion,
-						)
-						if (incompleteStages.length > 0) {
-							return text(
-								withInstructions({
-									action: "error",
-									intent: slug,
-									message: `Cannot complete intent '${slug}': the following stages have not completed: [${incompleteStages.join(", ")}]. Run those stages to completion before approving intent_completion.`,
-									incomplete_stages: incompleteStages,
-								}),
-							)
-						}
-						workflowIntentComplete(slug)
-						syncSessionMetadata(slug, args.state_file as string | undefined)
-						const gateResult = {
-							action: "intent_complete",
-							intent: slug,
-							studio: studioForCompletion,
-							message:
-								"Final review approved — intent complete. Report the completion summary to the user.",
-						}
-						return text(withInstructions(gateResult))
-					}
-					if (gateContext === "intent_review") {
-						// Intent approved — mark as reviewed AND advance phase
-						// to execute.
-						const intentFilePath = join(
-							process.cwd(),
-							intentDirPath,
-							"intent.md",
-						)
-						setFrontmatterField(intentFilePath, "intent_reviewed", true)
-						if (nextPhase) workflowAdvancePhase(slug, stage, nextPhase)
-						gitCommitState(`haiku: intent ${slug} approved by user`)
-						syncSessionMetadata(slug, args.state_file as string | undefined)
-						const gateResult = {
-							action: "intent_approved",
-							intent: slug,
-							stage,
-							from_phase: "elaborate",
-							to_phase: nextPhase,
-							message: `Intent approved — advancing to ${nextPhase || "execute"}. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately. Do NOT ask the user — the transition was already approved.`,
-						}
-						return text(withInstructions(gateResult))
-					}
-					if (gateContext === "elaborate_to_execute" && nextPhase) {
-						// Phase advancement (specs approved → start execution).
-						workflowAdvancePhase(slug, stage, nextPhase)
-						syncSessionMetadata(slug, args.state_file as string | undefined)
-						const gateResult = {
-							action: "advance_phase",
-							intent: slug,
-							stage,
-							from_phase: "elaborate",
-							to_phase: nextPhase,
-							message: `Specs approved — advancing to ${nextPhase}. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately. Do NOT ask the user — the transition was already approved.`,
-						}
-						return text(withInstructions(gateResult))
-					}
-					if (nextStage) {
-						workflowAdvanceStage(slug, stage, nextStage)
-						syncSessionMetadata(slug, args.state_file as string | undefined)
-						const gateResult = {
-							action: "advance_stage",
-							intent: slug,
-							stage,
-							next_stage: nextStage,
-							gate_outcome: "advanced",
-							message: `Approved — advancing to '${nextStage}'. IMPORTANT: Call haiku_run_next { intent: "${slug}" } immediately. Do NOT ask the user, do NOT summarize, do NOT say "want me to continue?" — the gate was already approved. Just call the tool.`,
-						}
-						return text(withInstructions(gateResult))
-					}
-					workflowCompleteStage(slug, stage, "advanced")
-					syncSessionMetadata(slug, args.state_file as string | undefined)
-					// Stage approved ≠ intent complete. Enter the intent-
-					// review bookend unless the intent explicitly opted out.
-					const approvedStudio =
-						(readFrontmatter(join(intentDir(slug), "intent.md"))
-							.studio as string) || ""
-					const gateResult = completeOrReviewIntent(
-						slug,
-						approvedStudio,
-						`Stage '${stage}' approved — final stage complete.`,
-					)
-					return text(withInstructions(gateResult))
-				}
-				if (reviewResult.decision === "external_review") {
-					// Mark the stage truly complete on its branch BEFORE the
-					// PR opens (status=completed, gate_outcome=advanced,
-					// completed_at). The PR then carries the final per-stage
-					// state to intent main on merge — no post-merge cleanup
-					// commit is needed. The gate handler's reconciliation
-					// block (gate.ts) will only advance active_stage once
-					// the branch is merged into intent main; the merge IS
-					// the user's only remaining action for this stage.
-					workflowCompleteStage(slug, stage, "advanced")
-					syncSessionMetadata(slug, args.state_file as string | undefined)
-					const gateResult = {
-						action: "external_review_requested",
-						intent: slug,
-						stage,
-						feedback: reviewResult.feedback,
-						message: isGitRepo()
-							? `External review requested. Open ONE merge request from branch 'haiku/${slug}/${stage}' to 'haiku/${slug}/main'. Do NOT open separate MRs for individual units — all unit work is already merged into the stage branch. Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:pickup again after the PR is merged.`
-							: `External review requested. Submit the work for review through your project's review process. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:pickup again after the PR is merged.`,
-					}
-					return text(withInstructions(gateResult))
-				}
-				// Revisit-dispatch short-circuit: when the decision came in
-				// via POST /api/revisit, the HTTP bridge parks the dispatch
-				// action in `annotations.revisit_action` and the
-				// orchestrator's instruction prose in
-				// `annotations.revisit_message`. The `feedback` field is
-				// empty on purpose — treating that prose as reviewer-typed
-				// input would spawn a new feedback file mirroring the
-				// dispatch message back, which the next run would read as
-				// a finding. Detect the marker and return the dispatch
-				// result verbatim, skipping file creation + rollback.
-				const revisitAnnotations = reviewResult.annotations as
-					| { revisit_action?: string; revisit_message?: string }
-					| undefined
-				const revisitAction =
-					typeof revisitAnnotations?.revisit_action === "string"
-						? revisitAnnotations.revisit_action
-						: null
-				if (revisitAction) {
-					syncSessionMetadata(slug, args.state_file as string | undefined)
-					return text(
-						withInstructions({
-							action: revisitAction,
-							intent: slug,
-							stage,
-							message:
-								revisitAnnotations?.revisit_message ||
-								`Revisit dispatched on stage '${stage}'. Follow the instructions returned by the orchestrator.`,
-						}),
-					)
-				}
-
-				// Feedback files only make sense when there are built
-				// artifacts to critique. If this rejection is happening at
-				// pre-execute time (elaborate phase with no completed units
-				// in the stage), persist nothing — the reviewer's comments
-				// go inline in the action and the agent edits unit specs
-				// directly.
-				const intentDirPathAbs = join(process.cwd(), intentDirPath)
-				const preExecute =
-					gateContext === "elaborate_to_execute" ||
-					gateContext === "intent_review"
-						? isStagePreExecute(intentDirPathAbs, stage)
-						: false
-
-				// changes_requested — persist all annotations and feedback
-				// as durable feedback files (post-execute contexts only).
-				const feedbackIds = preExecute
-					? []
-					: writeReviewFeedbackFiles(slug, stage, reviewResult)
-				const feedbackSummary =
-					feedbackIds.length > 0
-						? ` Created ${feedbackIds.length} feedback file(s): ${feedbackIds.join(", ")}.`
-						: ""
-
-				if (gateContext === "intent_review") {
-					// Intent rejected — stay in pending, agent must revise
-					// intent.md.
-					syncSessionMetadata(slug, args.state_file as string | undefined)
-					const gateResult = {
-						action: "changes_requested",
-						intent: slug,
-						stage,
-						feedback: reviewResult.feedback,
-						annotations: reviewResult.annotations,
-						feedback_ids: feedbackIds,
-						message: `Changes requested on intent: ${reviewResult.feedback || "(see annotations)"}.${feedbackSummary} Revise the intent description, then call haiku_run_next { intent: "${slug}" } again.`,
-					}
-					return text(withInstructions(gateResult))
-				}
-				if (gateContext === "intent_completion") {
-					// Final-review rejection — drop out of the completion-
-					// review phase and route the agent back. Feedback files
-					// were written against the last stage; the agent invokes
-					// /haiku:revisit (or logs a stage_revisit FB directly)
-					// to re-open that stage's elaborate phase and address
-					// them. Reset the dispatched flag so
-					// the next time we re-enter the completion review phase,
-					// the studio-level reviewers RE-AUDIT the fixes instead
-					// of short-circuiting to the gate on the stale "already
-					// dispatched" signal. Also reset intent-scope fix-loop
-					// bolt counters so the next completion cycle starts with
-					// a fresh budget. These fields are workflow-tracked in
-					// INTENT_FIELDS, so we must reseal the integrity
-					// checksum after writing or verifyIntentState() will
-					// false-positive.
-					const intentFilePath = join(intentDir(slug), "intent.md")
-					setFrontmatterField(intentFilePath, "phase", "active")
-					setFrontmatterField(
-						intentFilePath,
-						"completion_review_dispatched",
-						false,
-					)
-					setFrontmatterField(
-						intentFilePath,
-						"completion_review_skipped",
-						false,
-					)
-					resetFixLoopBolts(slug, "")
-					sealIntentState(slug)
-					gitCommitState(
-						`haiku: intent ${slug} completion-review rejected, reopening for revisit`,
-					)
-					syncSessionMetadata(slug, args.state_file as string | undefined)
-					const gateResult = {
-						action: "changes_requested",
-						intent: slug,
-						stage: null,
-						gate_context: "intent_completion",
-						feedback: reviewResult.feedback,
-						annotations: reviewResult.annotations,
-						feedback_ids: feedbackIds,
-						message: `Changes requested on intent completion: ${reviewResult.feedback || "(see annotations)"}.${feedbackSummary} The intent is no longer in final review. Invoke the /haiku:revisit slash command (or log stage_revisit feedback at the target stage directly via \`haiku_feedback\` with \`resolution: "stage_revisit"\`) to re-open the relevant stage, then address the feedback and call \`haiku_run_next\` to drive back to final review.`,
-					}
-					return text(withInstructions(gateResult))
-				}
-				if (gateContext === "elaborate_to_execute") {
-					// Don't advance phase — stay in elaborate so agent can
-					// fix.
-					syncSessionMetadata(slug, args.state_file as string | undefined)
-					// Pre-execute rejection: no feedback files, inline
-					// annotations, direct the agent to edit existing
-					// unstarted unit specs (or add new unit files). Nothing
-					// has been built — there is no artifact-level feedback
-					// to persist.
-					const unstartedUnits = listUnits(intentDirPathAbs, stage)
-						.filter((u) => u.status !== "completed")
-						.map((u) => u.name)
-					const gateResult = {
-						action: "revise_unit_specs",
-						intent: slug,
-						stage,
-						feedback: reviewResult.feedback,
-						annotations: reviewResult.annotations,
-						unstarted_units: unstartedUnits,
-						units_dir: `.haiku/intents/${slug}/stages/${stage}/units/`,
-						message: `Changes requested on unit specs:\n\n${reviewResult.feedback || "(see annotations)"}\n\nNothing has been built yet — NO feedback files were created. Resolve by EDITING the unstarted unit.md files in \`.haiku/intents/${slug}/stages/${stage}/units/\` directly (or adding new unit files if the scope needs expansion). Do NOT draft a full new wave of units to "close feedback" — that's a post-execute flow. When the edits are done, call \`haiku_run_next { intent: "${slug}" }\` again to re-open the review gate.`,
-					}
-					return text(withInstructions(gateResult))
-				}
-				syncSessionMetadata(slug, args.state_file as string | undefined)
-				const gateResult = {
-					action: "changes_requested",
-					intent: slug,
+			try {
+				const prepared = await _prepareGateReview(intentDirPath, gateType, {
+					gateContext,
 					stage,
-					feedback: reviewResult.feedback,
-					annotations: reviewResult.annotations,
-					feedback_ids: feedbackIds,
-					message: `Changes requested: ${reviewResult.feedback || "(see annotations)"}.${feedbackSummary} Address the feedback, then call haiku_run_next { intent: "${slug}" } again.`,
+					nextStage,
+					nextPhase,
+				})
+
+				// Persist session pointers on stage state so haiku_await_gate
+				// can recover them without an explicit session_id arg. Also
+				// gives the architecture map / tooling a stable place to
+				// observe the open session.
+				try {
+					const ssPath = stageStatePath(slug, stage)
+					const ssData = readJson(ssPath)
+					ssData.gate_review_session_id = prepared.session_id
+					ssData.gate_review_url = prepared.review_url
+					ssData.gate_review_context = gateContext
+					ssData.gate_review_next_stage = nextStage
+					ssData.gate_review_next_phase = nextPhase
+					writeJson(ssPath, ssData)
+				} catch {
+					/* non-fatal — agent can still pass session_id explicitly */
 				}
-				return text(withInstructions(gateResult))
+
+				syncSessionMetadata(slug, args.state_file as string | undefined)
+
+				// Browser-attached path: the user already has the SPA tab
+				// open from a prior gate this session, so the agent can
+				// skip "post URL to user" and just call haiku_await_gate.
+				// New-session path: post the URL, then await.
+				const tellUser = prepared.browser_attached
+					? `Stage '${stage}' is ready for review. The page you're on (${prepared.review_url}) just refreshed to this gate.`
+					: `Stage '${stage}' is ready for review. Open ${prepared.review_url} to approve or request changes.`
+				const message = prepared.browser_attached
+					? `Stage '${stage}' is ready for review. The user is already watching the SPA at ${prepared.review_url} (browser_attached=true), so do NOT re-post the URL — just call haiku_await_gate { intent: "${slug}" } to block on their decision.`
+					: `Stage '${stage}' is ready for review at: ${prepared.review_url}\n\nNext: post the URL to the user (so they can open it on any device — headless host, remote control, mobile, web), then call haiku_await_gate { intent: "${slug}" } to block on their decision. Pass auto_open: false on the await call when the MCP host should NOT also try to launch a local browser.`
+
+				const gateAction: Record<string, unknown> = {
+					action: "gate_review",
+					intent: slug,
+					studio: intentStudio,
+					stage,
+					next_stage: nextStage,
+					next_phase: nextPhase,
+					gate_type: gateType,
+					gate_context: gateContext,
+					review_url: prepared.review_url,
+					session_id: prepared.session_id,
+					reused: prepared.reused,
+					browser_attached: prepared.browser_attached,
+					message,
+					tell_user: tellUser,
+					next_step: `Calling haiku_await_gate to wait for your decision.`,
+				}
+				return text(withInstructions(gateAction))
 			} catch (err) {
 				const errorMsg = err instanceof Error ? err.message : String(err)
 				const errorStack = err instanceof Error ? err.stack : ""
 
-				console.error(`[haiku] gate_review failed: ${errorMsg}`)
+				console.error(`[haiku] gate_review prepare failed: ${errorMsg}`)
 				reportError(err, { intent: slug, stage })
 
-				// Log full error to .haiku/ for debugging.
 				try {
 					const logDir = join(process.cwd(), ".haiku", "logs")
 					mkdirSync(logDir, { recursive: true })
 					writeFileSync(
 						join(logDir, "gate-review-error.log"),
-						`${new Date().toISOString()}\nintent: ${slug}\nstage: ${stage}\nerror: ${errorMsg}\n${errorStack}\n---\n`,
+						`${new Date().toISOString()}\nintent: ${slug}\nstage: ${stage}\nphase: prepare\nerror: ${errorMsg}\n${errorStack}\n---\n`,
 						{ flag: "a" },
 					)
 				} catch {
-					/* logging failure is non-fatal */
-				}
-
-				// Classify error: agent-fixable or retryable errors go
-				// back to the agent.
-				const agentFixable =
-					errorMsg.includes("Could not parse intent") ||
-					errorMsg.includes("No such file") ||
-					errorMsg.includes("ENOENT") ||
-					errorMsg.includes("frontmatter") ||
-					errorMsg.includes("invalid identifier") ||
-					errorMsg.includes("Circular dependency") ||
-					errorMsg.includes("timeout") ||
-					errorMsg.includes("Timeout")
-
-				if (agentFixable) {
-					syncSessionMetadata(slug, args.state_file as string | undefined)
-					return {
-						content: [
-							{
-								type: "text" as const,
-								text: `GATE BLOCKED: ${errorMsg}. This is a data issue the agent can fix — check that the intent directory and files are correctly structured, then call haiku_run_next again.`,
-							},
-						],
-						isError: true,
-					}
-				}
-
-				// Infrastructure failure — fall back to elicitation.
-				if (stFile)
-					logSessionEvent(stFile, {
-						event: "gate_elicitation_fallback",
-						intent: slug,
-						stage,
-						error: errorMsg,
-					})
-				if (_elicitInput) {
-					try {
-						const elicitResult = await _elicitInput({
-							message:
-								gateContext === "intent_review"
-									? `Review UI failed (${errorMsg}). Approve intent '${slug}' to begin work?`
-									: `Review UI failed (${errorMsg}). Approve stage '${stage}' specs to proceed to execution?`,
-							requestedSchema: {
-								type: "object" as const,
-								properties: {
-									decision: {
-										type: "string",
-										title: "Decision",
-										description: "Approve specs or request changes",
-										enum: ["approve", "request_changes"],
-									},
-									feedback: {
-										type: "string",
-										title: "Feedback (optional)",
-										description: "Any notes or requested changes",
-									},
-								},
-								required: ["decision"],
-							},
-						})
-
-						// Re-enforce stage branch after the elicitation
-						// await — user may have switched branches while the
-						// prompt was up.
-						{
-							const postElicitGuard = ensureOnStageBranch(slug, stage)
-							if (!postElicitGuard.ok) {
-								return buildGuardResponse(
-									slug,
-									stage,
-									postElicitGuard,
-									"after elicitation",
-								)
-							}
-						}
-
-						if (elicitResult.action === "accept" && elicitResult.content) {
-							const decision = (elicitResult.content as Record<string, string>)
-								.decision
-							const feedback =
-								(elicitResult.content as Record<string, string>).feedback || ""
-							if (decision === "approve") {
-								if (gateContext === "intent_review") {
-									const intentFilePath = join(
-										process.cwd(),
-										intentDirPath,
-										"intent.md",
-									)
-									setFrontmatterField(intentFilePath, "intent_reviewed", true)
-									if (nextPhase) workflowAdvancePhase(slug, stage, nextPhase)
-									gitCommitState(
-										`haiku: intent ${slug} approved by user (elicitation)`,
-									)
-									syncSessionMetadata(
-										slug,
-										args.state_file as string | undefined,
-									)
-									const elicitApproveResult = {
-										action: "intent_approved",
-										intent: slug,
-										stage,
-										from_phase: "elaborate",
-										to_phase: nextPhase,
-										message: `Intent approved — advancing to ${nextPhase || "execute"}. Call haiku_run_next immediately.`,
-									}
-									return text(withInstructions(elicitApproveResult))
-								}
-								if (gateContext === "elaborate_to_execute" && nextPhase) {
-									workflowAdvancePhase(slug, stage, nextPhase)
-									syncSessionMetadata(
-										slug,
-										args.state_file as string | undefined,
-									)
-									const elicitApproveResult = {
-										action: "advance_phase",
-										intent: slug,
-										stage,
-										from_phase: "elaborate",
-										to_phase: nextPhase,
-										message:
-											"Specs approved via elicitation — advancing to execute",
-									}
-									return text(withInstructions(elicitApproveResult))
-								}
-								if (nextStage) {
-									workflowAdvanceStage(slug, stage, nextStage)
-									syncSessionMetadata(
-										slug,
-										args.state_file as string | undefined,
-									)
-									const elicitApproveResult = {
-										action: "advance_stage",
-										intent: slug,
-										stage,
-										next_stage: nextStage,
-										gate_outcome: "advanced",
-										message: "Approved via elicitation",
-									}
-									return text(withInstructions(elicitApproveResult))
-								}
-								// Final stage approved via elicitation — enter
-								// intent-completion bookend instead of completing
-								// silently.
-								workflowCompleteStage(slug, stage, "advanced")
-								syncSessionMetadata(slug, args.state_file as string | undefined)
-								const elicitStudio =
-									(readFrontmatter(join(intentDir(slug), "intent.md"))
-										.studio as string) || ""
-								const elicitApproveResult = completeOrReviewIntent(
-									slug,
-									elicitStudio,
-									"Final stage approved via elicitation.",
-								)
-								return text(withInstructions(elicitApproveResult))
-							}
-							// request_changes
-							syncSessionMetadata(slug, args.state_file as string | undefined)
-							const changeMsg =
-								gateContext === "intent_review"
-									? `Changes requested on intent: ${feedback}. Revise the intent description, then call haiku_run_next { intent: "${slug}" } again.`
-									: `Changes requested: ${feedback}. Call haiku_run_next { intent: "${slug}" } again after fixing.`
-							const elicitChangesResult = {
-								action: "changes_requested",
-								intent: slug,
-								stage,
-								feedback,
-								message: changeMsg,
-							}
-							return text(withInstructions(elicitChangesResult))
-						}
-						// User declined/cancelled elicitation — stay blocked.
-						syncSessionMetadata(slug, args.state_file as string | undefined)
-						const elicitCancelResult = {
-							action: "gate_blocked",
-							intent: slug,
-							stage,
-							message:
-								"Gate review cancelled. Call haiku_run_next again to retry.",
-						}
-						return text(withInstructions(elicitCancelResult))
-					} catch {
-						// Elicitation also failed — return error.
-					}
+					/* non-fatal */
 				}
 
 				syncSessionMetadata(slug, args.state_file as string | undefined)
@@ -812,7 +370,7 @@ export default defineTool({
 					content: [
 						{
 							type: "text" as const,
-							text: `GATE BLOCKED: Review UI and elicitation both failed. Error: ${errorMsg}. Logged to .haiku/logs/gate-review-error.log. Call haiku_run_next to retry.`,
+							text: `GATE PREPARE FAILED: ${errorMsg}. Logged to .haiku/logs/gate-review-error.log. Call haiku_run_next { intent: "${slug}" } to retry.`,
 						},
 					],
 					isError: true,

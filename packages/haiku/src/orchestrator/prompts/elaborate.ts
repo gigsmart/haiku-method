@@ -45,6 +45,7 @@ import {
 	batchDispatchDirective,
 	emitSubagentDispatchBlock,
 	inlineFile,
+	resolveStudioMandateModel,
 } from "./_helpers.js"
 import { definePromptBuilder } from "./define.js"
 import type { PromptBuilderContext } from "./types.js"
@@ -523,11 +524,17 @@ function renderElaborate(ctx: PromptBuilderContext): string {
 				"4. Write the populated document to the stage's discovery path as defined in the template's `location:` frontmatter above — **inside your isolation worktree** when one is allocated. **This is your ONLY write path** — any file written elsewhere is a scope violation.",
 				"5. Be thorough on YOUR axis — this artifact informs all downstream work. Thoroughness within scope is the goal; thoroughness across scope is a violation.",
 			)
+			const discoveryModel = resolveStudioMandateModel({
+				mandatePath: a.templatePath,
+				studio,
+				stage,
+			})
 			fanOutText += `${emitSubagentDispatchBlock({
 				unit: "discovery",
 				hat: a.name,
 				bolt: 1,
 				agentType: "general-purpose",
+				model: discoveryModel,
 				promptBody: lines.join("\n"),
 				heading: `### Subagent: \`${a.name}\``,
 			})}\n\n`

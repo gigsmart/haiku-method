@@ -17,7 +17,7 @@ import {
 import {
 	batchDispatchDirective,
 	inlineFile,
-	resolveReviewAgentModel,
+	resolveStudioMandateModel,
 } from "./_helpers.js"
 import { definePromptBuilder } from "./define.js"
 
@@ -110,7 +110,7 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 			"6. Do NOT critique completed units. Do NOT call `haiku_feedback` — persistence is not wanted here.",
 		]
 
-		const preReviewModel = resolveReviewAgentModel({
+		const preReviewModel = resolveStudioMandateModel({
 			mandatePath,
 			studio,
 			stage,

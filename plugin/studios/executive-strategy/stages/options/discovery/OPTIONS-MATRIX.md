@@ -1,4 +1,5 @@
 ---
+model: opus
 name: options-matrix
 location: .haiku/intents/{intent-slug}/knowledge/OPTIONS-MATRIX.md
 scope: intent

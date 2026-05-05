@@ -16,7 +16,6 @@
 
 import assert from "node:assert"
 import {
-	existsSync,
 	mkdirSync,
 	mkdtempSync,
 	readdirSync,
@@ -923,11 +922,11 @@ await attack(
 		)
 		writeFileSync(
 			join(root, "action-log.jsonl"),
-			JSON.stringify({
+			`${JSON.stringify({
 				path: "../../etc/passwd",
 				sha,
 				tick_counter: 1,
-			}) + "\n",
+			})}\n`,
 		)
 		const result = reconstructPriorBaseline(root, "security")
 		// EXPECTED: the path should NOT appear in the reconstructed

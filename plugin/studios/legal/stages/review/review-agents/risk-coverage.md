@@ -1,4 +1,5 @@
 ---
+model: opus
 interpretation: lens
 ---
 **Mandate:** The agent **MUST** verify all identified risks are adequately addressed and compliance requirements are met.

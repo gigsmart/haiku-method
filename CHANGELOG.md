@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.1] - 2026-05-05
+
+### Fixed
+- Discovery-stage artifact merges no longer block workflow progression.
+- The Stop workflow hook now properly halts execution instead of being ignored.
+
+## [3.11.0] - 2026-05-05
+
+### Added
+- Discovery templates now support model configuration, allowing you to specify which Claude version generates research artifacts and analysis for each stage.
+- Studio integrators and cross-studio decisions now support model configuration for unified governance across multiple studios.
+
+### Changed
+- Model selection now applies consistently across research, review, and decision phases throughout the workflow.
+
+## [3.10.0] - 2026-05-05
+
+### Added
+- Authoring discipline instructions during the elaborate phase that clarify unit composition and feedback quality standards.
+- Fix-loop red flag guidance that identifies common quality issues in the feedback triage workflow.
+
+## [3.9.0] - 2026-05-05
+
+### Added
+- Gate reviews now work in headless and remote environments with prepare/await phases, allowing review completion without a local browser UI.
+- Real-time feedback streaming via WebSocket during gate reviews for visibility in remote and CLI-only setups.
+
+## [3.8.0] - 2026-05-05
+
+### Added
+- Walkthrough-oriented review with step-by-step guidance for reviewing stages and intents.
+- Per-unit output artifacts tab displays which units produced each output.
+- Declaring units banner shows output authorship at a glance.
+
+### Changed
+- Output artifacts now tracked to their declaring units for complete traceability across the workflow.
+- Git worktree handling improved for robust concurrent branch operations.
+- Tool input validation uses strict schemas to detect configuration errors earlier.
+
 ## [3.7.0] - 2026-05-04
 
 ### Added

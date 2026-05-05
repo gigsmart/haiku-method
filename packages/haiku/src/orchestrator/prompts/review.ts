@@ -18,7 +18,7 @@ import {
 	emitSubagentDispatchBlock,
 	inlineFile,
 	readInterpretation,
-	resolveReviewAgentModel,
+	resolveStudioMandateModel,
 } from "./_helpers.js"
 import { definePromptBuilder } from "./define.js"
 import { WORKFLOW_CONTRACTS_REVIEW_BLOCK } from "./WORKFLOW_CONTRACTS_REVIEW_BLOCK.js"
@@ -106,7 +106,7 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 				`${reviewStep++}. Return only a summary count of how many findings you logged.`,
 			)
 			const prompt = reviewLines.join("\n")
-			const reviewAgentModel = resolveReviewAgentModel({
+			const reviewAgentModel = resolveStudioMandateModel({
 				mandatePath,
 				studio,
 				stage,

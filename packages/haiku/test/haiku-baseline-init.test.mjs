@@ -209,7 +209,7 @@ await test("establish-all on a fresh intent writes baselines for all tracked fil
 console.log("\n=== establish-all: idempotency ===")
 
 await test("establish-all on an intent with an existing baseline skips files whose SHA matches; baselines_skipped_existing reflects count", async () => {
-	const { slug, root, intentDir } = makeIntentFixture({
+	const { slug, root } = makeIntentFixture({
 		stages: [
 			{
 				name: "design",

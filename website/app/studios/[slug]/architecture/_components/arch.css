@@ -1,3 +1,10 @@
+/**
+ * biome-ignore-all lint/style/noDescendingSpecificity: this file was ported
+ * verbatim from a standalone HTML page (the architecture-map prototype) with
+ * deliberately hand-tuned selector ordering. Mechanical reordering to satisfy
+ * descending-specificity risks visual regressions across ~35 selectors. The
+ * cascade is intentional; selectors target distinct DOM contexts.
+ */
 /* Defang Tailwind's `prose` typography plugin inside the architecture map.
      The plugin styles `prose code` with a dark background and adds backtick
      ::before / ::after pseudo-elements — neither of which we want. The map

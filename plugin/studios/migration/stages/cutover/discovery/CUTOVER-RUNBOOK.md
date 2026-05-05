@@ -1,4 +1,5 @@
 ---
+model: opus
 name: cutover-runbook
 location: .haiku/intents/{intent-slug}/knowledge/CUTOVER-RUNBOOK.md
 scope: intent

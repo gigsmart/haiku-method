@@ -10,6 +10,7 @@
 import { appendFileSync } from "node:fs"
 import { WsClientMessageSchema, type WsServerMessage } from "haiku-api"
 import type { WebSocket as WsWebSocket } from "ws"
+import { broadcastIntent } from "../intent-broadcaster.js"
 import {
 	getSession,
 	type QuestionAnnotations,
@@ -182,12 +183,33 @@ export function handleWebSocketMessage(sessionId: string, raw: string): void {
 			msg.decision === "approved" ? "approved" : "changes_requested"
 		const feedback = msg.feedback ?? ""
 		const annotations = msg.annotations as ReviewAnnotations | undefined
+		// Queue the decision on the session. If a haiku_await_gate call
+		// is currently blocked (await_active=true), notifySessionUpdate
+		// wakes it and the await consumes pending_decision on its next
+		// loop iteration. If no await is open (await_active=false), the
+		// decision sits queued — the next haiku_await_gate call drains
+		// it on entry before subscribing to a fresh wait. Last-write-
+		// wins: a second submit overwrites the first, which is what the
+		// reviewer means by "actually I want to change my answer."
 		updateSession(sessionId, {
-			status: "decided" as never,
-			decision,
-			feedback,
-			annotations,
+			pending_decision: {
+				decision,
+				feedback,
+				annotations,
+				submitted_at: new Date().toISOString(),
+			},
 		})
+		// Broadcast: any other SPA tab on this intent (or this same
+		// tab — the broadcaster is fan-out, not exclude-self) gets the
+		// queued-decision signal so the UI can show "decision queued,
+		// waiting for engine to pick it up" in the empty state.
+		if (session.intent_slug) {
+			broadcastIntent(session.intent_slug, {
+				type: "pending_decision_changed",
+				session_id: sessionId,
+				queued: true,
+			})
+		}
 		sendToWebSocket(sessionId, {
 			type: "ack",
 			ok: true,

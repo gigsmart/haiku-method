@@ -1,4 +1,5 @@
 ---
+model: opus
 name: research-memo
 location: .haiku/intents/{intent-slug}/knowledge/RESEARCH-MEMO.md
 scope: intent

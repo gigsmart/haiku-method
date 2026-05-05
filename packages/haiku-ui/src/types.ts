@@ -29,4 +29,5 @@ export type {
 	SessionPayload as SessionData,
 	StageArtifact,
 	StageStateInfo,
+	UnitOutputPreview,
 } from "haiku-api"

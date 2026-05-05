@@ -481,6 +481,8 @@ export function ReviewPage({
 							gateBadges={gateBadges}
 							gateType={session.gate_type}
 							approveAction={session.approve_action}
+							awaitActive={session.await_active}
+							pendingDecisionQueued={!!session.pending_decision}
 							getAnnotations={getAnnotations}
 							adHoc={isAdHoc}
 							onFeedbackItemClick={(id) => setHighlightFeedbackId(id)}

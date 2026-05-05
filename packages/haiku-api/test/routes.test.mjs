@@ -26,7 +26,7 @@ const httpDir = join(repoRoot, "packages", "haiku", "src", "http")
 let httpSrc = readFileSync(httpTsPath, "utf8")
 for (const entry of readdirSync(httpDir, { withFileTypes: true })) {
 	if (entry.isFile() && entry.name.endsWith(".ts")) {
-		httpSrc += "\n" + readFileSync(join(httpDir, entry.name), "utf8")
+		httpSrc += `\n${readFileSync(join(httpDir, entry.name), "utf8")}`
 	}
 }
 

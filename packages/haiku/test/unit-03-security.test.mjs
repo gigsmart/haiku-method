@@ -515,14 +515,14 @@ await test("V-11.R3: reconstructPriorBaseline rebuilds from valid sidecar + acti
 	)
 	writeFileSync(
 		join(dir, "action-log.jsonl"),
-		JSON.stringify({
+		`${JSON.stringify({
 			path: "stages/security/artifacts/x.md",
 			sha,
 			author_class: "agent",
 			timestamp: "2026-04-30T00:00:00Z",
 			entry_type: "agent_write",
 			tick_counter: 1,
-		}) + "\n",
+		})}\n`,
 	)
 	const result = reconstructPriorBaseline(dir, "security")
 	assert.ok(result, "expected non-null reconstructed baseline")
@@ -544,11 +544,11 @@ await test("V-11.R4: reconstructPriorBaseline rejects sidecar with mismatched ha
 	)
 	writeFileSync(
 		join(dir, "action-log.jsonl"),
-		JSON.stringify({
+		`${JSON.stringify({
 			path: "stages/security/artifacts/x.md",
 			sha: claimedSha,
 			tick_counter: 1,
-		}) + "\n",
+		})}\n`,
 	)
 	// Sidecar fails sha validation → no validated shas → reconstruction returns null
 	assert.strictEqual(reconstructPriorBaseline(dir, "security"), null)

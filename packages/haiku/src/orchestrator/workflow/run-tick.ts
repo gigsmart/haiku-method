@@ -13,8 +13,9 @@
 // `handlers/index.ts` maps state names to handlers. Adding a new
 // state name = adding the entry to the registry + the file.
 
-import { existsSync, readdirSync } from "node:fs"
+import { existsSync, readdirSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
+import { broadcastIntent } from "../../intent-broadcaster.js"
 import type { OrchestratorAction } from "../../orchestrator.js"
 import { verifyIntentState } from "../../state-integrity.js"
 import {
@@ -70,6 +71,69 @@ export function dispatchOrchestratorAction(
 	}
 }
 
+/** Wrap a tick result with a broadcast to the per-intent live-state
+ *  pub/sub. Every committed tick fans out an event to any SPA tab
+ *  subscribed to this intent's channel so the dashboard can refresh
+ *  without polling. Best-effort — the broadcaster is async-fire-and-
+ *  forget and never throws. */
+function broadcastTick(
+	slug: string,
+	result: WorkflowTickResult,
+): WorkflowTickResult {
+	if (result.action) {
+		const stageState = result.context?.stageState as
+			| Record<string, unknown>
+			| undefined
+		broadcastIntent(slug, {
+			type: "tick_committed",
+			action: (result.action as { action?: string }).action ?? "unknown",
+			phase:
+				typeof stageState?.phase === "string" ? stageState.phase : undefined,
+			stage: result.context?.currentStage,
+			iteration:
+				typeof stageState?.iteration === "number"
+					? stageState.iteration
+					: undefined,
+		})
+	}
+	return result
+}
+
+/** Persist the most recent action's name to `.last_action.json` for
+ *  the Stop hook's "should I block?" decision. Best-effort — the
+ *  sentinel is out-of-band; a write failure must never abort a tick. */
+function writeLastActionSentinel(result: WorkflowTickResult): void {
+	if (!result.action) return
+	try {
+		writeFileSync(
+			join(result.context.intentDirPath, ".last_action.json"),
+			`${JSON.stringify({ name: result.action.action, at: new Date().toISOString() })}\n`,
+		)
+	} catch {
+		/* best-effort sentinel; never fail the tick */
+	}
+}
+
+/** Run one workflow tick for an intent. Wrapper that fans out a
+ *  `tick_committed` event to any SPA tab subscribed to this intent's
+ *  live-state channel and writes the `last_action` sentinel before
+ *  returning. Doing both in the wrapper guarantees every tick path —
+ *  including early-return gates like `manual_change_assessment` and
+ *  `upstream_reconciliation_required` — produces the same out-of-band
+ *  state that the Stop hook depends on. Returns null only when the
+ *  intent doesn't exist on disk. */
+export function runWorkflowTick(
+	slug: string,
+	root?: string,
+): WorkflowTickResult | null {
+	const result = runWorkflowTickInner(slug, root)
+	if (result) {
+		writeLastActionSentinel(result)
+		broadcastTick(slug, result)
+	}
+	return result
+}
+
 /** Run one workflow tick for an intent. Steps:
  *
  *   1. Pre-tick consistency repair (may mutate disk, may short-circuit
@@ -80,7 +144,7 @@ export function dispatchOrchestratorAction(
  *   4. Look up the handler for the derived state and run it.
  *
  *  Returns null only when the intent doesn't exist on disk. */
-export function runWorkflowTick(
+function runWorkflowTickInner(
 	slug: string,
 	root?: string,
 ): WorkflowTickResult | null {
@@ -266,6 +330,10 @@ export function runWorkflowTick(
 	}
 
 	const action = dispatchHandler(derived.state, derived.context, root)
+
+	// `.last_action.json` is written by the outer `runWorkflowTick`
+	// wrapper so every early-return path above also persists the
+	// sentinel, not just this main dispatch path.
 
 	return {
 		state: derived.state,

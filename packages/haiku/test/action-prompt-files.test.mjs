@@ -385,10 +385,9 @@ Intent quality mandate.
 	})
 
 	await test("intent_completion_fix action is file-backed", () => {
-		const { projDir, intentDirPath, slug, studio, stage } = createProject(
-			"pf-icf",
-			{ stage: "build" },
-		)
+		const { projDir, intentDirPath, slug, studio } = createProject("pf-icf", {
+			stage: "build",
+		})
 		const studioFixHatsDir = join(
 			intentDirPath,
 			"..",

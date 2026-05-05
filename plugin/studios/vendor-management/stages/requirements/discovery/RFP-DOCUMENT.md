@@ -1,4 +1,5 @@
 ---
+model: opus
 name: rfp-document
 location: .haiku/intents/{intent-slug}/knowledge/RFP-DOCUMENT.md
 scope: intent

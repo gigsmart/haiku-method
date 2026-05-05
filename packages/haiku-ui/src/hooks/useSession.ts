@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { ApiError } from "../api/client"
 import { useApiClient } from "../api/context"
 import type { SessionData } from "../types"
@@ -17,36 +17,43 @@ export function useSession(sessionId: string) {
 	 *  rather than a generic error. */
 	const [notFound, setNotFound] = useState(false)
 	const client = useApiClient()
+	const cancelledRef = useRef(false)
 
-	useEffect(() => {
-		let cancelled = false
-
-		async function fetchSession() {
-			try {
-				const data = await client.fetchSession(sessionId)
-				if (!cancelled) {
-					setSession(data)
-					setLoading(false)
-				}
-			} catch (err) {
-				if (!cancelled) {
-					if (err instanceof ApiError && err.status === 404) {
-						setNotFound(true)
-					}
-					setError(
-						err instanceof Error ? err.message : "Failed to load session",
-					)
-					setLoading(false)
-				}
+	const fetchSession = useCallback(async () => {
+		try {
+			const data = await client.fetchSession(sessionId)
+			if (!cancelledRef.current) {
+				setSession(data)
+				setLoading(false)
 			}
-		}
-
-		fetchSession()
-
-		return () => {
-			cancelled = true
+		} catch (err) {
+			if (!cancelledRef.current) {
+				if (err instanceof ApiError && err.status === 404) {
+					setNotFound(true)
+				}
+				setError(err instanceof Error ? err.message : "Failed to load session")
+				setLoading(false)
+			}
 		}
 	}, [sessionId, client])
 
-	return { session, loading, error, notFound }
+	useEffect(() => {
+		cancelledRef.current = false
+		fetchSession()
+		return () => {
+			cancelledRef.current = true
+		}
+	}, [fetchSession])
+
+	/** Re-fetch the session snapshot. Used by the WS layer when an
+	 *  intent-event arrives — the snapshot is the canonical view, so
+	 *  rather than reduce events into the existing object we just
+	 *  pull a fresh copy from /api/session/:id. Cheap; the API
+	 *  response is already projected from the in-memory session record
+	 *  and disk-fresh state.json. */
+	const refetch = useCallback(() => {
+		void fetchSession()
+	}, [fetchSession])
+
+	return { session, loading, error, notFound, refetch }
 }

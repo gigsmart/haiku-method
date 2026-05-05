@@ -1,4 +1,5 @@
 ---
+model: opus
 name: postmortem
 location: .haiku/intents/{intent-slug}/knowledge/POSTMORTEM.md
 scope: intent

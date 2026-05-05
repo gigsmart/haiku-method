@@ -22,7 +22,7 @@ import {
 	emitSubagentDispatchBlock,
 	inlineFile,
 	readInterpretation,
-	resolveReviewAgentModel,
+	resolveStudioMandateModel,
 } from "./_helpers.js"
 import { definePromptBuilder } from "./define.js"
 import { WORKFLOW_CONTRACTS_FIX_LOOP_BLOCK } from "./WORKFLOW_CONTRACTS_FIX_LOOP_BLOCK.js"
@@ -207,7 +207,7 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 			}
 
 			const fixHatModel = hatPath
-				? resolveReviewAgentModel({ mandatePath: hatPath, studio })
+				? resolveStudioMandateModel({ mandatePath: hatPath, studio })
 				: undefined
 			const dispatchBlock = emitSubagentDispatchBlock({
 				unit: `intent-fix-${fbId}`,

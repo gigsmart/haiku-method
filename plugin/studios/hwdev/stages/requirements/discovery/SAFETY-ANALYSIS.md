@@ -1,4 +1,5 @@
 ---
+model: opus
 name: safety-analysis
 location: .haiku/intents/{intent-slug}/knowledge/SAFETY-ANALYSIS.md
 scope: intent

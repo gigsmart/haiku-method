@@ -1,5 +1,6 @@
 ---
 name: architecture
+model: opus
 location: .haiku/knowledge/ARCHITECTURE.md
 scope: project
 format: text

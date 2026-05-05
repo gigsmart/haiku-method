@@ -1,4 +1,5 @@
 ---
+model: opus
 name: audit-result
 location: .haiku/intents/{intent-slug}/knowledge/AUDIT-RESULT.md
 scope: intent

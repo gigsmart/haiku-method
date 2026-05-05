@@ -1,4 +1,5 @@
 ---
+model: opus
 name: api-surface
 location: .haiku/intents/{intent-slug}/knowledge/API-SURFACE.md
 scope: intent

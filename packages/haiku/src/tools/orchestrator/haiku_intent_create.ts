@@ -216,6 +216,63 @@ export default defineTool({
 
 		writeFileSync(join(iDir, "intent.md"), intentContent)
 
+		// Seed `.gitattributes` for engine-owned append-only event
+		// streams. Both `action-log.jsonl` and `write-audit.jsonl` are
+		// written from EVERY branch the engine touches (intent main,
+		// stage branches, fix-chain worktrees, discovery worktrees).
+		// Without `merge=union`, every fix-chain that ran a workflow
+		// tick conflicts with the base on the JSONL append, the
+		// integrator can't cleanly resolve the loss-prone "did you
+		// mean to drop the other side's events?" question, and the
+		// integrator cap eventually trips — leaving the chain's real
+		// content stranded on a dead worktree. `merge=union` is the
+		// textbook fix for append-only logs: git concatenates both
+		// sides' lines automatically, no integrator involvement
+		// needed.
+		writeFileSync(
+			join(iDir, ".gitattributes"),
+			[
+				"# Engine-owned append-only event streams. `merge=union` tells git",
+				"# to concatenate both sides on conflict — these files are pure",
+				"# event streams and never benefit from manual conflict resolution.",
+				"action-log.jsonl merge=union",
+				"write-audit.jsonl merge=union",
+				"",
+			].join("\n"),
+		)
+
+		// Stage + commit `.gitattributes` ON THE INTENT MAIN BRANCH
+		// before any stage / unit / fix-chain / discovery worktree
+		// can fork from it. The bulk `gitCommitState` call below
+		// would normally pick this up, but it swallows errors (e.g.
+		// pre-commit hook failure) silently — so attempt an explicit
+		// commit here first. Failure is non-fatal: the next commit
+		// will retry, and `ensureIntentGitAttributes` is the
+		// belt-and-braces auto-repair on legacy intents anyway.
+		if (isGitRepo()) {
+			try {
+				const rel = `.haiku/intents/${slug}/.gitattributes`
+				execFileSync("git", ["add", "--", rel], { stdio: "pipe" })
+				execFileSync(
+					"git",
+					[
+						"commit",
+						"-m",
+						`haiku: seed .gitattributes (merge=union for event streams) for ${slug}`,
+						"--",
+						rel,
+					],
+					{ stdio: "pipe" },
+				)
+			} catch {
+				// Pre-commit hook, dirty index, etc. — non-fatal. The
+				// `gitCommitState` below will pick it up if the user's
+				// hook tolerates the bulk add; otherwise the auto-repair
+				// in `ensureIntentGitAttributes` fires on the next
+				// worktree-creation tick.
+			}
+		}
+
 		// Also write conversation context to knowledge for
 		// discoverability.
 		if (context) {

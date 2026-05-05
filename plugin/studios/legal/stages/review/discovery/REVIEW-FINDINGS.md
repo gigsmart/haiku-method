@@ -1,4 +1,5 @@
 ---
+model: opus
 name: review-findings
 location: .haiku/intents/{intent-slug}/knowledge/REVIEW-FINDINGS.md
 scope: intent

@@ -34,7 +34,7 @@ export function StageContent({
 		inlineComments,
 		setInlineComments,
 		pins,
-		setPins,
+		setPins: _setPins,
 	} = useReviewContext()
 	const navigate = useNavigate()
 

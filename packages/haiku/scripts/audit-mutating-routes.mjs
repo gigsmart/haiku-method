@@ -47,7 +47,7 @@
  * the hook model). Runtime CSRF behaviour is covered by the test suite.
  */
 
-import { readdirSync, readFileSync, statSync } from "node:fs"
+import { readdirSync, readFileSync } from "node:fs"
 import { dirname, join, relative, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 

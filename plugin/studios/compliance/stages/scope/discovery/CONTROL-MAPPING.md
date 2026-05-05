@@ -1,4 +1,5 @@
 ---
+model: opus
 name: control-mapping
 location: .haiku/intents/{intent-slug}/knowledge/CONTROL-MAPPING.md
 scope: intent

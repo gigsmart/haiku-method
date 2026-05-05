@@ -655,215 +655,210 @@ await withEnv({}, (t) => {
 // drift-detection-gate.ts and run-tick.ts; here we only verify the
 // allow-lists per event since the emit sites themselves are unit-tested by
 // the gate suites.
-{
-	test("schema: every drift/reconciliation event has a documented allow-list", () => {
-		const SCHEMAS = {
-			"haiku.drift.gate.kill_switch_hit": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-			],
-			"haiku.drift.gate.tick": ["intent_slug", "stage", "tick_iteration"],
-			"haiku.drift.gate.duration_ms": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"duration_ms",
-				"outcome",
-			],
-			"haiku.drift.markers.open_count": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"open_count",
-			],
-			"haiku.drift.markers.total_count": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"total_count",
-			],
-			"haiku.drift.markers.stale_removed": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"removed_count",
-			],
-			"haiku.drift.markers.suppressed_count": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"count",
-			],
-			"haiku.drift.surface.size": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"file_count",
-			],
-			"haiku.drift.findings.count": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"count",
-				"synthetic",
-			],
-			"haiku.drift.silent_auto_add.count": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"count",
-			],
-			"haiku.drift.baseline.established": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"file_count",
-			],
-			"haiku.drift.baseline.corrupt": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"error",
-			],
-			"haiku.drift.baseline.write_failed": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"error",
-				"site",
-			],
-			"haiku.drift.findings.mass_synthesized": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"raw_findings_count",
-				"effective_surface_size",
-				"drift_ratio",
-			],
-			"haiku.drift.assessments.count": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"count",
-			],
-			"haiku.drift.assessments.resolved": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"count",
-			],
-			"haiku.reconciliation.fingerprint.duration_ms": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"duration_ms",
-			],
-			"haiku.reconciliation.fingerprint.established": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-			],
-			"haiku.reconciliation.fingerprint.matched": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-			],
-			"haiku.reconciliation.fingerprint.drifted": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-			],
-			"haiku.reconciliation.fingerprint.skipped": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"reason",
-			],
-			"haiku.reconciliation.fingerprint.write_failed": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"error",
-			],
-			"haiku.reconciliation.findings.emitted": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"count",
-			],
-			"haiku.reconciliation.corpus.bytes": [
-				"intent_slug",
-				"stage",
-				"tick_iteration",
-				"bytes",
-			],
-		}
-		// Every schema must include the correlation triple — the PII gate
-		// treats absence of intent_slug as a violation upstream, but here
-		// we statically guarantee the contract at the schema layer too.
-		for (const [name, keys] of Object.entries(SCHEMAS)) {
-			assert.ok(keys.includes("intent_slug"), `${name} missing intent_slug`)
-			assert.ok(keys.includes("stage"), `${name} missing stage`)
+test("schema: every drift/reconciliation event has a documented allow-list", () => {
+	const SCHEMAS = {
+		"haiku.drift.gate.kill_switch_hit": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+		],
+		"haiku.drift.gate.tick": ["intent_slug", "stage", "tick_iteration"],
+		"haiku.drift.gate.duration_ms": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"duration_ms",
+			"outcome",
+		],
+		"haiku.drift.markers.open_count": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"open_count",
+		],
+		"haiku.drift.markers.total_count": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"total_count",
+		],
+		"haiku.drift.markers.stale_removed": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"removed_count",
+		],
+		"haiku.drift.markers.suppressed_count": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"count",
+		],
+		"haiku.drift.surface.size": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"file_count",
+		],
+		"haiku.drift.findings.count": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"count",
+			"synthetic",
+		],
+		"haiku.drift.silent_auto_add.count": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"count",
+		],
+		"haiku.drift.baseline.established": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"file_count",
+		],
+		"haiku.drift.baseline.corrupt": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"error",
+		],
+		"haiku.drift.baseline.write_failed": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"error",
+			"site",
+		],
+		"haiku.drift.findings.mass_synthesized": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"raw_findings_count",
+			"effective_surface_size",
+			"drift_ratio",
+		],
+		"haiku.drift.assessments.count": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"count",
+		],
+		"haiku.drift.assessments.resolved": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"count",
+		],
+		"haiku.reconciliation.fingerprint.duration_ms": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"duration_ms",
+		],
+		"haiku.reconciliation.fingerprint.established": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+		],
+		"haiku.reconciliation.fingerprint.matched": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+		],
+		"haiku.reconciliation.fingerprint.drifted": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+		],
+		"haiku.reconciliation.fingerprint.skipped": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"reason",
+		],
+		"haiku.reconciliation.fingerprint.write_failed": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"error",
+		],
+		"haiku.reconciliation.findings.emitted": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"count",
+		],
+		"haiku.reconciliation.corpus.bytes": [
+			"intent_slug",
+			"stage",
+			"tick_iteration",
+			"bytes",
+		],
+	}
+	// Every schema must include the correlation triple — the PII gate
+	// treats absence of intent_slug as a violation upstream, but here
+	// we statically guarantee the contract at the schema layer too.
+	for (const [name, keys] of Object.entries(SCHEMAS)) {
+		assert.ok(keys.includes("intent_slug"), `${name} missing intent_slug`)
+		assert.ok(keys.includes("stage"), `${name} missing stage`)
+		assert.ok(keys.includes("tick_iteration"), `${name} missing tick_iteration`)
+	}
+	// And no schema may declare a key that lives in the PII deny list.
+	// This is the static counterpart to the runtime sanitiser: even
+	// the documented schema can't accidentally pin a body-shaped or
+	// credential-shaped key. Comparison is case-folded to mirror
+	// `sanitizeAttributes` (HTTP header / env-var conventions use
+	// mixed case and an exact-match would let `Authorization` through).
+	const denied = new Set([
+		// Body / content-shaped
+		"diff_unified",
+		"excerpt",
+		"file_content",
+		"file_body",
+		"user_email",
+		"user_name",
+		"message_body",
+		"finding_body",
+		"fb_body",
+		"content",
+		// Credential-shaped
+		"password",
+		"passwd",
+		"pwd",
+		"token",
+		"access_token",
+		"refresh_token",
+		"id_token",
+		"bearer_token",
+		"bearer",
+		"api_key",
+		"apikey",
+		"api-key",
+		"authorization",
+		"auth_header",
+		"auth",
+		"secret",
+		"client_secret",
+		"signing_secret",
+		"credential",
+		"credentials",
+		"session_id",
+		"cookie",
+		"private_key",
+		"pem",
+	])
+	for (const [name, keys] of Object.entries(SCHEMAS)) {
+		for (const key of keys) {
 			assert.ok(
-				keys.includes("tick_iteration"),
-				`${name} missing tick_iteration`,
+				!denied.has(key.toLowerCase()),
+				`${name} declares deny-listed key "${key}"`,
 			)
 		}
-		// And no schema may declare a key that lives in the PII deny list.
-		// This is the static counterpart to the runtime sanitiser: even
-		// the documented schema can't accidentally pin a body-shaped or
-		// credential-shaped key. Comparison is case-folded to mirror
-		// `sanitizeAttributes` (HTTP header / env-var conventions use
-		// mixed case and an exact-match would let `Authorization` through).
-		const denied = new Set([
-			// Body / content-shaped
-			"diff_unified",
-			"excerpt",
-			"file_content",
-			"file_body",
-			"user_email",
-			"user_name",
-			"message_body",
-			"finding_body",
-			"fb_body",
-			"content",
-			// Credential-shaped
-			"password",
-			"passwd",
-			"pwd",
-			"token",
-			"access_token",
-			"refresh_token",
-			"id_token",
-			"bearer_token",
-			"bearer",
-			"api_key",
-			"apikey",
-			"api-key",
-			"authorization",
-			"auth_header",
-			"auth",
-			"secret",
-			"client_secret",
-			"signing_secret",
-			"credential",
-			"credentials",
-			"session_id",
-			"cookie",
-			"private_key",
-			"pem",
-		])
-		for (const [name, keys] of Object.entries(SCHEMAS)) {
-			for (const key of keys) {
-				assert.ok(
-					!denied.has(key.toLowerCase()),
-					`${name} declares deny-listed key "${key}"`,
-				)
-			}
-		}
-	})
-}
+	}
+})
 
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed > 0 ? 1 : 0)

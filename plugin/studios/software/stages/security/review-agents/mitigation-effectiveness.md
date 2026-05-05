@@ -1,4 +1,5 @@
 ---
+model: opus
 interpretation: lens
 ---
 **Mandate:** The agent **MUST** challenge whether proposed mitigations actually address the threats they claim to.

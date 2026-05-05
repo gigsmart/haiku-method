@@ -1,4 +1,5 @@
 ---
+model: opus
 interpretation: lens
 ---
 **Mandate:** The agent **MUST** verify every safety-critical code path identified in the safety analysis is implemented and tested.

@@ -1,4 +1,5 @@
 ---
+model: opus
 name: decision-brief
 location: .haiku/intents/{intent-slug}/knowledge/DECISION-BRIEF.md
 scope: intent

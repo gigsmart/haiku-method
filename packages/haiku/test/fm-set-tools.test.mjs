@@ -126,7 +126,18 @@ test("missing field returns error", () => {
 	withCwd(root, () => {
 		const r = call("haiku_settings_set", { value: "software" })
 		assert.strictEqual(r.isError, true)
-		assert.strictEqual(r.parsed.error, "settings_field_required")
+		// AJV input gate fires before the handler — `field` is a required
+		// schema property, so the missing-field rejection now surfaces as
+		// the stable `<tool>_input_invalid` code with the field path
+		// pinned in `errors[]`.
+		assert.strictEqual(r.parsed.error, "haiku_settings_set_input_invalid")
+		assert.ok(
+			r.parsed.errors.some(
+				(e) =>
+					e.keyword === "required" && e.params?.missingProperty === "field",
+			),
+			"Expected required-property violation on /field",
+		)
 	})
 	rmSync(root, { recursive: true, force: true })
 })

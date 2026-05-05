@@ -1,4 +1,5 @@
 ---
+model: opus
 name: gap-report
 location: .haiku/intents/{intent-slug}/knowledge/GAP-REPORT.md
 scope: intent

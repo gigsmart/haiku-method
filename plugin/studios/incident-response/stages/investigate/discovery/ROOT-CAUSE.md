@@ -1,4 +1,5 @@
 ---
+model: opus
 name: root-cause
 location: .haiku/intents/{intent-slug}/knowledge/ROOT-CAUSE.md
 scope: intent

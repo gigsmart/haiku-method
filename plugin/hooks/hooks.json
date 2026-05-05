@@ -75,7 +75,7 @@
 					{
 						"type": "command",
 						"command": "\"${CLAUDE_PLUGIN_ROOT}/bin/haiku\" hook enforce-iteration",
-						"async": true
+						"timeout": 5
 					}
 				]
 			}

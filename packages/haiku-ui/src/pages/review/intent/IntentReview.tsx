@@ -1,5 +1,5 @@
 import { CriteriaChecklist, MarkdownViewer, StatusBadge } from "@haiku/shared"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Card, SectionHeading } from "../../../atoms/Card"
 import { type TabDef, Tabs } from "../../../molecules/Tabs"
 import {
@@ -24,7 +24,7 @@ import {
 	markdownToSimpleHtml,
 } from "../shared/section-helpers"
 import type { ReviewPageSessionData } from "../shared/session-data"
-import { UnitsTable } from "../shared/UnitsTable"
+import { UnitsTable, type UnitsTableHandle } from "../shared/UnitsTable"
 
 export interface SubReviewProps {
 	session: ReviewPageSessionData
@@ -37,9 +37,11 @@ export interface SubReviewProps {
 
 export function IntentReview({
 	session,
+	sessionId: _sessionId,
 	onInlineCommentsChange,
 	onPinsChange,
 }: SubReviewProps) {
+	const unitsTableRef = useRef<UnitsTableHandle | null>(null)
 	const intent =
 		session.intent ??
 		({
@@ -58,6 +60,7 @@ export function IntentReview({
 	const knowledgeFiles = session.knowledge_files ?? []
 	const stageArtifacts = session.stage_artifacts ?? []
 	const outputArtifacts = session.output_artifacts ?? []
+	const unitOutputs = session.unit_outputs ?? {}
 	const [dagMaximized, setDagMaximized] = useState(false)
 
 	if (!intent) {
@@ -283,8 +286,10 @@ export function IntentReview({
 					<Card>
 						<SectionHeading>Units</SectionHeading>
 						<UnitsTable
+							ref={unitsTableRef}
 							units={units}
 							unitMockups={unitMockupsMap}
+							unitOutputs={unitOutputs}
 							onInlineCommentsChange={onInlineCommentsChange}
 							previousUnitContents={session.previous_review?.unitRawContents}
 						/>
@@ -312,6 +317,14 @@ export function IntentReview({
 				<OutputArtifactsTab
 					artifacts={outputArtifacts}
 					onInlineCommentsChange={onInlineCommentsChange}
+					outputDeclaredBy={session.output_declared_by}
+					onUnitClick={(unitSlug) => {
+						// Imperative bridge — UnitsTable owns the
+						// expand+scroll lifecycle and exposes a single
+						// `expandAndScrollTo` handle. No DOM lookups, no
+						// duplicate state about which row is expanded.
+						unitsTableRef.current?.expandAndScrollTo(unitSlug)
+					}}
 				/>
 			),
 		},

@@ -1,4 +1,5 @@
 ---
+model: opus
 name: forecast-model
 location: .haiku/intents/{intent-slug}/knowledge/FORECAST-MODEL.md
 scope: intent

@@ -1,4 +1,5 @@
 ---
+model: opus
 interpretation: lens
 ---
 **Mandate:** The agent **MUST** verify landscape analysis is evidence-based and covers all relevant dimensions.

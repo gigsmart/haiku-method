@@ -1,4 +1,5 @@
 ---
+model: opus
 name: migration-inventory
 location: .haiku/intents/{intent-slug}/knowledge/MIGRATION-INVENTORY.md
 scope: intent

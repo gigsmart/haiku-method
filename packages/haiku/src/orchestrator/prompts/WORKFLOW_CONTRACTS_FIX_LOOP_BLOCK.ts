@@ -17,4 +17,12 @@ export const WORKFLOW_CONTRACTS_FIX_LOOP_BLOCK = [
 	"#### Per-hat action rules live in the subagent prompts",
 	"",
 	"This contract covers dispatch coordination, the bolt cap, and the per-finding scoping rule. The action-rules each fix-mode hat follows during its own work — investigate root cause before editing, verify the finding against the artifact before fixing (and `haiku_feedback_reject` if the finding is stale or invalid), no hedging in summaries, no out-of-scope edits — live as numbered steps in the per-hat subagent prompts emitted below. Every fix-mode hat reads its own rules; this block exists so the dispatching agent understands the contract its subagents will follow.",
+	"",
+	"#### Red flags (STOP and re-read this contract if you catch yourself thinking)",
+	"",
+	"- \"I'll just rewrite the file — that's faster than tracing the finding\" — read the finding body and the flagged artifact first; fix the specific gap. Bolts spent rewriting unrelated code don't close the open feedback and risk introducing new findings.",
+	'- "The finding is wrong, I\'ll close it via advance" — invalid findings get `haiku_feedback_reject` with a concrete reason. Advancing on a wrong finding silently accepts it and pollutes the closure record.',
+	"- \"I see another issue while I'm here, I'll fix it too\" — log it as a new feedback item; do NOT bundle the fix into this loop. Each finding is its own scope; bundled fixes serialize what should run in parallel and conflate closure signals.",
+	'- "The artifact already looks fixed, I\'ll just close" — re-read both the finding body and the artifact and verify the gap is actually addressed, not just plausibly addressed. The terminal hat catches this; getting there earlier saves a bolt.',
+	'- "Later is the load-bearing word" — "I\'ll add the test later", "I\'ll come back for the edge case", "the bolt cap will catch it" — the next bolt costs the same as this one. Do the work in this hat.',
 ].join("\n")

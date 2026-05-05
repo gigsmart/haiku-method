@@ -1,4 +1,5 @@
 ---
+model: opus
 scope: intent
 interpretation: lens
 ---

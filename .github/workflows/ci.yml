@@ -28,6 +28,14 @@ jobs:
       - name: Run Biome check
         run: npx biome check packages/haiku/src
 
+      # God-file guardrail. Fails the build if any tracked .ts/.tsx
+      # source file crosses the size + export-count budget without an
+      # explicit allowlist entry. Prevents the next state-tools.ts
+      # from silently growing to 11k lines / 101 exports before anyone
+      # notices. Allowlist + thresholds documented in the script.
+      - name: Check for god files
+        run: node scripts/check-no-god-files.mjs
+
   test:
     name: MCP Tests
     runs-on: ubuntu-latest

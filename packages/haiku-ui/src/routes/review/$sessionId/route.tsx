@@ -133,10 +133,31 @@ function useFabRef() {
 
 function ReviewLayout(): React.ReactElement {
 	const { sessionId } = Route.useParams()
-	const { session, loading, error, notFound } = useSession(sessionId)
+	const { session, loading, error, notFound, refetch } = useSession(sessionId)
 	const [sessionEnded, setSessionEnded] = useState(false)
+	// Per-intent live-state events arrive over the WS as the workflow
+	// engine ticks, gates open/close, awaits flip on/off, and decisions
+	// queue. The simplest correct response is to re-pull the full
+	// session snapshot — the API projects from disk + memory and is
+	// authoritative. Debounce to coalesce bursts (a single tick can
+	// fan out 2-3 events: gate_prepared + await_state_changed +
+	// pending_decision_changed).
+	const refetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	useEffect(
+		() => () => {
+			if (refetchTimerRef.current) clearTimeout(refetchTimerRef.current)
+		},
+		[],
+	)
 	const wsRef = useSessionWebSocket(sessionId, {
 		onServerClose: () => setSessionEnded(true),
+		onIntentEvent: () => {
+			if (refetchTimerRef.current) clearTimeout(refetchTimerRef.current)
+			refetchTimerRef.current = setTimeout(() => {
+				refetchTimerRef.current = null
+				refetch()
+			}, 250)
+		},
 	})
 	const apiClient = useApiClient()
 
@@ -471,6 +492,8 @@ function ReviewLayoutLoaded({
 								gateBadges={gateBadges}
 								gateType={session.gate_type}
 								approveAction={session.approve_action}
+								awaitActive={session.await_active}
+								pendingDecisionQueued={!!session.pending_decision}
 								getAnnotations={getAnnotations}
 								adHoc={isAdHoc}
 								onFeedbackItemClick={(id) => setHighlightFeedbackId(id)}
@@ -511,6 +534,8 @@ function ReviewLayoutLoaded({
 									stageOrder={stageNamesOrdered}
 									deliveryReviewUrl={deliveryReviewUrl}
 									discoveredReviewUrl={discoveredReviewUrl}
+									outputArtifacts={session.output_artifacts}
+									outputDeclaredBy={session.output_declared_by}
 								/>
 							) : (
 								<Outlet />

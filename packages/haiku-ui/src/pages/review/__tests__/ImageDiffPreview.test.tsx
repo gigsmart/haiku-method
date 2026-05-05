@@ -32,7 +32,7 @@ function expandFirstRow(): void {
 	fireEvent.click(btns[0])
 }
 
-function expandAllRows(): void {
+function _expandAllRows(): void {
 	const btns = screen.getAllByText(/View diff and rationale/i)
 	for (const b of btns) fireEvent.click(b)
 }

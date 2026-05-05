@@ -1,4 +1,5 @@
 ---
+model: opus
 name: landscape-analysis
 location: .haiku/intents/{intent-slug}/knowledge/LANDSCAPE-ANALYSIS.md
 scope: intent

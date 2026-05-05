@@ -1,4 +1,5 @@
 ---
+model: opus
 name: budget-plan
 location: .haiku/intents/{intent-slug}/knowledge/BUDGET-PLAN.md
 scope: intent

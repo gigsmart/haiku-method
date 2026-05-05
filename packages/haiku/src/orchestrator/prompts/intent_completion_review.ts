@@ -12,7 +12,7 @@ import {
 	emitSubagentDispatchBlock,
 	inlineFile,
 	readInterpretation,
-	resolveReviewAgentModel,
+	resolveStudioMandateModel,
 } from "./_helpers.js"
 import { definePromptBuilder } from "./define.js"
 
@@ -65,7 +65,7 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 			"4. Return only a summary count of how many findings you logged.",
 		)
 		const prompt = reviewLines.join("\n")
-		const studioReviewModel = resolveReviewAgentModel({
+		const studioReviewModel = resolveStudioMandateModel({
 			mandatePath,
 			studio,
 		})
