@@ -2388,7 +2388,13 @@ export function mergeDiscoveryWorktree(
 				intentDir,
 			])
 			if (staged) {
-				tryRun([
+				// Use `run()` (not `tryRun()`) so a commit failure (pre-commit
+				// hook rejection, index lock, etc.) surfaces the real error via
+				// the outer try/catch rather than silently falling through to
+				// `mergeHere()` with staged-but-uncommitted files (which would
+				// produce a confusing "you have uncommitted changes" merge
+				// error instead of the actual commit failure cause).
+				run([
 					"git",
 					"commit",
 					"-m",

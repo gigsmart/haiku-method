@@ -99,16 +99,38 @@ function broadcastTick(
 	return result
 }
 
+/** Persist the most recent action's name to `.last_action.json` for
+ *  the Stop hook's "should I block?" decision. Best-effort — the
+ *  sentinel is out-of-band; a write failure must never abort a tick. */
+function writeLastActionSentinel(result: WorkflowTickResult): void {
+	if (!result.action) return
+	try {
+		writeFileSync(
+			join(result.context.intentDirPath, ".last_action.json"),
+			`${JSON.stringify({ name: result.action.action, at: new Date().toISOString() })}\n`,
+		)
+	} catch {
+		/* best-effort sentinel; never fail the tick */
+	}
+}
+
 /** Run one workflow tick for an intent. Wrapper that fans out a
  *  `tick_committed` event to any SPA tab subscribed to this intent's
- *  live-state channel before returning. Returns null only when the
+ *  live-state channel and writes the `last_action` sentinel before
+ *  returning. Doing both in the wrapper guarantees every tick path —
+ *  including early-return gates like `manual_change_assessment` and
+ *  `upstream_reconciliation_required` — produces the same out-of-band
+ *  state that the Stop hook depends on. Returns null only when the
  *  intent doesn't exist on disk. */
 export function runWorkflowTick(
 	slug: string,
 	root?: string,
 ): WorkflowTickResult | null {
 	const result = runWorkflowTickInner(slug, root)
-	if (result) broadcastTick(slug, result)
+	if (result) {
+		writeLastActionSentinel(result)
+		broadcastTick(slug, result)
+	}
 	return result
 }
 
@@ -309,22 +331,9 @@ function runWorkflowTickInner(
 
 	const action = dispatchHandler(derived.state, derived.context, root)
 
-	// Persist last_action for the Stop hook's "should I block?" decision.
-	// The hook reads this sentinel to distinguish (a) actions that mean
-	// "agent has work to do, then call run_next" — block stop and re-prompt
-	// — from (b) actions that mean "engine is waiting for a human or is in
-	// an unrecoverable break" — let the agent stop so the user can act.
-	// Best-effort; never block the tick on a write failure.
-	if (action) {
-		try {
-			writeFileSync(
-				join(derived.context.intentDirPath, ".last_action.json"),
-				`${JSON.stringify({ name: action.action, at: new Date().toISOString() })}\n`,
-			)
-		} catch {
-			/* best-effort sentinel for the Stop hook; never fail the tick */
-		}
-	}
+	// `.last_action.json` is written by the outer `runWorkflowTick`
+	// wrapper so every early-return path above also persists the
+	// sentinel, not just this main dispatch path.
 
 	return {
 		state: derived.state,
