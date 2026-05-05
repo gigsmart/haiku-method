@@ -16,6 +16,107 @@
       "result": null
     }
   ],
-  "elaboration_turns": 9,
-  "discovery_discovery_integrator_attempts": 1
+  "elaboration_turns": 11,
+  "discovery_discovery_integrator_attempts": 1,
+  "decision_log": [
+    {
+      "decision": "Token-source files to read",
+      "options": [
+        "Claude Code session jsonl only (parent)",
+        "Task subagent jsonl only",
+        "Both, correlated via dispatch_id (parent_session_id + tool_use_id)"
+      ],
+      "choice": "Both, correlated via dispatch_id (parent_session_id + tool_use_id)",
+      "source": "user",
+      "rationale": "User picked \"both correlated\" during prelaboration. This is the load-bearing choice that differentiates this tool from ccusage and similar — competitors report parent-session totals only and cannot answer \"how much did this hat dispatch spend in the parent vs the subagents it spawned\".",
+      "recorded_at": "2026-05-05T01:44:54Z"
+    },
+    {
+      "decision": "Skill entry point name",
+      "options": [
+        "/haiku:burn",
+        "/haiku:tokens",
+        "/haiku:spend",
+        "/haiku:cost"
+      ],
+      "choice": "/haiku:burn",
+      "source": "user",
+      "rationale": "User explicitly named the skill /haiku:burn. Picked the colloquial term (\"token burn\") over the more literal alternatives. Sets vocabulary precedent for related future skills (e.g. /haiku:burn-compare).",
+      "recorded_at": "2026-05-05T01:44:57Z"
+    },
+    {
+      "decision": "Per-tick breakdown inclusion",
+      "options": [
+        "Original 4 breakdowns only (intent / stage-hat / subagent / model)",
+        "Add by_tick as a 5th breakdown (one row per haiku_run_next call)"
+      ],
+      "choice": "Add by_tick as a 5th breakdown (one row per haiku_run_next call)",
+      "source": "user",
+      "rationale": "User requested per-tick visibility mid-elaboration. Per-tick attribution answers \"which workflow tick burned the most\" — load-bearing for engine optimization (which orchestrator action's prompt is most expensive, where to batch, where to trim).",
+      "recorded_at": "2026-05-05T01:45:02Z"
+    },
+    {
+      "decision": "Origin classification axes",
+      "options": [
+        "Just input vs output token split (no origin attribution)",
+        "input/output + user vs agent vs engine origin"
+      ],
+      "choice": "input/output + user vs agent vs engine origin",
+      "source": "user",
+      "rationale": "User explicitly added origin classification. The engine bucket (workflow contracts, MCP tool results, hook output, system reminders) is the single most actionable signal for engine-side optimization — it shows how much of every intent's spend is framework overhead vs real work.",
+      "recorded_at": "2026-05-05T01:45:05Z"
+    },
+    {
+      "decision": "Export formats supplied in v1",
+      "options": [
+        "JSON only",
+        "JSON + Markdown",
+        "JSON + Markdown + CSV",
+        "JSON + Markdown + auto-upload to shareable URL"
+      ],
+      "choice": "JSON + Markdown",
+      "source": "autonomous-acknowledged",
+      "rationale": "User said \"exportable so they can be sent to me and given back to the agent\". JSON covers machine re-ingestion and diffing; Markdown covers human reading + agent paste-back via the Read tool. CSV deferred (derivable client-side from JSON; one of the discovery non-goals is \"not a spreadsheet exporter\"). Auto-upload deferred (introduces auth surface area the api-surface explicitly avoids). Surfaced for veto in unit-04 §Open questions.",
+      "recorded_at": "2026-05-05T01:45:11Z"
+    },
+    {
+      "decision": "Definition of a \"tick\" for by_tick attribution",
+      "options": [
+        "One haiku_run_next call (parent-session work attributed to the action it returned)",
+        "One orchestrator phase transition (multiple haiku_run_next calls may map to one phase)",
+        "One day / one session (session-grain only, like ccusage)"
+      ],
+      "choice": "One haiku_run_next call (parent-session work attributed to the action it returned)",
+      "source": "autonomous-acknowledged",
+      "rationale": "A tick already has a canonical identity in the engine: every action-log entry carries tick_counter (action-log.ts). Reusing that field means by_tick has no new on-disk state and no new derivation rule — the analyzer just reads tick_counter and groups. Phase-grain would smear the per-action signal the user wanted; session-grain is what every external tool already does.",
+      "recorded_at": "2026-05-05T01:45:17Z"
+    },
+    {
+      "decision": "Tool name for the new MCP entry point",
+      "options": [
+        "haiku_token_spend (full descriptive name)",
+        "haiku_burn (mirror the skill name)",
+        "haiku_capacity_tokens (compose under existing /haiku:capacity surface)"
+      ],
+      "choice": "haiku_token_spend (full descriptive name)",
+      "source": "autonomous-acknowledged",
+      "rationale": "Tool name and skill name decouple intentionally: skill /haiku:burn is the colloquial agent surface; haiku_token_spend is the precise MCP descriptor that shows up in tools/list. Matches existing convention (skill /haiku:dashboard wraps tool haiku_dashboard semantically; the descriptive form wins for tool registry entries). Chosen by api-surface discovery agent and surfaced via this unit's body for veto.",
+      "recorded_at": "2026-05-05T01:45:22Z"
+    },
+    {
+      "decision": "Delivery surface for the spend report",
+      "options": [
+        "MCP tool returning JSON to chat",
+        "CLI script in plugin/",
+        "Web report under website/",
+        "MCP tool + SPA page rendered via existing review-UI server"
+      ],
+      "choice": "MCP tool + SPA page rendered via existing review-UI server",
+      "source": "user",
+      "rationale": "User picked MCP tool surface during prelaboration; later added that the report should display as an SPA page. Combined into the final delivery contract: tool returns structuredContent, skill /haiku:burn opens the SPA route on the existing Fastify server, no new daemon, no new port.",
+      "recorded_at": "2026-05-05T01:45:33Z"
+    }
+  ],
+  "pre_review_dispatched": true,
+  "pre_review_dispatched_at": "2026-05-05T01:45:58Z"
 }

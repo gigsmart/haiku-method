@@ -2,6 +2,10 @@
 title: 'Skill /haiku:burn and SPA delivery surface'
 model: sonnet
 status: pending
+inputs:
+  - intent.md
+  - knowledge/API-SURFACE.md
+  - knowledge/DISCOVERY.md
 ---
 # Skill `/haiku:burn` and SPA delivery surface
 

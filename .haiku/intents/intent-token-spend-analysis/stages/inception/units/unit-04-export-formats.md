@@ -4,6 +4,10 @@ model: sonnet
 depends_on:
   - unit-01-burn-skill-and-spa
 status: pending
+inputs:
+  - intent.md
+  - knowledge/API-SURFACE.md
+  - knowledge/DISCOVERY.md
 ---
 # Exportable report — JSON and Markdown
 
