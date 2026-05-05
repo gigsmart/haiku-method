@@ -1,12 +1,12 @@
 {
   "knowledge/API-SURFACE.md": {
     "path": "knowledge/API-SURFACE.md",
-    "sha256": "43bfc1e6ee5040ba2f768e5a10ea628e35c1b5c53a582c86f249eab40953b77a",
-    "bytes": 26775,
-    "mtime_ns": 1777946038399000000,
+    "sha256": "8866d4fc42220b90b4f27df58c4eb9c8d9fda2646ed2508d93f70956e38b0817",
+    "bytes": 27143,
+    "mtime_ns": 1777989231684000000,
     "is_binary": false,
     "author_class": "agent",
-    "acknowledged_at": "2026-05-05T01:59:23.307Z",
+    "acknowledged_at": "2026-05-05T13:54:05.832Z",
     "acknowledged_via": "agent-write",
     "stage": null,
     "tracking_class": "knowledge"
