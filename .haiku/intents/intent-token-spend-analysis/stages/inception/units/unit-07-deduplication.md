@@ -6,6 +6,8 @@ inputs:
   - knowledge/API-SURFACE.md
   - knowledge/DISCOVERY.md
 status: pending
+outputs:
+  - knowledge/DEDUPLICATION-CONTRACT.md
 ---
 # Message deduplication and coverage counters
 
