@@ -14,7 +14,6 @@
 
 import { readFileSync } from "node:fs"
 import contextMonitor from "./context-monitor.js"
-import enforceIteration from "./enforce-iteration.js"
 import guardWorkflowFields from "./guard-workflow-fields.js"
 import injectStateFile from "./inject-state-file.js"
 import promptGuard from "./prompt-guard.js"
@@ -25,7 +24,6 @@ import workflowGuard from "./workflow-guard.js"
 
 const HOOKS: readonly HookDef[] = [
 	contextMonitor,
-	enforceIteration,
 	guardWorkflowFields,
 	injectStateFile,
 	promptGuard,
@@ -48,6 +46,7 @@ const REMOVED_HOOKS = new Set([
 	"inject-context",
 	"subagent-hook",
 	"subagent-context",
+	"enforce-iteration",
 ])
 
 // Read stdin synchronously (hooks are synchronous)

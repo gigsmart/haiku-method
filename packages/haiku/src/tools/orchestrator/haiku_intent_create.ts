@@ -1,6 +1,7 @@
 // tools/orchestrator/haiku_intent_create.ts — Create a new intent.
-// One per session (rejects if the session already owns an intent).
-// Forks `haiku/{slug}/main` directly off the mainline ref WITHOUT
+// `/haiku:start` always creates a new intent — never resumes. Use
+// `/haiku:pickup` to resume an existing one. Forks `haiku/{slug}/main`
+// directly off the mainline ref WITHOUT
 // checking out the repo mainline (locked / dirty mainline checkouts
 // in another worktree don't block intent creation, and intent files
 // only ever land on the haiku branch — mainline stays clean). The
@@ -19,7 +20,7 @@ import {
 	resolveMainlineRef,
 } from "../../git-worktree.js"
 import { validateIdentifier } from "../../prompts/helpers.js"
-import { getSessionIntent, logSessionEvent } from "../../session-metadata.js"
+import { logSessionEvent } from "../../session-metadata.js"
 import {
 	findHaikuRoot,
 	gitCommitState,
@@ -34,7 +35,7 @@ import { text } from "./_text.js"
 export default defineTool({
 	name: "haiku_intent_create",
 	description:
-		"Create a new intent. Returns the slug + path. Title is required (crisp 3–8 word summary, ≤80 chars, single line). Studio is selected separately via haiku_select_studio. One intent per session.",
+		"Create a new intent. Returns the slug + path. Title is required (crisp 3–8 word summary, ≤80 chars, single line). Studio is selected separately via haiku_select_studio. Always creates a fresh intent — `/haiku:start` does not resume; use `/haiku:pickup` for that.",
 	inputSchema: {
 		type: "object" as const,
 		properties: {
@@ -101,23 +102,7 @@ export default defineTool({
 
 		slug = validateIdentifier(slug, "intent slug")
 
-		// One intent per session — reject if this session already has an
-		// active intent.
 		const stateFile = args.state_file as string | undefined
-		if (stateFile) {
-			const existingIntent = getSessionIntent(stateFile)
-			if (existingIntent) {
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: `This session already has an active intent: '${existingIntent}'. Only one intent per session is allowed. Use /clear to start a new session, then create a new intent.`,
-						},
-					],
-					isError: true,
-				}
-			}
-		}
 
 		// Fork the intent's main branch directly off the mainline ref and
 		// switch the working tree to it BEFORE any filesystem checks or

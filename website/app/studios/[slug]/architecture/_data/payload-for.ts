@@ -268,7 +268,6 @@ export function payloadFor(
 			validations: [
 				`Current hat (\`${opts.from ?? "?"}\`) declared its outputs (recorded by \`track-outputs\` hook)`,
 				"No `Edit`/`Write` outside the active unit's worktree (enforced by `workflow-guard`)",
-				"Bolt counter incremented by `enforce-iteration` hook",
 			],
 			writes: [
 				{

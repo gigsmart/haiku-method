@@ -32,13 +32,6 @@ export const HOOKS: HookDef[] = [
 	},
 	{
 		group: "guardrails",
-		name: "enforce-iteration",
-		desc: "Bumps the bolt counter on each `haiku_run_next` tick where a unit is active, ensuring every cycle is recorded.",
-		fires: ["call-chip-hat", "hat-arrow-wrap"],
-		file: "packages/haiku/src/hooks/enforce-iteration.ts",
-	},
-	{
-		group: "guardrails",
 		name: "redirect-plan-mode",
 		desc: "When the agent enters Claude Code's plan mode, this hook redirects the planning result back through the haiku workflow engine rather than letting the agent free-plan.",
 		fires: ["phase[elaborate]"],

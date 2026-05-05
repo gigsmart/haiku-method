@@ -309,7 +309,6 @@ No SessionStart hooks are registered. `inject-context` and `ensure-deps` were re
 ### Stop
 - [ ] `quality-gate`: runs configured gate commands (test, lint, typecheck, build)
 - [ ] `quality-gate`: blocks stop if gates fail
-- [ ] `enforce-iteration`: rescues from premature stop, checks DAG status
 
 ### All hooks
 - [ ] Execute via `${CLAUDE_PLUGIN_ROOT}/bin/haiku hook <name>` — no shell scripts
