@@ -7,9 +7,9 @@ inputs:
   - knowledge/DISCOVERY.md
 status: active
 bolt: 1
-hat: distiller
+hat: verifier
 started_at: '2026-05-05T13:49:53Z'
-hat_started_at: '2026-05-05T13:59:12Z'
+hat_started_at: '2026-05-05T14:00:25Z'
 iterations:
   - hat: researcher
     started_at: '2026-05-05T13:49:53Z'
@@ -21,6 +21,10 @@ iterations:
     result: advance
   - hat: distiller
     started_at: '2026-05-05T13:59:12Z'
+    completed_at: '2026-05-05T14:00:25Z'
+    result: advance
+  - hat: verifier
+    started_at: '2026-05-05T14:00:25Z'
     completed_at: null
     result: null
 ---
