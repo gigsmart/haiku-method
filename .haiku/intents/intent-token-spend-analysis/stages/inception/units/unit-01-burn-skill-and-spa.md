@@ -6,10 +6,10 @@ inputs:
   - knowledge/API-SURFACE.md
   - knowledge/DISCOVERY.md
 status: active
-bolt: 4
-hat: verifier
+bolt: 5
+hat: distiller
 started_at: '2026-05-05T13:49:58Z'
-hat_started_at: '2026-05-05T15:10:00Z'
+hat_started_at: '2026-05-05T15:11:28Z'
 iterations:
   - hat: researcher
     started_at: '2026-05-05T13:49:58Z'
@@ -85,6 +85,33 @@ iterations:
     result: advance
   - hat: verifier
     started_at: '2026-05-05T15:10:00Z'
+    completed_at: '2026-05-05T15:11:28Z'
+    result: reject
+    reason: >-
+      All five verifier criteria PASS on the unit body (substance, citation,
+      internal consistency vs API-SURFACE, decision-register consistency, open
+      questions accounted for). Body content matches all completion criteria
+      verbatim. BURN-SKILL-RESEARCH.md exists and is committed in the unit
+      worktree at
+      .haiku/intents/intent-token-spend-analysis/knowledge/BURN-SKILL-RESEARCH.md
+      (commit de9666efb). Verifier hat itself does not write artifacts;
+      advance_hat still returned `unit_outputs_empty` despite the committed
+      knowledge/ output. This is the SAME engine-detection bug flagged in the
+      previous bolt's rejection (rebuilt binary at e1ff2c75f may not be loaded
+      by running MCP runtime). Per no-engine-shortcuts rule, escalating via
+      reject_hat to surface the stuck state instead of working around with
+      manual git ops. The fix lives in the engine's outputs-detection path in
+      packages/haiku/src/state-tools.ts (or the orchestrator's advance_hat
+      handler) — the unit worktree is not the primary repo and
+      `unitOutputExists` may be looking in the wrong root despite commit
+      8f95262b1 ("fix(state-tools): root unitIntentDir and unitOutputExists at
+      primary repo"). Also note: unit worktree has uncommitted modifications to
+      packages/haiku/src/haiku-ui-html.ts, plugin/bin/haiku.mjs,
+      packages/haiku-ui/budget.json (out of stage scope) — these are not from
+      the verifier hat and should be reset by the engine's pre-advance scope
+      check, not by manual cleanup.
+  - hat: distiller
+    started_at: '2026-05-05T15:11:28Z'
     completed_at: null
     result: null
 model_original: sonnet
