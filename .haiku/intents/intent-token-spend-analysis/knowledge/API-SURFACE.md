@@ -82,6 +82,7 @@ One MCP tool. No CLI. No HTTP route. The agent (or any MCP client) invokes it vi
         events_parsed: { type: "integer" },
         events_skipped_unparseable: { type: "integer" },
         events_skipped_no_usage: { type: "integer" },
+        events_skipped_duplicate: { type: "integer", description: "Events that had all three id fields (session_id, message_id, request_id) and a token-bearing usage block, but whose fingerprint was already counted in this analysis invocation. Non-zero signals that the input had replayed messages and dedup is doing real work." },
         subagent_correlation: {
           type: "string",
           enum: ["full", "partial", "none"],
