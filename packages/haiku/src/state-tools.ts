@@ -2533,7 +2533,10 @@ function getUnitWorktreeChanges(
 ): string[] | null {
 	if (!isGitRepo()) return null
 	const unitBase = unit.replace(/\.md$/, "")
-	const worktreePath = join(findHaikuRoot(), "worktrees", slug, unitBase)
+	// Unit worktrees always live under the primary repo's `.haiku/worktrees/`
+	// — not under a nested Claude Code worktree's local .haiku/ view.
+	// Mirrors `unitWorktreePath()` in git-worktree.ts.
+	const worktreePath = join(primaryRepoRoot(), ".haiku", "worktrees", slug, unitBase)
 	if (!existsSync(worktreePath)) return null
 	try {
 		const unitBranch = `haiku/${slug}/${unitBase}`
