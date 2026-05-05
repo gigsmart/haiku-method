@@ -6,10 +6,10 @@ inputs:
   - knowledge/API-SURFACE.md
   - knowledge/DISCOVERY.md
 status: active
-bolt: 3
-hat: verifier
+bolt: 4
+hat: distiller
 started_at: '2026-05-05T13:49:58Z'
-hat_started_at: '2026-05-05T14:20:51Z'
+hat_started_at: '2026-05-05T14:41:15Z'
 iterations:
   - hat: researcher
     started_at: '2026-05-05T13:49:58Z'
@@ -64,6 +64,23 @@ iterations:
     result: advance
   - hat: verifier
     started_at: '2026-05-05T14:20:51Z'
+    completed_at: '2026-05-05T14:41:15Z'
+    result: reject
+    reason: >-
+      All five verifier criteria PASS on the unit body (substance, citation,
+      internal consistency vs API-SURFACE, decision-register consistency, open
+      questions accounted for). Body content is correct and matches all
+      completion criteria. Blocked at advance_hat with `unit_outputs_empty` even
+      though commit de9666efb already added
+      .haiku/intents/intent-token-spend-analysis/knowledge/BURN-SKILL-RESEARCH.md
+      (a valid knowledge/ output). The newly-rebuilt binary (commit e1ff2c75f,
+      "build(bin): rebuild haiku.mjs with outputs-lifecycle exemption fix") may
+      not yet be loaded by the running MCP runtime — same /mcp reconnect
+      requirement noted in the previous bolt's rejection. After reconnecting MCP
+      so the new binary is in memory, re-run haiku_run_next and the verifier
+      should advance without content changes.
+  - hat: distiller
+    started_at: '2026-05-05T14:41:15Z'
     completed_at: null
     result: null
 model_original: sonnet
