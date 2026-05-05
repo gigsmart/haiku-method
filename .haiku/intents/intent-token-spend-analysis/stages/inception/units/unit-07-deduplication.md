@@ -7,9 +7,9 @@ inputs:
   - knowledge/DISCOVERY.md
 status: active
 bolt: 2
-hat: distiller
+hat: verifier
 started_at: '2026-05-05T13:49:46Z'
-hat_started_at: '2026-05-05T14:05:22Z'
+hat_started_at: '2026-05-05T14:07:02Z'
 iterations:
   - hat: researcher
     started_at: '2026-05-05T13:49:46Z'
@@ -40,6 +40,10 @@ iterations:
       output (knowledge/DEDUPLICATION-CONTRACT.md).
   - hat: distiller
     started_at: '2026-05-05T14:05:22Z'
+    completed_at: '2026-05-05T14:07:02Z'
+    result: advance
+  - hat: verifier
+    started_at: '2026-05-05T14:07:02Z'
     completed_at: null
     result: null
 model_original: sonnet

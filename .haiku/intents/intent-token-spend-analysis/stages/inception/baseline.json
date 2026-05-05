@@ -34,5 +34,17 @@
     "acknowledged_via": "baseline-init",
     "stage": null,
     "tracking_class": "knowledge"
+  },
+  "knowledge/TOOL-REGISTRATION.md": {
+    "path": "knowledge/TOOL-REGISTRATION.md",
+    "sha256": "b27ffbff7b052191d918c3e906d4fa8dedcfc974f997ba85f18ff738c017e95b",
+    "bytes": 15707,
+    "mtime_ns": 1777989813490000000,
+    "is_binary": false,
+    "author_class": "agent",
+    "acknowledged_at": "2026-05-05T14:05:45.465Z",
+    "acknowledged_via": "baseline-init",
+    "stage": null,
+    "tracking_class": "knowledge"
   }
 }
