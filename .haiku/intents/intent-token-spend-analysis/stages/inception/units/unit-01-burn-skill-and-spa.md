@@ -6,10 +6,10 @@ inputs:
   - knowledge/API-SURFACE.md
   - knowledge/DISCOVERY.md
 status: active
-bolt: 2
-hat: verifier
+bolt: 3
+hat: distiller
 started_at: '2026-05-05T13:49:58Z'
-hat_started_at: '2026-05-05T14:12:16Z'
+hat_started_at: '2026-05-05T14:19:36Z'
 iterations:
   - hat: researcher
     started_at: '2026-05-05T13:49:58Z'
@@ -47,6 +47,19 @@ iterations:
     result: advance
   - hat: verifier
     started_at: '2026-05-05T14:12:16Z'
+    completed_at: '2026-05-05T14:19:36Z'
+    result: reject
+    reason: >-
+      Engine fix now compiled into plugin/bin/haiku.mjs (commit b502999ff) —
+      getUnitWorktreeChanges now uses primaryRepoRoot() to find unit worktrees
+      under the primary repo's .haiku/worktrees/ instead of the CC worktree's
+      .haiku/. All five verification criteria PASS. Binary requires /mcp
+      reconnect to load before advance_hat will succeed (advance keeps returning
+      unit_outputs_empty because the running MCP process still holds the old
+      binary in memory). After reconnect, re-run haiku_run_next and re-dispatch
+      this verifier — no content changes needed.
+  - hat: distiller
+    started_at: '2026-05-05T14:19:36Z'
     completed_at: null
     result: null
 model_original: sonnet

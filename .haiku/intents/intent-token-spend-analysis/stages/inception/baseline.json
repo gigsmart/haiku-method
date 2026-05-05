@@ -23,6 +23,18 @@
     "stage": null,
     "tracking_class": "knowledge"
   },
+  "knowledge/DEDUPLICATION-CONTRACT.md": {
+    "path": "knowledge/DEDUPLICATION-CONTRACT.md",
+    "sha256": "2a8c18296b4375a77777f543f1195cbc03ef2e4ab310c6f65689d8d811d03cf9",
+    "bytes": 10757,
+    "mtime_ns": 1777990487886000000,
+    "is_binary": false,
+    "author_class": "agent",
+    "acknowledged_at": "2026-05-05T14:16:41.210Z",
+    "acknowledged_via": "baseline-init",
+    "stage": null,
+    "tracking_class": "knowledge"
+  },
   "knowledge/DISCOVERY.md": {
     "path": "knowledge/DISCOVERY.md",
     "sha256": "8c698a9993419e4e62a50904214d6bc1a05d6a3598e3ba2c63925b110eb9a06e",
