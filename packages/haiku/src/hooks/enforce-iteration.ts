@@ -15,6 +15,7 @@
 //   - Awaiting external      -> no-op (PR/MR merge, external gate, await event)
 //   - In gate/gate_review    -> no-op (human approval wait)
 //   - No ready+in-progress   -> no-op (truly stuck; human must intervene)
+//   - Last action needs human or is unrecoverable -> no-op (see WAIT_FOR_HUMAN_ACTIONS)
 //   - Work remains           -> BLOCK and inject `haiku_run_next` instruction
 //
 // The injected reason tells the parent to call `haiku_run_next` and follow
@@ -24,7 +25,7 @@
 // in `external_review` or `ask` gate would loop forever with the hook trying
 // to force a run_next call while the workflow engine correctly refuses to advance.
 
-import { existsSync, readdirSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { basename, join } from "node:path"
 import { defineHook } from "./define.js"
 import {
@@ -39,6 +40,38 @@ import {
 
 function emitBlock(reason: string): void {
 	process.stdout.write(JSON.stringify({ decision: "block", reason }))
+}
+
+// Actions written to `.last_action.json` by run-tick.ts that mean
+// "engine is waiting for the human to act" or "engine is in an
+// unrecoverable break". The Stop hook NO-OPs on these — driving
+// haiku_run_next forward against any of them either does nothing
+// (`intent_complete`, `escalate`) or actively prevents the user from
+// answering the question the engine asked (`select_studio`,
+// `elaboration_insufficient`).
+//
+// `gate_review` is also covered by the existing `phase` check above;
+// listing it here is belt-and-suspenders so a Stop fired between gate
+// emit and stage-state flush still no-ops.
+const WAIT_FOR_HUMAN_ACTIONS = new Set([
+	"select_studio",
+	"elaboration_insufficient",
+	"gate_review",
+	"escalate",
+	"error",
+	"intent_complete",
+])
+
+function readLastActionName(intentDir: string): string | null {
+	const path = join(intentDir, ".last_action.json")
+	if (!existsSync(path)) return null
+	try {
+		const parsed = JSON.parse(readFileSync(path, "utf8"))
+		const name = parsed?.name
+		return typeof name === "string" ? name : null
+	} catch {
+		return null
+	}
 }
 
 function findUnitFilesInStage(intentDir: string, stage: string): string[] {
@@ -67,6 +100,15 @@ export async function enforceIteration(
 
 	const intentDir = findActiveIntent()
 	if (!intentDir) return
+
+	// If the engine's most recent tick returned an action that means
+	// "wait for the human" or "unrecoverable break", let the agent stop
+	// so the user can act. Driving haiku_run_next forward against any
+	// of these would either no-op (intent_complete, escalate) or actively
+	// prevent the user from answering the engine's question
+	// (select_studio, elaboration_insufficient).
+	const lastAction = readLastActionName(intentDir)
+	if (lastAction && WAIT_FOR_HUMAN_ACTIONS.has(lastAction)) return
 
 	const intentFile = `${intentDir}/intent.md`
 	const intentStatus = readFrontmatterField(intentFile, "status")

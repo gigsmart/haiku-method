@@ -13,7 +13,7 @@
 // `handlers/index.ts` maps state names to handlers. Adding a new
 // state name = adding the entry to the registry + the file.
 
-import { existsSync, readdirSync } from "node:fs"
+import { existsSync, readdirSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import type { OrchestratorAction } from "../../orchestrator.js"
 import { verifyIntentState } from "../../state-integrity.js"
@@ -266,6 +266,23 @@ export function runWorkflowTick(
 	}
 
 	const action = dispatchHandler(derived.state, derived.context, root)
+
+	// Persist last_action for the Stop hook's "should I block?" decision.
+	// The hook reads this sentinel to distinguish (a) actions that mean
+	// "agent has work to do, then call run_next" — block stop and re-prompt
+	// — from (b) actions that mean "engine is waiting for a human or is in
+	// an unrecoverable break" — let the agent stop so the user can act.
+	// Best-effort; never block the tick on a write failure.
+	if (action) {
+		try {
+			writeFileSync(
+				join(derived.context.intentDirPath, ".last_action.json"),
+				`${JSON.stringify({ name: action.action, at: new Date().toISOString() })}\n`,
+			)
+		} catch {
+			/* best-effort sentinel for the Stop hook; never fail the tick */
+		}
+	}
 
 	return {
 		state: derived.state,
