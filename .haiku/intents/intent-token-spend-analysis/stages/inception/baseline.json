@@ -1,4 +1,16 @@
 {
+  "knowledge/API-SURFACE.md": {
+    "path": "knowledge/API-SURFACE.md",
+    "sha256": "2918e71b9e28054cf9a75c70ca842c2f8a721f260ada352ce725adabf0ca7b13",
+    "bytes": 19998,
+    "mtime_ns": 1777945121478000000,
+    "is_binary": false,
+    "author_class": "agent",
+    "acknowledged_at": "2026-05-05T01:39:27.965Z",
+    "acknowledged_via": "baseline-init",
+    "stage": null,
+    "tracking_class": "knowledge"
+  },
   "knowledge/CONVERSATION-CONTEXT.md": {
     "path": "knowledge/CONVERSATION-CONTEXT.md",
     "sha256": "7e2de7ffdb1f31135353bcd421cc69b5f26eca7a3f85f0f6307dae3b0fd1d52e",
