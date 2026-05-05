@@ -7,6 +7,7 @@ import {
 } from "@haiku/shared/frontmatter"
 import matter from "gray-matter"
 import { extractSections } from "./markdown.js"
+import { STAGE_INTERNAL_ENTRIES } from "./stage-internal-entries.js"
 import type {
 	DiscoveryFrontmatter,
 	IntentFrontmatter,
@@ -285,8 +286,15 @@ export async function parseKnowledgeFiles(
 }
 
 /**
- * Read stage-specific artifact files (like DESIGN-BRIEF.md).
- * Returns an array of { stage, name, content } objects.
+ * Read stage-specific artifact files: top-level `*.md` plus every
+ * markdown under `knowledge/` and `discovery/` (the research /
+ * inputs surfaces). The Knowledge tab renders these grouped by
+ * stage.
+ *
+ * Returns an array of { stage, name, content } objects. The `name`
+ * preserves the subdir prefix when present (`knowledge/UPLOAD-FLOW`)
+ * so the Knowledge tab can disambiguate between same-named files in
+ * different surfaces.
  */
 export async function parseStageArtifacts(
 	intentDir: string,
@@ -316,6 +324,37 @@ export async function parseStageArtifacts(
 						}
 					}
 				}
+				// Stage-level knowledge/ and discovery/ — research surfaces
+				// the Knowledge tab renders. Names retain the subdir prefix
+				// (`knowledge/X`, `discovery/Y`) so reviewers can tell at a
+				// glance which surface a file came from.
+				for (const subDir of ["knowledge", "discovery"] as const) {
+					try {
+						const subPath = join(stageDir, subDir)
+						const subEntries = await readdir(subPath, {
+							withFileTypes: true,
+							encoding: "utf8",
+						})
+						for (const sub of subEntries.sort((a, b) =>
+							a.name.localeCompare(b.name),
+						)) {
+							if (!sub.isFile() || !sub.name.endsWith(".md")) continue
+							try {
+								const raw = await readFile(join(subPath, sub.name), "utf-8")
+								const { content } = matter(raw)
+								artifacts.push({
+									stage: stageEntry.name,
+									name: `${subDir}/${sub.name.replace(/\.md$/, "")}`,
+									content,
+								})
+							} catch {
+								// Skip unreadable files
+							}
+						}
+					} catch {
+						// No knowledge/ or discovery/ at this stage — skip.
+					}
+				}
 			} catch {
 				// Skip
 			}
@@ -337,6 +376,11 @@ export interface OutputArtifact {
 	content?: string
 	/** Relative path within the stage artifacts dir (for serving via HTTP) */
 	relativePath?: string
+	/** Original intent-dir-relative path. Set by the session-builder
+	 *  before `relativePath` gets rewritten to a `/stage-artifacts/...`
+	 *  URL — the SPA uses this to look the artifact up in
+	 *  `output_declared_by`. */
+	intentRelativePath?: string
 }
 
 /** Recursively collect every file path under `dir`. Returns full absolute
@@ -410,7 +454,10 @@ async function buildArtifactEntry(
  * strip the workspace-relative prefix when present so both forms collapse
  * to the same intent-dir-relative form before resolution.
  */
-function intentRelativeOutputPath(declared: string, intentDir: string): string {
+export function intentRelativeOutputPath(
+	declared: string,
+	intentDir: string,
+): string {
 	const intentDirName = basename(intentDir)
 	const workspacePrefix = `.haiku/intents/${intentDirName}/`
 	if (declared.startsWith(workspacePrefix)) {
@@ -517,25 +564,12 @@ async function parseUnitOutputs(
 	return out
 }
 
-/**
- * Workflow-internal entries inside `stages/<stage>/`. These are not user
- * artifacts and must NOT surface in the review screen's Outputs tab:
- *
- *   - `STAGE.md` — workflow-engine stage definition (lives in the plugin
- *     copy; sometimes mirrored into the intent dir for traceability).
- *   - `state.json` — workflow-engine state record.
- *   - `units/` — unit specs (rendered by the Units tab).
- *   - `feedback/` — feedback items (rendered by the Feedback tab).
- *
- * `artifacts/` is the existing canonical outputs dir and is walked
- * separately above this exclusion list, so it doesn't appear here.
- */
-const WORKFLOW_INTERNAL_STAGE_ENTRIES = new Set([
-	"STAGE.md",
-	"state.json",
-	"units",
-	"feedback",
-])
+// Workflow-internal stage-root entries are sourced from the canonical
+// list in `./stage-internal-entries.ts` so any future stage-tree walker
+// inherits the same exclusions. `artifacts/` is the canonical outputs
+// dir and is walked separately above; callers exclude it explicitly so
+// the artifacts walk and the catch-all walk can use different name /
+// relativePath conventions.
 
 /**
  * Walk the full `stages/<stage>/` directory tree, returning absolute paths
@@ -562,12 +596,19 @@ async function walkStageDirRecursive(
 		// Skip workflow-internal entries at the stage root only. Once we've
 		// descended into a non-internal subdir, every file under it is fair
 		// game.
-		if (currentRel === "" && WORKFLOW_INTERNAL_STAGE_ENTRIES.has(e.name)) {
+		if (currentRel === "" && STAGE_INTERNAL_ENTRIES.has(e.name)) {
 			continue
 		}
 		// `artifacts/` is the canonical outputs dir, walked separately by
 		// the artifacts/ scan above. Skip it here to avoid double-emitting.
 		if (currentRel === "" && e.name === "artifacts") continue
+		// `knowledge/` and `discovery/` are research / input surfaces — the
+		// Knowledge tab renders them. Excluding here so the same files
+		// don't also surface in Outputs (Tara saw this duplication and
+		// flagged it as confusing). Stage-level knowledge/discovery are
+		// surfaced through `parseStageArtifacts` instead.
+		if (currentRel === "" && (e.name === "knowledge" || e.name === "discovery"))
+			continue
 		const rel = currentRel ? `${currentRel}/${e.name}` : e.name
 		const abs = join(stageDir, e.name)
 		if (e.isDirectory()) {
@@ -636,7 +677,10 @@ export async function parseOutputArtifacts(
 				// colliding with another `knowledge-upload` at a different depth.
 				const relFromArtifacts = relative(artifactsDir, fullPath)
 				const nameWithDir = relFromArtifacts.replace(/\.[^.]+$/, "")
-				const httpPath = `${stageName}/artifacts/${relFromArtifacts}`
+				// Intent-dir-relative path so the `/stage-artifacts/:sessionId/*`
+				// route resolves correctly against `session.intent_dir` without
+				// the call site having to add a `stages/` prefix downstream.
+				const httpPath = `stages/${stageName}/artifacts/${relFromArtifacts}`
 				const entry = await buildArtifactEntry(
 					fullPath,
 					stageName,

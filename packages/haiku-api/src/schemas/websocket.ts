@@ -148,11 +148,75 @@ export type WsSessionUpdateMessage = z.infer<
 	typeof WsSessionUpdateMessageSchema
 >
 
+/** Per-intent live-state event. Fans out from the workflow tick + state-
+ *  tools mutations to every SPA tab subscribed to this intent's
+ *  channel. The SPA reduces events onto a snapshot fetched from
+ *  /api/session/:id so the dashboard stays live without polling. */
+const IntentEventTickCommittedSchema = z.object({
+	type: z.literal("tick_committed"),
+	action: z.string().max(64),
+	phase: z.string().max(64).optional(),
+	stage: z.string().max(64).optional(),
+	iteration: z.number().int().nonnegative().optional(),
+})
+const IntentEventUnitChangedSchema = z.object({
+	type: z.literal("unit_changed"),
+	unit_name: z.string().max(128),
+	status: z.string().max(32),
+	stage: z.string().max(64).optional(),
+	hat: z.string().max(64).optional(),
+})
+const IntentEventFeedbackChangedSchema = z.object({
+	type: z.literal("feedback_changed"),
+	feedback_id: z.string().max(64),
+	status: z.string().max(32),
+	stage: z.string().max(64).optional(),
+})
+const IntentEventGatePreparedSchema = z.object({
+	type: z.literal("gate_prepared"),
+	session_id: z.string().max(64),
+	stage: z.string().max(64),
+	gate_context: z.string().max(64),
+	review_url: z.string().max(2048),
+	browser_attached: z.boolean(),
+})
+const IntentEventAwaitStateChangedSchema = z.object({
+	type: z.literal("await_state_changed"),
+	session_id: z.string().max(64),
+	await_active: z.boolean(),
+})
+const IntentEventPendingDecisionChangedSchema = z.object({
+	type: z.literal("pending_decision_changed"),
+	session_id: z.string().max(64),
+	queued: z.boolean(),
+})
+const IntentEventSchema = z.discriminatedUnion("type", [
+	IntentEventTickCommittedSchema,
+	IntentEventUnitChangedSchema,
+	IntentEventFeedbackChangedSchema,
+	IntentEventGatePreparedSchema,
+	IntentEventAwaitStateChangedSchema,
+	IntentEventPendingDecisionChangedSchema,
+])
+export type IntentEvent = z.infer<typeof IntentEventSchema>
+
+export const WsIntentEventMessageSchema = z
+	.object({
+		type: z.literal("intent-event"),
+		session_id: z.string().max(64),
+		event: IntentEventSchema,
+	})
+	.describe(
+		"Server broadcast — a per-intent live-state event for any SPA tab subscribed to this intent's channel.",
+	)
+export type WsIntentEventMessage = z.infer<typeof WsIntentEventMessageSchema>
+
 export const WsServerMessageSchema = z
 	.discriminatedUnion("type", [
 		WsAckMessageSchema,
 		WsErrorMessageSchema,
 		WsSessionUpdateMessageSchema,
+		WsIntentEventMessageSchema,
 	])
 	.superRefine(refineFrameSize)
 	.describe("Any server -> client WebSocket envelope")

@@ -15,6 +15,7 @@
  */
 
 import {
+	type WsIntentEventMessage,
 	type WsServerMessage,
 	WsServerMessageSchema,
 	type WsSessionUpdateMessage,
@@ -24,6 +25,13 @@ import { useApiClient } from "../api/context"
 
 export interface UseSessionWebSocketOptions {
 	onUpdate?: (msg: WsSessionUpdateMessage) => void
+	/** Fires for every per-intent live-state event the server fans out
+	 *  on this session's channel. The intent broadcaster emits these
+	 *  on every workflow tick, gate prep, await-state flip, and
+	 *  pending-decision change. Consumers typically refetch the
+	 *  session snapshot from `/api/session/:id` so the UI reflects
+	 *  fresh state without hand-reducing each event variant. */
+	onIntentEvent?: (msg: WsIntentEventMessage) => void
 	/** Fires once the session is detected as ended — either because the
 	 *  server closed our active WebSocket or because a polling-fallback
 	 *  probe of `/api/session/:id` came back 404. Consumers use it to
@@ -45,6 +53,7 @@ export function useSessionWebSocket(
 	const pendingRef = useRef<WsSessionUpdateMessage | null>(null)
 	const rafRef = useRef<number | null>(null)
 	const onUpdateRef = useRef(options.onUpdate)
+	const onIntentEventRef = useRef(options.onIntentEvent)
 	const onServerCloseRef = useRef(options.onServerClose)
 	const client = useApiClient()
 
@@ -53,6 +62,9 @@ export function useSessionWebSocket(
 	useEffect(() => {
 		onUpdateRef.current = options.onUpdate
 	}, [options.onUpdate])
+	useEffect(() => {
+		onIntentEventRef.current = options.onIntentEvent
+	}, [options.onIntentEvent])
 	useEffect(() => {
 		onServerCloseRef.current = options.onServerClose
 	}, [options.onServerClose])
@@ -139,6 +151,18 @@ export function useSessionWebSocket(
 			const result = WsServerMessageSchema.safeParse(parsed)
 			if (!result.success) return
 			const msg: WsServerMessage = result.data
+
+			// Per-intent live-state events forward synchronously — they
+			// drive small UI state changes (Approve button gating,
+			// pending-decision banner) and consumers typically respond
+			// by refetching the session snapshot. No rAF coalescing
+			// here: events are infrequent (human-paced workflow ticks)
+			// and each one carries distinct meaning.
+			if (msg.type === "intent-event") {
+				onIntentEventRef.current?.(msg)
+				return
+			}
+
 			if (msg.type !== "session-update") return
 
 			// rAF coalescing — only the most recent session-update per frame wins.

@@ -15,6 +15,7 @@
 
 import { existsSync, readdirSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
+import { broadcastIntent } from "../../intent-broadcaster.js"
 import type { OrchestratorAction } from "../../orchestrator.js"
 import { verifyIntentState } from "../../state-integrity.js"
 import {
@@ -70,6 +71,47 @@ export function dispatchOrchestratorAction(
 	}
 }
 
+/** Wrap a tick result with a broadcast to the per-intent live-state
+ *  pub/sub. Every committed tick fans out an event to any SPA tab
+ *  subscribed to this intent's channel so the dashboard can refresh
+ *  without polling. Best-effort — the broadcaster is async-fire-and-
+ *  forget and never throws. */
+function broadcastTick(
+	slug: string,
+	result: WorkflowTickResult,
+): WorkflowTickResult {
+	if (result.action) {
+		const stageState = result.context?.stageState as
+			| Record<string, unknown>
+			| undefined
+		broadcastIntent(slug, {
+			type: "tick_committed",
+			action: (result.action as { action?: string }).action ?? "unknown",
+			phase:
+				typeof stageState?.phase === "string" ? stageState.phase : undefined,
+			stage: result.context?.currentStage,
+			iteration:
+				typeof stageState?.iteration === "number"
+					? stageState.iteration
+					: undefined,
+		})
+	}
+	return result
+}
+
+/** Run one workflow tick for an intent. Wrapper that fans out a
+ *  `tick_committed` event to any SPA tab subscribed to this intent's
+ *  live-state channel before returning. Returns null only when the
+ *  intent doesn't exist on disk. */
+export function runWorkflowTick(
+	slug: string,
+	root?: string,
+): WorkflowTickResult | null {
+	const result = runWorkflowTickInner(slug, root)
+	if (result) broadcastTick(slug, result)
+	return result
+}
+
 /** Run one workflow tick for an intent. Steps:
  *
  *   1. Pre-tick consistency repair (may mutate disk, may short-circuit
@@ -80,7 +122,7 @@ export function dispatchOrchestratorAction(
  *   4. Look up the handler for the derived state and run it.
  *
  *  Returns null only when the intent doesn't exist on disk. */
-export function runWorkflowTick(
+function runWorkflowTickInner(
 	slug: string,
 	root?: string,
 ): WorkflowTickResult | null {

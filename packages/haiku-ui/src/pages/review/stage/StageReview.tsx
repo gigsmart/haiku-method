@@ -38,6 +38,7 @@ import {
 } from "../../../organisms/ReplaceOutputDialog"
 import type { ParsedUnit } from "../../../parsed"
 import type { FeedbackItemData } from "../../../types"
+import { DeclaringUnitsBanner } from "../shared/DeclaringUnitsBanner"
 import {
 	markdownToSimpleHtml,
 	stripFrontmatter,
@@ -50,6 +51,7 @@ import {
 	shaOf,
 	useSeenTracker,
 } from "./useSeenTracker"
+import { composeWalkthroughItems } from "./walkthrough"
 
 export interface StageReviewProps {
 	session: ReviewPageSessionData
@@ -275,6 +277,11 @@ interface ArtifactViewModel {
 	summary: string
 	body: string
 	mime: string
+	/** Intent-dir-relative path. Set for outputs that came through
+	 *  parseOutputArtifacts (used to look the artifact up in
+	 *  `output_declared_by` for the "Declared by" banner). Optional
+	 *  because knowledge ViewModels don't carry it. */
+	intentRelativePath?: string
 }
 
 export function StageReview({
@@ -358,6 +365,7 @@ export function StageReview({
 		summary: summaryFor(a.name, a.content ?? "", a.type),
 		body: a.content ?? "",
 		mime: a.type,
+		intentRelativePath: a.intentRelativePath,
 	}))
 
 	// Pre-compute feedback → target maps (keyed by unit slug / knowledge name / output name)
@@ -478,40 +486,67 @@ export function StageReview({
 		setActiveTabRef.current("overview")
 	}, [])
 
-	// Unified walkthrough list — one contiguous sequence across every
-	// type in the stage. Units first, then knowledge, then outputs; the
-	// stepper in each detail view steps through this list so `Next` on
-	// the last unit goes straight to the first knowledge item without
-	// the reviewer having to manually switch tabs or re-invoke the
-	// walkthrough for each type.
+	// Walkthrough list — orientation flips based on which gate fired.
+	// `composeWalkthroughItems` owns the gate→items mapping; see that
+	// module for the routing table. Memoized on the same triggers as
+	// before — recomputing every render is intended.
+	const gateContext = session.gate_context
 	const walkthroughItems = useMemo(
-		() => [
-			...units.map((u) => ({
-				tab: "units" as const,
-				name: u.slug,
-			})),
-			...knowledgeVMs.map((a) => ({
-				tab: "knowledge" as const,
-				name: a.name,
-			})),
-			...outputVMs.map((a) => ({
-				tab: "outputs" as const,
-				name: a.name,
-			})),
-		],
+		() =>
+			composeWalkthroughItems(gateContext, {
+				units,
+				knowledgeVMs,
+				outputVMs,
+			}),
 		// biome-ignore lint/correctness/useExhaustiveDependencies: knowledgeVMs/outputVMs are derived arrays that change identity each render but only the contained name strings matter for walkthrough order; recomputing on every render is the intended behavior
-		[units, knowledgeVMs, outputVMs],
+		[gateContext, units, knowledgeVMs, outputVMs],
 	)
 	const walkIndex = detail
 		? walkthroughItems.findIndex(
 				(i) => i.tab === detail.tab && i.name === detail.name,
 			)
 		: -1
+	// Walkthrough = the SET of items relevant to this gate. Order is
+	// just file-natural; what matters is that every relevant item gets
+	// reviewed. Next jumps to the next *unseen* item (so reviewers
+	// aren't yanked through items they've already cleared); Previous
+	// is plain previous-in-set for browsing back to something they
+	// just looked at.
+	const seenStateForItem = useCallback(
+		(item: { tab: "units" | "knowledge" | "outputs"; name: string }) => {
+			if (item.tab === "units") {
+				const u = units.find((x) => x.slug === item.name)
+				if (!u) return "unseen" as const
+				return seen.state("unit", stageName, u.slug, shaOf(u))
+			}
+			if (item.tab === "knowledge") {
+				const a = knowledgeVMs.find((x) => x.name === item.name)
+				if (!a) return "unseen" as const
+				return seen.state("knowledge", stageName, a.name, shaOf(a))
+			}
+			const a = outputVMs.find((x) => x.name === item.name)
+			if (!a) return "unseen" as const
+			return seen.state("output", stageName, a.name, shaOf(a))
+		},
+		// biome-ignore lint/correctness/useExhaustiveDependencies: knowledgeVMs / outputVMs are derived arrays whose identity flips every render but only the contained name strings matter for the lookup; matches the existing convention used for walkthroughItems
+		[units, knowledgeVMs, outputVMs, seen, stageName],
+	)
+	// Find the next unseen item, scanning forward from walkIndex with
+	// wraparound. Falls back to plain next-in-array when everything is
+	// already seen — rare case where the reviewer revisits the
+	// walkthrough after closing.
+	const walkNext = useMemo(() => {
+		if (walkthroughItems.length === 0) return null
+		const start = walkIndex >= 0 ? walkIndex : -1
+		for (let step = 1; step <= walkthroughItems.length; step++) {
+			const idx = (start + step) % walkthroughItems.length
+			if (idx === walkIndex) continue
+			const candidate = walkthroughItems[idx]
+			if (seenStateForItem(candidate) !== "seen") return candidate
+		}
+		return null
+	}, [walkthroughItems, walkIndex, seenStateForItem])
 	const walkPrev = walkIndex > 0 ? walkthroughItems[walkIndex - 1] : null
-	const walkNext =
-		walkIndex >= 0 && walkIndex < walkthroughItems.length - 1
-			? walkthroughItems[walkIndex + 1]
-			: null
 	const walkPrevHandler = useCallback(() => {
 		if (walkPrev) openDetail(walkPrev.tab, walkPrev.name)
 	}, [walkPrev, openDetail])
@@ -519,14 +554,17 @@ export function StageReview({
 		if (walkNext) openDetail(walkNext.tab, walkNext.name)
 	}, [walkNext, openDetail])
 
-	// "Start walkthrough" entry — always land on the very first item in
-	// the unified walkthrough list (units[0], else knowledge[0], else
-	// outputs[0]). Next/prev then carry the reviewer through every type
-	// in order without requiring them to re-invoke the walkthrough.
+	// "Start walkthrough" lands on the first *unseen* relevant item.
+	// If everything is already seen, fall back to the first item — a
+	// reviewer who explicitly invokes the walkthrough still gets
+	// somewhere to land.
 	const startWalkthrough = useCallback(() => {
-		const first = walkthroughItems[0]
-		if (first) openDetail(first.tab, first.name)
-	}, [walkthroughItems, openDetail])
+		const firstUnseen = walkthroughItems.find(
+			(item) => seenStateForItem(item) !== "seen",
+		)
+		const target = firstUnseen ?? walkthroughItems[0]
+		if (target) openDetail(target.tab, target.name)
+	}, [walkthroughItems, seenStateForItem, openDetail])
 
 	const totalUnseen =
 		units.filter(
@@ -666,6 +704,17 @@ export function StageReview({
 						flashAnchor={flashAnchor ?? null}
 						onFlashCommentConsumed={onFlashCommentConsumed}
 						onSubmitAnnotation={onSubmitAnnotation}
+						outputDeclaredBy={session.output_declared_by}
+						onDeclaringUnitClick={(unitSlug) => {
+							// Open the unit's focused detail view. `openDetail`
+							// switches to the Units tab AND mounts
+							// `UnitDetailView` for this slug — same surface a
+							// reviewer would land on by clicking the unit row
+							// directly. Beats the previous DOM-querySelector
+							// scroll which left the row collapsed and required
+							// a second click.
+							openDetail("units", unitSlug)
+						}}
 					/>
 				) : (
 					<ArtifactsTab
@@ -1462,6 +1511,8 @@ function ArtifactDetailView({
 	flashAnchor,
 	onFlashCommentConsumed,
 	onSubmitAnnotation,
+	outputDeclaredBy,
+	onDeclaringUnitClick,
 }: {
 	kind: "knowledge" | "output"
 	artifacts: ArtifactViewModel[]
@@ -1498,6 +1549,14 @@ function ArtifactDetailView({
 		comment: string,
 		screenshotDataUrl: string,
 	) => Promise<void>
+	/** Map from intent-relative output path → declaring unit slugs.
+	 *  Renders the "Declared by" banner above the artifact body when
+	 *  kind is "output" and the current artifact's path appears in
+	 *  the map. */
+	outputDeclaredBy?: Record<string, string[]>
+	/** Handler for clicks on a declaring-unit badge. Parent decides
+	 *  what "open this unit" means. */
+	onDeclaringUnitClick?: (unitSlug: string) => void
 }) {
 	const current = artifacts.find((a) => a.name === currentName)
 
@@ -1589,6 +1648,13 @@ function ArtifactDetailView({
 					)}
 				</div>
 				<div className="px-4 py-3">
+					{kind === "output" && (
+						<DeclaringUnitsBanner
+							intentRelativePath={current.intentRelativePath}
+							declaredBy={outputDeclaredBy}
+							onUnitClick={onDeclaringUnitClick}
+						/>
+					)}
 					<ArtifactBody
 						kind={kind}
 						artifact={current}

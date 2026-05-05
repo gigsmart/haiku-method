@@ -60,8 +60,30 @@ import { join } from "node:path"
 import {
 	handleOrchestratorTool,
 	runNext,
-	setOpenReviewHandler,
+	setGateReviewHandlers,
 } from "../src/orchestrator.ts"
+
+// Mock helper: register prepare + await callbacks so the haiku_run_next
+// gate_review path can store the session pointers, and a follow-up
+// haiku_await_gate call returns `decisionResult` and dispatches it
+// through the same post-decision logic the production path uses. Pass
+// `null` to clear both callbacks.
+function setGateReviewMock(decisionResult) {
+	if (decisionResult === null) {
+		setGateReviewHandlers({ prepare: null, await: null })
+		return
+	}
+	setGateReviewHandlers({
+		prepare: async () => ({
+			session_id: "test-gate-session",
+			review_url: "http://test.local/review/test-gate-session",
+			use_remote: false,
+			reused: false,
+			browser_attached: false,
+		}),
+		await: async () => decisionResult,
+	})
+}
 import {
 	readFeedbackFiles,
 	updateFeedbackFile,
@@ -295,8 +317,8 @@ try {
 
 		process.chdir(projDir)
 
-		// Mock the review handler to return changes_requested with annotations
-		setOpenReviewHandler(async (_dir, _type, _gate) => ({
+		// Mock the review handlers to return changes_requested with annotations
+		setGateReviewMock({
 			decision: "changes_requested",
 			feedback: "Overall the specs need work",
 			annotations: {
@@ -312,9 +334,12 @@ try {
 					},
 				],
 			},
-		}))
+		})
 
-		const result = await handleOrchestratorTool("haiku_run_next", {
+		// Two-step: run_next prepares the session, await_gate dispatches
+		// the decision through the post-review switch.
+		await handleOrchestratorTool("haiku_run_next", { intent: slug })
+		const result = await handleOrchestratorTool("haiku_await_gate", {
 			intent: slug,
 		})
 		const responseText = result.content[0].text
@@ -372,7 +397,7 @@ try {
 		)
 
 		// Reset handler
-		setOpenReviewHandler(null)
+		setGateReviewMock(null)
 	})
 
 	await test("changes_requested with empty annotations writes only free-text feedback", async () => {
@@ -385,13 +410,14 @@ try {
 
 		process.chdir(projDir)
 
-		setOpenReviewHandler(async () => ({
+		setGateReviewMock({
 			decision: "changes_requested",
 			feedback: "Please add error handling",
 			annotations: {},
-		}))
+		})
 
-		const result = await handleOrchestratorTool("haiku_run_next", {
+		await handleOrchestratorTool("haiku_run_next", { intent: slug })
+		const result = await handleOrchestratorTool("haiku_await_gate", {
 			intent: slug,
 		})
 		const responseText = result.content[0].text
@@ -403,7 +429,7 @@ try {
 		assert.strictEqual(items.length, 1)
 		assert.strictEqual(items[0].origin, "user-chat")
 
-		setOpenReviewHandler(null)
+		setGateReviewMock(null)
 	})
 
 	await test("changes_requested with no feedback or annotations creates no files", async () => {
@@ -416,13 +442,14 @@ try {
 
 		process.chdir(projDir)
 
-		setOpenReviewHandler(async () => ({
+		setGateReviewMock({
 			decision: "changes_requested",
 			feedback: "",
 			annotations: undefined,
-		}))
+		})
 
-		const result = await handleOrchestratorTool("haiku_run_next", {
+		await handleOrchestratorTool("haiku_run_next", { intent: slug })
+		const result = await handleOrchestratorTool("haiku_await_gate", {
 			intent: slug,
 		})
 		const responseText = result.content[0].text
@@ -436,7 +463,7 @@ try {
 				readdirSync(feedbackDir).filter((f) => f.endsWith(".md")).length === 0,
 		)
 
-		setOpenReviewHandler(null)
+		setGateReviewMock(null)
 	})
 
 	await test("changes_requested on intent_review pre-execute context surfaces inline feedback without persisting files", async () => {
@@ -456,15 +483,16 @@ try {
 
 		process.chdir(projDir)
 
-		setOpenReviewHandler(async () => ({
+		setGateReviewMock({
 			decision: "changes_requested",
 			feedback: "Intent needs more scope",
 			annotations: {
 				pins: [{ x: 5, y: 10, text: "Clarify this goal" }],
 			},
-		}))
+		})
 
-		const result = await handleOrchestratorTool("haiku_run_next", {
+		await handleOrchestratorTool("haiku_run_next", { intent: slug })
+		const result = await handleOrchestratorTool("haiku_await_gate", {
 			intent: slug,
 		})
 		const responseText = result.content[0].text
@@ -480,7 +508,7 @@ try {
 			"Inline annotations should still be surfaced",
 		)
 
-		setOpenReviewHandler(null)
+		setGateReviewMock(null)
 	})
 
 	// =========================================================================

@@ -21,10 +21,22 @@
 // callers (and tests) that still import from "./orchestrator.js",
 // plus the MCP tool handler dispatch.
 
+import { existsSync, readFileSync } from "node:fs"
+import { join } from "node:path"
 import { actionPromptBuilders } from "./orchestrator/prompts/index.js"
+import {
+	resolveStageMetadata,
+	resolveUnitHatsInStudio,
+} from "./orchestrator/studio.js"
 import { orchestratorToolDefs } from "./orchestrator/tool-defs.js"
 import { dispatchOrchestratorAction } from "./orchestrator/workflow/run-tick.js"
-import { validateSlugArgs } from "./state-tools.js"
+import type { ReviewAnnotations } from "./sessions.js"
+import {
+	intentDir,
+	parseFrontmatter,
+	setBuildContinueDispatchHandler,
+	validateSlugArgs,
+} from "./state-tools.js"
 import { writeActionPromptFile } from "./subagent-prompt-file.js"
 import { orchestratorToolHandlers } from "./tools/orchestrator/index.js"
 
@@ -255,30 +267,54 @@ export function buildRunInstructions(
 
 // ── Tool handlers ──────────────────────────────────────────────────────────
 
+export type GateMetaForCallback = {
+	gateContext?: string
+	stage?: string
+	nextStage?: string | null
+	nextPhase?: string | null
+}
+
 /**
- * Callback for opening a review and blocking until the user decides.
- * Set by server.ts at startup to avoid circular imports.
+ * Two-step gate-review callbacks. Set by server.ts at startup to avoid
+ * circular imports.
+ *
+ * - `_prepareGateReview` is called by `haiku_run_next` when the workflow
+ *   engine reports `gate_review`. It creates the session + URL but does
+ *   NOT block, so haiku_run_next can return the URL to the agent (so
+ *   the agent can post it to the user) before the user decides.
+ *
+ * - `_awaitGateReviewSession` is called by `haiku_await_gate`. It opens
+ *   the browser best-effort (when `autoOpen`) and blocks on the session
+ *   until the user decides or the wait times out.
  */
-let _openReviewAndWait:
+let _prepareGateReview:
 	| ((
 			intentDir: string,
-			gateType?: string,
-			/** Abort signal propagated from the MCP tool call so the review
-			 *  session can be torn down (and its WebSocket closed) if the
-			 *  user cancels the tool. */
-			signal?: AbortSignal,
-			/** Extra context the session payload uses to compute a
-			 *  consequence-aware Approve button label (e.g. "Complete
-			 *  Development Stage", "Open Pull Request", "Mark Intent Done").
-			 *  Optional — omitted callers fall back to a generic stage
-			 *  completion label. */
-			gateMeta?: {
-				gateContext?: string
-				stage?: string
-				nextStage?: string | null
-				nextPhase?: string | null
+			gateType: string | undefined,
+			gateMeta: GateMetaForCallback | undefined,
+	  ) => Promise<{
+			session_id: string
+			review_url: string
+			use_remote: boolean
+			reused: boolean
+			browser_attached: boolean
+	  }>)
+	| null = null
+
+let _awaitGateReviewSession:
+	| ((
+			sessionId: string,
+			opts: {
+				autoOpen?: boolean
+				signal?: AbortSignal
+				reviewUrl?: string
+				timeoutMs?: number
 			},
-	  ) => Promise<{ decision: string; feedback: string; annotations?: unknown }>)
+	  ) => Promise<{
+			decision: string
+			feedback: string
+			annotations?: ReviewAnnotations
+	  }>)
 	| null = null
 
 /**
@@ -292,8 +328,12 @@ let _elicitInput:
 	  }>)
 	| null = null
 
-export function setOpenReviewHandler(handler: typeof _openReviewAndWait): void {
-	_openReviewAndWait = handler
+export function setGateReviewHandlers(handlers: {
+	prepare: typeof _prepareGateReview
+	await: typeof _awaitGateReviewSession
+}): void {
+	_prepareGateReview = handlers.prepare
+	_awaitGateReviewSession = handlers.await
 }
 
 export function setElicitInputHandler(handler: typeof _elicitInput): void {
@@ -307,16 +347,21 @@ export function getElicitInput(): typeof _elicitInput {
 	return _elicitInput
 }
 
-/** Per-tool orchestrator handlers reach the open-review handler
- *  through this getter — same pattern as getElicitInput. */
-export function getOpenReviewAndWait(): typeof _openReviewAndWait {
-	return _openReviewAndWait
+/** Per-tool orchestrator handlers reach the gate-review prepare/await
+ *  callbacks through these getters. Keeps the variables module-private
+ *  while still allowing extracted per-tool files to call them. */
+export function getPrepareGateReview(): typeof _prepareGateReview {
+	return _prepareGateReview
+}
+
+export function getAwaitGateReviewSession(): typeof _awaitGateReviewSession {
+	return _awaitGateReviewSession
 }
 
 export async function handleOrchestratorTool(
 	name: string,
 	args: Record<string, unknown>,
-	_signal?: AbortSignal,
+	signal?: AbortSignal,
 ): Promise<{
 	content: Array<{ type: "text"; text: string }>
 	isError?: boolean
@@ -331,12 +376,52 @@ export async function handleOrchestratorTool(
 	// Per-tool handlers in tools/orchestrator/* take priority over the
 	// legacy if-chain. Migrated tools live in their own file with
 	// defineTool(); the chain below handles the rest until they all
-	// migrate.
+	// migrate. The MCP abort signal is forwarded so long-running tools
+	// (haiku_await_gate, future blocking tools) can unwind on client
+	// cancel — without it, a Ctrl-C on the agent leaves the await
+	// running for the full 30-minute timeout.
 	const perToolHandler = orchestratorToolHandlers.get(name)
 	if (perToolHandler) {
-		const result = perToolHandler.handle(args)
+		const result = perToolHandler.handle(args, signal)
 		return result instanceof Promise ? await result : result
 	}
 
 	return text(`Unknown orchestrator tool: ${name}`)
 }
+
+// ── Per-unit dispatch hook ────────────────────────────────────────────────
+//
+// Wired at module load. `haiku_unit_advance_hat` calls back into here
+// when a unit transitions to its next hat mid-wave: we synthesize a
+// per-unit `continue_unit` action, render the prompt internally via
+// `buildRunInstructions` (which writes the prompt-file and stamps
+// `prompt_file` onto the action), and return the action. The advance
+// handler then writes that action to a result file the parent reads
+// to dispatch the next hat directly — no `haiku_run_next` round-trip
+// needed for hat-to-hat transitions within the same unit.
+setBuildContinueDispatchHandler(
+	(slug, stage, unit, hat, bolt): OrchestratorAction => {
+		const iDir = intentDir(slug)
+		const intentMd = readFileSync(join(iDir, "intent.md"), "utf8")
+		const { data: iFm } = parseFrontmatter(intentMd)
+		const studio = (iFm.studio as string) || ""
+		const worktreePath = join(process.cwd(), ".haiku", "worktrees", slug, unit)
+		const action: OrchestratorAction = {
+			action: "continue_unit",
+			intent: slug,
+			stage,
+			unit,
+			hat,
+			bolt,
+			hats: resolveUnitHatsInStudio(studio, stage, slug, unit),
+			worktree: existsSync(worktreePath) ? worktreePath : null,
+			stage_metadata: resolveStageMetadata(studio, stage),
+			message: `Continue unit '${unit}' on hat '${hat}' — single-unit dispatch (the unit holds its wave slot through its full hat sequence; siblings stay in flight).`,
+		}
+		// Mutates `action` to add `prompt_file` (and rewrites `message`
+		// to the file pointer). We discard the rendered body string —
+		// the parent dispatches against `prompt_file` directly.
+		buildRunInstructions(slug, studio, action, iDir)
+		return action
+	},
+)

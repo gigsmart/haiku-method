@@ -27,13 +27,22 @@ import { getCapabilities, isClaudeCode } from "./harness.js"
 import {
 	orchestratorToolDefs,
 	setElicitInputHandler,
-	setOpenReviewHandler,
+	setGateReviewHandlers,
 } from "./orchestrator.js"
 // Prompts: for Claude Code, skills are native; for other harnesses, we bridge
 // skills → MCP prompts so they surface as invocable actions.
 import { completeArgument, getPrompt, listPrompts } from "./prompts/index.js"
 import { registerSkillPrompts } from "./prompts/skill-bridge.js"
-import { createReviewGateHandler, handleToolCall } from "./server/tool-call.js"
+import {
+	awaitGateReviewSession,
+	handleToolCall,
+	prepareGateReviewSession,
+} from "./server/tool-call.js"
+import {
+	HAIKU_AWAIT_DESIGN_DIRECTION_INPUT_SCHEMA,
+	HAIKU_AWAIT_VISUAL_ANSWER_INPUT_SCHEMA,
+} from "./state/schemas/index.js"
+import { jsonSchemaOf } from "./state/schemas/inputs/_validate.js"
 import { stateToolDefs } from "./state-tools.js"
 
 // Bridge skills to MCP prompts for harnesses that lack native skill support.
@@ -169,6 +178,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 			},
 		},
 		{
+			name: "haiku_await_visual_answer",
+			description:
+				"Block on a pending visual-question session until the user submits answers (or the wait times out at 30 min). Pair with `ask_user_visual_question`: when that tool returns a `session_ready` payload with a URL, post the URL to the user (essential for headless / SSH / web-client / mobile / remote-control setups), then call this tool to wait. Pass `auto_open: false` to skip the browser launch when the user will follow the URL on a different device.",
+			inputSchema: jsonSchemaOf(HAIKU_AWAIT_VISUAL_ANSWER_INPUT_SCHEMA),
+		},
+		{
+			name: "haiku_await_design_direction",
+			description:
+				"Block on a pending design-direction session until the user submits a selection (or the wait times out at 30 min). Pair with `pick_design_direction`: when that tool returns a `session_ready` payload, post the URL to the user, then call this tool to wait. Pass `auto_open: false` for remote/headless setups where the user follows the URL on a different device.",
+			inputSchema: jsonSchemaOf(HAIKU_AWAIT_DESIGN_DIRECTION_INPUT_SCHEMA),
+		},
+		{
 			name: "haiku_report",
 			description:
 				"Submit a bug report or feedback to the H·AI·K·U team via Sentry. " +
@@ -206,7 +227,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 	if (!isClaudeCode()) {
 		const browserTools = new Set([
 			"ask_user_visual_question",
+			"haiku_await_visual_answer",
 			"pick_design_direction",
+			"haiku_await_design_direction",
 		])
 		filteredTools = filteredTools.filter((t) => !browserTools.has(t.name))
 	}
@@ -312,10 +335,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
 	return result
 })
 
-// Wire up the review handler for the orchestrator's gate_ask flow.
-// This lets haiku_run_next open a review and block until the user decides,
-// without the agent needing to call open_review separately.
-setOpenReviewHandler(createReviewGateHandler())
+// Wire up the two-step gate-review handlers. `haiku_run_next` calls the
+// `prepare` half synchronously when the workflow engine reports
+// `gate_review` — that creates the session + URL but does not block, so
+// the URL can be returned in the action and posted to the user.
+// `haiku_await_gate` calls the `await` half to block on the user's
+// decision (with best-effort browser launch).
+setGateReviewHandlers({
+	prepare: prepareGateReviewSession,
+	await: awaitGateReviewSession,
+})
 
 // Wire up elicitation fallback for when the review UI fails
 setElicitInputHandler(async (params) => {

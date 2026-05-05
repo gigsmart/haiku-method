@@ -6,6 +6,7 @@ import {
 	InlineComments,
 } from "../../../organisms/InlineComments"
 import type { OutputArtifact } from "../../../types"
+import { DeclaringUnitsBanner } from "./DeclaringUnitsBanner"
 import { markdownToSimpleHtml } from "./section-helpers"
 
 /**
@@ -41,9 +42,18 @@ function authedAssetUrl(url: string | undefined | null): string {
 export function OutputArtifactsTab({
 	artifacts,
 	onInlineCommentsChange,
+	outputDeclaredBy,
+	onUnitClick,
 }: {
 	artifacts: OutputArtifact[]
 	onInlineCommentsChange: (comments: InlineCommentEntry[]) => void
+	/** Map of intent-relative path → declaring unit slugs. Server-built;
+	 *  passed through so the banner can render above each card. */
+	outputDeclaredBy?: Record<string, string[]>
+	/** Click handler for declaring-unit badges. The parent decides
+	 *  what "open this unit" means — typically scrolls to / expands
+	 *  the unit's row inside the Units tab. */
+	onUnitClick?: (unitSlug: string) => void
 }) {
 	const [expandedImage, setExpandedImage] = useState<string | null>(null)
 
@@ -109,6 +119,11 @@ export function OutputArtifactsTab({
 												id={`output-${globalIndex}`}
 											>
 												<SectionHeading>{a.name}</SectionHeading>
+												<DeclaringUnitsBanner
+													intentRelativePath={a.intentRelativePath}
+													declaredBy={outputDeclaredBy}
+													onUnitClick={onUnitClick}
+												/>
 												<InlineComments
 													htmlContent={markdownToSimpleHtml(a.content)}
 													onCommentsChange={onInlineCommentsChange}
@@ -135,6 +150,11 @@ export function OutputArtifactsTab({
 														</a>
 													)}
 												</div>
+												<DeclaringUnitsBanner
+													intentRelativePath={a.intentRelativePath}
+													declaredBy={outputDeclaredBy}
+													onUnitClick={onUnitClick}
+												/>
 												<iframe
 													srcDoc={a.content}
 													sandbox="allow-scripts allow-same-origin"
@@ -162,6 +182,11 @@ export function OutputArtifactsTab({
 														Open in new tab &#8599;
 													</a>
 												</div>
+												<DeclaringUnitsBanner
+													intentRelativePath={a.intentRelativePath}
+													declaredBy={outputDeclaredBy}
+													onUnitClick={onUnitClick}
+												/>
 												<button
 													type="button"
 													onClick={() =>
@@ -209,6 +234,11 @@ export function OutputArtifactsTab({
 														Open file &#8599;
 													</a>
 												</div>
+												<DeclaringUnitsBanner
+													intentRelativePath={a.intentRelativePath}
+													declaredBy={outputDeclaredBy}
+													onUnitClick={onUnitClick}
+												/>
 												<p className="text-xs text-stone-500 dark:text-stone-400 mt-2 italic">
 													No inline preview available for this file type. Open
 													in a new tab to view.

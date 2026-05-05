@@ -41,6 +41,12 @@ export interface UnitFrontmatter {
 	completed_at?: string | null
 	// Injected by parseAllUnits when unit is in stages/{stage}/units/
 	stage?: string
+	// Intent-relative paths to artifacts the unit consumed (declared
+	// upstream context) and produced (deliverables auto-populated by
+	// the workflow engine at advance_hat). Both are read by the review
+	// UI to surface per-unit input/output linkouts.
+	inputs?: string[]
+	outputs?: string[]
 	// Legacy fields
 	last_updated?: string
 	branch?: string

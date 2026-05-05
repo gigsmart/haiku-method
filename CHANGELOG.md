@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.0] - 2026-05-05
+
+### Added
+- Gate reviews now work in headless and remote environments with prepare/await phases, allowing review completion without a local browser UI.
+- Real-time feedback streaming via WebSocket during gate reviews for visibility in remote and CLI-only setups.
+
+## [3.8.0] - 2026-05-05
+
+### Added
+- Walkthrough-oriented review with step-by-step guidance for reviewing stages and intents.
+- Per-unit output artifacts tab displays which units produced each output.
+- Declaring units banner shows output authorship at a glance.
+
+### Changed
+- Output artifacts now tracked to their declaring units for complete traceability across the workflow.
+- Git worktree handling improved for robust concurrent branch operations.
+- Tool input validation uses strict schemas to detect configuration errors earlier.
+
 ## [3.7.0] - 2026-05-04
 
 ### Added

@@ -67,6 +67,17 @@ export interface FeedbackSidebarProps {
 	 *  (no pending feedback) or "Request Changes" (pending feedback
 	 *  persists and will be picked up by the next run_next). */
 	adHoc?: boolean
+	/** True while a haiku_await_gate tool call is currently blocked on
+	 *  this session. When false, Approve is disabled — the engine isn't
+	 *  asking for a decision right now. Feedback authoring stays open
+	 *  regardless, and the empty-state hint nudges the user toward
+	 *  leaving feedback to force a decision on the next tick. */
+	awaitActive?: boolean
+	/** Set when the SPA submitted a decision while no await was open.
+	 *  The next haiku_await_gate call drains it on entry. While set,
+	 *  Approve is disabled and the hint shows "decision queued, waiting
+	 *  for engine." */
+	pendingDecisionQueued?: boolean
 	className?: string
 }
 
@@ -99,6 +110,8 @@ export function FeedbackSidebar({
 	onFeedbackItemClick,
 	onDecisionSuccess,
 	adHoc,
+	awaitActive,
+	pendingDecisionQueued,
 	className,
 }: FeedbackSidebarProps): React.ReactElement {
 	const {
@@ -286,6 +299,16 @@ export function FeedbackSidebar({
 		[onFeedbackItemClick],
 	)
 
+	// Live-session gating: in non-ad-hoc gate review, Approve is only
+	// active when an MCP haiku_await_gate is currently waiting on a
+	// decision (awaitActive=true). When the engine isn't asking
+	// (awaitActive=false), Approve is disabled — the user can still
+	// leave feedback, and the next workflow tick will pick it up. When
+	// a decision is already queued (pendingDecisionQueued), Approve is
+	// disabled with a "waiting for engine to consume" hint.
+	const approveGated =
+		mode === "approve" && !adHoc && (!awaitActive || !!pendingDecisionQueued)
+
 	const hintText = adHoc
 		? mode === "add"
 			? "Adds a pending feedback item. Persisted immediately — the next run_next picks it up via the normal fix-loop."
@@ -297,7 +320,11 @@ export function FeedbackSidebar({
 			: mode === "request"
 				? `Hands ${pendingCount} item${pendingCount === 1 ? "" : "s"} to the agent on ${stage ?? "(stage)"}. Each routes per its resolution: reply, inline fix, stage revisit, or upstream rewind.`
 				: mode === "approve"
-					? "No feedback pending — approving advances the workflow engine to the next stage."
+					? pendingDecisionQueued
+						? "Decision queued — waiting for the engine to consume it on the next tick."
+						: awaitActive
+							? "Engine is waiting on your decision. Approve to advance, or leave feedback to request changes."
+							: "No engine call is awaiting a decision right now. Leave feedback to force one on the next tick, or wait for the agent to drive back to a gate."
 					: `Type a comment above or click into another stage.`
 
 	return (
@@ -492,8 +519,16 @@ export function FeedbackSidebar({
 						<button
 							type="button"
 							onClick={() => void submit("approved")}
-							disabled={submitting !== null}
+							disabled={submitting !== null || approveGated}
 							data-decision="approved"
+							data-await-gated={approveGated || undefined}
+							title={
+								pendingDecisionQueued
+									? "Decision queued — waiting for the engine to consume it on the next tick."
+									: !awaitActive
+										? "No engine call is awaiting a decision right now. Leave feedback to force one on the next tick."
+										: undefined
+							}
 							className={`${touchTargetClass} ${focusRingClass} ${focusRingVariantClasses.approve} flex-1 min-w-0 inline-flex items-center justify-center gap-2 rounded-md bg-teal-700 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-green-300 disabled:text-green-800 dark:disabled:bg-green-900/40 dark:disabled:text-green-200`}
 						>
 							{approveAction?.label ?? DECISION_LABELS.approved}
@@ -515,8 +550,9 @@ export function FeedbackSidebar({
 						<button
 							type="button"
 							onClick={() => void submit("external")}
-							disabled={submitting !== null}
+							disabled={submitting !== null || approveGated}
 							data-decision="external"
+							data-await-gated={approveGated || undefined}
 							className={`${touchTargetClass} ${focusRingClass} inline-flex items-center gap-2 rounded-md border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50`}
 						>
 							{DECISION_LABELS.external}

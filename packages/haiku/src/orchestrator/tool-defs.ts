@@ -17,6 +17,9 @@
 // Deriving here would close the import cycle and TDZ-trip the registry's
 // const exports. The contract test is the safe alternative.
 
+import { HAIKU_AWAIT_GATE_INPUT_SCHEMA } from "../state/schemas/index.js"
+import { jsonSchemaOf } from "../state/schemas/inputs/_validate.js"
+
 export const orchestratorToolDefs = [
 	{
 		name: "haiku_run_next",
@@ -45,7 +48,21 @@ export const orchestratorToolDefs = [
 			},
 		},
 	},
-	// haiku_gate_approve removed — gates are handled by the workflow engine (review UI + elicitation fallback)
+	{
+		name: "haiku_await_gate",
+		description:
+			"Block on a pending gate-review session for an intent until the user " +
+			"approves, requests changes, or the wait times out (30 min). Pair with " +
+			"`haiku_run_next`: when run_next returns a `gate_review` action, post " +
+			"the included `review_url` to the user (essential for headless / SSH / " +
+			"web-client / mobile / remote-control setups where the MCP host can't " +
+			"auto-open the user's browser), then call this tool to wait for their " +
+			"decision. Opens the review URL in the default browser best-effort by " +
+			"default; pass `auto_open: false` to skip the browser launch. Returns " +
+			"the resulting orchestrator action (advance_stage / changes_requested / " +
+			"external_review_requested / etc.).",
+		inputSchema: jsonSchemaOf(HAIKU_AWAIT_GATE_INPUT_SCHEMA),
+	},
 	{
 		name: "haiku_intent_create",
 		description:

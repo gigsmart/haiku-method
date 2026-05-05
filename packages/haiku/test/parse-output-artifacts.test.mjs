@@ -97,7 +97,7 @@ await test("unknown extensions surface as type:file with relativePath", async ()
 	const tokens = artifacts.find((a) => a.name === "tokens")
 	assert.ok(tokens, "tokens.json (unknown ext) should surface")
 	assert.strictEqual(tokens.type, "file")
-	assert.strictEqual(tokens.relativePath, "design/artifacts/tokens.json")
+	assert.strictEqual(tokens.relativePath, "stages/design/artifacts/tokens.json")
 	assert.strictEqual(
 		tokens.content,
 		undefined,
@@ -113,7 +113,7 @@ await test("relativePath for nested files preserves the hierarchy", async () => 
 	)
 	assert.strictEqual(
 		wireframe.relativePath,
-		"design/artifacts/wireframes/knowledge-upload.html",
+		"stages/design/artifacts/wireframes/knowledge-upload.html",
 	)
 })
 
@@ -359,6 +359,68 @@ await test("catch-all: workflow-internal entries are excluded (STAGE.md, state.j
 		names,
 		["REAL"],
 		`workflow-internal entries should be hidden; got ${JSON.stringify(names)}`,
+	)
+})
+
+await test("catch-all: stages/<stage>/knowledge/ and stages/<stage>/discovery/ are NOT surfaced as outputs (rendered by Knowledge tab instead)", async () => {
+	const intentDir = mkdtempSync(join(tmp, "intent-knowledge-dedupe-"))
+	const stageDir = join(intentDir, "stages", "design")
+	mkdirSync(join(stageDir, "knowledge"), { recursive: true })
+	mkdirSync(join(stageDir, "discovery"), { recursive: true })
+	writeFileSync(
+		join(stageDir, "knowledge", "UPLOAD-FLOW.md"),
+		"---\ntitle: Upload Flow\n---\n# upload",
+	)
+	writeFileSync(
+		join(stageDir, "discovery", "ARCHITECTURE.md"),
+		"---\ntitle: Architecture\n---\n# arch",
+	)
+	// One real output for sanity.
+	writeFileSync(
+		join(stageDir, "DELIVERABLE.md"),
+		"---\ntitle: Deliverable\n---\n# real output",
+	)
+	const artifacts = await parseOutputArtifacts(intentDir)
+	const names = artifacts.map((a) => a.name).sort()
+	assert.deepStrictEqual(
+		names,
+		["DELIVERABLE"],
+		`stage-level knowledge/discovery should not bleed into Outputs; got ${JSON.stringify(names)}`,
+	)
+})
+
+await test("catch-all: drift-engine sidecars are excluded (baseline-content/, baseline.json, .baseline-ack, baseline-thrash.json, drift-assessments/)", async () => {
+	const intentDir = mkdtempSync(join(tmp, "intent-catchall-drift-"))
+	const stageDir = join(intentDir, "stages", "design")
+	// Drift-engine sidecars — sha256-named snapshots, baseline manifest,
+	// ack marker, thrash counter, and assessment records. None are user
+	// outputs; all are written by the orchestrator.
+	mkdirSync(join(stageDir, "baseline-content"), { recursive: true })
+	mkdirSync(join(stageDir, "drift-assessments"), { recursive: true })
+	const fakeSha = "a".repeat(64)
+	writeFileSync(join(stageDir, "baseline-content", fakeSha), "snapshot bytes")
+	writeFileSync(
+		join(stageDir, "baseline-content", "b".repeat(64)),
+		"another snapshot",
+	)
+	writeFileSync(
+		join(stageDir, "baseline.json"),
+		'{"some/file":{"sha256":"...","path":"some/file","stage":"design","is_binary":false,"mtime":1,"tracking_class":"stage-output"}}',
+	)
+	writeFileSync(join(stageDir, ".baseline-ack"), "")
+	writeFileSync(join(stageDir, "baseline-thrash.json"), "{}")
+	writeFileSync(
+		join(stageDir, "drift-assessments", "DA-01.json"),
+		'{"id":"DA-01"}',
+	)
+	// One real artifact for sanity
+	writeFileSync(join(stageDir, "REAL.md"), "---\ntitle: Real\n---\n# real body")
+	const artifacts = await parseOutputArtifacts(intentDir)
+	const names = artifacts.map((a) => a.name).sort()
+	assert.deepStrictEqual(
+		names,
+		["REAL"],
+		`drift-engine sidecars should be hidden; got ${JSON.stringify(names)}`,
 	)
 })
 

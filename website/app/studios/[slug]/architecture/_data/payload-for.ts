@@ -178,12 +178,22 @@ export function payloadFor(
 				{
 					hook: "MCP tool result",
 					target: "agent's `tool_use_result`",
-					what: "**blocking** until user clicks; on resolve the click outcome (`approved`/`changes_requested`)",
+					what: "the `gate_review` action with `review_url` + `session_id` (no longer blocking — the agent posts the URL to the user, then calls `haiku_await_gate` separately)",
 				},
 				{
-					hook: "_openReviewAndWait",
-					target: "Review web UI",
-					what: "the elaborated unit specs + DAG + `inputs:` declarations are rendered for human inspection",
+					hook: "_prepareGateReview",
+					target: "Review web UI session record",
+					what: "creates (or REUSES, when a live SPA tab exists for this intent) the review session; refreshes parsed units + gate_meta on every prepare; returns `{session_id, review_url, reused, browser_attached}`",
+				},
+				{
+					hook: "intent-broadcaster (gate_prepared)",
+					target: "every WS subscriber on this intent",
+					what: "fires a `gate_prepared` event so the SPA tab refreshes into the gate view without polling",
+				},
+				{
+					hook: "haiku_await_gate (paired tool, separate MCP call)",
+					target: "agent's `tool_use_result`",
+					what: "drains `pending_decision` on entry; otherwise blocks on `waitForSession` (up to 30 min). Forwards MCP abort signal so cancel unwinds promptly. Session lives across awaits — WS, tunnel, and pointers persist.",
 				},
 				{
 					hook: "inject-context",
@@ -192,13 +202,17 @@ export function payloadFor(
 				},
 			],
 			action: "gate_review",
-			summary: `elaboration complete — open ${isFirst ? "intent_review" : "elaborate_to_execute"} gate`,
+			summary: `elaboration complete — prepare ${isFirst ? "intent_review" : "elaborate_to_execute"} gate (non-blocking)`,
 			payload: {
 				action: "gate_review",
 				gate_context: isFirst ? "intent_review" : "elaborate_to_execute",
 				next_phase: "execute",
 				units_count: stage.units.length,
 				wave_count: stage.waves.length,
+				review_url: "https://...",
+				session_id: "<session-id>",
+				reused: false,
+				browser_attached: false,
 			},
 			validations: [
 				"DAG is acyclic (`computeUnitWaves` topological sort succeeds)",
@@ -210,7 +224,7 @@ export function payloadFor(
 			writes: [
 				{
 					path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`,
-					change: `\`gate_context: "${isFirst ? "intent_review" : "elaborate_to_execute"}"\`, \`gate_outcome: "pending"\``,
+					change: `\`gate_context: "${isFirst ? "intent_review" : "elaborate_to_execute"}"\`, \`gate_outcome: "pending"\`, \`gate_review_session_id\`, \`gate_review_url\`, \`gate_review_context\`, \`gate_review_next_stage\`, \`gate_review_next_phase\` (consumed by haiku_await_gate)`,
 				},
 				{
 					path: `.haiku/intents/{slug}/stages/${stageLower}/units/unit-NN-*.md`,
@@ -218,7 +232,7 @@ export function payloadFor(
 						"frontmatter validated; nothing mutated unless validation auto-fixes naming",
 				},
 			],
-			instructions: `Calls \`_openReviewAndWait()\`, which **blocks** the MCP tool call until the user clicks \`Approve\` or \`Request Changes\` in the web UI. On approve → \`phase\` advances to \`execute\`. On reject → ${isFirst ? "`phase` resets to `pending`" : "`phase` stays at `elaborate`"} and any user comments left in the UI become \`feedback/FB-NN.md\` files on the stage. **The review UI does NOT re-open while those FBs are pending** — the workflow engine routes through \`feedback_dispatch\` (for human comments) or \`review_fix\` (for inline-fix items) until each finding is closed or escalated.`,
+			instructions: `Calls \`_prepareGateReview()\` to mint (or reuse) a review session and return the URL — the call does **NOT** block. The agent posts the URL to the user (or skips when \`browser_attached=true\`) and then calls \`haiku_await_gate { intent }\` to block on the decision. \`haiku_await_gate\` drains \`pending_decision\` on entry — supporting decisions submitted before any await opens — and otherwise waits up to 30 min. On approve → \`phase\` advances to \`execute\`. On reject → ${isFirst ? "`phase` resets to `pending`" : "`phase` stays at `elaborate`"} and any user comments left in the UI become \`feedback/FB-NN.md\` files on the stage. **The review UI does NOT re-open while those FBs are pending** — the workflow engine routes through \`feedback_dispatch\` (for human comments) or \`review_fix\` (for inline-fix items) until each finding is closed or escalated.`,
 		},
 		"hat-to-hat": {
 			injection: [
@@ -374,7 +388,7 @@ export function payloadFor(
 					? "Auto-advance with no human interaction."
 					: baseGate === "external"
 						? "Submit PR on per-stage branch and wait for merge."
-						: "Open review UI via `_openReviewAndWait()` and wait for human decision."
+						: "Prepare review session via `_prepareGateReview()` (non-blocking) and return the URL; the agent posts it then calls `haiku_await_gate` to block on the user's decision (or drains a queued `pending_decision` if the user already clicked while no await was open)."
 			}`,
 		},
 		"gate-to-next-stage": {
@@ -564,7 +578,7 @@ export function payloadFor(
 				},
 			],
 			instructions:
-				"Agent walks the `unreferenced` list. For each file: either (a) call `haiku_unit_set { field: \"inputs\", value: [...] }` to add it to a unit's inputs (canonical path); or (b) call `haiku_coverage_acknowledge { path, decision: \"out-of-scope\", rationale }` to record an explicit dismissal. After resolving all, call `haiku_run_next` to re-run the validator. If files remain unresolved, the validator re-emits `coverage_review_required` with the remaining list.",
+				'Agent walks the `unreferenced` list. For each file: either (a) call `haiku_unit_set { field: "inputs", value: [...] }` to add it to a unit\'s inputs (canonical path); or (b) call `haiku_coverage_acknowledge { path, decision: "out-of-scope", rationale }` to record an explicit dismissal. After resolving all, call `haiku_run_next` to re-run the validator. If files remain unresolved, the validator re-emits `coverage_review_required` with the remaining list.',
 		},
 		"output-liveness-review-required": {
 			injection: [
@@ -575,7 +589,8 @@ export function payloadFor(
 				},
 				{
 					hook: "validateOutputLiveness()",
-					target: "per-stage review handler (after quality gates pass, before workflowAdvancePhase to gate) AND intent-completion handler (before studio review dispatch)",
+					target:
+						"per-stage review handler (after quality gates pass, before workflowAdvancePhase to gate) AND intent-completion handler (before studio review dispatch)",
 					what: "For each `.ts`/`.tsx`/`.js`/`.jsx` output declared by any stage's units, runs `git grep -lw <stem>` in the repo root. Excludes test files and workflow-meta paths. Aggregates `haiku_coverage_acknowledge` acknowledgments from every stage's `coverage-decisions.json`. Orphan = zero git-grep hits and not acknowledged. Per-stage scope passes `[currentStage]`; intent-completion scope passes the full ordered stage list.",
 				},
 			],
@@ -604,11 +619,11 @@ export function payloadFor(
 				{
 					path: ".haiku/intents/{slug}/stages/{stage}/coverage-decisions.json",
 					change:
-						"written by `haiku_coverage_acknowledge { stage: \"<producing-stage>\", path, decision: \"out-of-scope\" }` — checked across ALL stages' decision files",
+						'written by `haiku_coverage_acknowledge { stage: "<producing-stage>", path, decision: "out-of-scope" }` — checked across ALL stages\' decision files',
 				},
 			],
 			instructions:
-				"Agent walks the `orphans` list. For each file: either (a) author or extend a unit that imports/renders the output in a reachable code path and commits the integration; or (b) call `haiku_coverage_acknowledge { stage: \"<producing-stage>\", path, decision: \"out-of-scope\", rationale }`. After resolving all, call `haiku_run_next` — the validator re-runs. Gate is best-effort: if `isGitRepo()` is false or git is unavailable, the gate is skipped.",
+				'Agent walks the `orphans` list. For each file: either (a) author or extend a unit that imports/renders the output in a reachable code path and commits the integration; or (b) call `haiku_coverage_acknowledge { stage: "<producing-stage>", path, decision: "out-of-scope", rationale }`. After resolving all, call `haiku_run_next` — the validator re-runs. Gate is best-effort: if `isGitRepo()` is false or git is unavailable, the gate is skipped.',
 		},
 		"feedback-dispatch": {
 			injection: [

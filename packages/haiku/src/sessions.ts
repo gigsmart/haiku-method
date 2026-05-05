@@ -136,6 +136,15 @@ export interface ReviewAnnotations {
 	screenshot?: string // base64 PNG of annotated canvas
 	pins?: Array<{ x: number; y: number; text: string }>
 	comments?: Array<{ selectedText: string; comment: string; paragraph: number }>
+	// Revisit channel: set by the HTTP revisit endpoint
+	// (POST /api/revisit/:sessionId) when waking awaitGateReviewSession
+	// via pending_decision. haiku_await_gate's revisit-dispatch short-
+	// circuit reads these to route the rewind. Distinct from the
+	// reviewer-annotation fields above — populated only on the revisit
+	// path, never via the WS `decide` frame.
+	revisit_action?: string
+	revisit_stage?: string
+	revisit_message?: string
 }
 
 /** Snapshot of a decided review for delta comparison on the next re-review. */
@@ -186,6 +195,35 @@ export interface ReviewSession {
 	 *  intent, a snapshot of the prior review's content is attached here so
 	 *  the SPA can render a delta and show the previous feedback. */
 	previousReview?: PreviousReviewSnapshot
+	/** A queued decision the SPA submitted while no haiku_await_gate was
+	 *  blocking on this session. The next await drains this slot before
+	 *  subscribing to a fresh waitForSession. Last-write-wins: a second
+	 *  submit overwrites the first. Cleared when an await consumes it or
+	 *  when a fresh await opens (defensive). Independent of `status` —
+	 *  the session itself stays "pending" between awaits, since the
+	 *  decision is per-await-cycle, not per-session. */
+	pending_decision?: {
+		decision: string
+		feedback: string
+		annotations?: ReviewAnnotations
+		submitted_at: string
+	} | null
+	/** True while a haiku_await_gate call is currently blocked on this
+	 *  session. The SPA reads this to decide whether the Approve button
+	 *  should be active (await_active=true) or disabled with a "leave
+	 *  feedback to force a decision next tick" empty state
+	 *  (await_active=false). Set by awaitGateReviewSession on entry and
+	 *  cleared on exit. */
+	await_active?: boolean
+	/** Cumulative number of awaits that have run on this session. Useful
+	 *  for telemetry and for the SPA to detect "engine is back, new
+	 *  await round started." */
+	await_count?: number
+	/** ISO timestamp set when the most recent await began blocking. */
+	last_await_started_at?: string | null
+	/** ISO timestamp set when the most recent await ended (decision,
+	 *  timeout, or abort). */
+	last_await_ended_at?: string | null
 	/** Parsed data for the SPA — stored at session creation so /api/session can return it */
 	parsedIntent?: unknown
 	parsedUnits?: unknown[]
@@ -202,7 +240,28 @@ export interface ReviewSession {
 		type: string
 		content?: string
 		relativePath?: string
+		intentRelativePath?: string
 	}>
+	/** Per-unit output preview entries keyed by unit slug. The SPA's
+	 *  Units tab renders each entry as a click-out link with a hover
+	 *  popover preview. Built server-side at session creation so the
+	 *  SPA doesn't have to per-row-fetch each output's bytes. */
+	unitOutputs?: Record<
+		string,
+		Array<{
+			path: string
+			name: string
+			type: string
+			url: string
+			previewBody?: string
+			sizeBytes?: number
+			exists: boolean
+		}>
+	>
+	/** Inverse map: keyed by intent-dir-relative output path, lists
+	 *  the unit slugs that declared it. The review UI surfaces this
+	 *  as a banner above output content. */
+	outputDeclaredBy?: Record<string, string[]>
 }
 
 export interface QuestionDef {
@@ -422,6 +481,54 @@ export function getSession(
 }
 
 /**
+ * Find a non-ad-hoc review session for the given intent slug whose
+ * presence has NOT been lost (the SPA tab is still alive). Used by
+ * prepareGateReviewSession to reuse an existing tab across gate cycles
+ * within a single agent session — same URL, same session_id, refreshed
+ * parsed data and gate_meta.
+ *
+ * Returns the most recently created matching session. Returns undefined
+ * when none exists.
+ */
+export function findLiveReviewSessionForIntent(
+	intentSlug: string,
+): ReviewSession | undefined {
+	let best: ReviewSession | undefined
+	let bestCreatedAt = 0
+	for (const [id, s] of sessions) {
+		if (s.session_type !== "review") continue
+		if (s.intent_slug !== intentSlug) continue
+		if (s.ad_hoc) continue
+		if (presenceLost.has(id)) continue
+		const createdAt = sessionCreatedAt.get(id) ?? 0
+		if (createdAt > bestCreatedAt) {
+			best = s
+			bestCreatedAt = createdAt
+		}
+	}
+	return best
+}
+
+/** True when the SPA tab is actively heartbeating for the given session.
+ *  Distinct from "session exists" — a session can exist (in-memory map)
+ *  without an attached browser. Used by prepareGateReviewSession to set
+ *  browser_attached on the prepared payload so the agent prompt can
+ *  skip "post the URL to the user" when the user is already watching.
+ *
+ *  Threshold is tighter than HEARTBEAT_GRACE_MS (which is generous to
+ *  account for backgrounded-tab throttling) — the question here is "is
+ *  the tab in the foreground RIGHT NOW," not "is the tab still
+ *  reachable in principle." 30s is roughly 3 SPA heartbeat ticks. */
+const BROWSER_ATTACHED_FRESHNESS_MS = 30_000
+export function isBrowserAttached(sessionId: string): boolean {
+	if (!sessions.has(sessionId)) return false
+	if (presenceLost.has(sessionId)) return false
+	const ts = lastHeartbeatAt.get(sessionId)
+	if (!ts) return false
+	return Date.now() - ts <= BROWSER_ATTACHED_FRESHNESS_MS
+}
+
+/**
  * Drop a session from the in-memory registry. Callers should use this
  * when the session's purpose is complete (tool call returned, user
  * abandoned the review, MCP process shutting down) so subsequent
@@ -438,7 +545,18 @@ export function deleteSession(sessionId: string): boolean {
 export function updateSession(
 	sessionId: string,
 	updates: Partial<
-		Pick<ReviewSession, "status" | "decision" | "feedback" | "annotations">
+		Pick<
+			ReviewSession,
+			| "status"
+			| "decision"
+			| "feedback"
+			| "annotations"
+			| "pending_decision"
+			| "await_active"
+			| "await_count"
+			| "last_await_started_at"
+			| "last_await_ended_at"
+		>
 	>,
 ): ReviewSession | undefined {
 	const session = sessions.get(sessionId)
