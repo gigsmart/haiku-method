@@ -7,9 +7,9 @@ inputs:
   - knowledge/DISCOVERY.md
 status: active
 bolt: 3
-hat: distiller
+hat: verifier
 started_at: '2026-05-05T13:49:58Z'
-hat_started_at: '2026-05-05T14:19:36Z'
+hat_started_at: '2026-05-05T14:20:51Z'
 iterations:
   - hat: researcher
     started_at: '2026-05-05T13:49:58Z'
@@ -60,6 +60,10 @@ iterations:
       this verifier — no content changes needed.
   - hat: distiller
     started_at: '2026-05-05T14:19:36Z'
+    completed_at: '2026-05-05T14:20:51Z'
+    result: advance
+  - hat: verifier
+    started_at: '2026-05-05T14:20:51Z'
     completed_at: null
     result: null
 model_original: sonnet
