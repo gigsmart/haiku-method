@@ -5,7 +5,16 @@ inputs:
   - intent.md
   - knowledge/API-SURFACE.md
   - knowledge/DISCOVERY.md
-status: pending
+status: active
+bolt: 1
+hat: researcher
+started_at: '2026-05-05T13:49:48Z'
+hat_started_at: '2026-05-05T13:49:48Z'
+iterations:
+  - hat: researcher
+    started_at: '2026-05-05T13:49:48Z'
+    completed_at: null
+    result: null
 ---
 # Bundled pricing table contract
 
