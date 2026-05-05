@@ -5,7 +5,9 @@ inputs:
   - intent.md
   - knowledge/API-SURFACE.md
   - knowledge/DISCOVERY.md
-status: active
+outputs:
+  - knowledge/PRICING-TABLE.md
+status: completed
 bolt: 1
 hat: verifier
 started_at: '2026-05-05T13:49:48Z'
@@ -25,8 +27,9 @@ iterations:
     result: advance
   - hat: verifier
     started_at: '2026-05-05T13:55:01Z'
-    completed_at: null
-    result: null
+    completed_at: '2026-05-05T14:25:52Z'
+    result: advance
+completed_at: '2026-05-05T14:25:52Z'
 ---
 # Bundled pricing table contract
 
