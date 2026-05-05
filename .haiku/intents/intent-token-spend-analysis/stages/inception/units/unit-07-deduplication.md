@@ -1,15 +1,15 @@
 ---
 title: Message deduplication and coverage counters
-model: sonnet
+model: opus
 inputs:
   - intent.md
   - knowledge/API-SURFACE.md
   - knowledge/DISCOVERY.md
 status: active
-bolt: 1
-hat: verifier
+bolt: 2
+hat: distiller
 started_at: '2026-05-05T13:49:46Z'
-hat_started_at: '2026-05-05T13:56:07Z'
+hat_started_at: '2026-05-05T14:05:22Z'
 iterations:
   - hat: researcher
     started_at: '2026-05-05T13:49:46Z'
@@ -25,8 +25,24 @@ iterations:
     result: advance
   - hat: verifier
     started_at: '2026-05-05T13:56:07Z'
+    completed_at: '2026-05-05T14:05:22Z'
+    result: reject
+    reason: >-
+      Verification PASSED — all 5 criteria met (substantive content, rationale
+      cited, internal consistency with API-SURFACE.md, no decision-register
+      conflicts, open questions resolved). advance_hat blocked by engine bug:
+      getUnitWorktreeChanges cannot locate the unit worktree when MCP server
+      runs from a Claude Code worktree (findHaikuRoot() resolves to the
+      worktree-local .haiku, not the main repo .haiku where unit worktrees
+      live). Bug fixed in packages/haiku/src/state-tools.ts (git common-dir
+      fallback added) and compiled to plugin/bin/haiku.mjs. Requires MCP restart
+      to load new binary, then advance_hat will succeed with auto-detected
+      output (knowledge/DEDUPLICATION-CONTRACT.md).
+  - hat: distiller
+    started_at: '2026-05-05T14:05:22Z'
     completed_at: null
     result: null
+model_original: sonnet
 ---
 # Message deduplication and coverage counters
 
