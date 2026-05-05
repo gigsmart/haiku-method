@@ -2414,7 +2414,9 @@ export function getIntentScopeTickCounter(intentDirAbsPath: string): number {
  * runs against the parent's (still stale) copy and false-reports missing.
  */
 export function unitIntentDir(slug: string, unit: string): string {
-	const workTreePath = join(findHaikuRoot(), "worktrees", slug, unit)
+	// Unit worktrees always live under the primary repo's `.haiku/worktrees/`
+	// — not under a nested Claude Code worktree's local .haiku/ view.
+	const workTreePath = join(primaryRepoRoot(), ".haiku", "worktrees", slug, unit)
 	const workTreeIntentDir = join(workTreePath, ".haiku", "intents", slug)
 	if (existsSync(workTreeIntentDir)) return workTreeIntentDir
 	return intentDir(slug)
@@ -2432,7 +2434,9 @@ export function unitOutputExists(
 	// Intent-relative: main intent dir or the unit worktree's intent dir.
 	const mainResolved = resolve(intentDir(slug), outputPath)
 	if (existsSync(mainResolved)) return true
-	const wtRoot = join(findHaikuRoot(), "worktrees", slug, unit)
+	// Unit worktrees always live under the primary repo's `.haiku/worktrees/`
+	// — not under a nested Claude Code worktree's local .haiku/ view.
+	const wtRoot = join(primaryRepoRoot(), ".haiku", "worktrees", slug, unit)
 	const wtIntentDir = join(wtRoot, ".haiku", "intents", slug)
 	if (existsSync(wtIntentDir)) {
 		const wtResolved = resolve(wtIntentDir, outputPath)
