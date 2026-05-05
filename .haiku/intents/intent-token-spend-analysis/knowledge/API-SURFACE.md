@@ -4,6 +4,13 @@ The public contract for the new token-spend-analysis MCP tool. The surface is a 
 
 The contract below is the canonical reference. Once shipped, every signature, field name, status enum, and error code listed here is part of the semver-stable surface unless explicitly marked Experimental or Internal.
 
+## Target Consumers
+
+Two concrete callers drive this surface. Both live inside the H·AI·K·U MCP boundary; there is no external library consumer.
+
+1. **The orchestrator / hat subagent mid-run.** Calls `haiku_token_spend` programmatically to inform routing decisions before the next bolt dispatch (e.g. "the last bolt of `implementer` spent 4× the median on Opus output; route the next one to Sonnet"). Needs structured JSON, small response, no UI surface. Drives the `include_raw_events: false` default and the bias toward terse `coverage` diagnostic.
+2. **The human running an intent via the `/haiku:burn` skill.** Receives the same structured response rendered by the SPA at `/intents/{slug}/burn`. Needs the coverage diagnostic surfaced prominently as a banner, plus exportable JSON / Markdown so the report can be shared or re-fed back into a later agent conversation. Drives the SPA contract (unit-01) and the export contract (unit-04).
+
 ## Public Entry Points
 
 ### Tool: `haiku_token_spend`
@@ -161,6 +168,40 @@ One MCP tool. No CLI. No HTTP route. The agent (or any MCP client) invokes it vi
         required: ["model", "model_id_raw", "spend"],
       },
     },
+    by_tick: {
+      type: "array",
+      description:
+        "One row per haiku_run_next call (a 'tick'). Tick boundary source is the `event: \"run_next\"` records in `haiku.jsonl` written by `logSessionEvent` in `packages/haiku/src/session-metadata.ts`. Numbering is sequential across the intent's lifetime, derived from the ordering of those events for the intent.",
+      items: {
+        type: "object",
+        properties: {
+          tick_number: { type: "integer", description: "Sequential, 0-based, monotonically increasing across the intent lifetime. tick_number=0 is the synthetic 'pre-intent' tick (any messages before the first haiku_run_next call)." },
+          action: {
+            type: "string",
+            description:
+              "Orchestrator action returned by haiku_run_next for this tick. Stable display anchors: 'elaborate' | 'execute' | 'review_fix' | 'gate' | 'integrate_fix_chains' | 'intent_completion_review' | 'intent_completion_fix' | 'feedback_dispatch' | 'feedback_triage' | 'start_stage' | 'advance_phase' | 'complete' | 'pre-intent' (synthetic). Unknown action strings fall through to 'other' rendering.",
+          },
+          stage: { type: ["string", "null"], description: "Stage the action targeted; null for intent-scope actions (e.g. intent_completion_review)." },
+          started_at: { type: "string", description: "ISO 8601 timestamp from the run_next event in haiku.jsonl. Stored at write time, not recomputed at analysis time — stable across re-runs." },
+          ended_at: { type: ["string", "null"], description: "ISO 8601 timestamp of the next tick's started_at, or null for the most recent tick." },
+          spend: { "$ref": "#/definitions/SpendBucket" },
+        },
+        required: ["tick_number", "action", "started_at", "spend"],
+      },
+    },
+    by_origin: {
+      type: "array",
+      description:
+        "Aggregate spend split by who/what produced the tokens. Stable enum values: 'user' | 'agent' | 'engine'. Adding a value at the end is non-breaking; renaming or removing one is breaking.",
+      items: {
+        type: "object",
+        properties: {
+          origin: { type: "string", enum: ["user", "agent", "engine"] },
+          spend: { "$ref": "#/definitions/SpendBucketCore" },
+        },
+        required: ["origin", "spend"],
+      },
+    },
     events: {
       type: "array",
       description: "Experimental — only present when include_raw_events=true. Shape may change without a major bump.",
@@ -177,9 +218,34 @@ One MCP tool. No CLI. No HTTP route. The agent (or any MCP client) invokes it vi
     "by_hat",
     "by_subagent",
     "by_model",
+    "by_tick",
+    "by_origin",
   ],
 
   definitions: {
+    SpendBucketCore: {
+      type: "object",
+      description: "The base spend shape with no recursive origin breakdown. Used inside SpendBucket.by_origin and inside by_origin[] rows so origin slices don't recurse infinitely.",
+      properties: {
+        input_tokens: { type: "integer" },
+        output_tokens: { type: "integer" },
+        cache_creation_input_tokens: { type: "integer" },
+        cache_read_input_tokens: { type: "integer" },
+        total_tokens: {
+          type: "integer",
+          description: "Sum of input + output + cache_creation + cache_read. Convenience field; consumers MAY recompute.",
+        },
+        message_count: { type: "integer", description: "Number of assistant messages contributing to this bucket." },
+      },
+      required: [
+        "input_tokens",
+        "output_tokens",
+        "cache_creation_input_tokens",
+        "cache_read_input_tokens",
+        "total_tokens",
+        "message_count",
+      ],
+    },
     SpendBucket: {
       type: "object",
       properties: {
@@ -192,6 +258,15 @@ One MCP tool. No CLI. No HTTP route. The agent (or any MCP client) invokes it vi
           description: "Sum of input + output + cache_creation + cache_read. Convenience field; consumers MAY recompute.",
         },
         message_count: { type: "integer", description: "Number of assistant messages contributing to this bucket." },
+        by_origin: {
+          type: "object",
+          description: "Optional per-origin slice of this bucket. Omitted when zero on every origin. Keys with zero spend are omitted, never present-but-zero.",
+          properties: {
+            user: { "$ref": "#/definitions/SpendBucketCore" },
+            agent: { "$ref": "#/definitions/SpendBucketCore" },
+            engine: { "$ref": "#/definitions/SpendBucketCore" },
+          },
+        },
       },
       required: [
         "input_tokens",
@@ -328,6 +403,8 @@ For `haiku_token_spend` specifically, every one of the following is a major-vers
 - Adding a new `error.code` value (consumers MUST treat unknown codes as `internal`).
 - Adding new fields under `details` for an existing error code, provided the documented ones still appear when relevant.
 - Improving precision of any counter (e.g. starting to count cache tokens that were previously rolled into `input_tokens` is breaking; fixing a rounding bug is not, even though totals shift).
+- Refinements to the origin-classification heuristic (the per-content-block rule defined in the unit-03 knowledge unit) that produce `by_origin` and `SpendBucket.by_origin` shifts of ≤1% on any given intent's event corpus. The ±1% tolerance exists because the heuristic uses byte-length apportionment for messages that mix origin classes — the derivation is inherently approximate. Shifts exceeding 1% on the same input, or any change to the three-value `origin` enum, are breaking.
+- Adding new orchestrator action names to the `by_tick[].action` field. The 13 display anchors named in the field's schema description are Stable; new action strings beyond that set arrive without bumping major and consumers must render them as 'other'.
 - Changes to `events[]` (Experimental), the `analyzeTokenSpend()` export (Internal), or the human-readable `message` string (best-effort).
 
 ### Deprecation policy
@@ -338,11 +415,16 @@ Deprecated fields stay in the response, with their documented semantics, for one
 
 - **Stable** — full semver guarantees per the policy above.
   - The tool name `haiku_token_spend`.
-  - All required output fields.
-  - All `SpendBucket` counters and `message_count`.
+  - All required output fields, including `by_tick` and `by_origin`.
+  - All `SpendBucket` counters and `message_count`. `SpendBucket.by_origin` is Stable-as-optional (adding it was non-breaking; removing it would be).
+  - All `by_tick[]` required fields (`tick_number`, `action`, `started_at`, `spend`).
+  - The 13 Stable display anchor values for `by_tick[].action` (see schema description).
+  - The three-value `by_origin[].origin` enum (`user`, `agent`, `engine`).
   - All error codes listed in the Stable table.
   - The `dispatch_id` derivation.
   - The model-family normalization rule.
+  - The skill name `/haiku:burn`.
+  - The SPA route `/intents/{slug}/burn` and the export routes `/intents/{slug}/burn.json`, `/intents/{slug}/burn.md`.
 - **Experimental** — opt-in only, may change without a major bump.
   - `include_raw_events` input + `events[]` output.
   - Any future field guarded by a similar opt-in flag.
@@ -354,6 +436,7 @@ Deprecated fields stay in the response, with their documented semantics, for one
 
 ## Boundary Notes (cross-cutting context, sibling axes)
 
+- **SPA and skill delivery layer.** `haiku_token_spend` is consumed by the `/haiku:burn` skill (defined in unit-01), which opens a SPA at the Stable route `/intents/{slug}/burn` served by the existing review-UI Fastify instance. The tool's `structuredContent` is the rendering source — the SPA does not make a second HTTP request for data. Two companion routes carry Stable path contracts and re-call `haiku_token_spend` server-side: `GET /intents/{slug}/burn.json` (verbatim outputSchema as UTF-8 JSON, `Content-Disposition: attachment`) and `GET /intents/{slug}/burn.md` (Markdown export per unit-04). Adding new query-string filters to these routes is non-breaking. Renaming the routes is breaking. The export-format contracts and round-trip determinism live in unit-04.
 - **Source-format coupling.** The on-disk jsonl format at `~/.claude/projects/<slug>/*.jsonl` is owned by Claude Code, not by this library. The contract above intentionally exposes counters with stable names (`input_tokens`, `output_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`) chosen to survive plausible upstream renames; the parser layer maps from whatever the harness writes to these stable names. *Depends on the data-model artifact to fix the parser-side schema.*
 - **Dispatch metadata flow.** Stage / hat / unit / bolt attribution depends on metadata recorded at Task dispatch time; today those values exist in `subagent-prompt-file.ts`'s tmpfile naming (`{unit}-{hat}-{bolt}.prompt.md`) and in the `_session_context` the inject-state-file hook injects into MCP calls. Whether attribution travels via the prompt-file path, the parent session jsonl's tool_use record, or a sidecar metadata file is *out of scope for this artifact* — the contract just says these four fields appear on `by_subagent` rows when reconstructible, null otherwise.
 - **Performance / caching.** Whether the analyzer streams jsonl files or memoizes a digest is a non-functional / data-model concern. The output contract is the same either way.

@@ -10,6 +10,7 @@ stages:
   - security
   - release
 active_stage: inception
+intent_reviewed: true
 ---
 
 # Add intent token spend analysis

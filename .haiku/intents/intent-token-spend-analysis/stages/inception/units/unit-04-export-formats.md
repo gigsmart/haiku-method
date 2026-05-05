@@ -3,11 +3,11 @@ title: Exportable report — JSON and Markdown
 model: sonnet
 depends_on:
   - unit-01-burn-skill-and-spa
-status: pending
 inputs:
   - intent.md
   - knowledge/API-SURFACE.md
   - knowledge/DISCOVERY.md
+status: pending
 ---
 # Exportable report — JSON and Markdown
 
@@ -28,7 +28,7 @@ The SPA from unit-01 is the live view. This unit pins the export contract: the r
 - Structure: one section per top-level breakdown in the api-surface response, in this order: header (intent slug, window, coverage banner), totals card, by_origin, by_tick, by_stage, by_hat, by_subagent, by_model.
 - Each breakdown renders as a Markdown table with one row per item and columns matching the `SpendBucket` shape (input, output, cache_create, cache_read, total, message_count).
 - The header carries enough metadata that the export stands alone — intent slug, project slug, window bounds, coverage diagnostic — so a reader (or an agent re-ingesting the file) doesn't need to infer context.
-- The Markdown is intentionally pasteable back into a Claude Code conversation: the agent reads the file via `Read`, reasons about it directly, and can use it as input for routing decisions (e.g. "your last burn report shows the `implementer` hat is using 3× the median Opus tokens — recommend dropping that hat to Sonnet").
+- The Markdown is intentionally pasteable back into a Claude Code conversation: the agent reads the file via `Read`, reasons about it directly, and can use it as input for routing decisions.
 
 ## Where exports live
 
@@ -36,18 +36,25 @@ The SPA from unit-01 is the live view. This unit pins the export contract: the r
 - The export server-side: a parallel pair of routes on the same Fastify server — `GET /intents/{slug}/burn.json` and `GET /intents/{slug}/burn.md` — that re-call `haiku_token_spend` and serve the result with the appropriate `Content-Type` and `Content-Disposition: attachment`. This lets `curl` + `wget` work without touching the SPA, useful for shell-based handoff.
 - No persistence. Exports are computed on demand. The SPA does not write a copy to disk; the user/agent saves the download where they want it.
 
-## Re-ingestion contract
+## Re-ingestion contract and determinism
 
-- The Markdown export is the canonical re-ingestion format. An agent reading the file via the `Read` tool gets the report in a form it can reason about without parsing JSON.
-- The JSON export is the canonical machine-format. A future tool (or a separate slash command like `/haiku:burn-compare a.json b.json`) can diff two JSON exports without re-running the analysis.
-- Neither export carries non-deterministic metadata (no wall-clock generation timestamp inside the file body — only in the file name). Two runs over the same intent in the same window must produce byte-identical exports. This is what lets diffing JSON exports work.
+The exports are designed for diff-based comparison across runs (e.g. a future `/haiku:burn-compare a.json b.json` skill). For diffing to work, the byte-identity guarantee must be precisely scoped — broad determinism claims that the schema cannot uphold are spec gaps.
+
+**Byte-identity guarantee — what is and isn't covered:**
+
+- **Covered (deterministic on the same input):** every field whose value is read directly from a stored jsonl record — all `SpendBucket` fields (the four token counters + `total_tokens` + `message_count`), all `by_origin[]` aggregates, the `coverage` diagnostics, all `by_tick[].started_at` and `ended_at` values (read from `haiku.jsonl` event timestamps which are stored at write time, not recomputed at analysis time).
+- **Covered (deterministic via pinned ordering):** `by_tick[]` ordered by `tick_number` ascending; `by_stage[]` and `by_hat[]` ordered by first-observation order from the action-log; `by_subagent[]` ordered by `dispatch_id` lexicographic; `by_model[]` ordered by `total_tokens` descending. Any change to these orderings is a breaking change to the export-byte-identity guarantee. JSON object key ordering follows `JSON.stringify(value, null, 2)` insertion order (V8-stable in the supported Node 20+ runtime).
+- **Not covered (export-only metadata):** the file-name's ISO 8601 timestamp suffix is wall-clock at export time (it's the only place wall-clock leaks in). The body never contains a wall-clock generation timestamp — diffing JSON exports compares bodies, not file names.
+
+**Quality-gate enforcement:** a unit test in `packages/haiku/test/token-spend-determinism.test.mjs` calls `analyzeTokenSpend()` twice on a fixture-set of jsonl files and asserts byte-equality of `JSON.stringify(a, null, 2) === JSON.stringify(b, null, 2)`. The execute phase MUST author this test before completing the unit; without it, the byte-identity claim is documentation-only.
 
 ## Stability tier
 
 - File-name template `haiku-burn-{slug}-{ISO8601}.{ext}`: **Stable**. Renaming the prefix (e.g. to `haiku-spend-…`) is breaking because shell scripts that glob over the directory rely on the prefix.
 - JSON export body schema: **Stable** — defined to be the verbatim `outputSchema`, so it inherits api-surface's stability tier.
 - Markdown export section ordering and table column ordering: **Stable**. Adding new sections at the end is non-breaking; reordering existing ones is breaking (visual diffs and screen-reader navigation expectations).
-- The route paths `/intents/{slug}/burn.json` and `/intents/{slug}/burn.md`: **Stable**.
+- Array-item ordering rules listed under §"Re-ingestion contract and determinism": **Stable**. Any change is breaking.
+- The route paths `/intents/{slug}/burn.json` and `/intents/{slug}/burn.md`: **Stable** (also reflected in api-surface §Stability Tiers).
 - The download button labels in the SPA header: **not** Stable (UI copy is iterable).
 
 ## Open questions
@@ -60,6 +67,6 @@ The SPA from unit-01 is the live view. This unit pins the export contract: the r
 
 - §"Two export formats" specifies the file name template, body content, and encoding rule for each format.
 - §"Where exports live" names the SPA buttons, the two server routes (`GET /intents/{slug}/burn.json` and `.md`), and the no-persistence rule.
-- §"Re-ingestion contract" names the canonical re-ingestion format (Markdown), the canonical machine-format (JSON), and pins the byte-identical-on-same-input determinism property.
-- §"Stability tier" classifies the file-name template, body schemas, route paths, and section ordering with one-line rationale per call.
+- §"Re-ingestion contract and determinism" precisely scopes the byte-identity guarantee — what is covered, what is covered via pinned ordering, what is NOT covered (file-name wall-clock). Names the array-ordering rules per breakdown. Names the test file path that enforces the guarantee.
+- §"Stability tier" classifies the file-name template, body schemas, route paths, section ordering, and array-item ordering with one-line rationale per call.
 - §"Open questions" lists every deferred decision with proposed default or `(needs human escalation)`.
