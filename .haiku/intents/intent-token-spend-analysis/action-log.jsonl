@@ -1,1 +1,2 @@
+{"entry_type":"baseline_established","path":"__baseline_marker__:established:inception","sha":"","author_class":"agent","timestamp":"2026-05-04T21:55:12.935Z","claimed_author_id":null,"human_author_id":null,"entry_id":"BLN-EST-0-db0069","tick_counter":0}
 {"entry_type":"agent_write","path":"knowledge/DISCOVERY.md","sha":"8c698a9993419e4e62a50904214d6bc1a05d6a3598e3ba2c63925b110eb9a06e","author_class":"agent","timestamp":"2026-05-04T21:59:07Z","claimed_author_id":null,"human_author_id":null,"entry_id":"AGW-0-01","tick_counter":0,"tick_scope":"intent"}
