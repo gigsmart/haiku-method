@@ -1,15 +1,15 @@
 ---
 title: 'Skill /haiku:burn and SPA delivery surface'
-model: sonnet
+model: opus
 inputs:
   - intent.md
   - knowledge/API-SURFACE.md
   - knowledge/DISCOVERY.md
 status: active
-bolt: 1
-hat: verifier
+bolt: 2
+hat: distiller
 started_at: '2026-05-05T13:49:58Z'
-hat_started_at: '2026-05-05T13:55:12Z'
+hat_started_at: '2026-05-05T14:10:27Z'
 iterations:
   - hat: researcher
     started_at: '2026-05-05T13:49:58Z'
@@ -25,8 +25,27 @@ iterations:
     result: advance
   - hat: verifier
     started_at: '2026-05-05T13:55:12Z'
+    completed_at: '2026-05-05T14:10:27Z'
+    result: reject
+    reason: >-
+      Engine bug: getUnitWorktreeChanges in the running binary resolves the unit
+      worktree path using findHaikuRoot() (resolves to the CC worktree-local
+      .haiku/) instead of the canonical .haiku/worktrees/ under the primary repo
+      root. The worktree exists at
+      /Users/jwaldrip/dev/src/github.com/gigsmart/haiku-method/.haiku/worktrees/intent-token-spend-analysis/unit-01-burn-skill-and-spa
+      but the binary looks in twinkling-tinkering-mountain/.haiku/worktrees/
+      which does not exist. As a result, changed files
+      (knowledge/BURN-SKILL-RESEARCH.md) are not detected and outputs
+      auto-population is skipped, causing unit_outputs_empty. Fix is already
+      compiled into plugin/bin/haiku.mjs (added git-common-dir fallback in
+      getUnitWorktreeChanges). Requires /mcp reconnect to load the new binary,
+      then re-run haiku_run_next to re-dispatch this verifier hat. Verification
+      content itself PASSED all five criteria.
+  - hat: distiller
+    started_at: '2026-05-05T14:10:27Z'
     completed_at: null
     result: null
+model_original: sonnet
 ---
 # Skill `/haiku:burn` and SPA delivery surface
 
