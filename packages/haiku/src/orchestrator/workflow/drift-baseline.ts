@@ -1344,33 +1344,44 @@ function actionLogCountCorruptionEvents(
  *  whose contents hash to that filename. This is the "sidecar presence
  *  as previously-established signal" recommended by the red-team
  *  (RED-TEAM-FINDINGS.md Recommended-follow-up). Tamper-evident: an
- *  attacker would have to remove every sidecar from disk to disarm
- *  this check; selective tampering of a single sidecar is detectable
- *  by the sha256 mismatch. */
+ *  attacker would have to remove every per-stage sidecar from disk to
+ *  disarm this check; selective tampering of a single sidecar is
+ *  detectable by the sha256 mismatch.
+ *
+ *  Scope: per-stage only. The intent-level `baseline-content/` directory
+ *  holds intent-scope content sidecars (knowledge/ entries whose
+ *  `stageOwner` is null) and is shared across every stage. Using it as
+ *  a "this stage has previously established" signal produces a
+ *  cross-stage false positive: the moment the FIRST stage establishes
+ *  its baseline, the intent-level dir is populated, and every later
+ *  stage's first-tick gate sees that sidecar and refuses to
+ *  silent-establish — even though the new stage has never had a
+ *  baseline of its own. The per-stage sidecar walk below already
+ *  defends V-11 against sidecar removal on the active stage; the
+ *  intent-level walk added no per-stage tamper-evidence on top of
+ *  that. Action-log marker (signal 1) and state.json stamp (signal 3)
+ *  in `wasBaselinePreviouslyEstablished` are already correctly indexed
+ *  by stage. */
 function hasValidatedBaselineSidecar(
 	intentDir: string,
 	stage: string,
 ): boolean {
-	const dirs = [baselineContentDir(intentDir, stage)]
-	const intentDirSidecar = baselineIntentContentDir(intentDir)
-	if (existsSync(intentDirSidecar)) dirs.push(intentDirSidecar)
-	for (const dir of dirs) {
-		if (!existsSync(dir)) continue
-		let names: string[]
+	const dir = baselineContentDir(intentDir, stage)
+	if (!existsSync(dir)) return false
+	let names: string[]
+	try {
+		names = readdirSync(dir)
+	} catch {
+		return false
+	}
+	for (const name of names) {
+		if (!/^[0-9a-f]{64}$/.test(name)) continue
 		try {
-			names = readdirSync(dir)
+			const buf = readFileSync(join(dir, name))
+			const actual = createHash("sha256").update(buf).digest("hex")
+			if (actual === name) return true
 		} catch {
-			continue
-		}
-		for (const name of names) {
-			if (!/^[0-9a-f]{64}$/.test(name)) continue
-			try {
-				const buf = readFileSync(join(dir, name))
-				const actual = createHash("sha256").update(buf).digest("hex")
-				if (actual === name) return true
-			} catch {
-				// Skip unreadable.
-			}
+			// Skip unreadable.
 		}
 	}
 	return false
