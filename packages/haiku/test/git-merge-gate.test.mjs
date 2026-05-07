@@ -289,7 +289,7 @@ test("copies feedback files from stage branch onto intent main", () => {
 		)
 		mkdirSync(fbDir, { recursive: true })
 		writeFileSync(
-			join(fbDir, "FB-01-test.md"),
+			join(fbDir, "FB-001-test.md"),
 			"---\nstatus: pending\n---\n\nTest feedback body.",
 		)
 		git("git add .haiku")
@@ -318,8 +318,8 @@ test("copies feedback files from stage branch onto intent main", () => {
 			`expected 1 path copied, got: ${JSON.stringify(result.paths_copied)}`,
 		)
 		assert.ok(
-			result.paths_copied[0].includes("FB-01-test.md"),
-			`expected FB-01-test.md in paths_copied: ${result.paths_copied}`,
+			result.paths_copied[0].includes("FB-001-test.md"),
+			`expected FB-001-test.md in paths_copied: ${result.paths_copied}`,
 		)
 		// File should now exist on intent main
 		const copiedPath = join(root, result.paths_copied[0])

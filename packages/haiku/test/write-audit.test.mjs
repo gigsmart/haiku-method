@@ -241,7 +241,7 @@ await ok(
 		assert.strictEqual(result7.entries[0].entry_id, "HWM-7-01")
 		assert.strictEqual(result7.entries[0].path, "k/rt.md")
 		assert.strictEqual(result7.entries[0].tick_counter, 7)
-		// FB-28: clean log → no malformed lines.
+		// FB-028: clean log → no malformed lines.
 		assert.strictEqual(result7.malformedCount, 0)
 		assert.strictEqual(result7.malformedSamples.length, 0)
 
@@ -252,10 +252,10 @@ await ok(
 	},
 )
 
-// ── Test 6b (FB-28): malformed lines are counted, not silently dropped ────
+// ── Test 6b (FB-028): malformed lines are counted, not silently dropped ────
 
 await ok(
-	"FB-28: readActionLogForTick surfaces malformedCount instead of swallowing JSON-parse errors",
+	"FB-028: readActionLogForTick surfaces malformedCount instead of swallowing JSON-parse errors",
 	async () => {
 		const dir = mkdtempSync(join(tmp, "t6b-"))
 		const entry = makeEntry({
@@ -267,7 +267,7 @@ await ok(
 		assert.ok(r.ok, "first append must succeed")
 
 		// Inject a malformed line directly to simulate tampering or
-		// concurrent-writer interleaving (the very thing FB-28 calls out).
+		// concurrent-writer interleaving (the very thing FB-028 calls out).
 		const { appendFileSync } = await import("node:fs")
 		appendFileSync(
 			join(dir, "action-log.jsonl"),
@@ -283,7 +283,7 @@ await ok(
 		assert.strictEqual(
 			result.malformedCount,
 			1,
-			"malformed line MUST be counted, not silently dropped (FB-28)",
+			"malformed line MUST be counted, not silently dropped (FB-028)",
 		)
 		assert.strictEqual(
 			result.malformedSamples.length,
@@ -378,9 +378,9 @@ await ok(
 	},
 )
 
-// ── FB-28: per-field caps + record-size cap ──────────────────────────────
+// ── FB-028: per-field caps + record-size cap ──────────────────────────────
 
-ok("FB-28: validateAndCapAuditRecord truncates oversized rationale", () => {
+ok("FB-028: validateAndCapAuditRecord truncates oversized rationale", () => {
 	const huge = "r".repeat(MAX_AUDIT_RATIONALE_BYTES + 5000)
 	const rec = makeRecord({ rationale: huge })
 	const result = validateAndCapAuditRecord(rec)
@@ -397,7 +397,7 @@ ok("FB-28: validateAndCapAuditRecord truncates oversized rationale", () => {
 })
 
 ok(
-	"FB-28: validateAndCapAuditRecord truncates oversized claimed_author_id",
+	"FB-028: validateAndCapAuditRecord truncates oversized claimed_author_id",
 	() => {
 		const huge = "c".repeat(MAX_AUDIT_AUTHOR_ID_BYTES + 500)
 		const rec = makeRecord({
@@ -418,7 +418,7 @@ ok(
 )
 
 ok(
-	"FB-28: validateAndCapAuditRecord caps dirs_created length and per-element size",
+	"FB-028: validateAndCapAuditRecord caps dirs_created length and per-element size",
 	() => {
 		const longDir = "d".repeat(MAX_AUDIT_DIR_PATH_BYTES + 100)
 		const dirs = Array.from(
@@ -442,7 +442,7 @@ ok(
 	},
 )
 
-ok("FB-28: validateAndCapAuditRecord caps oversized path", () => {
+ok("FB-028: validateAndCapAuditRecord caps oversized path", () => {
 	const longPath = "p".repeat(MAX_AUDIT_PATH_BYTES + 1000)
 	const rec = makeRecord({ path: longPath })
 	const result = validateAndCapAuditRecord(rec)
@@ -453,7 +453,7 @@ ok("FB-28: validateAndCapAuditRecord caps oversized path", () => {
 })
 
 await ok(
-	"FB-28: appendWriteAudit caps unbounded rationale instead of relying on PIPE_BUF",
+	"FB-028: appendWriteAudit caps unbounded rationale instead of relying on PIPE_BUF",
 	async () => {
 		const dir = mkdtempSync(join(tmp, "fb28-rationale-"))
 		const huge = "x".repeat(MAX_AUDIT_RATIONALE_BYTES * 4) // 16 KB rationale
@@ -480,16 +480,16 @@ await ok(
 )
 
 await ok(
-	"FB-28: 50 concurrent appends produce 50 distinct, individually-parseable lines",
+	"FB-028: 50 concurrent appends produce 50 distinct, individually-parseable lines",
 	async () => {
 		// Stress the mutex with more concurrency than the prior test (which
-		// did 2). The FB-28 atomicity model relies on the per-file mutex,
+		// did 2). The FB-028 atomicity model relies on the per-file mutex,
 		// not PIPE_BUF — so this MUST hold even with records that exceed
 		// the macOS PIPE_BUF=512 byte limit.
 		const dir = mkdtempSync(join(tmp, "fb28-concurrent-"))
 		const N = 50
 		// Each record carries a 1 KB rationale → serialised line > 1 KB,
-		// well above macOS PIPE_BUF (512). Pre-FB-28 this would interleave.
+		// well above macOS PIPE_BUF (512). Pre-FB-028 this would interleave.
 		const rationale = "y".repeat(1024)
 		const promises = []
 		for (let i = 0; i < N; i++) {

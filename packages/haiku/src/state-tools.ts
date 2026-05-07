@@ -987,7 +987,7 @@ function scanOneIntent(
 						field: `stages/${stageName}/units/${f.name}`,
 						severity: "warning",
 						message: `Unit filename doesn't match expected pattern`,
-						fix: "Rename to match pattern: unit-NN-slug-name.md",
+						fix: "Rename to match pattern: unit-NNN-slug-name.md (3-digit zero-padded; legacy 2-digit also resolves)",
 					})
 				}
 				const unitRaw = readFileSync(join(repairUnitsDir, f.name), "utf8")
@@ -2479,7 +2479,27 @@ export function stageDir(slug: string, stage: string): string {
 
 export function unitPath(slug: string, stage: string, unit: string): string {
 	const name = unit.endsWith(".md") ? unit : `${unit}.md`
-	return join(stageDir(slug, stage), "units", name)
+	const dir = join(stageDir(slug, stage), "units")
+	const exact = join(dir, name)
+	if (existsSync(exact)) return exact
+	// Width-flexible numeric-prefix lookup. Migration path for intents
+	// authored with 2-digit padding (`unit-01-foo.md`) when the agent
+	// passes 3-digit (`unit-001-foo`) or vice versa. Match by leading
+	// digit prefix + post-digit slug suffix, ignoring zero-pad width.
+	const m = name.match(/^unit-(\d+)-(.+)\.md$/)
+	if (!m) return exact
+	const targetNum = Number.parseInt(m[1], 10)
+	const targetSlug = m[2]
+	if (!existsSync(dir)) return exact
+	const matches = readdirSync(dir).filter((f) => {
+		const fm = f.match(/^unit-(\d+)-(.+)\.md$/)
+		if (!fm) return false
+		return (
+			Number.parseInt(fm[1], 10) === targetNum && fm[2] === targetSlug
+		)
+	})
+	if (matches.length === 1) return join(dir, matches[0])
+	return exact
 }
 
 export function stageStatePath(slug: string, stage: string): string {
@@ -3651,6 +3671,20 @@ function ajvErrorToCode(err: {
 	}
 }
 
+/**
+ * Width-flexible unit-name match. `unit-01-foo` resolves to `unit-001-foo`
+ * (and vice versa) — same numeric prefix and slug suffix, ignoring
+ * zero-pad width. Used by depends_on validation so existing 2-digit
+ * intents don't break under the NNN-padded engine prompt.
+ */
+function resolvesToUnit(entry: string, target: string): boolean {
+	if (entry === target) return true
+	const a = entry.match(/^unit-(\d+)-(.+)$/)
+	const b = target.match(/^unit-(\d+)-(.+)$/)
+	if (!a || !b) return false
+	return Number.parseInt(a[1], 10) === Number.parseInt(b[1], 10) && a[2] === b[2]
+}
+
 export function validateUnitFrontmatter(
 	frontmatter: Record<string, unknown>,
 	context: {
@@ -3681,12 +3715,15 @@ export function validateUnitFrontmatter(
 	if (Array.isArray(frontmatter.depends_on)) {
 		for (const entry of frontmatter.depends_on) {
 			if (typeof entry !== "string") continue // already flagged by AJV
-			if (entry === context.unit) {
+			if (entry === context.unit || resolvesToUnit(entry, context.unit)) {
 				errors.push(
 					`depends_on_self_reference: unit '${context.unit}' lists itself in depends_on. A unit cannot depend on itself.`,
 				)
 			}
-			if (!context.siblingUnits.includes(entry) && entry !== context.unit) {
+			const resolves = context.siblingUnits.some((s) =>
+				resolvesToUnit(entry, s),
+			)
+			if (!resolves && !resolvesToUnit(entry, context.unit)) {
 				errors.push(
 					`depends_on_unresolved: depends_on entry '${entry}' does not resolve to a unit in stage '${context.stage}'. Sibling units in this stage: [${context.siblingUnits.join(", ")}].`,
 				)
@@ -4805,9 +4842,18 @@ function nextFeedbackNumber(dir: string): number {
 	return max + 1
 }
 
-/** Zero-pad a number to two digits. */
+/** Three-digit zero pad: 1 → "001", 47 → "047", 999 → "999".
+ *
+ *  Schema cap on numeric IDs (feedback + units) is 999, so 3 digits
+ *  always fits. Pre-2026-05-07 files used 2-digit padding ("08-…md");
+ *  this is migration-clean because every consumer parses the leading
+ *  digits as an integer rather than relying on a fixed-width prefix.
+ *  `nextFeedbackNumber` / `nextUnitNumber` find max+1 across mixed-
+ *  padding files (numeric compare, not string), so a stage with
+ *  `08-foo.md` next gets `009-bar.md` without breaking lookup or
+ *  ordering. */
 function zeroPad(n: number): string {
-	return n.toString().padStart(2, "0")
+	return n.toString().padStart(3, "0")
 }
 
 /** One reply on a feedback thread. Append-only; agents and humans
@@ -5507,9 +5553,23 @@ export function moveFeedbackFile(
 	}
 }
 
-function deriveFeedbackIdFromFilename(filename: string): string {
+export function deriveFeedbackIdFromFilename(filename: string): string {
 	const m = filename.match(/^(\d+)-/)
-	return m ? `FB-${m[1].padStart(2, "0")}` : "FB-??"
+	if (!m) return "FB-???"
+	// Display format mirrors the on-disk padding the writer used.
+	// New files use 3-digit pad; legacy files (pre-2026-05-07) used 2.
+	// We preserve whatever width the file already has, so display
+	// matches the actual filename for `ls` / SPA round-trip clarity.
+	return `FB-${m[1]}`
+}
+
+/** Format a numeric feedback id back to canonical display form
+ *  (`FB-NNN`). Handlers pass the input number through this so the
+ *  response always carries the engine's canonical string regardless
+ *  of how the input was framed (integer input, regex-normalised raw
+ *  string, etc.). Width matches the on-disk padding (3 digits). */
+export function formatFeedbackId(num: number): string {
+	return `FB-${num.toString().padStart(3, "0")}`
 }
 
 /**
@@ -9917,7 +9977,7 @@ export function handleStateTool(
 			if (fbDeleteInputErr) return fbDeleteInputErr
 			const intent = args.intent as string
 			const stage = (args.stage as string) || ""
-			const feedbackId = args.feedback_id as string
+			const feedbackId = formatFeedbackId(args.feedback_id as number)
 
 			if (!intent)
 				return {
@@ -9975,7 +10035,7 @@ export function handleStateTool(
 			if (fbMoveInputErr) return fbMoveInputErr
 			const intent = args.intent as string
 			const stage = (args.stage as string) || ""
-			const feedbackId = args.feedback_id as string
+			const feedbackId = formatFeedbackId(args.feedback_id as number)
 			const toStage = (args.to_stage as string) || ""
 
 			if (!intent)
@@ -10102,7 +10162,7 @@ export function handleStateTool(
 			if (fbRejectInputErr) return fbRejectInputErr
 			const intent = args.intent as string
 			const stage = (args.stage as string) || ""
-			const feedbackId = args.feedback_id as string
+			const feedbackId = formatFeedbackId(args.feedback_id as number)
 			const reason = args.reason as string
 
 			if (!intent)
@@ -10371,8 +10431,8 @@ export function handleStateTool(
 			if (fbReadInputErr) return fbReadInputErr
 			const intentArg = args.intent as string
 			const stageArg = (args.stage as string) || ""
-			const fbId = args.feedback_id as string
-			if (!intentArg || !fbId) {
+			const feedbackId = formatFeedbackId(args.feedback_id as number)
+			if (!intentArg || !feedbackId) {
 				return reply(
 					{
 						error: "missing_args",
@@ -10395,7 +10455,7 @@ export function handleStateTool(
 						error: "feedback_not_found",
 						intent: intentArg,
 						stage: stageArg || null,
-						feedback_id: fbId,
+						feedback_id: feedbackId,
 						message: `No feedback directory at ${dir}.`,
 					},
 					{ isError: true },
@@ -10404,8 +10464,8 @@ export function handleStateTool(
 			let foundPath: string | null = null
 			let foundData: Record<string, unknown> | null = null
 			let foundBody: string | null = null
-			// Derive numeric part from fbId: "FB-01" → 1, "FB-1" → 1, "1" → 1
-			const fbNumMatch = fbId.match(/^(?:FB-)?(\d+)$/i)
+			// Derive numeric part from feedbackId: "FB-01" → 1, "FB-1" → 1, "1" → 1
+			const fbNumMatch = feedbackId.match(/^(?:FB-)?(\d+)$/i)
 			const fbNum = fbNumMatch ? Number.parseInt(fbNumMatch[1], 10) : null
 			for (const f of readdirSync(dir).filter((n) => n.endsWith(".md"))) {
 				const p = join(dir, f)
@@ -10418,8 +10478,8 @@ export function handleStateTool(
 					? Number.parseInt(fileNumMatch[1], 10)
 					: null
 				if (
-					(data.id as string) === fbId ||
-					(data.feedback_id as string) === fbId ||
+					(data.id as string) === feedbackId ||
+					(data.feedback_id as string) === feedbackId ||
 					(fbNum !== null && fileNum === fbNum)
 				) {
 					foundPath = p
@@ -10434,8 +10494,8 @@ export function handleStateTool(
 						error: "feedback_not_found",
 						intent: intentArg,
 						stage: stageArg || null,
-						feedback_id: fbId,
-						message: `No feedback file matching ${fbId} in ${dir}.`,
+						feedback_id: feedbackId,
+						message: `No feedback file matching ${feedbackId} in ${dir}.`,
 					},
 					{ isError: true },
 				)
@@ -10443,7 +10503,7 @@ export function handleStateTool(
 			const fmTitle =
 				typeof foundData?.title === "string" ? (foundData.title as string) : ""
 			const h1Match = foundBody.match(/^#\s+(.+)$/m)
-			const title = fmTitle || (h1Match ? h1Match[1].trim() : fbId)
+			const title = fmTitle || (h1Match ? h1Match[1].trim() : feedbackId)
 			return reply({ title, body: foundBody })
 		}
 
@@ -10457,7 +10517,7 @@ export function handleStateTool(
 			if (fbWriteInputErr) return fbWriteInputErr
 			const intentArg = args.intent as string
 			const stageArg = (args.stage as string) || ""
-			const fbId = args.feedback_id as string
+			const feedbackId = formatFeedbackId(args.feedback_id as number)
 			const rawBody = (args.body as string) ?? ""
 
 			// V-10 server-side sanitization. The fixer-hat path lands here
@@ -10466,7 +10526,7 @@ export function handleStateTool(
 			// so a hostile agent cannot plant XSS in the persisted FB.
 			const newBody = sanitizeFeedbackBody(rawBody)
 
-			if (!intentArg || !fbId) {
+			if (!intentArg || !feedbackId) {
 				return reply(
 					{
 						error: "missing_args",
@@ -10494,7 +10554,7 @@ export function handleStateTool(
 
 			// Locate the FB file by id via the canonical resolver (numeric-
 			// prefix matching against the file's `NN-slug.md` name).
-			const found = findFeedbackFile(intentArg, stageArg, fbId)
+			const found = findFeedbackFile(intentArg, stageArg, feedbackId)
 			if (!found) {
 				const dir = stageArg
 					? feedbackDir(intentArg, stageArg)
@@ -10504,8 +10564,8 @@ export function handleStateTool(
 						error: "feedback_not_found",
 						intent: intentArg,
 						stage: stageArg || null,
-						feedback_id: fbId,
-						message: `No feedback file matching ${fbId} in ${dir}.`,
+						feedback_id: feedbackId,
+						message: `No feedback file matching ${feedbackId} in ${dir}.`,
 					},
 					{ isError: true },
 				)
@@ -10522,7 +10582,7 @@ export function handleStateTool(
 					{
 						error: "lifecycle_violation",
 						current_status: status,
-						message: `Cannot rewrite feedback '${fbId}' — status is '${status}'. Per the forward-only lifecycle rule, closed and rejected feedback are terminal and immutable. To raise a related concern, file a NEW feedback via haiku_feedback.`,
+						message: `Cannot rewrite feedback '${feedbackId}' — status is '${status}'. Per the forward-only lifecycle rule, closed and rejected feedback are terminal and immutable. To raise a related concern, file a NEW feedback via haiku_feedback.`,
 					},
 					{ isError: true },
 				)
@@ -10537,14 +10597,14 @@ export function handleStateTool(
 			emitTelemetry("haiku.feedback.body_rewritten", {
 				intent: intentArg,
 				stage: stageArg || "",
-				feedback_id: fbId,
+				feedback_id: feedbackId,
 			})
 			return reply({
 				ok: true,
-				feedback_id: fbId,
+				feedback_id: feedbackId,
 				stage: stageArg || null,
 				intent: intentArg,
-				message: `Rewrote body of feedback '${fbId}' (status preserved as '${status}').`,
+				message: `Rewrote body of feedback '${feedbackId}' (status preserved as '${status}').`,
 			})
 		}
 
@@ -10562,8 +10622,8 @@ export function handleStateTool(
 			if (fbAdvanceHatInputErr) return fbAdvanceHatInputErr
 			const intentArg = args.intent as string
 			const stageArg = (args.stage as string) || ""
-			const fbId = args.feedback_id as string
-			if (!intentArg || !fbId) {
+			const feedbackId = formatFeedbackId(args.feedback_id as number)
+			if (!intentArg || !feedbackId) {
 				return reply(
 					{
 						error: "missing_args",
@@ -10577,7 +10637,7 @@ export function handleStateTool(
 			if (fbBranchErr) return fbBranchErr
 
 			// Locate FB file by id via the canonical resolver.
-			const advFound = findFeedbackFile(intentArg, stageArg, fbId)
+			const advFound = findFeedbackFile(intentArg, stageArg, feedbackId)
 			if (!advFound) {
 				const fbAdvDir = stageArg
 					? feedbackDir(intentArg, stageArg)
@@ -10587,8 +10647,8 @@ export function handleStateTool(
 						error: "feedback_not_found",
 						intent: intentArg,
 						stage: stageArg || null,
-						feedback_id: fbId,
-						message: `No feedback file matching ${fbId} in ${fbAdvDir}.`,
+						feedback_id: feedbackId,
+						message: `No feedback file matching ${feedbackId} in ${fbAdvDir}.`,
 					},
 					{ isError: true },
 				)
@@ -10604,7 +10664,7 @@ export function handleStateTool(
 					{
 						error: "lifecycle_violation",
 						current_status: advStatus,
-						message: `Cannot advance hat on FB '${fbId}' — already ${advStatus} (terminal).`,
+						message: `Cannot advance hat on FB '${feedbackId}' — already ${advStatus} (terminal).`,
 					},
 					{ isError: true },
 				)
@@ -10670,7 +10730,7 @@ export function handleStateTool(
 				return reply(
 					{
 						error: "no_hat_to_advance",
-						message: `FB '${fbId}' is at hat '${curHat}', already the last hat in fix_hats. The FB should have closed on the prior advance call. State may be inconsistent.`,
+						message: `FB '${feedbackId}' is at hat '${curHat}', already the last hat in fix_hats. The FB should have closed on the prior advance call. State may be inconsistent.`,
 					},
 					{ isError: true },
 				)
@@ -10689,9 +10749,9 @@ export function handleStateTool(
 				return reply(
 					{
 						error: "reply_required",
-						feedback_id: fbId,
+						feedback_id: feedbackId,
 						calling_hat: callingHat,
-						message: `FB '${fbId}' is about to close on terminal hat '${callingHat}'. Pass a \`reply\` arg with a short plain-language explanation of what was done so the requester can see how the issue was addressed.`,
+						message: `FB '${feedbackId}' is about to close on terminal hat '${callingHat}'. Pass a \`reply\` arg with a short plain-language explanation of what was done so the requester can see how the issue was addressed.`,
 					},
 					{ isError: true },
 				)
@@ -10712,7 +10772,7 @@ export function handleStateTool(
 			let closedBy: string | undefined
 			if (isLast) {
 				newStatus = "closed"
-				closedBy = `fix-loop:${fbId}:bolt-${curBolt}`
+				closedBy = `fix-loop:${feedbackId}:bolt-${curBolt}`
 			} else {
 				newStatus = "addressed"
 			}
@@ -10745,13 +10805,13 @@ export function handleStateTool(
 			// block the advance.
 			if (isLast) {
 				try {
-					clearMarkersForFeedbackSync(intentDir(intentArg), fbId, "closed", {
+					clearMarkersForFeedbackSync(intentDir(intentArg), feedbackId, "closed", {
 						intentSlug: intentArg,
 					})
 				} catch (err) {
 					emitTelemetry("haiku.drift.clear_marker_failed", {
 						intent: intentArg,
-						feedback_id: fbId,
+						feedback_id: feedbackId,
 						terminal_status: "closed",
 						error: String((err as Error)?.message ?? err),
 					})
@@ -10763,7 +10823,7 @@ export function handleStateTool(
 				{
 					intent: intentArg,
 					stage: stageArg || "",
-					feedback_id: fbId,
+					feedback_id: feedbackId,
 					hat: nextHat,
 				},
 			)
@@ -10787,7 +10847,7 @@ export function handleStateTool(
 			// not LLM compliance.
 			let nextSubagentDispatchBlock: string | null = null
 			if (!isLast && nextDispatchedHat) {
-				const sidecarUnit = stageArg ? `fix-${fbId}` : `intent-fix-${fbId}`
+				const sidecarUnit = stageArg ? `fix-${feedbackId}` : `intent-fix-${feedbackId}`
 				try {
 					const sidecar = nextRelayPath({
 						unit: sidecarUnit,
@@ -10805,7 +10865,7 @@ export function handleStateTool(
 
 			return reply({
 				ok: true,
-				feedback_id: fbId,
+				feedback_id: feedbackId,
 				stage: stageArg || null,
 				calling_hat: callingHat,
 				next_dispatched_hat: nextDispatchedHat,
@@ -10813,8 +10873,8 @@ export function handleStateTool(
 				closed: isLast,
 				bolt: curBolt,
 				message: isLast
-					? `FB '${fbId}' closed by ${closedBy} after '${callingHat}' (last hat in fix_hats sequence ${callingIdx + 1}/${fixHats.length}).`
-					: `FB '${fbId}': '${callingHat}' (${callingIdx + 1}/${fixHats.length}) finished; next hat to dispatch is '${nextDispatchedHat}'. The next-hat dispatch block is in the \`next_subagent_dispatch_block\` field of this response — relay it verbatim to your parent.`,
+					? `FB '${feedbackId}' closed by ${closedBy} after '${callingHat}' (last hat in fix_hats sequence ${callingIdx + 1}/${fixHats.length}).`
+					: `FB '${feedbackId}': '${callingHat}' (${callingIdx + 1}/${fixHats.length}) finished; next hat to dispatch is '${nextDispatchedHat}'. The next-hat dispatch block is in the \`next_subagent_dispatch_block\` field of this response — relay it verbatim to your parent.`,
 			})
 		}
 
@@ -10827,9 +10887,9 @@ export function handleStateTool(
 			if (fbRejectHatInputErr) return fbRejectHatInputErr
 			const intentArg = args.intent as string
 			const stageArg = (args.stage as string) || ""
-			const fbId = args.feedback_id as string
+			const feedbackId = formatFeedbackId(args.feedback_id as number)
 			const reason = (args.reason as string) || ""
-			if (!intentArg || !fbId) {
+			if (!intentArg || !feedbackId) {
 				return reply(
 					{
 						error: "missing_args",
@@ -10842,7 +10902,7 @@ export function handleStateTool(
 			const rejBranchErr = enforceStageBranch(intentArg, stageArg || undefined)
 			if (rejBranchErr) return rejBranchErr
 
-			const rejFound = findFeedbackFile(intentArg, stageArg, fbId)
+			const rejFound = findFeedbackFile(intentArg, stageArg, feedbackId)
 			if (!rejFound) {
 				const fbRejDir = stageArg
 					? feedbackDir(intentArg, stageArg)
@@ -10850,8 +10910,8 @@ export function handleStateTool(
 				return reply(
 					{
 						error: "feedback_not_found",
-						feedback_id: fbId,
-						message: `No feedback file matching ${fbId} in ${fbRejDir}.`,
+						feedback_id: feedbackId,
+						message: `No feedback file matching ${feedbackId} in ${fbRejDir}.`,
 					},
 					{ isError: true },
 				)
@@ -10866,7 +10926,7 @@ export function handleStateTool(
 					{
 						error: "lifecycle_violation",
 						current_status: rejStatus,
-						message: `Cannot reject hat on FB '${fbId}' — already ${rejStatus} (terminal).`,
+						message: `Cannot reject hat on FB '${feedbackId}' — already ${rejStatus} (terminal).`,
 					},
 					{ isError: true },
 				)
@@ -10922,7 +10982,7 @@ export function handleStateTool(
 				return reply(
 					{
 						error: "no_hat_to_reject",
-						message: `FB '${fbId}' has no hat to reject — already past the last hat in fix_hats (storage at '${curHatRej}').`,
+						message: `FB '${feedbackId}' has no hat to reject — already past the last hat in fix_hats (storage at '${curHatRej}').`,
 					},
 					{ isError: true },
 				)
@@ -10986,14 +11046,14 @@ export function handleStateTool(
 			writeFileSync(rejPath, matter.stringify(`${rejBody.trimEnd()}\n`, newFm))
 			if (escalatedFromTier && escalatedToTier) {
 				console.error(
-					`[haiku] feedback model escalated: ${escalatedFromTier} → ${escalatedToTier} (FB ${fbId} hat rejected, bolt ${curBoltRej + 1})`,
+					`[haiku] feedback model escalated: ${escalatedFromTier} → ${escalatedToTier} (FB ${feedbackId} hat rejected, bolt ${curBoltRej + 1})`,
 				)
 			}
 			sealIntentState(intentArg)
 			emitTelemetry("haiku.feedback.hat_rejected", {
 				intent: intentArg,
 				stage: stageArg || "",
-				feedback_id: fbId,
+				feedback_id: feedbackId,
 				hat: callingHatRej,
 				new_bolt: String(curBoltRej + 1),
 				...(escalatedToTier
@@ -11005,15 +11065,15 @@ export function handleStateTool(
 			})
 			return reply({
 				ok: true,
-				feedback_id: fbId,
+				feedback_id: feedbackId,
 				rejecting_hat: callingHatRej,
 				next_dispatched_hat: nextDispatchedHatRej,
 				new_bolt: curBoltRej + 1,
 				reason,
 				message:
 					callingIdxRej > 0
-						? `FB '${fbId}' hat '${callingHatRej}' rejected — sending back to '${nextDispatchedHatRej}', bolt incremented to ${curBoltRej + 1}.`
-						: `FB '${fbId}' first hat '${callingHatRej}' rejected — no prior hat to send back to; same hat will retry, bolt incremented to ${curBoltRej + 1}.`,
+						? `FB '${feedbackId}' hat '${callingHatRej}' rejected — sending back to '${nextDispatchedHatRej}', bolt incremented to ${curBoltRej + 1}.`
+						: `FB '${feedbackId}' first hat '${callingHatRej}' rejected — no prior hat to send back to; same hat will retry, bolt incremented to ${curBoltRej + 1}.`,
 			})
 		}
 
@@ -11026,7 +11086,7 @@ export function handleStateTool(
 			if (setTargetsInputErr) return setTargetsInputErr
 			const intentArg = args.intent as string
 			const stageArg = (args.stage as string) || ""
-			const fbId = args.feedback_id as string
+			const feedbackId = formatFeedbackId(args.feedback_id as number)
 			const targetUnit =
 				args.target_unit === null || args.target_unit === undefined
 					? null
@@ -11040,15 +11100,15 @@ export function handleStateTool(
 			const stBranchErr = enforceStageBranch(intentArg, stageArg || undefined)
 			if (stBranchErr) return stBranchErr
 
-			const stFound = findFeedbackFile(intentArg, stageArg, fbId)
+			const stFound = findFeedbackFile(intentArg, stageArg, feedbackId)
 			if (!stFound) {
 				return reply(
 					{
 						error: "feedback_not_found",
-						feedback_id: fbId,
+						feedback_id: feedbackId,
 						message: stageArg
-							? `Feedback '${fbId}' not found in stage '${stageArg}'.`
-							: `Feedback '${fbId}' not found (intent-scope).`,
+							? `Feedback '${feedbackId}' not found in stage '${stageArg}'.`
+							: `Feedback '${feedbackId}' not found (intent-scope).`,
 					},
 					{ isError: true },
 				)
@@ -11079,10 +11139,10 @@ export function handleStateTool(
 				return reply(
 					{
 						error: "targets_already_set",
-						feedback_id: fbId,
+						feedback_id: feedbackId,
 						current_target_unit: existingUnit,
 						current_target_invalidates: existingInvalidates,
-						message: `Feedback '${fbId}' already has classified targets — once set, immutable per the FB-as-unit architecture. To retarget, reject the FB (haiku_feedback_reject) and create a new one with the correct targets.`,
+						message: `Feedback '${feedbackId}' already has classified targets — once set, immutable per the FB-as-unit architecture. To retarget, reject the FB (haiku_feedback_reject) and create a new one with the correct targets.`,
 					},
 					{ isError: true },
 				)
@@ -11095,7 +11155,7 @@ export function handleStateTool(
 					{
 						error: "lifecycle_violation",
 						current_status: stStatus,
-						message: `Cannot classify FB '${fbId}' — already ${stStatus} (terminal).`,
+						message: `Cannot classify FB '${feedbackId}' — already ${stStatus} (terminal).`,
 					},
 					{ isError: true },
 				)
@@ -11115,11 +11175,11 @@ export function handleStateTool(
 
 			return reply({
 				ok: true,
-				feedback_id: fbId,
+				feedback_id: feedbackId,
 				target_unit: targetUnit,
 				target_invalidates: targetInvalidates,
 				reasoning: reasoning || null,
-				message: `Feedback '${fbId}' classified: target_unit=${targetUnit ?? "null (intent-scope)"}, invalidates=[${targetInvalidates.join(", ")}]${reasoning ? ` — ${reasoning}` : ""}.`,
+				message: `Feedback '${feedbackId}' classified: target_unit=${targetUnit ?? "null (intent-scope)"}, invalidates=[${targetInvalidates.join(", ")}]${reasoning ? ` — ${reasoning}` : ""}.`,
 			})
 		}
 

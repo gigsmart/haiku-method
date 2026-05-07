@@ -105,7 +105,7 @@ function makeRichV3Fixture() {
 			status: "closed",
 			bolt: 1,
 			triaged_at: "2026-04-16T10:00:00Z",
-			closed_by: "fix-loop:FB-01:bolt-1",
+			closed_by: "fix-loop:FB-001:bolt-1",
 			resolution: "inline_fix",
 			created_at: "2026-04-16T09:30:00Z",
 			replies: [
@@ -430,7 +430,7 @@ test("realistic v3 → v4 — malformed YAML in one FB does NOT abort the migrat
 			console.warn = origWarn
 		}
 
-		// Sanity: every other FB still migrated. The good neighbour FB-01
+		// Sanity: every other FB still migrated. The good neighbour FB-001
 		// on the design stage must have its v3 fields stripped.
 		const goodFm = readFm(
 			join(

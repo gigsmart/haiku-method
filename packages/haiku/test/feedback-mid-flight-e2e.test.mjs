@@ -135,7 +135,7 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 			// this stage is [builder, feedback-assessor]; each tick
 			// stamps one. Stamping just the named hat for the FB id.
 			for (const fbId of action.feedback_ids || []) {
-				const files = readdirSync(fbDir).filter((f) => f.startsWith(fbId))
+				const files = readdirSync(fbDir).filter((f) => { const n = Number.parseInt(String(fbId).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; })
 				for (const f of files) {
 					const path = join(fbDir, f)
 					const fm = readFm(path)
@@ -153,7 +153,7 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 		}
 		case "close_feedback": {
 			const files = readdirSync(fbDir).filter((f) =>
-				f.startsWith(action.feedback_id),
+				{ const n = Number.parseInt(String(action.feedback_id).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; },
 			)
 			for (const f of files) {
 				const path = join(fbDir, f)
@@ -337,7 +337,7 @@ test("e2e: FB opens after stage A merged, fix loop runs, FB closes, pipeline sea
 				makeFeedback({
 					intentDir,
 					stage: "a",
-					id: "FB-01",
+					id: "FB-001",
 					title: "stage-a needs revision",
 					body: "found a bug after merge",
 					origin: "user-chat",

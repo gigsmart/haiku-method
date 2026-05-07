@@ -339,19 +339,19 @@ export function validateUnitNaming(
 				violations.push({
 					file: f,
 					issue:
-						"must have a zero-padded number after 'unit-' (e.g., unit-01-...)",
+						"must have a zero-padded number after 'unit-' (e.g., unit-001-...)",
 				})
 			} else if (!/^unit-\d{2,}/.test(f)) {
 				violations.push({
 					file: f,
 					issue:
-						"number must be zero-padded to at least 2 digits (e.g., 01, 02)",
+						"number must be zero-padded to at least 2 digits (preferred: 3 digits, e.g. `001`, `002`, …, `999`)",
 				})
 			} else {
 				violations.push({
 					file: f,
 					issue:
-						"slug must be kebab-case (lowercase letters, numbers, hyphens). Expected: unit-NN-slug.md",
+						"slug must be kebab-case (lowercase letters, numbers, hyphens). Expected: unit-NNN-slug.md",
 				})
 			}
 			continue
@@ -378,7 +378,7 @@ export function validateUnitNaming(
 			intent: slug,
 			stage,
 			violations,
-			message: `${violations.length} unit file(s) have invalid naming in stage '${stage}'. Files MUST be named \`unit-NN-slug.md\` (e.g., \`unit-01-data-model.md\`):\n\n${violations.map((v) => `- \`${v.file}\`: ${v.issue}`).join("\n")}\n\nRename the files to match the convention, then call \`haiku_run_next { intent: "${slug}" }\` again.`,
+			message: `${violations.length} unit file(s) have invalid naming in stage '${stage}'. Files MUST be named \`unit-NNN-slug.md\` (e.g., \`unit-001-data-model.md\`; legacy 2-digit \`unit-01-…\` still resolves):\n\n${violations.map((v) => `- \`${v.file}\`: ${v.issue}`).join("\n")}\n\nRename the files to match the convention, then call \`haiku_run_next { intent: "${slug}" }\` again.`,
 		}
 	}
 

@@ -179,8 +179,8 @@ test("FB on stage A carries over: cursor on C surfaces stage-A action", async ()
 			`expected revisit to stage A; got stage='${action.stage}'`,
 		)
 		assert.ok(
-			Array.isArray(action.feedback_ids) && action.feedback_ids.includes("FB-01"),
-			`expected FB-01 in feedback_ids; got ${JSON.stringify(action.feedback_ids)}`,
+			Array.isArray(action.feedback_ids) && action.feedback_ids.includes("FB-001"),
+			`expected FB-001 in feedback_ids; got ${JSON.stringify(action.feedback_ids)}`,
 		)
 	})
 })

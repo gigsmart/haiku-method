@@ -262,10 +262,10 @@ test("sad: closed FB doesn't re-trigger the fix loop", () => {
 		// FB with terminal status (closed) sitting in the dir. The
 		// cursor's Track B walk must not pick it as actionable.
 		writeFileSync(
-			join(intentDir, "feedback", "FB-01.md"),
+			join(intentDir, "feedback", "FB-001.md"),
 			fm(
 				{
-					feedback_id: "FB-01",
+					feedback_id: "FB-001",
 					title: "old",
 					origin: "user-chat",
 					author: "u",

@@ -150,7 +150,7 @@ function applyResponse(intentDir, action) {
 		}
 		case "start_feedback_hat": {
 			for (const fbId of action.feedback_ids || []) {
-				const files = readdirSync(fbDir).filter((f) => f.startsWith(fbId))
+				const files = readdirSync(fbDir).filter((f) => { const n = Number.parseInt(String(fbId).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; })
 				for (const f of files) {
 					const path = join(fbDir, f)
 					const fm = readFm(path)
@@ -168,7 +168,7 @@ function applyResponse(intentDir, action) {
 		}
 		case "close_feedback": {
 			const files = readdirSync(fbDir).filter((f) =>
-				f.startsWith(action.feedback_id),
+				{ const n = Number.parseInt(String(action.feedback_id).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; },
 			)
 			for (const f of files) {
 				const path = join(fbDir, f)
@@ -417,7 +417,7 @@ test("fs-mode FB mid-flight: opens after stage A merge, fix loop runs, pipeline 
 				makeFeedback({
 					intentDir,
 					stage: "a",
-					id: "FB-01",
+					id: "FB-001",
 					title: "stage-a regression",
 					body: "found a bug after merge",
 					origin: "user-chat",

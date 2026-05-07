@@ -423,7 +423,7 @@ test("set_targets refuses to classify already-closed FB (lifecycle guard)", asyn
 		const r = handleStateTool("haiku_feedback_set_targets", {
 			intent: slug,
 			stage: "design",
-			feedback_id: "FB-04",
+			feedback_id: 4,
 			target_unit: "unit-99",
 			target_invalidates: ["user"],
 		})

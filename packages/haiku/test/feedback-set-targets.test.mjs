@@ -113,7 +113,7 @@ try {
 		const r = handleStateTool("haiku_feedback_set_targets", {
 			intent: intentSlug,
 			stage: "design",
-			feedback_id: "FB-01",
+			feedback_id: 1,
 			target_unit: "unit-02-rate-limit",
 			target_invalidates: ["user", "completeness"],
 		})
@@ -142,7 +142,7 @@ try {
 	})
 
 	test("classifies with reasoning paragraph stored on targets.reasoning", () => {
-		// Re-stage a fresh FB-05 since FB-01/02/03/04 are already
+		// Re-stage a fresh FB-005 since FB-001/02/03/04 are already
 		// classified or closed by earlier tests in this file.
 		writeFileSync(
 			join(intentDir, "stages", "design", "feedback", "05-with-reason.md"),
@@ -161,7 +161,7 @@ try {
 		const r = handleStateTool("haiku_feedback_set_targets", {
 			intent: intentSlug,
 			stage: "design",
-			feedback_id: "FB-05",
+			feedback_id: 5,
 			target_unit: null,
 			target_invalidates: ["user"],
 			reasoning,
@@ -186,7 +186,7 @@ try {
 	})
 
 	test("classifies as intent-scope (target_unit: null)", () => {
-		// Re-stage a fresh FB-03 first.
+		// Re-stage a fresh FB-003 first.
 		writeFileSync(
 			join(intentDir, "stages", "design", "feedback", "03-glossary.md"),
 			matter.stringify("Need a unified glossary.\n", {
@@ -202,7 +202,7 @@ try {
 		const r = handleStateTool("haiku_feedback_set_targets", {
 			intent: intentSlug,
 			stage: "design",
-			feedback_id: "FB-03",
+			feedback_id: 3,
 			target_unit: null,
 			target_invalidates: ["user"],
 		})
@@ -215,7 +215,7 @@ try {
 		const r = handleStateTool("haiku_feedback_set_targets", {
 			intent: intentSlug,
 			stage: "design",
-			feedback_id: "FB-02",
+			feedback_id: 2,
 			target_unit: "unit-99-redirect",
 			target_invalidates: ["user"],
 		})
@@ -227,10 +227,13 @@ try {
 	})
 
 	test("refuses on missing FB", () => {
+		// Use a high but in-range number — the schema accepts 1..999 but
+		// no FB-999 exists in this fixture, so the engine returns
+		// feedback_not_found (not the input_invalid gate).
 		const r = handleStateTool("haiku_feedback_set_targets", {
 			intent: intentSlug,
 			stage: "design",
-			feedback_id: "FB-9999",
+			feedback_id: 999,
 			target_unit: null,
 			target_invalidates: [],
 		})
@@ -256,7 +259,7 @@ try {
 		const r = handleStateTool("haiku_feedback_set_targets", {
 			intent: intentSlug,
 			stage: "design",
-			feedback_id: "FB-04",
+			feedback_id: 4,
 			target_unit: "unit-05-late",
 			target_invalidates: ["user"],
 		})

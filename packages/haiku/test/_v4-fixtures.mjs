@@ -127,7 +127,7 @@ export function makeIntent({
 export function makeFeedback({
 	intentDir,
 	stage,
-	id, // e.g. "01"
+	id, // number (1, 8, 47) or any digit-prefixed string ("8", "08", "FB-008")
 	title = "test feedback",
 	body = "test body",
 	origin = "user-chat",
@@ -167,9 +167,31 @@ export function makeFeedback({
 			: [],
 		closed_at: closed ? at : null,
 	}
-	const path = join(fbDir, `${id}-${title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.md`)
+	// Normalise the input id to a number, then 3-digit pad to match the
+	// engine's on-disk convention. Accepts numbers (1, 8, 47), digit
+	// strings ("8", "08", "008"), or "FB-NN" forms ("FB-8", "FB-008").
+	// Some legacy tests use "FB-DRIFT-NN" or other non-standard prefixes
+	// to tag specific FB classes — for those we extract the trailing
+	// digits and warn loudly so future maintainers know the test relies
+	// on the engine's prefix-match parser, not the fixture's.
+	const idStr = String(id)
+	let num
+	if (typeof id === "number") {
+		num = id
+	} else {
+		const m = idStr.match(/(\d+)\s*$/)
+		num = m ? Number.parseInt(m[1], 10) : NaN
+	}
+	if (!Number.isFinite(num) || num < 1) {
+		throw new Error(
+			`makeFeedback: could not derive a positive integer id from ${JSON.stringify(id)}; pass a number or a digit-suffixed string`,
+		)
+	}
+	const nnn = num.toString().padStart(3, "0")
+	const slug = title.replace(/[^a-z0-9]/gi, "-").toLowerCase()
+	const path = join(fbDir, `${nnn}-${slug}.md`)
 	writeFileSync(path, matter.stringify(body, fm))
-	return { path, frontmatter: fm }
+	return { path, frontmatter: fm, num }
 }
 
 /**

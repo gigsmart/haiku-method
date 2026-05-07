@@ -1,9 +1,9 @@
 #!/usr/bin/env npx tsx
-// Strict-mode feedback mutation auth test (FB-20 regression guard).
+// Strict-mode feedback mutation auth test (FB-020 regression guard).
 //
 // When `HAIKU_REMOTE_REVIEW=1` the public tunnel is live and the server MUST
 // reject POST/PUT/DELETE /api/feedback/... without `X-Haiku-Session-Id` as
-// 401. Before FB-20 this was a fail-open soft gate — any unauthenticated
+// 401. Before FB-020 this was a fail-open soft gate — any unauthenticated
 // cross-origin caller could poison review state.
 //
 // This file is the subprocess entrypoint: it runs the assertions with
@@ -46,7 +46,7 @@ const { __setActiveTunnelForTesting, signJWT } = await import(
 )
 const { review } = await import("../src/config.ts")
 
-// FB-30 added tunnel-JWT auth that fires BEFORE the feedback mutation
+// FB-030 added tunnel-JWT auth that fires BEFORE the feedback mutation
 // guard. In remote mode every request needs a valid JWT to get past
 // the auth layer at all. Stub an active tunnel so verifyTunnelJWT can
 // validate tokens we mint here.
@@ -65,7 +65,7 @@ function mintJWT(sid) {
 	})
 }
 
-// FB-36 made CORS origin-checked. The test's OPTIONS preflight must
+// FB-036 made CORS origin-checked. The test's OPTIONS preflight must
 // send a valid Origin to get CORS headers back. Default allow-list
 // entry is `review.siteUrl`.
 const ALLOWED_ORIGIN =
@@ -173,8 +173,8 @@ async function run() {
 
 	console.log("\n=== Strict mutation auth (HAIKU_REMOTE_REVIEW=1) ===")
 
-	// Seed a session + JWT. FB-30 added the tunnel-JWT gate that now
-	// fires BEFORE the feedback mutation gate (FB-20), so requests
+	// Seed a session + JWT. FB-030 added the tunnel-JWT gate that now
+	// fires BEFORE the feedback mutation gate (FB-020), so requests
 	// missing the JWT never reach the feedback guard — they 401 at the
 	// outer gate with `missing_token`. Tests that want to exercise the
 	// feedback gate must send a valid JWT first.

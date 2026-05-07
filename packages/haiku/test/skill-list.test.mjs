@@ -603,12 +603,12 @@ Verify the revisit-elaborate prompt advertises installed skills.
 					iteration: 2,
 					pending_feedback: [
 						{
-							feedback_id: "FB-01",
+							feedback_id: "FB-001",
 							title: "Add coverage for edge case",
 							origin: "adversarial-review",
 							author: "reviewer",
 							status: "open",
-							file: ".haiku/intents/skill-revisit-intent/stages/plan/feedback/FB-01.md",
+							file: ".haiku/intents/skill-revisit-intent/stages/plan/feedback/FB-001.md",
 						},
 					],
 				},

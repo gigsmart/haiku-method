@@ -141,7 +141,7 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 		}
 		case "start_feedback_hat": {
 			for (const fbId of action.feedback_ids || []) {
-				const files = readdirSync(fbDir).filter((f) => f.startsWith(fbId))
+				const files = readdirSync(fbDir).filter((f) => { const n = Number.parseInt(String(fbId).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; })
 				for (const f of files) {
 					const path = join(fbDir, f)
 					const fm = readFm(path)
@@ -159,7 +159,7 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 		}
 		case "close_feedback": {
 			const files = readdirSync(fbDir).filter((f) =>
-				f.startsWith(action.feedback_id),
+				{ const n = Number.parseInt(String(action.feedback_id).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; },
 			)
 			for (const f of files) {
 				const path = join(fbDir, f)
@@ -357,7 +357,7 @@ test("e2e (interpretation A): FB on s1 lands while s4 is in flight → cursor wa
 				makeFeedback({
 					intentDir,
 					stage: "s1",
-					id: "FB-01",
+					id: "FB-001",
 					title: "stage-s1 needs revision",
 					body: "user-noticed gap on s1 while s4 was in flight",
 					origin: "user-chat",
@@ -468,7 +468,7 @@ test("e2e (interpretation B): FB on s1 lands AFTER s4 merged → cursor walks Tr
 				makeFeedback({
 					intentDir,
 					stage: "s1",
-					id: "FB-01",
+					id: "FB-001",
 					title: "stage-s1 needs revision",
 					body: "found a gap after s4 merged",
 					origin: "user-chat",

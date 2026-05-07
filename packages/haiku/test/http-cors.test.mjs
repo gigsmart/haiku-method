@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
-// FB-36 regression guard: CORS must be origin-gated, never wildcard.
+// FB-036 regression guard: CORS must be origin-gated, never wildcard.
 //
-// When `HAIKU_REMOTE_REVIEW=1` the public tunnel is live. Before FB-36 the
+// When `HAIKU_REMOTE_REVIEW=1` the public tunnel is live. Before FB-036 the
 // server emitted `Access-Control-Allow-Origin: *` on every response, which
 // combined with the session-token-in-URL auth model let any site the
 // reviewer opened cross-origin mutate review state. The fix narrows CORS to
@@ -143,7 +143,7 @@ async function run() {
 	// and non-match without needing a valid JWT.
 	const safeUrl = `${baseUrl}/review/current`
 
-	console.log("\n=== FB-36 CORS allow-list ===")
+	console.log("\n=== FB-036 CORS allow-list ===")
 
 	await test("allowed origin (siteUrl) gets ACAO echoed back", async () => {
 		const res = await fetch(safeUrl, {
@@ -210,7 +210,7 @@ async function run() {
 		)
 	})
 
-	await test("ACAO is never `*` — regression guard for the root FB-36 bug", async () => {
+	await test("ACAO is never `*` — regression guard for the root FB-036 bug", async () => {
 		for (const origin of [
 			"https://haikumethod.ai",
 			"https://evil.example",
@@ -241,7 +241,7 @@ async function run() {
 
 	// ── Preflight / OPTIONS ─────────────────────────────────────────────────
 
-	console.log("\n=== FB-36 CORS preflight (OPTIONS) ===")
+	console.log("\n=== FB-036 CORS preflight (OPTIONS) ===")
 
 	await test("OPTIONS from allowed origin returns 204 with ACAO echoed", async () => {
 		const res = await fetch(
@@ -294,7 +294,7 @@ async function run() {
 
 	// Wildcard-strip logic is tested in-process since stripping depends on
 	// module-level state that the re-exec'd child already initialized.
-	console.log("\n=== FB-36 wildcard-strip ===")
+	console.log("\n=== FB-036 wildcard-strip ===")
 
 	await test("stripWildcardAllowedOrigins removes `*` and warns", async () => {
 		// Seed a `*` into the in-memory allow-list, then strip.

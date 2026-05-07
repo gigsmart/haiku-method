@@ -1,6 +1,6 @@
 #!/usr/bin/env npx tsx
 // Test suite for parseOutputArtifacts — verifies recursive walk and full
-// type coverage. Regression for FB-21: nested artifacts (e.g.
+// type coverage. Regression for FB-021: nested artifacts (e.g.
 // `artifacts/wireframes/foo.html`) were dropped by the old non-recursive
 // readdir, hiding wireframes from the review screen even though they were
 // committed and visible to the review-agent scope filter.

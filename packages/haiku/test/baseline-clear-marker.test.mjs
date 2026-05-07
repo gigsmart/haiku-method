@@ -149,7 +149,7 @@ function setupSurfaceAsFeedbackMarker(opts = {}) {
 		linked_feedback_id:
 			opts.outcome === "trigger-revisit"
 				? null
-				: opts.linkedFeedbackId || "FB-12",
+				: opts.linkedFeedbackId || "FB-012",
 		linked_revisit_target_stage:
 			opts.outcome === "trigger-revisit"
 				? opts.linkedRevisitTargetStage || stage

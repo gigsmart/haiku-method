@@ -846,7 +846,7 @@ try {
 		const result = handleStateTool("haiku_feedback_reject", {
 			intent: intentSlug,
 			stage: "inception",
-			feedback_id: "FB-01\\..\\secret",
+			feedback_id: "FB-001\\..\\secret",
 			reason: "test",
 		})
 		assert.strictEqual(result.isError, true)
@@ -1943,7 +1943,7 @@ Closed body content.
 		const result = handleStateTool("haiku_feedback_read", {
 			intent: intentSlug,
 			stage: "inception",
-			feedback_id: "FB-01",
+			feedback_id: 1,
 		})
 		const parsed = JSON.parse(getTextResult(result))
 		assert.ok("title" in parsed)
@@ -1957,7 +1957,7 @@ Closed body content.
 		const result = handleStateTool("haiku_feedback_write", {
 			intent: intentSlug,
 			stage: "inception",
-			feedback_id: "FB-01",
+			feedback_id: 1,
 			body: "Updated diagnosis: root cause is X; proposed action: Y.",
 		})
 		const parsed = JSON.parse(getTextResult(result))
@@ -1968,7 +1968,7 @@ Closed body content.
 		const result = handleStateTool("haiku_feedback_write", {
 			intent: intentSlug,
 			stage: "inception",
-			feedback_id: "FB-01",
+			feedback_id: 1,
 			body: "",
 		})
 		const parsed = JSON.parse(getTextResult(result))
@@ -1979,7 +1979,7 @@ Closed body content.
 		const result = handleStateTool("haiku_feedback_write", {
 			intent: intentSlug,
 			stage: "inception",
-			feedback_id: "FB-02",
+			feedback_id: 2,
 			body: "Trying to rewrite closed FB.",
 		})
 		const parsed = JSON.parse(getTextResult(result))
@@ -1991,7 +1991,7 @@ Closed body content.
 		const result = handleStateTool("haiku_feedback_update", {
 			intent: intentSlug,
 			stage: "inception",
-			feedback_id: "FB-02",
+			feedback_id: 2,
 			status: "pending",
 		})
 		const parsed = JSON.parse(getTextResult(result))
@@ -1999,13 +1999,13 @@ Closed body content.
 	})
 
 	test("haiku_feedback_read returns feedback_not_found for missing FB", () => {
-		// Numeric ID to satisfy the FB-NN AJV pattern; the file just
-		// doesn't exist on disk, so the handler responds with the
-		// `feedback_not_found` semantic code (not the input-gate code).
+		// In-range numeric ID that doesn't exist on disk → handler
+		// responds with the `feedback_not_found` semantic code (not the
+		// input-gate code).
 		const result = handleStateTool("haiku_feedback_read", {
 			intent: intentSlug,
 			stage: "inception",
-			feedback_id: "FB-9999",
+			feedback_id: 999,
 		})
 		const parsed = JSON.parse(getTextResult(result))
 		assert.strictEqual(parsed.error, "feedback_not_found")
@@ -2015,7 +2015,7 @@ Closed body content.
 
 	console.log("\n=== haiku_feedback_advance_hat / _reject_hat ===")
 
-	// Stand up a fresh FB for advance/reject testing (separate from the FB-02
+	// Stand up a fresh FB for advance/reject testing (separate from the FB-002
 	// closed fixture above to avoid coupling tests).
 	writeFileSync(
 		join(fbDir, "03-advance-test.md"),
@@ -2031,7 +2031,7 @@ created_at: 2026-04-26T00:00:00Z
 Body for advance test.
 `,
 	)
-	// FB-04 — separate fixture for the reply-required guard test so it
+	// FB-004 — separate fixture for the reply-required guard test so it
 	// doesn't coupled with the B4 sequence above.
 	writeFileSync(
 		join(fbDir, "04-reply-required-test.md"),
@@ -2083,7 +2083,7 @@ Test stage.
 		const r1 = handleStateTool("haiku_feedback_advance_hat", {
 			intent: intentSlug,
 			stage: "inception",
-			feedback_id: "FB-03",
+			feedback_id: 3,
 		})
 		const p1 = JSON.parse(getTextResult(r1))
 		assert.strictEqual(p1.ok, true)
@@ -2098,7 +2098,7 @@ Test stage.
 		const r2 = handleStateTool("haiku_feedback_advance_hat", {
 			intent: intentSlug,
 			stage: "inception",
-			feedback_id: "FB-03",
+			feedback_id: 3,
 			reply: "Test fix landed; verifier signed off.",
 		})
 		const p2 = JSON.parse(getTextResult(r2))
@@ -2118,18 +2118,18 @@ Test stage.
 		const r = handleStateTool("haiku_feedback_advance_hat", {
 			intent: intentSlug,
 			stage: "inception",
-			feedback_id: "FB-04",
+			feedback_id: 4,
 		})
 		const p = JSON.parse(getTextResult(r))
 		assert.strictEqual(r.isError, true)
 		assert.strictEqual(p.error, "reply_required")
 	})
 
-	test("haiku_feedback_advance_hat refuses on already-closed FB (FB-02)", () => {
+	test("haiku_feedback_advance_hat refuses on already-closed FB (FB-002)", () => {
 		const result = handleStateTool("haiku_feedback_advance_hat", {
 			intent: intentSlug,
 			stage: "inception",
-			feedback_id: "FB-02",
+			feedback_id: 2,
 		})
 		const parsed = JSON.parse(getTextResult(result))
 		assert.strictEqual(parsed.error, "lifecycle_violation")
@@ -2140,7 +2140,7 @@ Test stage.
 		const result = handleStateTool("haiku_feedback_reject_hat", {
 			intent: intentSlug,
 			stage: "inception",
-			feedback_id: "FB-02",
+			feedback_id: 2,
 			reason: "test",
 		})
 		const parsed = JSON.parse(getTextResult(result))

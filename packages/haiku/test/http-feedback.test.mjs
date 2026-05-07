@@ -161,8 +161,8 @@ async function run() {
 		assert.strictEqual(data.stage, stageName)
 		assert.strictEqual(data.count, 2)
 		assert.strictEqual(data.items.length, 2)
-		assert.strictEqual(data.items[0].feedback_id, "FB-01")
-		assert.strictEqual(data.items[1].feedback_id, "FB-02")
+		assert.strictEqual(data.items[0].feedback_id, "FB-001")
+		assert.strictEqual(data.items[1].feedback_id, "FB-002")
 		assert.ok(data.items[0].body)
 		assert.ok(data.items[0].title)
 	})
@@ -225,9 +225,9 @@ async function run() {
 		)
 		assert.strictEqual(res.status, 201)
 		const data = await res.json()
-		assert.strictEqual(data.feedback_id, "FB-03")
+		assert.strictEqual(data.feedback_id, "FB-003")
 		assert.strictEqual(data.status, "pending")
-		assert.ok(data.message.includes("FB-03 created"))
+		assert.ok(data.message.includes("FB-003 created"))
 		assert.ok(data.file.includes("03-"))
 	})
 
@@ -299,7 +299,7 @@ async function run() {
 
 	await test("updates status field and returns 200", async () => {
 		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-01`,
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-001`,
 			{
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
@@ -308,9 +308,9 @@ async function run() {
 		)
 		assert.strictEqual(res.status, 200)
 		const data = await res.json()
-		assert.strictEqual(data.feedback_id, "FB-01")
+		assert.strictEqual(data.feedback_id, "FB-001")
 		assert.deepStrictEqual(data.updated_fields, ["status"])
-		assert.ok(data.message.includes("FB-01 updated"))
+		assert.ok(data.message.includes("FB-001 updated"))
 	})
 
 	await test("updates closed_by field", async () => {
@@ -322,7 +322,7 @@ async function run() {
 			"---\ntitle: stub\n---\n\nstub unit for closed_by test.\n",
 		)
 		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-01`,
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-001`,
 			{
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
@@ -335,9 +335,9 @@ async function run() {
 	})
 
 	await test("human can close human-authored feedback via PUT", async () => {
-		// FB-02 is human-authored (user-visual)
+		// FB-002 is human-authored (user-visual)
 		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-02`,
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-002`,
 			{
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
@@ -351,7 +351,7 @@ async function run() {
 
 	await test("PUT returns 400 for no updatable fields", async () => {
 		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-01`,
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-001`,
 			{
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
@@ -363,7 +363,7 @@ async function run() {
 
 	await test("PUT returns 404 for nonexistent feedback id", async () => {
 		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-99`,
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-099`,
 			{
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
@@ -378,9 +378,9 @@ async function run() {
 	console.log("\n=== DELETE /api/feedback/:intent/:stage/:id ===")
 
 	await test("DELETE returns 409 for pending feedback", async () => {
-		// FB-03 is pending
+		// FB-003 is pending
 		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-03`,
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-003`,
 			{
 				method: "DELETE",
 			},
@@ -391,23 +391,23 @@ async function run() {
 	})
 
 	await test("DELETE returns 200 for non-pending feedback", async () => {
-		// FB-01 was set to addressed
+		// FB-001 was set to addressed
 		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-01`,
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-001`,
 			{
 				method: "DELETE",
 			},
 		)
 		assert.strictEqual(res.status, 200)
 		const data = await res.json()
-		assert.strictEqual(data.feedback_id, "FB-01")
+		assert.strictEqual(data.feedback_id, "FB-001")
 		assert.strictEqual(data.deleted, true)
-		assert.ok(data.message.includes("FB-01 deleted"))
+		assert.ok(data.message.includes("FB-001 deleted"))
 	})
 
 	await test("DELETE returns 404 for nonexistent feedback id", async () => {
 		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-99`,
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-099`,
 			{
 				method: "DELETE",
 			},
@@ -416,9 +416,9 @@ async function run() {
 	})
 
 	await test("human can delete closed human-authored feedback", async () => {
-		// FB-02 was closed above
+		// FB-002 was closed above
 		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-02`,
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-002`,
 			{
 				method: "DELETE",
 			},
@@ -550,7 +550,7 @@ async function run() {
 
 	await test("PUT /api/feedback with traversal in stage returns 400", async () => {
 		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/..%2Fetc/FB-01`,
+			`${baseUrl}/api/feedback/${intentSlug}/..%2Fetc/FB-001`,
 			{
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
@@ -603,7 +603,7 @@ async function run() {
 
 	await test("PUT with empty body returns 400 with validation_failed", async () => {
 		const res = await fetch(
-			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-01`,
+			`${baseUrl}/api/feedback/${intentSlug}/${stageName}/FB-001`,
 			{
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },

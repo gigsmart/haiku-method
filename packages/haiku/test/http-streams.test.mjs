@@ -351,7 +351,7 @@ async function run() {
 		assert.strictEqual(res.status, 403, `expected 403, got ${res.status}`)
 	})
 
-	// ── Schema-gate wiring verification (FB-15 bolt 3) ────────────────────────
+	// ── Schema-gate wiring verification (FB-015 bolt 3) ────────────────────────
 	//
 	// Unit-01 spec requires that FileServeParamsSchema.safeParse run BEFORE
 	// resolvePathSafe on every file-serve handler. These probes exercise the
@@ -369,7 +369,7 @@ async function run() {
 	// the http layer. Schema-level rejection of `.` is already covered by
 	// packages/haiku-api/test/schemas.test.mjs (FileServeParamsSchema
 	// adversarial-fixture test block) which exercises the refine() directly.
-	console.log("\n=== schema-gate wiring (FB-15) ===")
+	console.log("\n=== schema-gate wiring (FB-015) ===")
 
 	// Pre-encoded fixtures — what the attacker actually sends over the wire.
 	// `%00` is the encoded null byte; `%2e` is encoded dot.

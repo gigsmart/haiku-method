@@ -7,7 +7,13 @@
 // would otherwise form between state-tools.ts and the new modules.
 
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import {
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	readFileSync,
+	writeFileSync,
+} from "node:fs"
 import { join } from "node:path"
 import {
 	dedupeFrontmatterKeys,
@@ -90,7 +96,24 @@ export function stageDir(slug: string, stage: string): string {
 
 export function unitPath(slug: string, stage: string, unit: string): string {
 	const name = unit.endsWith(".md") ? unit : `${unit}.md`
-	return join(stageDir(slug, stage), "units", name)
+	const dir = join(stageDir(slug, stage), "units")
+	const exact = join(dir, name)
+	if (existsSync(exact)) return exact
+	// Width-flexible numeric-prefix lookup. Migration path for intents
+	// authored with 2-digit padding (`unit-01-foo.md`) when the agent
+	// passes 3-digit (`unit-001-foo`) or vice versa.
+	const m = name.match(/^unit-(\d+)-(.+)\.md$/)
+	if (!m) return exact
+	const targetNum = Number.parseInt(m[1], 10)
+	const targetSlug = m[2]
+	if (!existsSync(dir)) return exact
+	const matches = readdirSync(dir).filter((f) => {
+		const fm = f.match(/^unit-(\d+)-(.+)\.md$/)
+		if (!fm) return false
+		return Number.parseInt(fm[1], 10) === targetNum && fm[2] === targetSlug
+	})
+	if (matches.length === 1) return join(dir, matches[0])
+	return exact
 }
 
 export function stageStatePath(slug: string, stage: string): string {

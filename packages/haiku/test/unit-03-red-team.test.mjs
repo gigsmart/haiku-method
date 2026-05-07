@@ -597,9 +597,9 @@ await attack(
 )
 
 await attack(
-	"V-10.RT14 (FB-32): nested-tag reconstitution — single-pass replace would leave live tag",
+	"V-10.RT14 (FB-032): nested-tag reconstitution — single-pass replace would leave live tag",
 	async () => {
-		// ATTACK (FB-32): a single-pass regex sanitiser strips the inner
+		// ATTACK (FB-032): a single-pass regex sanitiser strips the inner
 		// `<script src=x>` from `<scr<script src=x>ipt src=x>`, then
 		// concatenates the surrounding `<scr` + `ipt src=x>` into a brand-
 		// new live `<script src=x>` tag. The sanitiser must iterate until
@@ -631,9 +631,9 @@ await attack(
 )
 
 await attack(
-	"V-10.RT15 (FB-32): data:image/svg+xml in href/src is neutralised — SVG can carry <script>",
+	"V-10.RT15 (FB-032): data:image/svg+xml in href/src is neutralised — SVG can carry <script>",
 	async () => {
-		// ATTACK (FB-32): SVG documents can embed executable `<script>`
+		// ATTACK (FB-032): SVG documents can embed executable `<script>`
 		// elements and event handlers. Even via `<img src=...>`, certain
 		// renderings (e.g. <object>, <embed>, direct navigation) execute
 		// the SVG's scripts. `data:image/svg+xml` must be on the
@@ -654,9 +654,9 @@ await attack(
 )
 
 await attack(
-	"V-10.RT16 (FB-32): data:application/(java|ecma)script + data:text/javascript neutralised",
+	"V-10.RT16 (FB-032): data:application/(java|ecma)script + data:text/javascript neutralised",
 	async () => {
-		// ATTACK (FB-32): script-as-data MIME types execute when navigated
+		// ATTACK (FB-032): script-as-data MIME types execute when navigated
 		// to. The original allowlist only caught `data:text/html`; the
 		// JS-flavoured data: URLs slipped through.
 		const cases = [
@@ -677,9 +677,9 @@ await attack(
 )
 
 await attack(
-	"V-10.RT17 (FB-32): safe data:image/png + intent-scope paths are preserved",
+	"V-10.RT17 (FB-032): safe data:image/png + intent-scope paths are preserved",
 	async () => {
-		// REGRESSION GUARD (FB-32): widening the dangerous-scheme list
+		// REGRESSION GUARD (FB-032): widening the dangerous-scheme list
 		// must NOT touch raster image data: URLs (legitimate base64
 		// attachments) or relative intent-scope paths.
 		const safeRaster =

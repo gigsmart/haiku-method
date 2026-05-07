@@ -101,10 +101,10 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 					e.file && e.file.includes("/stages/")
 						? e.file.split("/stages/")[1].split("/")[0]
 						: "a"
-				const id = `FB-DRIFT-${String(i + 1).padStart(2, "0")}`
+				const num = i + 1
 				const fbDir = join(intentDir, "stages", stageOfDrift, "feedback")
 				mkdirSync(fbDir, { recursive: true })
-				const fbPath = join(fbDir, `${id}-drift.md`)
+				const fbPath = join(fbDir, `${String(num).padStart(3, "0")}-drift.md`)
 				const sourceRef = `drift:${e.kind}:${e.file}`
 				writeFm(fbPath, {
 					title: `drift on ${e.unit}/${e.role}`,
@@ -171,7 +171,7 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 		}
 		case "start_feedback_hat": {
 			for (const fbId of action.feedback_ids || []) {
-				const files = readdirSync(fbDir).filter((f) => f.startsWith(fbId))
+				const files = readdirSync(fbDir).filter((f) => { const n = Number.parseInt(String(fbId).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; })
 				for (const f of files) {
 					const path = join(fbDir, f)
 					const fm = readFm(path)
@@ -189,7 +189,7 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 		}
 		case "close_feedback": {
 			const files = readdirSync(fbDir).filter((f) =>
-				f.startsWith(action.feedback_id),
+				{ const n = Number.parseInt(String(action.feedback_id).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; },
 			)
 			for (const f of files) {
 				const path = join(fbDir, f)
@@ -474,7 +474,7 @@ test("e2e: drift introduced after stage A signed → FB → fix loop → seal", 
 		)
 		assert.ok(
 			fbClosed,
-			"close_feedback never fired — fix loop didn't terminate",
+			`close_feedback never fired — fix loop didn't terminate. recent: ${seen.slice(-30).join(" → ")}`,
 		)
 		assert.equal(
 			seen[seen.length - 1],

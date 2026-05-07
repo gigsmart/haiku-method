@@ -230,7 +230,7 @@ try {
 
 	test("surfaces the most recent rejected fix-loop iteration", () => {
 		const path = writeUnit("fb-rejected", {
-			id: "FB-07",
+			id: "FB-007",
 			status: "pending",
 			iterations: [
 				{
@@ -259,7 +259,7 @@ try {
 
 	test("returns empty when no rejected iteration exists (only advanced/closed)", () => {
 		const path = writeUnit("fb-no-reject", {
-			id: "FB-08",
+			id: "FB-008",
 			status: "closed",
 			iterations: [
 				{
@@ -283,7 +283,7 @@ try {
 
 	test("returns empty when the rejected iteration has no reason text", () => {
 		const path = writeUnit("fb-rejected-no-reason", {
-			id: "FB-10",
+			id: "FB-010",
 			status: "pending",
 			iterations: [
 				{
@@ -302,7 +302,7 @@ try {
 		// Defensive: feedback iteration uses different result vocabulary.
 		// "reject" is unit-shape; the feedback block must NOT match it.
 		const path = writeUnit("fb-wrong-result", {
-			id: "FB-09",
+			id: "FB-009",
 			status: "pending",
 			iterations: [
 				{

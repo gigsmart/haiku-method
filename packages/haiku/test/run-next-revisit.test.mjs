@@ -132,7 +132,7 @@ test("run_next: FB on earlier stage rewinds branch + cursor returns Track-B acti
 		makeFeedback({
 			intentDir,
 			stage: "a",
-			id: "FB-01",
+			id: "FB-001",
 			title: "rewind to a",
 			body: "agent left a thing on stage a",
 			origin: "user-chat",

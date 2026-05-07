@@ -283,7 +283,7 @@ test("excludes units/, feedback/, intent.md, state.json", () => {
 	mkdirSync(join(stageDir, "feedback"), { recursive: true })
 	mkdirSync(join(stageDir, "artifacts"), { recursive: true })
 	writeFileSync(join(stageDir, "units", "unit-01-foo.md"), "---\n---\n")
-	writeFileSync(join(stageDir, "feedback", "FB-01.md"), "---\n---\n")
+	writeFileSync(join(stageDir, "feedback", "FB-001.md"), "---\n---\n")
 	writeFileSync(join(intentDir, "intent.md"), "---\n---\n")
 	writeFileSync(join(stageDir, "state.json"), "{}")
 	writeFileSync(join(stageDir, "artifacts", "real.md"), "content")

@@ -84,7 +84,7 @@ function makeMarker(overrides = {}) {
 		created_at: "2026-04-28T14:35:12Z",
 		created_by_assessment_id: "AS-01",
 		outcome: "surface-as-feedback",
-		linked_feedback_id: "FB-01",
+		linked_feedback_id: "FB-001",
 		linked_revisit_target_stage: null,
 		cleared_at: null,
 		resolved_sha: null,
@@ -211,7 +211,7 @@ await test("rejects marker where both linked_feedback_id and linked_revisit_targ
 await test("rejects marker where both linked_feedback_id and linked_revisit_target_stage are non-null", async () => {
 	const intentDir = makeDir("append-both-non-null")
 	const marker = makeMarker({
-		linked_feedback_id: "FB-01",
+		linked_feedback_id: "FB-001",
 		linked_revisit_target_stage: "design",
 	})
 
@@ -232,7 +232,7 @@ await test("accepts valid surface-as-feedback marker (only linked_feedback_id se
 	const intentDir = makeDir("append-valid-fb")
 	const marker = makeMarker({
 		outcome: "surface-as-feedback",
-		linked_feedback_id: "FB-01",
+		linked_feedback_id: "FB-001",
 		linked_revisit_target_stage: null,
 	})
 
@@ -333,7 +333,7 @@ await test("sets cleared_at and resolved_sha together; reads back identical valu
 	const intentDir = makeDir("clear-success")
 	const marker = makeMarker({
 		outcome: "surface-as-feedback",
-		linked_feedback_id: "FB-01",
+		linked_feedback_id: "FB-001",
 		linked_revisit_target_stage: null,
 	})
 	await writeMarkers(intentDir, { markers: [marker] })
@@ -362,7 +362,7 @@ await test("clearMarker with trigger feedback-rejected also works for surface-as
 	const intentDir = makeDir("clear-fb-rejected")
 	const marker = makeMarker({
 		outcome: "surface-as-feedback",
-		linked_feedback_id: "FB-02",
+		linked_feedback_id: "FB-002",
 		linked_revisit_target_stage: null,
 	})
 	await writeMarkers(intentDir, { markers: [marker] })
@@ -381,7 +381,7 @@ await test("clearMarker rejects (surface-as-feedback, revisit-complete) with Tri
 	const intentDir = makeDir("clear-mismatch-sf")
 	const marker = makeMarker({
 		outcome: "surface-as-feedback",
-		linked_feedback_id: "FB-03",
+		linked_feedback_id: "FB-003",
 		linked_revisit_target_stage: null,
 	})
 	await writeMarkers(intentDir, { markers: [marker] })

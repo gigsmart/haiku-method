@@ -1,5 +1,5 @@
 #!/usr/bin/env npx tsx
-// FB-30 regression guard — tunnel-exposed routes reject unauthenticated
+// FB-030 regression guard — tunnel-exposed routes reject unauthenticated
 // callers in remote-review mode.
 //
 // `buildReviewUrl` mints an HS256 JWT keyed with `EPHEMERAL_SECRET` and

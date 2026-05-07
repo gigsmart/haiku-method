@@ -106,7 +106,7 @@ test("start_feedback_hat dispatch resolves model from studio default and emits i
 		makeFeedback({
 			intentDir,
 			stage: "design",
-			id: "FB-01",
+			id: "FB-001",
 			title: "fix typo",
 			body: "Mechanical text edit",
 			origin: "user-chat",
@@ -124,7 +124,7 @@ test("start_feedback_hat dispatch resolves model from studio default and emits i
 				intent: slug,
 				stage: "design",
 				hat: "builder",
-				feedback_ids: ["FB-01"],
+				feedback_ids: ["FB-001"],
 				terminal: false,
 			},
 			"",
@@ -170,7 +170,7 @@ test("start_feedback_hat picks up FB-level model override at the top of the casc
 		const fbDir = join(intentDir, "stages", "design", "feedback")
 		mkdirSync(fbDir, { recursive: true })
 		writeFileSync(
-			join(fbDir, "01-needs-opus.md"),
+			join(fbDir, "001-needs-opus.md"),
 			matter.stringify("body", {
 				title: "needs opus",
 				origin: "user-chat",
@@ -196,7 +196,7 @@ test("start_feedback_hat picks up FB-level model override at the top of the casc
 				intent: slug,
 				stage: "design",
 				hat: "builder",
-				feedback_ids: ["FB-01"],
+				feedback_ids: ["FB-001"],
 				terminal: false,
 			},
 			"",
@@ -240,7 +240,7 @@ test("haiku_feedback_reject_hat escalates the FB model tier on rejection (sonnet
 		// reject_hat sees a "calling hat" to reject.
 		const fbDir = join(intentDir, "stages", "design", "feedback")
 		mkdirSync(fbDir, { recursive: true })
-		const fbPath = join(fbDir, "01-fix-typo.md")
+		const fbPath = join(fbDir, "001-fix-typo.md")
 		writeFileSync(
 			fbPath,
 			matter.stringify("body", {
@@ -267,7 +267,7 @@ test("haiku_feedback_reject_hat escalates the FB model tier on rejection (sonnet
 		const result = handleStateTool("haiku_feedback_reject_hat", {
 			intent: slug,
 			stage: "design",
-			feedback_id: "FB-01",
+			feedback_id: 1,
 			reason: "needs more context — escalating",
 		})
 		assert.ok(
@@ -319,7 +319,7 @@ test("haiku_feedback_reject_hat does NOT escalate when already at opus (top tier
 		})
 		const fbDir = join(intentDir, "stages", "design", "feedback")
 		mkdirSync(fbDir, { recursive: true })
-		const fbPath = join(fbDir, "01-fix-typo.md")
+		const fbPath = join(fbDir, "001-fix-typo.md")
 		writeFileSync(
 			fbPath,
 			matter.stringify("body", {
@@ -344,7 +344,7 @@ test("haiku_feedback_reject_hat does NOT escalate when already at opus (top tier
 		const result = handleStateTool("haiku_feedback_reject_hat", {
 			intent: slug,
 			stage: "design",
-			feedback_id: "FB-01",
+			feedback_id: 1,
 			reason: "still stuck",
 		})
 		assert.ok(!result.isError)

@@ -74,7 +74,7 @@ test("subscribers on different intents stay isolated", () => {
 	const unsubB = subscribeIntent("intent-B", (e) => bEvents.push(e))
 	broadcastIntent("intent-A", {
 		type: "feedback_changed",
-		feedback_id: "FB-01",
+		feedback_id: "FB-001",
 		status: "open",
 	})
 	assert.strictEqual(aEvents.length, 1)

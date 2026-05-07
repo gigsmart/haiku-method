@@ -3,13 +3,21 @@
 // create + update schemas in `state/schemas/feedback.ts`.
 //
 // Tools covered: delete, move, reject, list, read, write,
-// advance_hat, reject_hat. All eight share the same FB-NN id
+// advance_hat, reject_hat. All eight share the same numeric FB id
 // shape and (intent, optional stage) targeting; the variant-
 // specific knobs land per-schema.
+//
+// 2026-05-07: feedback_id was widened to accept "FB-NN" / "FB-N" /
+// "NN" / "N" string forms via regex. Agents wasted ticks guessing
+// which form the engine wanted (panda's session: tried "FB-08", "08",
+// "8" in succession before finding the right combo). Tightened to
+// `Type.Integer({ minimum: 1, maximum: 9999 })` — one input form, no
+// guessing, schema-level rejection of malformed values. Display
+// strings ("FB-08") still flow back on the response side; the input
+// is just the number.
 
 import { type Static, Type } from "@sinclair/typebox"
 import { stateAjv } from "../_ajv.js"
-import { FB_ID_PATTERN } from "../feedback.js"
 // v4: FEEDBACK_STATUSES no longer exists — closed_at: string | null is
 // the only lifecycle witness on FBs.
 
@@ -24,9 +32,11 @@ const fbTargeting = {
 			description: "Stage name. Omit for intent-scope feedback.",
 		}),
 	),
-	feedback_id: Type.String({
-		pattern: FB_ID_PATTERN,
-		description: "FB-NN identifier (with or without the FB- prefix).",
+	feedback_id: Type.Integer({
+		minimum: 1,
+		maximum: 999,
+		description:
+			"Feedback identifier — the numeric prefix of the FB on disk (e.g. for `008-output-discovery-…md`, pass `8`). Just a number; no `FB-` prefix, no zero-padding, no string form. Range fits the on-disk `NNN-…md` 3-digit padding (max 999, plenty of room). The handler does prefix-match lookup against `<NNN>-*.md` — the agent never needs to know the slug part. Pre-2026-05-07 intents that used 2-digit padding (`08-…md`) still resolve correctly; the lookup parses leading digits regardless of width.",
 	}),
 } as const
 

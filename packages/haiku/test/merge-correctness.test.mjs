@@ -508,13 +508,13 @@ await test("happy path: fix-chain→stage yields a 2-parent merge commit", () =>
 		git(tmp, "add", "-A")
 		git(tmp, "commit", "-m", "stage diverge")
 
-		const wt = createFixChainWorktree(slug, stage, "FB-01")
+		const wt = createFixChainWorktree(slug, stage, "FB-001")
 		assert.ok(wt, "createFixChainWorktree returned a path")
 		writeFileSync(join(wt, "fix.md"), "fix output\n")
 		git(wt, "add", "-A")
 		git(wt, "commit", "-m", "fix work")
 
-		const res = mergeFixChainWorktree(slug, stage, "FB-01")
+		const res = mergeFixChainWorktree(slug, stage, "FB-001")
 		assert.ok(res.success, `expected success; got: ${res.message}`)
 		assertTwoParentMergeCommit(
 			tmp,
@@ -535,7 +535,7 @@ await test("conflict path: prompt names file with full conflictFiles list", () =
 		git(tmp, "add", "-A")
 		git(tmp, "commit", "-m", "baseline")
 
-		const wt = createFixChainWorktree(slug, stage, "FB-02")
+		const wt = createFixChainWorktree(slug, stage, "FB-002")
 		assert.ok(wt, "createFixChainWorktree returned a path")
 		writeFileSync(join(wt, "shared.md"), "fix-chain edit\n")
 		git(wt, "add", "-A")
@@ -545,7 +545,7 @@ await test("conflict path: prompt names file with full conflictFiles list", () =
 		git(tmp, "add", "-A")
 		git(tmp, "commit", "-m", "stage diverge")
 
-		const res = mergeFixChainWorktree(slug, stage, "FB-02")
+		const res = mergeFixChainWorktree(slug, stage, "FB-002")
 		assert.strictEqual(res.success, false)
 		assert.strictEqual(
 			res.isConflict,

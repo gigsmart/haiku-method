@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
-// FB-06 regression guard: `/health` must split liveness from readiness.
+// FB-006 regression guard: `/health` must split liveness from readiness.
 //
-// Before FB-06 the endpoint always replied 200 `"ok"`, so a tunnel or
+// Before FB-006 the endpoint always replied 200 `"ok"`, so a tunnel or
 // load balancer probing it during startup would believe the instance
 // was ready to serve traffic while buildApp() / post-listen init was
 // still running. The fix adds a module-level `ready` flag in

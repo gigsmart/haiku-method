@@ -130,7 +130,7 @@ await test("returns null in non-git environment", () => {
 	const origCwd = process.cwd()
 	try {
 		process.chdir(tmp)
-		const wt = createFixChainWorktree("slug", "stage", "FB-01")
+		const wt = createFixChainWorktree("slug", "stage", "FB-001")
 		assert.strictEqual(wt, null)
 	} finally {
 		process.chdir(origCwd)
@@ -148,11 +148,11 @@ await test("creates worktree + branch off stage", () => {
 		// ensureStageBranch but in filesystem setup we branch manually).
 		git(tmp, "branch", `haiku/${slug}/${stage}`, `haiku/${slug}/main`)
 
-		const wt = createFixChainWorktree(slug, stage, "FB-01")
+		const wt = createFixChainWorktree(slug, stage, "FB-001")
 		assert.ok(wt, "worktree path returned")
 		assert.ok(existsSync(wt), "worktree dir exists on disk")
 		assert.ok(
-			branchExists(tmp, fixChainBranchName(slug, stage, "FB-01")),
+			branchExists(tmp, fixChainBranchName(slug, stage, "FB-001")),
 			"fix-chain branch exists",
 		)
 	} finally {
@@ -166,8 +166,8 @@ await test("create is idempotent for same slug/stage/FB", () => {
 		process.chdir(tmp)
 		git(tmp, "branch", `haiku/${slug}/${stage}`, `haiku/${slug}/main`)
 
-		const wt1 = createFixChainWorktree(slug, stage, "FB-01")
-		const wt2 = createFixChainWorktree(slug, stage, "FB-01")
+		const wt1 = createFixChainWorktree(slug, stage, "FB-001")
+		const wt2 = createFixChainWorktree(slug, stage, "FB-001")
 		assert.strictEqual(wt1, wt2, "returns same path")
 	} finally {
 		cleanupRepo(tmp)
@@ -183,7 +183,7 @@ await test("merges worktree back when no conflicts", () => {
 		git(tmp, "branch", `haiku/${slug}/${stage}`, `haiku/${slug}/main`)
 		git(tmp, "checkout", `haiku/${slug}/${stage}`)
 
-		const wt = createFixChainWorktree(slug, stage, "FB-01")
+		const wt = createFixChainWorktree(slug, stage, "FB-001")
 		assert.ok(wt)
 
 		// Make a change in the fix-chain worktree.
@@ -192,11 +192,11 @@ await test("merges worktree back when no conflicts", () => {
 		git(wt, "add", "-A")
 		git(wt, "commit", "-m", "fix change")
 
-		const res = mergeFixChainWorktree(slug, stage, "FB-01")
+		const res = mergeFixChainWorktree(slug, stage, "FB-001")
 		assert.ok(res.success, `merge succeeded: ${res.message}`)
 		assert.ok(!existsSync(wt), "worktree dir reaped")
 		assert.ok(
-			!branchExists(tmp, fixChainBranchName(slug, stage, "FB-01")),
+			!branchExists(tmp, fixChainBranchName(slug, stage, "FB-001")),
 			"fix-chain branch deleted",
 		)
 		// The fix should now be visible on the stage branch.
@@ -225,7 +225,7 @@ await test("returns isConflict when stage + fix-chain diverge on same file", () 
 		git(tmp, "commit", "-m", "baseline shared.md on stage")
 
 		// Fix-chain worktree forks off the current stage HEAD.
-		const wt = createFixChainWorktree(slug, stage, "FB-02")
+		const wt = createFixChainWorktree(slug, stage, "FB-002")
 		assert.ok(wt)
 
 		// Both trees edit the same file in conflicting ways.
@@ -237,7 +237,7 @@ await test("returns isConflict when stage + fix-chain diverge on same file", () 
 		git(tmp, "add", "-A")
 		git(tmp, "commit", "-m", "stage advanced shared.md")
 
-		const res = mergeFixChainWorktree(slug, stage, "FB-02")
+		const res = mergeFixChainWorktree(slug, stage, "FB-002")
 		assert.strictEqual(res.success, false, "merge reports failure")
 		assert.strictEqual(res.isConflict, true, "isConflict flag set")
 		assert.ok(
@@ -266,7 +266,7 @@ await test("completes merge after integrator resolves conflict markers", () => {
 		git(tmp, "add", "-A")
 		git(tmp, "commit", "-m", "baseline")
 
-		const wt = createFixChainWorktree(slug, stage, "FB-03")
+		const wt = createFixChainWorktree(slug, stage, "FB-003")
 		writeFileSync(join(wt, "shared.md"), "fix-chain edit\n")
 		git(wt, "add", "-A")
 		git(wt, "commit", "-m", "fix")
@@ -275,7 +275,7 @@ await test("completes merge after integrator resolves conflict markers", () => {
 		git(tmp, "commit", "-m", "stage")
 
 		// First attempt returns isConflict.
-		const conflictRes = mergeFixChainWorktree(slug, stage, "FB-03")
+		const conflictRes = mergeFixChainWorktree(slug, stage, "FB-003")
 		assert.strictEqual(conflictRes.isConflict, true)
 
 		// Simulate integrator: resolve markers, git add.
@@ -283,7 +283,7 @@ await test("completes merge after integrator resolves conflict markers", () => {
 		git(wt, "add", "shared.md")
 
 		// Retry — should detect MERGE_HEAD + clean resolution, commit, merge.
-		const retryRes = mergeFixChainWorktree(slug, stage, "FB-03")
+		const retryRes = mergeFixChainWorktree(slug, stage, "FB-003")
 		assert.ok(
 			retryRes.success,
 			`retry after integrator resolution succeeded: ${retryRes.message}`,
@@ -381,7 +381,7 @@ await test("returns isConflict if integrator leaves files unresolved", () => {
 		git(tmp, "add", "-A")
 		git(tmp, "commit", "-m", "baseline")
 
-		const wt = createFixChainWorktree(slug, stage, "FB-04")
+		const wt = createFixChainWorktree(slug, stage, "FB-004")
 		writeFileSync(join(wt, "shared.md"), "fix-chain\n")
 		git(wt, "add", "-A")
 		git(wt, "commit", "-m", "fix")
@@ -390,11 +390,11 @@ await test("returns isConflict if integrator leaves files unresolved", () => {
 		git(tmp, "commit", "-m", "stage")
 
 		// First attempt — conflict.
-		mergeFixChainWorktree(slug, stage, "FB-04")
+		mergeFixChainWorktree(slug, stage, "FB-004")
 
 		// "Integrator" that doesn't actually resolve — leaves markers in place.
 		// Retry should still report isConflict.
-		const retryRes = mergeFixChainWorktree(slug, stage, "FB-04")
+		const retryRes = mergeFixChainWorktree(slug, stage, "FB-004")
 		assert.strictEqual(retryRes.isConflict, true, "still reports conflict")
 		assert.ok(
 			retryRes.conflictFiles && retryRes.conflictFiles.length > 0,
@@ -413,16 +413,16 @@ await test("cleanup removes worktree + branch without merging", () => {
 		process.chdir(tmp)
 		git(tmp, "branch", `haiku/${slug}/${stage}`, `haiku/${slug}/main`)
 
-		const wt = createFixChainWorktree(slug, stage, "FB-05")
+		const wt = createFixChainWorktree(slug, stage, "FB-005")
 		assert.ok(wt && existsSync(wt))
-		const branch = fixChainBranchName(slug, stage, "FB-05")
+		const branch = fixChainBranchName(slug, stage, "FB-005")
 		assert.ok(branchExists(tmp, branch))
 
 		writeFileSync(join(wt, "wip.md"), "wip that should be discarded\n")
 		git(wt, "add", "-A")
 		git(wt, "commit", "-m", "wip")
 
-		const res = cleanupFixChainWorktree(slug, stage, "FB-05")
+		const res = cleanupFixChainWorktree(slug, stage, "FB-005")
 		assert.ok(res.success)
 		assert.ok(!existsSync(wt), "worktree dir gone")
 		assert.ok(!branchExists(tmp, branch), "branch gone")
@@ -457,9 +457,9 @@ await test("intent-scope chain forks off intent main", () => {
 	const { tmp, slug } = setupRepo()
 	try {
 		process.chdir(tmp)
-		const wt = createFixChainWorktree(slug, "intent", "FB-01")
+		const wt = createFixChainWorktree(slug, "intent", "FB-001")
 		assert.ok(wt, "intent-scope worktree created")
-		const branch = fixChainBranchName(slug, "intent", "FB-01")
+		const branch = fixChainBranchName(slug, "intent", "FB-001")
 		assert.ok(branchExists(tmp, branch))
 
 		// The base it forked from should be haiku/{slug}/main.
@@ -765,21 +765,21 @@ await test("surfaces untracked-files-specific remediation when foreign worktree 
 console.log("\n=== path + branch name conventions ===")
 
 await test("fixChainWorktreePath conventions", () => {
-	const p = fixChainWorktreePath("my-intent", "development", "FB-07")
-	assert.ok(p.endsWith(".haiku/worktrees/my-intent/fix-development-FB-07"), p)
+	const p = fixChainWorktreePath("my-intent", "development", "FB-007")
+	assert.ok(p.endsWith(".haiku/worktrees/my-intent/fix-development-FB-007"), p)
 })
 
 await test("fixChainBranchName for stage scope", () => {
 	assert.strictEqual(
-		fixChainBranchName("my-intent", "development", "FB-07"),
-		"haiku/my-intent/fix-development-FB-07",
+		fixChainBranchName("my-intent", "development", "FB-007"),
+		"haiku/my-intent/fix-development-FB-007",
 	)
 })
 
 await test("fixChainBranchName for intent scope", () => {
 	assert.strictEqual(
-		fixChainBranchName("my-intent", "intent", "FB-01"),
-		"haiku/my-intent/fix-intent-FB-01",
+		fixChainBranchName("my-intent", "intent", "FB-001"),
+		"haiku/my-intent/fix-intent-FB-001",
 	)
 })
 
@@ -897,7 +897,7 @@ await test("leaves correctly-placed worktrees alone", () => {
 	try {
 		process.chdir(tmp)
 		git(tmp, "branch", `haiku/${slug}/${stage}`, `haiku/${slug}/main`)
-		const wt = createFixChainWorktree(slug, stage, "FB-99")
+		const wt = createFixChainWorktree(slug, stage, "FB-099")
 		assert.ok(wt && existsSync(wt), "fix-chain worktree created at primary")
 
 		const result = migrateMisplacedWorktrees()

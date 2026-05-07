@@ -1,5 +1,5 @@
 #!/usr/bin/env npx tsx
-// FB-21 — defence-in-depth against OOB filesystem drops at the read sink.
+// FB-021 — defence-in-depth against OOB filesystem drops at the read sink.
 //
 // The upload routes block dangerous extensions, but the entire raison
 // d'être of the `out-of-band-human-file-modifications` intent is files
@@ -69,7 +69,7 @@ async function serveAndCapture(realPath) {
 }
 
 console.log(
-	"\n=== FB-21 — OOB-drop browser-renderable extensions forced to attachment ===",
+	"\n=== FB-021 — OOB-drop browser-renderable extensions forced to attachment ===",
 )
 
 const BLOCKED_EXTS = [
@@ -113,7 +113,7 @@ for (const ext of BLOCKED_EXTS) {
 }
 
 console.log(
-	"\n=== FB-21 — safe inline types still render with typed Content-Type ===",
+	"\n=== FB-021 — safe inline types still render with typed Content-Type ===",
 )
 
 const INLINE_CASES = [
@@ -152,7 +152,7 @@ for (const { ext, expected } of INLINE_CASES) {
 	})
 }
 
-console.log("\n=== FB-21 — unknown extensions fall through to attachment ===")
+console.log("\n=== FB-021 — unknown extensions fall through to attachment ===")
 
 const UNKNOWN_EXTS = [".wasm", ".jsp", ".asp", ".php", ".bin", ""]
 
@@ -176,7 +176,7 @@ for (const ext of UNKNOWN_EXTS) {
 }
 
 console.log("")
-console.log(`FB-21 serveFile MIME defence: ${passed} passed, ${failed} failed`)
+console.log(`FB-021 serveFile MIME defence: ${passed} passed, ${failed} failed`)
 
 if (failed > 0) {
 	process.exit(1)
