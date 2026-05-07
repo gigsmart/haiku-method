@@ -1,10 +1,10 @@
 {
-	"bundleGzipMaxBytes": 1048576,
-	"lastKnownGzipBytes": 772411,
-	"notes": [
-		"Pre-move bundle measured at 929.8 KB gzipped (inlined HTML blob at stages/development/artifacts/bundle-baseline.html). Post-move blob was 884.9 KB gzipped (-44.8 KB from pre-move relocation).",
-		"FB-21: vite.config.ts had `minify: false`, shipping a ~919 KB un-minified inlined SPA. Flipping to `minify: \"esbuild\"` (Vite default) dropped the inlined gzipped size to 693 KB (-24.6% / ~220 KB saved) with no bundle-shape changes — single inline HTML blob still required by the MCP embedder.",
-		"Unit-03's 500 KB spec target is still ~193 KB above reality; the residual overshoot comes from @xyflow/react + elkjs + mermaid + react-markdown + remark bundled into one inline chunk (manualChunks:undefined + inlineDynamicImports:true, required by the single-HTML-blob embedder). Spec/reality delta is tracked by FB-05 for human adjudication.",
-		"Budget ceiling kept at 1024 KB as the safety cap above the post-minification 693 KB blob. bundle-haiku-ui.mjs still enforces non-zero exit on overage — no gate was weakened."
-	]
+  "bundleGzipMaxBytes": 1048576,
+  "lastKnownGzipBytes": 778089,
+  "notes": [
+    "Pre-move bundle measured at 929.8 KB gzipped (inlined HTML blob at stages/development/artifacts/bundle-baseline.html). Post-move blob was 884.9 KB gzipped (-44.8 KB from pre-move relocation).",
+    "FB-21: vite.config.ts had `minify: false`, shipping a ~919 KB un-minified inlined SPA. Flipping to `minify: \"esbuild\"` (Vite default) dropped the inlined gzipped size to 693 KB (-24.6% / ~220 KB saved) with no bundle-shape changes — single inline HTML blob still required by the MCP embedder.",
+    "Unit-03's 500 KB spec target is still ~193 KB above reality; the residual overshoot comes from @xyflow/react + elkjs + mermaid + react-markdown + remark bundled into one inline chunk (manualChunks:undefined + inlineDynamicImports:true, required by the single-HTML-blob embedder). Spec/reality delta is tracked by FB-05 for human adjudication.",
+    "Budget ceiling kept at 1024 KB as the safety cap above the post-minification 693 KB blob. bundle-haiku-ui.mjs still enforces non-zero exit on overage — no gate was weakened."
+  ]
 }

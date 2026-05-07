@@ -292,6 +292,48 @@ export default defineTool({
 			result = dispatchOrchestratorAction(slug)
 		}
 
+		// Surface-once stamping for the design-direction handoff actions.
+		// The cursor's design_direction gate emits one of:
+		//   - design_direction_complete   (archetype mode + screenshots)
+		//   - design_direction_uploaded   (upload/intake mode)
+		// after the user submits a selection. The agent must see the
+		// payload exactly once so it can Read screenshots / uploaded
+		// files; on subsequent ticks the cursor must walk past to
+		// elaborate. Stamp `surfaced_at` on the per-stage record before
+		// returning so the next tick falls through. Failure here leaves
+		// the cursor re-emitting the action — annoying but not fatal.
+		if (
+			(result.action === "design_direction_complete" ||
+				result.action === "design_direction_uploaded") &&
+			typeof result.stage === "string"
+		) {
+			try {
+				const stage = result.stage as string
+				const intentMdPath = join(findHaikuRoot(), "intents", slug, "intent.md")
+				if (existsSync(intentMdPath)) {
+					const raw = readFileSync(intentMdPath, "utf8")
+					const parsed = parseFrontmatter(raw)
+					const fm = (parsed.data as Record<string, unknown>) || {}
+					const directions =
+						fm.design_directions &&
+						typeof fm.design_directions === "object"
+							? { ...(fm.design_directions as Record<string, unknown>) }
+							: {}
+					const dd =
+						directions[stage] && typeof directions[stage] === "object"
+							? { ...(directions[stage] as Record<string, unknown>) }
+							: {}
+					dd.surfaced_at = new Date().toISOString()
+					directions[stage] = dd
+					setFrontmatterField(intentMdPath, "design_directions", directions)
+				}
+			} catch (err) {
+				console.error(
+					`[haiku_run_next] design_direction surface stamp failed: ${err instanceof Error ? err.message : String(err)}`,
+				)
+			}
+		}
+
 		// Auto-close for `close_feedback`: the cursor returns this when
 		// every fix-hat for an FB has signed advance. The prompt
 		// promises "the engine writes the closure" — same gap as

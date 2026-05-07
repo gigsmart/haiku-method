@@ -4,11 +4,22 @@
 /**
  * DirectionPage — canonical implementation for /direction/:sessionId.
  *
- * Two submission modes:
+ * Four submission modes:
  *   - `select`     — user picks one archetype as the final direction.
  *                   May add comments + visual pins on the chosen preview.
  *   - `regenerate` — user wants more / different variants. Marks archetypes
  *                   to keep; agent produces fresh variants for the rest.
+ *   - `upload`     — designer provided finished designs. Skips archetype
+ *                   generation entirely. Only available in intake mode
+ *                   (when the picker opens with no archetypes).
+ *   - `generate`   — intake-mode signal: user has nothing to upload and
+ *                   wants the agent to produce variants. The agent then
+ *                   re-opens this picker with archetypes attached.
+ *
+ * Intake mode (archetypes.length === 0) renders IntakePage instead of
+ * the archetype radiogroup — users either upload finished designs or
+ * click "Generate variants for me." This avoids burning generation
+ * tokens on archetypes the user is going to throw away.
  *
  * Parameter sliders were removed (the legacy tuning model collapsed under
  * the "ask for more variants" flow — iterate on the archetype set instead
@@ -49,6 +60,31 @@ interface Props {
 type Mode = "select" | "regenerate"
 
 export function DirectionPage({
+	session,
+	sessionId,
+	wsRef,
+}: Props): React.ReactElement {
+	const archetypes = session.archetypes ?? []
+
+	// Intake mode: archetypes empty → user picks between "I have designs to
+	// upload" and "Generate variants for me." Skips archetype generation
+	// when the user has uploads, which is the whole point of intake-first.
+	// Branched at the top before hooks so the two paths each get their own
+	// hook order (no rules-of-hooks violation).
+	if (archetypes.length === 0) {
+		return (
+			<IntakePage
+				sessionId={sessionId}
+				title={session.title || "Design Direction"}
+			/>
+		)
+	}
+	return (
+		<ArchetypePage session={session} sessionId={sessionId} wsRef={wsRef} />
+	)
+}
+
+function ArchetypePage({
 	session,
 	sessionId,
 	wsRef: _wsRef,
@@ -642,5 +678,380 @@ function PreviewDialog({
 				/>
 			</div>
 		</div>
+	)
+}
+
+// ── Intake page (no archetypes yet) ────────────────────────────────────────
+
+interface IntakeFile {
+	filename: string
+	data_url: string
+	caption: string
+	preview_url: string
+}
+
+const ACCEPTED_INTAKE_MIMES =
+	"image/png,image/jpeg,image/webp,image/svg+xml,image/gif,application/pdf"
+
+function readFileAsDataUrl(file: File): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader()
+		reader.onerror = () => reject(reader.error || new Error("read failed"))
+		reader.onload = () => resolve(String(reader.result || ""))
+		reader.readAsDataURL(file)
+	})
+}
+
+function IntakePage({
+	sessionId,
+	title,
+}: {
+	sessionId: string
+	title: string
+}): React.ReactElement {
+	const client = useApiClient()
+	const announce = useAnnounce()
+
+	const [files, setFiles] = useState<IntakeFile[]>([])
+	const [comments, setComments] = useState("")
+	const [submitting, setSubmitting] = useState(false)
+	const [errorMessage, setErrorMessage] = useState<string | null>(null)
+	const [done, setDone] = useState(false)
+	const [doneMessage, setDoneMessage] = useState("")
+	const [dragActive, setDragActive] = useState(false)
+	const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+	const intakeLegendId = "intake-prompt-title"
+	const captionsId = "intake-comments"
+	const dropzoneLabelId = "intake-dropzone-label"
+
+	const ingestFiles = useCallback(async (incoming: FileList | File[]) => {
+		const list = Array.from(incoming)
+		if (list.length === 0) return
+		const accepted: IntakeFile[] = []
+		for (const f of list) {
+			// Per-file cap mirrors the wire schema's 1.5 MB data_url limit.
+			// Base64 inflates by ~33%, so the raw cap is ~1.1 MB; round to
+			// 1.5 MB on the wire side so the picker matches.
+			if (f.size > 1_500_000) {
+				announce(
+					"assertive",
+					`File ${f.name} is too large (${(f.size / 1024 / 1024).toFixed(1)} MB > 1.5 MB)`,
+				)
+				continue
+			}
+			try {
+				const dataUrl = await readFileAsDataUrl(f)
+				accepted.push({
+					filename: f.name,
+					data_url: dataUrl,
+					caption: "",
+					preview_url: dataUrl,
+				})
+			} catch (err) {
+				announce(
+					"assertive",
+					`Could not read ${f.name}: ${err instanceof Error ? err.message : String(err)}`,
+				)
+			}
+		}
+		if (accepted.length === 0) return
+		setFiles((prev) => {
+			// Cap the in-memory list at 20 to match the wire schema. Excess
+			// files are dropped silently with an announcement; the user can
+			// retry after removing some.
+			const merged = [...prev, ...accepted]
+			if (merged.length > 20) {
+				announce(
+					"assertive",
+					`Only the first 20 files are kept (${merged.length - 20} dropped)`,
+				)
+				return merged.slice(0, 20)
+			}
+			return merged
+		})
+	}, [announce])
+
+	const removeFile = useCallback((idx: number) => {
+		setFiles((prev) => prev.filter((_, i) => i !== idx))
+	}, [])
+
+	const updateCaption = useCallback((idx: number, caption: string) => {
+		setFiles((prev) => prev.map((f, i) => (i === idx ? { ...f, caption } : f)))
+	}, [])
+
+	const handleDrop = useCallback(
+		(e: React.DragEvent<HTMLLabelElement>) => {
+			e.preventDefault()
+			setDragActive(false)
+			void ingestFiles(e.dataTransfer.files)
+		},
+		[ingestFiles],
+	)
+
+	const handleDragOver = useCallback((e: React.DragEvent<HTMLLabelElement>) => {
+		e.preventDefault()
+		setDragActive(true)
+	}, [])
+
+	const handleDragLeave = useCallback(() => {
+		setDragActive(false)
+	}, [])
+
+	const handleFileInput = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			if (e.target.files) void ingestFiles(e.target.files)
+			// Allow re-selecting the same file after removal
+			e.target.value = ""
+		},
+		[ingestFiles],
+	)
+
+	async function submitUploads(e: React.FormEvent) {
+		e.preventDefault()
+		if (submitting || files.length === 0) return
+		setSubmitting(true)
+		setErrorMessage(null)
+		try {
+			const wireFiles = files.map((f) => ({
+				filename: f.filename,
+				data_url: f.data_url,
+				...(f.caption ? { caption: f.caption } : {}),
+			}))
+			await client.submitDirection(sessionId, {
+				mode: "upload",
+				files: wireFiles,
+				...(comments ? { comments } : {}),
+			})
+			announce(
+				"polite",
+				`Uploaded ${files.length} design${files.length === 1 ? "" : "s"}`,
+			)
+			setDoneMessage(
+				`Uploaded ${files.length} design${files.length === 1 ? "" : "s"} as the chosen direction.`,
+			)
+			setDone(true)
+			tryCloseTab({
+				url: paths.directionSelect(sessionId),
+				body: {
+					mode: "upload",
+					files: wireFiles,
+					comments,
+				},
+			})
+		} catch (err) {
+			const message =
+				err instanceof Error ? err.message : "Failed to upload designs"
+			setErrorMessage(message)
+			announce("assertive", `Upload failed: ${message}`)
+			setSubmitting(false)
+		}
+	}
+
+	async function submitGenerate() {
+		if (submitting) return
+		setSubmitting(true)
+		setErrorMessage(null)
+		try {
+			await client.submitDirection(sessionId, {
+				mode: "generate",
+				...(comments ? { comments } : {}),
+			})
+			announce("polite", "Asked the agent to generate variants")
+			setDoneMessage(
+				"The agent will now generate design variants and re-open the picker.",
+			)
+			setDone(true)
+			tryCloseTab({
+				url: paths.directionSelect(sessionId),
+				body: {
+					mode: "generate",
+					comments,
+				},
+			})
+		} catch (err) {
+			const message =
+				err instanceof Error ? err.message : "Failed to request generation"
+			setErrorMessage(message)
+			announce("assertive", `Request failed: ${message}`)
+			setSubmitting(false)
+		}
+	}
+
+	if (done) return <SubmitSuccess message={doneMessage} />
+
+	const hasFiles = files.length > 0
+	return (
+		<form onSubmit={submitUploads} noValidate>
+			<Card>
+				<div className="mb-4">
+					<h2
+						id={intakeLegendId}
+						className="text-lg font-semibold text-stone-900 dark:text-stone-100"
+					>
+						{title}
+					</h2>
+					<p className="text-sm text-stone-600 dark:text-stone-300 mt-2">
+						Already have designs? Upload them and the agent will use those as
+						the direction. No designs yet? Have the agent generate variants for
+						you to choose from.
+					</p>
+				</div>
+			</Card>
+
+			<Card>
+				<SectionHeading>I have designs to upload</SectionHeading>
+				<p className="text-sm text-stone-600 dark:text-stone-300 mb-3">
+					Drop image files (PNG, JPG, WebP, SVG, GIF) or PDFs here. Max 20
+					files, 1.5 MB each. Add a caption per file so the agent knows what
+					each artefact represents.
+				</p>
+				<input
+					ref={fileInputRef}
+					type="file"
+					accept={ACCEPTED_INTAKE_MIMES}
+					multiple
+					onChange={handleFileInput}
+					className="sr-only"
+					aria-labelledby={dropzoneLabelId}
+					id="intake-file-input"
+				/>
+				<label
+					id={dropzoneLabelId}
+					htmlFor="intake-file-input"
+					onDrop={handleDrop}
+					onDragOver={handleDragOver}
+					onDragLeave={handleDragLeave}
+					className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-8 cursor-pointer transition-colors ${
+						dragActive
+							? "border-teal-600 dark:border-teal-400 bg-teal-50 dark:bg-teal-900/20"
+							: "border-stone-300 dark:border-stone-600 hover:border-stone-400 dark:hover:border-stone-500"
+					} ${focusRingClass}`}
+				>
+					<span className="text-sm font-medium text-stone-900 dark:text-stone-100">
+						{dragActive
+							? "Drop to add"
+							: "Drag files here, or click to browse"}
+					</span>
+					<span className="text-xs text-stone-500 dark:text-stone-400">
+						{hasFiles
+							? `${files.length} of 20 added`
+							: "PNG, JPG, WebP, SVG, GIF, or PDF"}
+					</span>
+				</label>
+
+				{hasFiles && (
+					<ul className="mt-4 space-y-3">
+						{files.map((f, i) => (
+							<li
+								key={`intake-${i}-${f.filename}`}
+								className="flex items-start gap-3 p-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900"
+							>
+								{f.preview_url.startsWith("data:image/") ? (
+									<img
+										src={f.preview_url}
+										alt={`Preview of ${f.filename}`}
+										className="shrink-0 w-20 h-20 object-cover rounded border border-stone-200 dark:border-stone-700 bg-white"
+									/>
+								) : (
+									<div className="shrink-0 w-20 h-20 flex items-center justify-center rounded border border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-xs text-stone-600 dark:text-stone-300 uppercase">
+										{f.filename.split(".").pop() || "file"}
+									</div>
+								)}
+								<div className="flex-1 min-w-0 space-y-2">
+									<p
+										className="text-sm font-medium text-stone-900 dark:text-stone-100 truncate"
+										title={f.filename}
+									>
+										{f.filename}
+									</p>
+									<input
+										type="text"
+										value={f.caption}
+										onChange={(e) => updateCaption(i, e.target.value)}
+										placeholder="Caption (e.g. mobile dashboard, logged-in state)"
+										disabled={submitting}
+										aria-label={`Caption for ${f.filename}`}
+										className={`w-full px-3 py-2 text-sm border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 ${focusRingClass}`}
+									/>
+								</div>
+								<button
+									type="button"
+									onClick={() => removeFile(i)}
+									aria-label={`Remove ${f.filename}`}
+									disabled={submitting}
+									className={`shrink-0 px-2 py-1 text-xs font-semibold rounded-md border border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-200 hover:bg-red-50 hover:border-red-300 hover:text-red-700 dark:hover:bg-red-900/20 dark:hover:border-red-700 dark:hover:text-red-300 transition-colors ${focusRingClass}`}
+								>
+									Remove
+								</button>
+							</li>
+						))}
+					</ul>
+				)}
+			</Card>
+
+			<Card>
+				<label
+					htmlFor={captionsId}
+					className="block text-sm font-medium text-stone-900 dark:text-stone-100 mb-2"
+				>
+					Notes for the agent (optional)
+				</label>
+				<textarea
+					id={captionsId}
+					className={`w-full p-3 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 resize-y text-sm ${focusRingClass}`}
+					rows={3}
+					placeholder={
+						hasFiles
+							? "What should the agent honour about these designs..."
+							: "Anything to steer the variant generation..."
+					}
+					value={comments}
+					onChange={(e) => setComments(e.target.value)}
+					disabled={submitting}
+				/>
+			</Card>
+
+			<button
+				type="submit"
+				disabled={!hasFiles || submitting}
+				aria-disabled={!hasFiles || submitting}
+				className={`w-full px-6 py-3 bg-teal-700 hover:bg-teal-800 text-white font-semibold rounded-lg transition-colors ${focusRingClass} disabled:bg-stone-200 disabled:text-stone-500 dark:disabled:bg-stone-800 dark:disabled:text-stone-500 disabled:cursor-not-allowed ${touchTargetClass}`}
+			>
+				{submitting
+					? "Submitting..."
+					: hasFiles
+						? `Use these ${files.length} design${files.length === 1 ? "" : "s"} as the direction`
+						: "Add files above to upload"}
+			</button>
+
+			<div className="my-6 flex items-center gap-3 text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400">
+				<span className="flex-1 h-px bg-stone-200 dark:bg-stone-700" />
+				<span>or</span>
+				<span className="flex-1 h-px bg-stone-200 dark:bg-stone-700" />
+			</div>
+
+			<button
+				type="button"
+				onClick={submitGenerate}
+				disabled={submitting}
+				aria-disabled={submitting}
+				className={`w-full px-6 py-3 bg-white dark:bg-stone-900 hover:bg-stone-50 dark:hover:bg-stone-800 border-2 border-stone-300 dark:border-stone-600 text-stone-900 dark:text-stone-100 font-semibold rounded-lg transition-colors ${focusRingClass} disabled:bg-stone-100 disabled:text-stone-500 dark:disabled:bg-stone-800 dark:disabled:text-stone-500 disabled:cursor-not-allowed ${touchTargetClass}`}
+			>
+				Generate variants for me instead
+			</button>
+			<p className="mt-2 text-xs text-stone-500 dark:text-stone-400 text-center">
+				The agent will produce 2-3 design archetypes for you to pick from.
+			</p>
+
+			{errorMessage && (
+				<div
+					role="alert"
+					className="mt-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200"
+				>
+					<p className="font-semibold">{errorMessage}</p>
+				</div>
+			)}
+		</form>
 	)
 }

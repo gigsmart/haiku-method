@@ -841,6 +841,7 @@ test("cursor: requires_design_direction + selection on intent.md → elaborate",
 					design: {
 						archetype: "modular-cards",
 						at: "2026-05-06T00:00:00Z",
+						surfaced_at: "2026-05-06T00:00:01Z",
 					},
 				},
 			},
@@ -851,6 +852,93 @@ test("cursor: requires_design_direction + selection on intent.md → elaborate",
 			`expected elaborate (or noop) once selection recorded; got: ${action.action}`,
 		)
 	})
+})
+
+test("cursor: design_directions[stage] set without surfaced_at → emits design_direction_complete (archetype mode)", async () => {
+	if (!HAS_GIT) return
+	await withTmpRepo(
+		"cursor-dd-surface-once-archetype",
+		async ({ repoRoot, intentDir, slug }) => {
+			makeStudio({
+				repoRoot,
+				studio: "test",
+				stages: [
+					{
+						name: "design",
+						hats: ["planner", "builder", "verifier"],
+						fix_hats: ["classifier", "builder", "feedback-assessor"],
+						review: "ask",
+						review_agents: ["code-reviewer"],
+						requires_design_direction: true,
+					},
+				],
+			})
+			makeIntent({
+				intentDir,
+				slug,
+				studio: "test",
+				extraFm: {
+					design_directions: {
+						design: {
+							mode: "archetype",
+							archetype: "vivid",
+							comments: "lean into the gradients",
+							at: "2026-05-06T00:00:00Z",
+						},
+					},
+				},
+			})
+			const action = await runTick(repoRoot, slug)
+			assert.strictEqual(action.action, "design_direction_complete")
+			assert.strictEqual(action.archetype, "vivid")
+		},
+	)
+})
+
+test("cursor: design_directions[stage] in upload mode without surfaced_at → emits design_direction_uploaded", async () => {
+	if (!HAS_GIT) return
+	await withTmpRepo(
+		"cursor-dd-surface-once-upload",
+		async ({ repoRoot, intentDir, slug }) => {
+			makeStudio({
+				repoRoot,
+				studio: "test",
+				stages: [
+					{
+						name: "design",
+						hats: ["planner", "builder", "verifier"],
+						fix_hats: ["classifier", "builder", "feedback-assessor"],
+						review: "ask",
+						review_agents: ["code-reviewer"],
+						requires_design_direction: true,
+					},
+				],
+			})
+			makeIntent({
+				intentDir,
+				slug,
+				studio: "test",
+				extraFm: {
+					design_directions: {
+						design: {
+							mode: "upload",
+							uploads: [
+								{
+									filename: "hero.png",
+									path: "stages/design/artifacts/design-direction/uploads/up-01-hero.png",
+								},
+							],
+							at: "2026-05-06T00:00:00Z",
+						},
+					},
+				},
+			})
+			const action = await runTick(repoRoot, slug)
+			assert.strictEqual(action.action, "design_direction_uploaded")
+			assert.strictEqual(action.uploads.length, 1)
+			assert.match(action.uploads[0].path, /uploads\/up-01-hero\.png$/)
+		},
+	)
 })
 
 test("cursor: stage WITHOUT requires_design_direction skips the gate", async () => {
@@ -1116,7 +1204,7 @@ test("cursor: design_direction recorded → clarify fires next", async () => {
 			studio: "test",
 			extraFm: {
 				design_directions: {
-					design: { archetype: "x", at: "t" },
+					design: { archetype: "x", at: "t", surfaced_at: "t" },
 				},
 			},
 		})
@@ -1161,7 +1249,9 @@ test("cursor: design + clarify recorded → discovery fires next", async () => {
 			slug,
 			studio: "test",
 			extraFm: {
-				design_directions: { design: { archetype: "x", at: "t" } },
+				design_directions: {
+					design: { archetype: "x", at: "t", surfaced_at: "t" },
+				},
 				clarifications: {
 					design: { answers: [], at: "t" },
 				},

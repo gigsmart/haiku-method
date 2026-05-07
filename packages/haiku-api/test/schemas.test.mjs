@@ -272,8 +272,13 @@ describe("schemas/review.ts — ReviewDecisionResponseSchema", () => {
 describe("schemas/direction.ts — DirectionSelectRequestSchema", () => {
 	// DirectionSelectRequestSchema is a discriminated union on `mode`:
 	// { mode: "select", archetype, comments?, annotations? } |
-	// { mode: "regenerate", comments? }. The `parameters` field on the
-	// older shape no longer exists; tests below cover the current surface.
+	// { mode: "regenerate", keep, comments? } |
+	// { mode: "upload", files[], comments? } |
+	// { mode: "generate", comments? }. The intake-first flow (upload +
+	// generate modes) was added 2026-05-06 — the picker opens with no
+	// archetypes so the user can either upload finished designs or
+	// signal they want the agent to produce variants. The legacy
+	// `parameters` field on the original shape no longer exists.
 	test("parses valid", () => {
 		assertValid(DirectionSelectRequestSchema, {
 			mode: "select",
@@ -284,6 +289,24 @@ describe("schemas/direction.ts — DirectionSelectRequestSchema", () => {
 		assertValid(DirectionSelectRequestSchema, {
 			mode: "regenerate",
 			keep: ["minimalist"],
+		})
+	})
+	test("parses valid (upload)", () => {
+		assertValid(DirectionSelectRequestSchema, {
+			mode: "upload",
+			files: [
+				{
+					filename: "mobile-dashboard.png",
+					data_url: "data:image/png;base64,iVBORw0KGgo=",
+					caption: "logged-in state",
+				},
+			],
+		})
+	})
+	test("parses valid (generate intake signal)", () => {
+		assertValid(DirectionSelectRequestSchema, {
+			mode: "generate",
+			comments: "lean minimal",
 		})
 	})
 	test("rejects missing mode", () => {
@@ -302,6 +325,32 @@ describe("schemas/direction.ts — DirectionSelectRequestSchema", () => {
 			mode: "select",
 			archetype: "minimalist",
 			comments: "x".repeat(10_001),
+		})
+	})
+	test("rejects upload with zero files", () => {
+		assertInvalid(DirectionSelectRequestSchema, {
+			mode: "upload",
+			files: [],
+		})
+	})
+	test("rejects upload with more than 20 files", () => {
+		assertInvalid(DirectionSelectRequestSchema, {
+			mode: "upload",
+			files: Array.from({ length: 21 }, (_, i) => ({
+				filename: `f-${i}.png`,
+				data_url: "data:image/png;base64,iVBORw0KGgo=",
+			})),
+		})
+	})
+	test("rejects upload file exceeding data_url cap", () => {
+		assertInvalid(DirectionSelectRequestSchema, {
+			mode: "upload",
+			files: [
+				{
+					filename: "huge.png",
+					data_url: `data:image/png;base64,${"x".repeat(1_500_001)}`,
+				},
+			],
 		})
 	})
 })

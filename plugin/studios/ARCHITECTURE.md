@@ -271,7 +271,7 @@ Two layers of checks fire before a mainline action is emitted:
 | **DAG cycle** | `elaborate.ts` | `dag_cycle_detected` | Break the cycle, retick |
 | **Missing discovery artifacts** | `elaborate.ts` | `discovery_missing` | Produce the artifacts, retick |
 | **Elaboration insufficient** | `elaborate.ts` | `elaboration_insufficient` | Record more decisions or declare `no_decisions: true` |
-| **Design direction needed** | `elaborate.ts` | `design_direction_required` | Use `pick_design_direction` to surface variants, await user pick |
+| **Design direction needed** | `elaborate.ts` | `design_direction_required` | Open `pick_design_direction` in **intake mode** (no archetypes). User either uploads finished designs (→ `design_direction_uploaded`, archetype generation skipped) or asks the agent to generate variants (→ `design_direction_complete` once a final pick lands) |
 | **Missing outputs** | `review.ts` | `outputs_missing` | Produce the artifacts, retick |
 
 The distinction matters for plugin maintainers: adding a true pre-advance check goes in `run-tick.ts` / `feedback-triage-gate.ts`; adding a handler-internal check goes in the relevant handler file.

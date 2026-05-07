@@ -160,7 +160,9 @@ const PickDesignDirectionInput = z.object({
 	archetypes: z
 		.array(DesignArchetypeSchema)
 		.optional()
-		.describe("Inline array of design archetypes to choose from"),
+		.describe(
+			"Inline array of design archetypes to choose from. Omit (or pass an empty array) on the FIRST call to enter intake mode — the picker asks whether the user has designs to upload before any generation work happens. Pass archetypes only after the user responds with `mode: \"generate\"`.",
+		),
 	archetypes_file: z
 		.string()
 		.optional()
@@ -857,8 +859,16 @@ export async function handleToolCall(
 		const input = PickDesignDirectionInput.parse(args)
 		const _title = input.title ?? "Design Direction"
 
-		// Resolve archetypes: inline or from file
-		let archetypes: DesignArchetypeData[]
+		// Resolve archetypes: inline, from file, or empty (intake mode).
+		// Empty is the intake-first path: the agent calls this tool with
+		// no archetypes to ask the user whether they have designs to
+		// upload. If they upload, the picker submits `mode: "upload"` and
+		// the workflow surfaces the file paths on the next tick. If they
+		// click "generate for me," the picker submits `mode: "generate"`
+		// and the agent produces archetypes and re-opens the picker.
+		// This avoids burning generation tokens before we know the user
+		// has nothing to upload.
+		let archetypes: DesignArchetypeData[] = []
 		if (input.archetypes) {
 			archetypes = input.archetypes
 		} else if (input.archetypes_file) {
@@ -871,16 +881,9 @@ export async function handleToolCall(
 			// arbitrary files.
 			const raw = await readFile(resolve(input.archetypes_file), "utf-8")
 			archetypes = z.array(DesignArchetypeSchema).parse(JSON.parse(raw))
-		} else {
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: "Error: provide either archetypes or archetypes_file",
-					},
-				],
-			}
 		}
+		// else: intake mode (empty archetypes) — UI shows upload + generate
+		// affordances only.
 
 		const session = createDesignDirectionSession({
 			intent_slug: input.intent_slug,
@@ -901,6 +904,7 @@ export async function handleToolCall(
 		// block on the response. Same motivation as the gate-review
 		// and visual-question splits: the URL travels through chat
 		// regardless of whether the MCP host can launch a browser.
+		const intakeMode = archetypes.length === 0
 		return {
 			content: [
 				{
@@ -912,8 +916,11 @@ export async function handleToolCall(
 							intent_slug: input.intent_slug,
 							url: directionUrl,
 							archetype_count: archetypes.length,
+							mode: intakeMode ? "intake" : "select",
 							next_tool: "haiku_await_design_direction",
-							message: `Design-direction session created. Tell the user the URL above (post it in chat — essential for headless / remote / mobile setups), then call haiku_await_design_direction { session_id: "${session.session_id}", intent_slug: "${input.intent_slug}" } to block on their selection. Pass auto_open: false on the await call when the user will open the URL on a different device.`,
+							message: intakeMode
+								? `Intake-mode design-direction session created — the picker will ask whether the user has designs to upload BEFORE any archetype generation happens. Tell the user the URL above (post it in chat — essential for headless / remote / mobile setups), then call haiku_await_design_direction { session_id: "${session.session_id}", intent_slug: "${input.intent_slug}" } to block on their response. If the user uploads files, the workflow records them as the chosen direction and skips generation entirely. If they click "Generate variants for me", you'll get back a 'generate' signal — produce archetypes and call pick_design_direction again with them.`
+								: `Design-direction session created. Tell the user the URL above (post it in chat — essential for headless / remote / mobile setups), then call haiku_await_design_direction { session_id: "${session.session_id}", intent_slug: "${input.intent_slug}" } to block on their selection. Pass auto_open: false on the await call when the user will open the URL on a different device.`,
 						},
 						null,
 						2,
@@ -1023,6 +1030,85 @@ export async function handleToolCall(
 						{
 							type: "text" as const,
 							text: withAnnouncement(announcement, nextStep),
+						},
+					],
+				}
+			}
+
+			if (sel.mode === "generate") {
+				// Intake-first signal: the user has no uploads and wants
+				// the agent to produce archetypes. Mirror the regenerate
+				// hand-back — the durable state is unchanged, the agent
+				// produces variants and re-opens the picker.
+				const announcement = sel.comments
+					? `The user has no existing designs and wants you to generate variants. Steering notes: ${sel.comments}`
+					: "The user has no existing designs and wants you to generate variants."
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: withAnnouncement(
+								announcement,
+								"Generate 2-3 distinct archetypes (HTML wireframe snippets — different layouts, interaction patterns, or visual hierarchies) and call `pick_design_direction` again with `archetypes` populated.",
+							),
+						},
+					],
+				}
+			}
+
+			if (sel.mode === "upload") {
+				// Designer-provided files path — the HTTP submit route
+				// already wrote the files to disk under
+				// `stages/<stage>/artifacts/design-direction/uploads/`
+				// and recorded the same paths in stage state.json. The
+				// elaborate handler will surface them on the next tick
+				// the same way it surfaces select-mode screenshots. We
+				// re-enforce the stage branch (same reason as the select
+				// path: the user may have checked out another branch
+				// during the up-to-30-min wait) and return a short ack.
+				if (intentSlug) {
+					try {
+						const intentRaw = await readFile(
+							join(findHaikuRoot(), "intents", intentSlug, "intent.md"),
+							"utf-8",
+						)
+						const activeStage =
+							(parseFrontmatter(intentRaw).data.active_stage as string) || ""
+						if (activeStage) {
+							const guard = ensureOnStageBranch(intentSlug, activeStage)
+							if (!guard.ok) {
+								console.warn(
+									`[haiku_await_design_direction] stage-branch enforcement failed: ${guard.message}`,
+								)
+							}
+						}
+					} catch (err) {
+						console.warn(
+							`[haiku_await_design_direction] post-wait branch reconciliation skipped: ${err instanceof Error ? err.message : String(err)}`,
+						)
+					}
+				}
+				const fileLines = sel.files
+					.map(
+						(f, i) =>
+							`  ${i + 1}. \`${f.path}\`${f.caption ? ` — ${f.caption}` : ""}`,
+					)
+					.join("\n")
+				const announceParts = [
+					`The user uploaded ${sel.files.length} design file${
+						sel.files.length === 1 ? "" : "s"
+					} as the chosen direction (no archetype generation needed):`,
+					fileLines,
+				]
+				if (sel.comments) announceParts.push(`Comments: ${sel.comments}`)
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: withAnnouncement(
+								announceParts.join("\n"),
+								"Call `haiku_run_next` to continue — the workflow will surface the upload paths so you can `Read` each file and incorporate the designs into elaboration.",
+							),
 						},
 					],
 				}

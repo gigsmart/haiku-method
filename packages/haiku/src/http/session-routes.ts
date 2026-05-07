@@ -44,6 +44,7 @@ const isFeedbackOpen = (
 	return true
 }
 import {
+	type DirectionSelection,
 	getSession,
 	type QuestionAnnotations,
 	type QuestionAnswer,
@@ -58,6 +59,7 @@ import {
 	intentDir,
 	parseFrontmatter,
 	persistDesignDirectionSelection,
+	persistDesignDirectionUploads,
 	readFeedbackFiles,
 	readJson,
 	stageStatePath,
@@ -218,15 +220,36 @@ export function registerSessionRoutes(instance: FastifyInstance): void {
 			// still finds `design_direction_selected: true` on disk and
 			// emits the `design_direction_complete` recovery action.
 			//
-			// Two write paths:
-			//   1. Full persist via persistDesignDirectionSelection — writes
-			//      annotated PNG sidecars + state.json with screenshot paths.
-			//   2. Minimal state-only fallback — used when there are no
-			//      screenshots OR the full persist threw (disk full,
-			//      permission denied, etc). Without this fallback the
-			//      elaborate handler would re-emit design_direction_required
-			//      and the agent would loop into a 409 on the closed session.
-			let selection = parsed.data
+			// Three write paths:
+			//   1. select mode → persistDesignDirectionSelection — writes
+			//      annotated PNG sidecars + state.json with screenshot paths,
+			//      with a minimal state-only fallback when there are no
+			//      screenshots OR the full persist throws (disk full,
+			//      permission denied, etc).
+			//   2. upload mode → persistDesignDirectionUploads — decodes
+			//      designer-uploaded files onto disk under
+			//      `<stage>/artifacts/design-direction/uploads/` and stamps
+			//      `design_direction_selected: true` so the next
+			//      haiku_run_next surfaces the upload paths.
+			//   3. regenerate / generate modes → no persist. The selection
+			//      stays in the in-memory session so the await handler can
+			//      hand the agent back; the workflow's design_direction_
+			//      selected flag remains false so elaborate keeps requiring
+			//      the picker until the user picks select or upload.
+			//
+			// Without these, the elaborate handler would re-emit
+			// design_direction_required and the agent would loop into a 409
+			// on the closed session.
+			// `selection` is the runtime in-memory form of the user's
+			// response — paths-only for files, no embedded data URLs. It
+			// matches the wire shape for select / regenerate / generate
+			// modes and diverges for upload (data_url → path).
+			let selection: DirectionSelection =
+				parsed.data.mode === "upload"
+					? // Placeholder — overwritten in the upload branch below
+						// once persistDesignDirectionUploads returns the paths.
+						{ mode: "upload", files: [] }
+					: parsed.data
 			if (parsed.data.mode === "select") {
 				const ddSession = getSession(req.params.sessionId)
 				const slug =
@@ -291,6 +314,48 @@ export function registerSessionRoutes(instance: FastifyInstance): void {
 								"minimal design-direction state write failed — agent may need to re-select",
 							)
 						}
+					}
+				}
+			}
+
+			if (parsed.data.mode === "upload") {
+				const ddSession = getSession(req.params.sessionId)
+				const slug =
+					ddSession?.session_type === "design_direction"
+						? ddSession.intent_slug
+						: ""
+				const activeStage = slug ? readActiveStage(slug) : ""
+				if (slug && activeStage) {
+					try {
+						const { uploads } = persistDesignDirectionUploads({
+							slug,
+							stage: activeStage,
+							files: parsed.data.files,
+							...(parsed.data.comments
+								? { comments: parsed.data.comments }
+								: {}),
+						})
+						// Replace the heavy data URLs with paths-only metadata
+						// for the in-memory session record. Authoritative
+						// storage is on disk now and the workflow surfaces
+						// uploads by path on the next haiku_run_next.
+						selection = {
+							mode: "upload",
+							files: uploads,
+							...(parsed.data.comments
+								? { comments: parsed.data.comments }
+								: {}),
+						}
+					} catch (err) {
+						req.log.error(
+							{ err },
+							"persistDesignDirectionUploads failed — designer uploads not durable",
+						)
+						reply.status(500).send({
+							error: "upload_persist_failed",
+							detail: err instanceof Error ? err.message : String(err),
+						})
+						return
 					}
 				}
 			}

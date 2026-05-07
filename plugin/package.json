@@ -1,6 +1,6 @@
 {
   "name": "haiku-method",
-  "version": "3.16.2",
+  "version": "3.16.3",
   "description": "H·AI·K·U methodology — universal lifecycle orchestration with hat-based workflows, completion criteria, and automatic context preservation.",
   "homepage": "https://haikumethod.ai",
   "repository": {

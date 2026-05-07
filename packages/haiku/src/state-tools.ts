@@ -4644,7 +4644,10 @@ export function persistDesignDirectionSelection(opts: {
 					? (fm.design_directions as Record<string, unknown>)
 					: {}
 			directions[opts.stage] = {
+				mode: "archetype",
 				archetype: opts.archetype,
+				...(opts.comments ? { comments: opts.comments } : {}),
+				...(persisted.length > 0 ? { annotations: persisted } : {}),
 				at: timestamp(),
 			}
 			setFrontmatterField(intentMdPath, "design_directions", directions)
@@ -4656,6 +4659,126 @@ export function persistDesignDirectionSelection(opts: {
 	}
 
 	return { annotations: persisted, artifactsDir }
+}
+
+/** Persisted form of a designer-uploaded artefact.
+ *  `path` is intent-relative so it survives worktree moves. */
+export interface DesignDirectionUpload {
+	filename: string
+	path: string
+	caption?: string
+}
+
+/** Decode incoming `data:image/...` URLs from an upload-mode design
+ *  direction submission, write them under
+ *  `<stage>/artifacts/design-direction/uploads/`, and update stage
+ *  state.json with the paths so the elaborate handler can surface them
+ *  on the next tick (mirrors the screenshot-annotation persistence path).
+ *
+ *  Re-submissions replace the whole upload set: any prior `up-NN-…`
+ *  files are deleted before the new ones are written. Same "latest
+ *  selection is the truth" semantics as the screenshot persister —
+ *  there is no scenario where a previously persisted upload stays
+ *  load-bearing after a fresh upload submission lands. */
+export function persistDesignDirectionUploads(opts: {
+	slug: string
+	stage: string
+	files: Array<{ filename: string; data_url: string; caption?: string }>
+	comments?: string
+}): {
+	uploads: DesignDirectionUpload[]
+	uploadsDir: string
+} {
+	const ddDir = join(
+		stageDir(opts.slug, opts.stage),
+		"artifacts",
+		"design-direction",
+	)
+	const uploadsDir = join(ddDir, "uploads")
+	mkdirSync(uploadsDir, { recursive: true })
+
+	for (const f of readdirSync(uploadsDir)) {
+		if (/^up-\d+-.*\.(png|jpe?g|webp|svg|pdf|gif)$/i.test(f)) {
+			try {
+				unlinkSync(join(uploadsDir, f))
+			} catch {
+				/* best-effort */
+			}
+		}
+	}
+
+	const uploads: DesignDirectionUpload[] = []
+	let nn = 1
+	for (const f of opts.files) {
+		const m = f.data_url.match(
+			/^data:(image\/(?:png|jpeg|webp|svg\+xml|gif)|application\/pdf);base64,([A-Za-z0-9+/=]+)$/,
+		)
+		if (!m) continue
+		const mime = m[1]
+		let ext: string
+		if (mime === "image/jpeg") ext = "jpg"
+		else if (mime === "image/svg+xml") ext = "svg"
+		else if (mime === "application/pdf") ext = "pdf"
+		else ext = mime.replace(/^image\//, "")
+		// Sanitise filename: strip any path traversal, keep a slug.
+		const base =
+			slugifyTitle(opts.files[nn - 1]?.filename.replace(/\.[^.]+$/, "") ?? "") ||
+			`upload-${nn}`
+		const filename = `up-${zeroPad(nn)}-${base}.${ext}`
+		writeFileSync(join(uploadsDir, filename), Buffer.from(m[2], "base64"))
+		const upload: DesignDirectionUpload = {
+			filename: f.filename,
+			path: `stages/${opts.stage}/artifacts/design-direction/uploads/${filename}`,
+			...(f.caption ? { caption: f.caption } : {}),
+		}
+		uploads.push(upload)
+		nn++
+	}
+
+	const ssPath = stageStatePath(opts.slug, opts.stage)
+	const ssData = readJson(ssPath)
+	ssData.design_direction_selected = true
+	ssData.design_direction_selected_at = timestamp()
+	ssData.design_direction = {
+		mode: "upload",
+		...(opts.comments ? { comments: opts.comments } : {}),
+		uploads,
+	}
+	delete ssData.design_direction_surfaced
+	writeJson(ssPath, ssData)
+
+	// v4 cursor reads intent.md (not state.json) for the
+	// `requires_design_direction` gate check. Stamp the upload payload
+	// onto `design_directions[<stage>]` with `mode: "upload"` so the
+	// surface-once branch in cursor.ts emits `design_direction_uploaded`
+	// before elaborate. Without this stamp, an upload submission would
+	// satisfy state.json but the v4 cursor would keep emitting
+	// `design_direction_required`.
+	try {
+		const intentMdPath = join(intentDir(opts.slug), "intent.md")
+		if (existsSync(intentMdPath)) {
+			const raw = readFileSync(intentMdPath, "utf8")
+			const parsed = parseFrontmatter(raw)
+			const fm = (parsed.data as Record<string, unknown>) || {}
+			const directions =
+				fm.design_directions && typeof fm.design_directions === "object"
+					? (fm.design_directions as Record<string, unknown>)
+					: {}
+			directions[opts.stage] = {
+				mode: "upload",
+				...(opts.comments ? { comments: opts.comments } : {}),
+				uploads,
+				at: timestamp(),
+			}
+			setFrontmatterField(intentMdPath, "design_directions", directions)
+		}
+	} catch (err) {
+		console.error(
+			`[haiku] failed to stamp design_directions (upload) on intent.md: ${err instanceof Error ? err.message : String(err)}`,
+		)
+	}
+
+	return { uploads, uploadsDir }
 }
 
 /** Path to the feedback directory for an intent. When `stage` is falsy,

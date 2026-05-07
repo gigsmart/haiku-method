@@ -11,14 +11,17 @@ criteria_focus: design
 
 The key words "MUST", "MUST NOT", "SHALL", "SHALL NOT", "REQUIRED" in this section are to be interpreted as described in RFC 2119.
 
-During elaboration, the agent **MUST** create **multiple low-fidelity wireframe variants** and present them for the user to choose a direction:
+During elaboration, the agent **MUST** establish a design direction with the user before drafting any final wireframes. The flow is **intake-first** — the user may already have finished designs, in which case archetype generation is skipped entirely:
 
-1. The agent **MUST** generate 2-3 distinct design approaches as HTML wireframe snippets (different layouts, interaction patterns, or visual hierarchies)
-2. The agent **MUST** call `pick_design_direction` with the variants as `archetypes` — each with a `name`, `description`, and `preview_html` (the rendered wireframe).
-3. The user either picks one as the final direction (optionally annotating it via the pencil tool — strokes are screen-captured and returned to the agent as image content blocks) **or** asks the agent to regenerate variants — keeping a subset of the current archetypes and steering the next batch via comments. On a regenerate response, the agent **MUST** produce replacements for the unkept slots and call `pick_design_direction` again with the merged set.
-4. The agent **MUST** use the final selected direction to create the wireframes saved to `stages/design/artifacts/`
-5. The agent **MUST NOT** produce ASCII art wireframes — all wireframes **MUST** be HTML or design provider files
-6. If a design provider MCP is available (Pencil, OpenPencil, Figma), the agent **SHOULD** use it instead of raw HTML
+1. The agent **MUST** call `pick_design_direction` **with no `archetypes` field** (or an empty array) to open the picker in intake mode. The picker asks the user whether they have designs to upload OR want the agent to generate variants.
+2. The agent **MUST** call `haiku_await_design_direction` to wait for the response.
+3. The user's response branches:
+   - **Upload** — the user provided finished designs. The next `haiku_run_next` tick surfaces the file paths via a `design_direction_uploaded` action. The agent **MUST** `Read` each uploaded file and treat the uploads as the source of truth for the visual direction. The agent **MUST NOT** generate archetypes in this case.
+   - **Generate** — the user wants the agent to produce variants. The agent **MUST** generate 2-3 distinct design approaches as HTML wireframe snippets (different layouts, interaction patterns, or visual hierarchies) and call `pick_design_direction` again with the variants as `archetypes` — each with a `name`, `description`, and `preview_html` (the rendered wireframe).
+4. After variants are presented, the user either picks one as the final direction (optionally annotating it via the pencil tool — strokes are screen-captured and returned to the agent as image content blocks) **or** asks the agent to regenerate — keeping a subset of the current archetypes and steering the next batch via comments. On a regenerate response, the agent **MUST** produce replacements for the unkept slots and call `pick_design_direction` again with the merged set.
+5. The agent **MUST** use the final direction (uploaded files or selected archetype) to create the wireframes saved to `stages/design/artifacts/`
+6. The agent **MUST NOT** produce ASCII art wireframes — all wireframes **MUST** be HTML or design provider files
+7. If a design provider MCP is available (Pencil, OpenPencil, Figma), the agent **SHOULD** use it instead of raw HTML when generation is needed
 
 ## Criteria Guidance
 

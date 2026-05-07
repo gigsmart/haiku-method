@@ -477,3 +477,114 @@ describe("DirectionPage — PreviewDialog focus trap (FB-69)", () => {
 		})
 	})
 })
+
+describe("DirectionPage — intake mode (no archetypes)", () => {
+	afterEach(() => {
+		cleanup()
+		document.body.innerHTML = ""
+	})
+
+	function intakeSession(): DirectionSessionPayload {
+		return {
+			session_id: "intake-session",
+			session_type: "design_direction",
+			status: "pending",
+			title: "Pick or upload",
+			intent_slug: "demo-intent",
+			archetypes: [],
+			selection: null,
+		}
+	}
+
+	it("renders the intake screen when archetypes is empty", () => {
+		render(
+			<Harness client={makeMockClient()}>
+				<DirectionPage
+					session={intakeSession()}
+					sessionId="intake-session"
+				/>
+			</Harness>,
+		)
+		expect(screen.getByText(/i have designs to upload/i)).toBeTruthy()
+		expect(
+			screen.getByRole("button", { name: /generate variants for me instead/i }),
+		).toBeTruthy()
+	})
+
+	it("posts { mode: 'generate' } when the user clicks generate", async () => {
+		const submitDirection = vi.fn(async () => ({ ok: true as const }))
+		const client = makeMockClient({ submitDirection })
+		render(
+			<Harness client={client}>
+				<DirectionPage
+					session={intakeSession()}
+					sessionId="intake-session"
+				/>
+			</Harness>,
+		)
+		fireEvent.click(
+			screen.getByRole("button", { name: /generate variants for me instead/i }),
+		)
+		await waitFor(() => {
+			expect(submitDirection).toHaveBeenCalledTimes(1)
+		})
+		const calls = submitDirection.mock.calls as unknown as Array<
+			[string, DirectionSelectRequest]
+		>
+		const body = calls[0]?.[1]
+		if (!body) throw new Error("no submit call")
+		expect(body.mode).toBe("generate")
+	})
+
+	it("posts { mode: 'upload', files } after a file is added", async () => {
+		const submitDirection = vi.fn(async () => ({ ok: true as const }))
+		const client = makeMockClient({ submitDirection })
+		render(
+			<Harness client={client}>
+				<DirectionPage
+					session={intakeSession()}
+					sessionId="intake-session"
+				/>
+			</Harness>,
+		)
+
+		const fileInput = document.getElementById(
+			"intake-file-input",
+		) as HTMLInputElement | null
+		if (!fileInput) throw new Error("file input not found")
+
+		// jsdom's File / FileReader stubs accept Blob inputs and emit a
+		// synthetic data URL. A trivial PNG header is fine — we only
+		// assert the wire shape downstream.
+		const file = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "hero.png", {
+			type: "image/png",
+		})
+		Object.defineProperty(fileInput, "files", {
+			value: [file],
+			configurable: true,
+		})
+		fireEvent.change(fileInput)
+
+		// Wait for the file's data URL to be read and rendered.
+		await waitFor(() => {
+			expect(screen.queryByText("hero.png")).toBeTruthy()
+		})
+
+		fireEvent.click(
+			screen.getByRole("button", { name: /use these 1 design as the direction/i }),
+		)
+
+		await waitFor(() => {
+			expect(submitDirection).toHaveBeenCalledTimes(1)
+		})
+		const calls = submitDirection.mock.calls as unknown as Array<
+			[string, DirectionSelectRequest]
+		>
+		const body = calls[0]?.[1]
+		if (!body) throw new Error("no submit call")
+		if (body.mode !== "upload") throw new Error("expected upload mode")
+		expect(body.files.length).toBe(1)
+		expect(body.files[0]?.filename).toBe("hero.png")
+		expect(body.files[0]?.data_url.startsWith("data:")).toBe(true)
+	})
+})

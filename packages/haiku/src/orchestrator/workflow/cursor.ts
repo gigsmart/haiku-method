@@ -92,6 +92,19 @@ export type CursorAction =
 			stage: string
 	  }
 	| {
+			kind: "design_direction_complete"
+			stage: string
+			archetype: string
+			comments?: string
+			annotations?: Array<{ comment: string; screenshot_path: string }>
+	  }
+	| {
+			kind: "design_direction_uploaded"
+			stage: string
+			uploads: Array<{ filename: string; path: string; caption?: string }>
+			comments?: string
+	  }
+	| {
 			kind: "clarify_required"
 			stage: string
 			questions: Array<{ id: string; prompt: string; body: string }>
@@ -604,10 +617,21 @@ function walkIntentTrack(args: {
 	//      so they have richer context.
 	//   4. elaborate / wave logic.
 
-	// 1. Design direction (P3). Hard gate: when the stage's STAGE.md
-	//    declares `requires_design_direction: true`, the cursor refuses
-	//    to advance until the user has selected a direction. Stored on
-	//    intent.md as `design_directions: { <stage>: { archetype, at } }`.
+	// 1. Design direction (P3). Two-phase gate:
+	//
+	//    a. Selection: when the stage's STAGE.md declares
+	//       `requires_design_direction: true`, the cursor refuses to
+	//       advance until the user has selected a direction. Stored on
+	//       intent.md as `design_directions: { <stage>: { … } }`.
+	//
+	//    b. Surface-once: after selection, the cursor emits ONE
+	//       `design_direction_complete` (archetype mode) or
+	//       `design_direction_uploaded` (intake/upload mode) action so
+	//       the agent can read screenshot annotations or uploaded files
+	//       before elaboration starts. Surfaced state is tracked by
+	//       `surfaced_at` on the same record — once stamped, the cursor
+	//       falls through to elaborate. The agent stamps `surfaced_at`
+	//       via the engine after it's seen the action.
 	const stageMeta = resolveStageMetadata(studio, stage)
 	if (stageMeta?.requires_design_direction === true) {
 		const intentMdPath = join(intentDir, "intent.md")
@@ -618,8 +642,44 @@ function walkIntentTrack(args: {
 				typeof intentFm.design_directions === "object"
 					? (intentFm.design_directions as Record<string, unknown>)
 					: {}
-			if (!directions[stage]) {
+			const dd = directions[stage] as
+				| {
+						mode?: string
+						archetype?: string
+						comments?: string
+						annotations?: Array<{ comment: string; screenshot_path: string }>
+						uploads?: Array<{ filename: string; path: string; caption?: string }>
+						at?: string
+						surfaced_at?: string
+				  }
+				| undefined
+			if (!dd) {
 				return { kind: "design_direction_required", stage }
+			}
+			if (!dd.surfaced_at) {
+				if (
+					dd.mode === "upload" &&
+					Array.isArray(dd.uploads) &&
+					dd.uploads.length > 0
+				) {
+					return {
+						kind: "design_direction_uploaded",
+						stage,
+						uploads: dd.uploads,
+						...(dd.comments ? { comments: dd.comments } : {}),
+					}
+				}
+				if (dd.archetype) {
+					return {
+						kind: "design_direction_complete",
+						stage,
+						archetype: dd.archetype,
+						...(dd.comments ? { comments: dd.comments } : {}),
+						...(dd.annotations && dd.annotations.length > 0
+							? { annotations: dd.annotations }
+							: {}),
+					}
+				}
 			}
 		}
 	}

@@ -317,9 +317,18 @@ export interface DesignArchetypeData {
 	preview_html: string
 }
 
-/** A user's response to a design-direction picker. Either a final
- *  selection (`mode: "select"`) or a regenerate request asking the
- *  agent for more variants (`mode: "regenerate"`). */
+/** A user's response to a design-direction picker. Four modes:
+ *   - `select`     final pick of one archetype (with optional pins +
+ *                  screenshot annotations).
+ *   - `regenerate` agent should produce more variants, keeping a subset.
+ *   - `upload`     designer provided finished designs as the chosen
+ *                  direction; no archetype generation needed. The HTTP
+ *                  submit route writes the files to disk and stores the
+ *                  resulting paths on the session for the await handler
+ *                  + the next-tick surface to read.
+ *   - `generate`   intake signal: user has nothing to upload and wants
+ *                  the agent to generate archetypes. The agent then
+ *                  produces them and calls `pick_design_direction` again. */
 export type DirectionSelection =
 	| {
 			mode: "select"
@@ -336,6 +345,21 @@ export type DirectionSelection =
 	| {
 			mode: "regenerate"
 			keep: string[]
+			comments?: string
+	  }
+	| {
+			mode: "upload"
+			files: Array<{
+				filename: string
+				/** Intent-relative path under `.haiku/intents/<slug>/`,
+				 *  e.g. `stages/design/artifacts/design-direction/uploads/up-01-mobile.png`. */
+				path: string
+				caption?: string
+			}>
+			comments?: string
+	  }
+	| {
+			mode: "generate"
 			comments?: string
 	  }
 

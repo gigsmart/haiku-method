@@ -598,7 +598,7 @@ export function ModalRouter({
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										"**design direction needed** (from `elaborate.ts`) → `design_direction_required`. Agent surfaces variants via `pick_design_direction`.",
+										"**design direction needed** (from `elaborate.ts`) → `design_direction_required`. Agent opens `pick_design_direction` in intake mode (no archetypes); user uploads finished designs (→ `design_direction_uploaded`, no generation) or asks the agent to generate variants (→ `design_direction_complete` after a final pick).",
 									)}
 								/>
 							</li>
