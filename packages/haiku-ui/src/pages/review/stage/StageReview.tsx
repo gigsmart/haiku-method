@@ -201,8 +201,19 @@ function statusPillClass(status: string | undefined): string {
 /** Project the feedback items that carry an `inline_anchor` into the
  *  shape `<InlineComments>` needs for re-painting previously-saved
  *  highlights. Filters out closed / rejected items — those are
- *  resolved, no reason to clutter the artifact body. */
-function deriveExistingAnchors(items: readonly FeedbackItemData[]): Array<{
+ *  resolved, no reason to clutter the artifact body.
+ *
+ *  IMPORTANT: this filter is for the PERSISTENT highlight layer
+ *  (`inline-comments-saved`), NOT for the click-to-flash path. A
+ *  reviewer clicking a closed feedback card still scrolls to the
+ *  excerpt and flashes it for ~1.6s — that path is driven by
+ *  `flashAnchor` (see `-stage-content.tsx`), which reads
+ *  `item.inline_anchor` regardless of status. The closed-FB experience
+ *  is "tap to remember what I said about this," not "show me a
+ *  permanent yellow stripe over every prior comment." */
+export function deriveExistingAnchors(
+	items: readonly FeedbackItemData[],
+): Array<{
 	commentId?: string
 	selectedText: string
 	paragraph?: number

@@ -43,19 +43,59 @@ export function bodySha256(absolutePath: string): string {
 	return createHash("sha256").update(body, "utf8").digest("hex")
 }
 
-/** sha256 of the entire file contents (binary-safe). Used for output
- *  witnesses (PNGs, JSON, etc — files without frontmatter). */
+/** sha256 of the entire file contents (binary-safe). Used internally
+ *  for binary outputs; callers should prefer `outputSha256` which picks
+ *  body-vs-binary hashing per file extension. */
 export function fileSha256(absolutePath: string): string {
 	if (!existsSync(absolutePath)) return ""
 	const buf = readFileSync(absolutePath)
 	return createHash("sha256").update(buf).digest("hex")
 }
 
+/** Extensions whose drift signal should ignore frontmatter — only the
+ *  content body matters. Adding an extension here means the drift sweep
+ *  treats engine FM mutations (stage rebinding, signed_at restamps, hat
+ *  bumps, etc.) as no-op for that file type, only flagging real
+ *  human / agent prose changes. */
+const TEXT_BODY_EXTENSIONS: ReadonlySet<string> = new Set([
+	".md",
+	".markdown",
+	".mdx",
+	".txt",
+	".rst",
+	".adoc",
+])
+
+/** Pick the right sha strategy for a declared output:
+ *    - markdown / text-with-FM extensions → body hash (strips FM)
+ *    - everything else (images, PDFs, JSON, etc.) → full-file binary
+ *      hash
+ *
+ *  Drift is about content drift, not state drift. The cursor tracks
+ *  workflow state (FM mutations) independently of the witness; mixing
+ *  them into the witness was the noise that scared reviewers in v3 +
+ *  early v4 sessions. Stripping FM from text outputs aligns the
+ *  witness with what humans actually changed. */
+export function outputSha256(absolutePath: string): string {
+	if (!existsSync(absolutePath)) return ""
+	const ext = absolutePath.slice(absolutePath.lastIndexOf(".")).toLowerCase()
+	if (TEXT_BODY_EXTENSIONS.has(ext)) {
+		return bodySha256(absolutePath)
+	}
+	return fileSha256(absolutePath)
+}
+
 /** Build the witnesses map for an approvals slot: { <relPath>: <sha256> }
  *  for every declared output that exists on disk at sign time. Outputs
  *  the unit declares but doesn't produce yet are simply omitted from
  *  the map (the sweep will treat their later appearance as drift on
- *  the unit owner's part — by then the slot should be re-signed). */
+ *  the unit owner's part — by then the slot should be re-signed).
+ *
+ *  Uses `outputSha256` so markdown / text outputs are body-hashed (FM
+ *  stripped) and binary outputs get full-file hashes. The drift sweep
+ *  uses the same picker, so sign-time and check-time hashes line up
+ *  per-file regardless of whether the engine has touched the FM since.
+ */
 export function buildOutputWitnesses(
 	intentDir: string,
 	outputs: string[],
@@ -63,7 +103,7 @@ export function buildOutputWitnesses(
 	const map: Record<string, string> = {}
 	for (const out of outputs) {
 		const abs = join(intentDir, out)
-		const sha = fileSha256(abs)
+		const sha = outputSha256(abs)
 		if (sha) map[out] = sha
 	}
 	return map

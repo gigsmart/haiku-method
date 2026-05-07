@@ -7,13 +7,30 @@
 // (origin: `adversarial-review`, targets.invalidates: [<role>]) which
 // rewinds the cursor through the fix loop on this role. On clean
 // approval, stamps `approvals.<role>`.
+//
+// Model routing follows the same `resolveStudioMandateModel` cascade
+// as dispatch_review.ts. See its header for rationale.
 
+import { join } from "node:path"
+import { resolvePluginRoot } from "../../config.js"
 import { definePromptBuilder } from "./define.js"
+import { resolveStudioMandateModel } from "./_helpers.js"
 
-export default definePromptBuilder(({ slug, action }) => {
+export default definePromptBuilder(({ slug, studio, action }) => {
 	const stage = (action.stage as string) || ""
 	const role = (action.role as string) || ""
 	const units = (action.units as string[]) || []
+
+	const mandatePath = join(
+		resolvePluginRoot(),
+		"studios",
+		studio,
+		"stages",
+		stage,
+		"review-agents",
+		`${role}.md`,
+	)
+	const modelTier = resolveStudioMandateModel({ mandatePath, studio, stage })
 
 	const lines: string[] = []
 	lines.push(`# Dispatch approval-agent \`${role}\` on stage \`${stage}\``)
@@ -24,6 +41,12 @@ export default definePromptBuilder(({ slug, action }) => {
 	lines.push("")
 	for (const u of units) lines.push(`  - \`${u}\``)
 	lines.push("")
+	if (modelTier) {
+		lines.push(
+			`**Model:** spawn the Task with \`model: "${modelTier}"\` (resolved via the review-agent mandate cascade).`,
+		)
+		lines.push("")
+	}
 	lines.push("## What to do")
 	lines.push("")
 	lines.push(

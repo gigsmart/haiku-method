@@ -39,6 +39,12 @@ export interface UseFeedbackSidebarControllerResult {
 	busyIds: ReadonlySet<string>
 	creating: boolean
 	retry: () => void
+	/** Re-pull the feedback list from the server. Used after operations
+	 *  that mutate items server-side without an optimistic local update
+	 *  — most importantly, after a successful revisit submit, so the
+	 *  sidebar reflects the new dispatched/triaged statuses instead of
+	 *  showing the items as still "pending". */
+	refetch: () => Promise<void> | void
 	handleStatusChange: (id: string, next: FeedbackStatus) => void
 	handleDelete: (id: string) => void
 	handleReply: (
@@ -141,6 +147,7 @@ export function useFeedbackSidebarController(): UseFeedbackSidebarControllerResu
 		busyIds,
 		creating,
 		retry,
+		refetch,
 		handleStatusChange,
 		handleDelete,
 		handleReply,

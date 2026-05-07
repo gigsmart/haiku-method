@@ -24,6 +24,7 @@ import {
 	listVisibleIntents,
 	MAX_RATIONALE_BYTES,
 	MAX_RATIONALE_EXCERPT_BYTES,
+	parseFrontmatter,
 	readClaimedAuthorId,
 	setFrontmatterField,
 	stateToolDefs,
@@ -1704,6 +1705,111 @@ body
 			value: "sonnet",
 		})
 		assert.ok(getTextResult(result).includes("ok"))
+	})
+
+	test("haiku_unit_set allows quality_gates edits on COMPLETED units (Mike's loop fix)", () => {
+		// Mike's session 2026-05-07: agent surfaced broken quality_gates on a
+		// completed unit. v3+v4 forward-only lifecycle blocked haiku_unit_set,
+		// leaving direct file editing as the only escape — exactly the kind
+		// of "engine has no answer" trap we want to avoid. Fix: quality_gates
+		// joins `outputs` as a lifecycle-mutable field. Gate definitions are
+		// check specs, not workflow state, so updating them doesn't violate
+		// forward-only (you can't change what was produced, only how it's
+		// verified).
+		const cunit = unitPath(intentSlug, "inception", "unit-02-elaborate")
+		setFrontmatterField(cunit, "status", "completed")
+		const result = handleStateTool("haiku_unit_set", {
+			intent: intentSlug,
+			stage: "inception",
+			unit: "unit-02-elaborate",
+			field: "quality_gates",
+			value: [
+				{
+					name: "compile clean",
+					command: "cd services/api && MIX_ENV=test mix compile --warnings-as-errors",
+				},
+			],
+		})
+		assert.ok(
+			!result.isError,
+			`expected quality_gates exemption to allow the write on a completed unit; got: ${getTextResult(result)}`,
+		)
+		// Reset so subsequent tests in this file don't inherit the
+		// completed status flip.
+		setFrontmatterField(cunit, "status", "pending")
+	})
+
+	test("haiku_unit_set still rejects OTHER field edits on completed units (lifecycle invariant intact)", () => {
+		// Companion to the quality_gates exemption above: confirms the
+		// exemption is narrow. Editing `description` (or any other non-
+		// exempt field) on a completed unit still gets the lifecycle
+		// rejection — we didn't accidentally open the floodgates.
+		const cunit = unitPath(intentSlug, "inception", "unit-02-elaborate")
+		setFrontmatterField(cunit, "status", "completed")
+		const result = handleStateTool("haiku_unit_set", {
+			intent: intentSlug,
+			stage: "inception",
+			unit: "unit-02-elaborate",
+			field: "description",
+			value: "trying to rewrite history",
+		})
+		const parsed = JSON.parse(getTextResult(result))
+		assert.strictEqual(parsed.error, "lifecycle_violation")
+		assert.strictEqual(parsed.current_status, "completed")
+		setFrontmatterField(cunit, "status", "pending")
+	})
+
+	test("haiku_unit_set persists Mike's elixir-do-else command without YAML mangling", () => {
+		// Regression test for the YAML serialization concern from Mike's
+		// session: the gate command contained `do: :ok, else: ...` which
+		// looks like YAML mapping keys. When Mike hand-edited the file,
+		// his hand-typed YAML broke. The engine's path through
+		// haiku_unit_set + gray-matter + js-yaml picks a folded-scalar
+		// style automatically and round-trips correctly. This test
+		// asserts the round-trip is byte-stable through the real engine
+		// path (not just an in-memory fixture). Combined with the
+		// lifecycle exemption above, Mike would've fixed his gate via
+		// the engine — no hand edit, no parse error, no loop.
+		const cunit = unitPath(intentSlug, "inception", "unit-02-elaborate")
+		setFrontmatterField(cunit, "status", "completed")
+
+		const mikesCommand =
+			`cd services/api && MIX_ENV=test elixir -S mix run -e ` +
+			`'Code.ensure_compiled!(Oban.Pro.Worker); IO.puts(if function_exported?(Oban.Pro.Worker, :get_weight, 1), do: :ok, else: (raise "get_weight/1 not exported"))' ` +
+			`2>&1 | grep -q ok`
+
+		const setResult = handleStateTool("haiku_unit_set", {
+			intent: intentSlug,
+			stage: "inception",
+			unit: "unit-02-elaborate",
+			field: "quality_gates",
+			value: [
+				{
+					name: "weight/1 dispatch (get_weight/1) is exported on Oban.Pro.Worker",
+					command: mikesCommand,
+				},
+			],
+		})
+		assert.ok(
+			!setResult.isError,
+			`expected the write to succeed; got: ${getTextResult(setResult)}`,
+		)
+
+		// Read the file back through the same parser the engine uses
+		// elsewhere (parseFrontmatter is gray-matter under the hood).
+		// Assert the command came back byte-identical.
+		const raw = readFileSync(cunit, "utf8")
+		const { data: backFm } = parseFrontmatter(raw)
+		const gates = backFm.quality_gates
+		assert.ok(Array.isArray(gates), "quality_gates should be an array")
+		assert.strictEqual(gates.length, 1)
+		assert.strictEqual(
+			gates[0].command,
+			mikesCommand,
+			`round-trip mismatch:\n  expected: ${JSON.stringify(mikesCommand)}\n  actual:   ${JSON.stringify(gates[0].command)}`,
+		)
+
+		setFrontmatterField(cunit, "status", "pending")
 	})
 
 	// ── haiku_unit_write (FM validators + DAG cycle detection + lifecycle) ──

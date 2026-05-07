@@ -940,11 +940,26 @@ export function derivePosition(args: {
 	}
 
 	// Track B — feedback walk across stages 0..currentStage + intent.
-	if (activeStage) {
+	//
+	// Also runs when activeStage is null (every stage merged). That's
+	// the "user finished the pipeline, then opened an FB on an earlier
+	// stage from the post-pipeline review" path. Without this branch,
+	// the cursor would fall through to "intent-level approvals" and
+	// silently seal over the open FB. We walk every stage in that case
+	// so the FB gets dispatched into the owning stage's fix loop. The
+	// fix-hat work commits to that stage's branch, naturally putting it
+	// ahead of intent main; once the FB closes, the merge_stage tick
+	// re-merges it and the cursor resumes downstream walks.
+	{
 		const fbAction = walkFeedbackTrack({
 			intentDir,
 			studio,
-			currentStage: activeStage,
+			// When every stage is merged, treat the LAST stage as the
+			// cutoff so walkFeedbackTrack walks all of them. When a
+			// stage is active, walk 0..active inclusive (existing
+			// behaviour).
+			currentStage:
+				activeStage ?? resolveStudioStages(studio).slice(-1)[0] ?? "",
 		})
 		if (fbAction) return { track: "feedback", action: fbAction }
 	}

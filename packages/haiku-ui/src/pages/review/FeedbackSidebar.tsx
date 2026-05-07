@@ -144,6 +144,7 @@ export function FeedbackSidebar({
 		handleReply,
 		handleDismissClosureReply,
 		createFeedback,
+		refetch,
 	} = useFeedbackSidebarController()
 
 	const client = useApiClient()
@@ -571,6 +572,13 @@ export function FeedbackSidebar({
 				onSuccess={() => {
 					announce("polite", "Feedback sent to agent")
 					setComposerText("")
+					// Re-pull the feedback list so the previously-pending
+					// items show their new server-side status instead of
+					// staying stuck on "pending" — that lag is what made
+					// reviewers think the modal "did nothing" (Matt's
+					// session, L996 — items showed pending after a
+					// successful revisit submit).
+					void refetch()
 				}}
 				targetStage={stage ?? undefined}
 				pendingItems={items.filter((i) => i.status === "pending")}

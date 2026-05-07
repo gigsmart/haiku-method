@@ -126,6 +126,55 @@ export type FeedbackFrontmatter = Static<typeof FEEDBACK_FRONTMATTER_SCHEMA>
 
 // ── HAIKU_FEEDBACK_INPUT_SCHEMA — args for haiku_feedback (create) ───
 
+// Inline-anchor shape — agents can attach a text excerpt to their
+// feedback so the SPA flashes the underlying span when a reviewer
+// clicks the card. Mirrors the FeedbackInlineAnchorSchema on the wire
+// (haiku-api/src/schemas/feedback.ts) but uses the agent-facing
+// camelCase that gets normalised to snake_case by writeFeedbackFile.
+const HAIKU_FEEDBACK_INLINE_ANCHOR_SCHEMA = Type.Object(
+	{
+		selected_text: Type.String({
+			minLength: 1,
+			maxLength: 1000,
+			description:
+				"The literal text excerpt the feedback anchors to. The SPA greps the rendered artifact body for this string, so it must match the source verbatim (including whitespace inside the span).",
+		}),
+		paragraph: Type.Integer({
+			minimum: 0,
+			maximum: 10000,
+			description:
+				"Zero-based paragraph index in the rendered artifact body. Used as a tiebreaker when the same selected_text appears more than once.",
+		}),
+		location: Type.String({
+			maxLength: 500,
+			description:
+				"Human-readable label rendered on the feedback card (e.g. 'Unit: Threat model and security hardening'). Display only — not used for routing.",
+		}),
+		comment_id: Type.Optional(
+			Type.String({
+				maxLength: 200,
+				description:
+					"Optional DOM id the SPA can scroll-to. Defaulted by the engine when omitted.",
+			}),
+		),
+		file_path: Type.Optional(
+			Type.String({
+				maxLength: 1000,
+				description:
+					"Repo-relative path to the artifact file (e.g. .haiku/intents/<slug>/stages/<stage>/units/<name>.md). The SPA parses this to route to the right tab; agents can grep it for selected_text to land on the line.",
+			}),
+		),
+		content_sha: Type.Optional(
+			Type.String({
+				maxLength: 64,
+				description:
+					"Optional sha of the artifact's raw body at the time of anchoring. The SPA uses it to paint stale highlights when the body has drifted since.",
+			}),
+		),
+	},
+	{ additionalProperties: false },
+)
+
 export const HAIKU_FEEDBACK_INPUT_SCHEMA = Type.Object(
 	{
 		intent: Type.String({ minLength: 1, description: "Intent slug" }),
@@ -161,6 +210,12 @@ export const HAIKU_FEEDBACK_INPUT_SCHEMA = Type.Object(
 				description: "Who created it (default: agent).",
 			}),
 		),
+		// Inline-anchor — optional. When present, the SPA flashes the
+		// excerpt span on click so reviewers see exactly what the agent
+		// was reacting to. Adversarial / studio-review hats should attach
+		// one whenever the finding points at a specific line of an
+		// artifact; intent-scope process feedback can omit it.
+		inline_anchor: Type.Optional(HAIKU_FEEDBACK_INLINE_ANCHOR_SCHEMA),
 		// targets — set at create time, immutable thereafter.
 		// Both keys are optional at create time (defaulted by handler):
 		// - target_unit: defaults to the active unit being reviewed (if

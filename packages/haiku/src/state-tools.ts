@@ -6538,7 +6538,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 	{
 		name: "haiku_feedback",
 		description:
-			'Create a feedback item for an intent. Writes a markdown file with frontmatter tracking status, origin, and author. Omit `stage` to log an intent-scope finding (used by the studio-level pre-intent-completion review layer). To request a stage rewind from the agent side (planner blocked, upstream gap, etc.), pass `stage: "<earlier-stage>"` and `resolution: "stage_revisit"` — the next `haiku_run_next` will route through the pre-tick gate and emit a `revisited` action. Revisit is a property of run_next mechanics, not a separate verb.',
+			'Create a feedback item for an intent. Writes a markdown file with frontmatter tracking status, origin, and author. Omit `stage` to log an intent-scope finding (used by the studio-level pre-intent-completion review layer). To request a stage rewind from the agent side (planner blocked, upstream gap, etc.), pass `stage: "<earlier-stage>"` and `resolution: "stage_revisit"` — the next `haiku_run_next` will route through the pre-tick gate and emit a `revisited` action. Revisit is a property of run_next mechanics, not a separate verb. Pass `inline_anchor: { selected_text, paragraph, location, file_path? }` when the finding points at a specific span of an artifact — the SPA will scroll-and-flash the excerpt when the reviewer clicks the feedback card. Adversarial-review and studio-review hats should attach an anchor whenever they cite a specific line.',
 		// SCHEMA IS THE SSOT — defined in state/schemas/feedback.ts
 		// (HAIKU_FEEDBACK_INPUT_SCHEMA). The handler runs the same
 		// schema through AJV at entry so the MCP-runtime check and the
@@ -7001,11 +7001,26 @@ export function handleStateTool(
 			if (existsSync(path)) {
 				const { data: currentFm } = parseFrontmatter(readFileSync(path, "utf8"))
 				const currentStatus = (currentFm.status as string) || "pending"
-				// `outputs` is exempt from the lifecycle gate: advance_hat's own
-				// autoPopulateOutputs writes it during the active phase, so the
-				// agent must be able to do the same when auto-detect fails (e.g.
-				// unit worktree not reachable from the stage worktree CWD).
-				const isLifecycleMutable = field === "outputs"
+				// Lifecycle exemptions — narrow set of fields that remain
+				// editable after a unit completes:
+				//   - `outputs`: advance_hat's own autoPopulateOutputs writes it
+				//     during the active phase, so the agent must be able to do
+				//     the same when auto-detect fails (unit worktree not
+				//     reachable from the stage worktree CWD, etc.).
+				//   - `quality_gates`: gate definitions are check specs, not
+				//     workflow state. They live next to the unit they apply to,
+				//     so the only path to repair a broken / drifted gate is to
+				//     edit it on the completed unit. Without this exemption,
+				//     `fix_quality_gates` is unactionable when the failure is
+				//     in the gate command itself (typo, library API change,
+				//     YAML serialization issue) — the agent can't fix the
+				//     gate, can't bypass the workflow, and the only escape is
+				//     direct file editing outside the engine. That's the trap
+				//     Mike's session hit. Updating gate definitions doesn't
+				//     violate forward-only: you can't change what the unit
+				//     produced, only how it gets verified.
+				const isLifecycleMutable =
+					field === "outputs" || field === "quality_gates"
 				if (
 					!isLifecycleMutable &&
 					(currentStatus === "active" || currentStatus === "completed")
@@ -7015,7 +7030,7 @@ export function handleStateTool(
 							error: "lifecycle_violation",
 							current_status: currentStatus,
 							field,
-							message: `Cannot set field '${field}' on unit '${args.unit}' — status is '${currentStatus}'. Per the forward-only lifecycle rule (architecture §1.3), units become immutable once they enter active or completed status. Pending units only.`,
+							message: `Cannot set field '${field}' on unit '${args.unit}' — status is '${currentStatus}'. Per the forward-only lifecycle rule (architecture §1.3), units become immutable once they enter active or completed status. Pending units only. (\`outputs\` and \`quality_gates\` are exempt — see haiku_unit_set handler comments.)`,
 						},
 						{ isError: true },
 					)
@@ -9780,6 +9795,37 @@ export function handleStateTool(
 			const sourceRef = (args.source_ref as string) || undefined
 			const author = (args.author as string) || undefined
 			const resolution = (args.resolution as string) || undefined
+			// Inline-anchor — gate-validated by HAIKU_FEEDBACK_INPUT_SCHEMA,
+			// then translated from the snake_case wire shape to the
+			// camelCase `writeFeedbackFile` expects. Agents that omit it
+			// produce the legacy "no excerpt" behaviour; agents that pass
+			// it get a SPA flash on click.
+			const inlineAnchorRaw = args.inline_anchor as
+				| {
+						selected_text: string
+						paragraph: number
+						location: string
+						comment_id?: string
+						file_path?: string
+						content_sha?: string
+				  }
+				| undefined
+			const inlineAnchor = inlineAnchorRaw
+				? {
+						selectedText: inlineAnchorRaw.selected_text,
+						paragraph: inlineAnchorRaw.paragraph,
+						location: inlineAnchorRaw.location,
+						...(inlineAnchorRaw.comment_id
+							? { commentId: inlineAnchorRaw.comment_id }
+							: {}),
+						...(inlineAnchorRaw.file_path
+							? { filePath: inlineAnchorRaw.file_path }
+							: {}),
+						...(inlineAnchorRaw.content_sha
+							? { contentSha: inlineAnchorRaw.content_sha }
+							: {}),
+					}
+				: undefined
 
 			// Intent-existence check is dynamic (filesystem state), not
 			// expressible in the input schema — keep it here.
@@ -9829,6 +9875,7 @@ export function handleStateTool(
 				author,
 				source_ref: sourceRef ?? null,
 				resolution: resolution ?? null,
+				...(inlineAnchor ? { inlineAnchor } : {}),
 			})
 
 			const gitResult = gitCommitState(
@@ -10904,13 +10951,44 @@ export function handleStateTool(
 				reason: reason || "(no reason provided)",
 			})
 
+			// Auto-escalate model tier on rejection — mirrors the unit
+			// reject_hat path so feedback fix loops inherit the same
+			// recovery: when sonnet's first attempt at a fix is rejected,
+			// the next bolt redispatches at opus. The FB-level `model:`
+			// field is at the top of the start_feedback_hat cascade
+			// (feedback > hat > stage > studio), so writing it here
+			// guarantees the next dispatch reads the escalated value.
+			let escalatedFromTier: string | undefined
+			let escalatedToTier: string | undefined
+			if (features.modelSelection) {
+				const currentModel = rejFm.model as string | undefined
+				const next = escalate(currentModel)
+				if (currentModel && next) {
+					escalatedFromTier = currentModel
+					escalatedToTier = next
+				}
+			}
+
 			const newFm: Record<string, unknown> = {
 				...rejFm,
 				hat: newStoredHatRej,
 				bolt: curBoltRej + 1,
 				iterations,
+				...(escalatedToTier
+					? {
+							model: escalatedToTier,
+							model_original:
+								(rejFm.model_original as string | undefined) ??
+								escalatedFromTier,
+						}
+					: {}),
 			}
 			writeFileSync(rejPath, matter.stringify(`${rejBody.trimEnd()}\n`, newFm))
+			if (escalatedFromTier && escalatedToTier) {
+				console.error(
+					`[haiku] feedback model escalated: ${escalatedFromTier} → ${escalatedToTier} (FB ${fbId} hat rejected, bolt ${curBoltRej + 1})`,
+				)
+			}
 			sealIntentState(intentArg)
 			emitTelemetry("haiku.feedback.hat_rejected", {
 				intent: intentArg,
@@ -10918,6 +10996,12 @@ export function handleStateTool(
 				feedback_id: fbId,
 				hat: callingHatRej,
 				new_bolt: String(curBoltRej + 1),
+				...(escalatedToTier
+					? {
+							model_escalated_from: escalatedFromTier,
+							model_escalated_to: escalatedToTier,
+						}
+					: {}),
 			})
 			return reply({
 				ok: true,

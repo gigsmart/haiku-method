@@ -13,11 +13,14 @@
 // This is distinct from `discovery_missing`, which is a validator
 // surface (location-on-disk check) raised by the elaborate handler.
 
+import { join } from "node:path"
+import { resolvePluginRoot } from "../../config.js"
 import { readStageArtifactDefs } from "../../studio-reader.js"
 import { definePromptBuilder } from "./define.js"
 import {
 	emitSubagentDispatchBlock,
 	inlineFile,
+	resolveStudioMandateModel,
 } from "./_helpers.js"
 
 export default definePromptBuilder(({ slug, studio, action }) => {
@@ -71,13 +74,27 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 		`Spawn one subagent for the \`${agent}\` discovery template against unit \`${unit}\`.`,
 	)
 	lines.push("")
+	const discoveryMandatePath = join(
+		resolvePluginRoot(),
+		"studios",
+		studio,
+		"stages",
+		stage,
+		"discovery",
+		`${agent}.md`,
+	)
+	const discoveryModel = resolveStudioMandateModel({
+		mandatePath: discoveryMandatePath,
+		studio,
+		stage,
+	})
 	lines.push(
 		emitSubagentDispatchBlock({
 			unit,
 			hat: agent,
 			bolt: 1,
 			agentType: "general-purpose",
-			model: undefined,
+			model: discoveryModel,
 			promptBody,
 			heading: `### Subagent: \`${agent}\``,
 		}),

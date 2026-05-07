@@ -24,6 +24,7 @@ import {
 	emitSubagentDispatchBlock,
 	inlineFile,
 	readInterpretation,
+	resolveStudioMandateModel,
 } from "./_helpers.js"
 import { definePromptBuilder } from "./define.js"
 import { WORKFLOW_CONTRACTS_ANNOUNCEMENT_BLOCK } from "./WORKFLOW_CONTRACTS_ANNOUNCEMENT_BLOCK.js"
@@ -238,12 +239,30 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 				)
 			}
 
+			// Resolve through the full mandate cascade — hatDef.model
+			// alone skips the stage / studio defaults. Aligns with
+			// start_unit/start_unit_hat/start_feedback_hat so the studio's
+			// `default_model: sonnet` reaches stage-scope fix loops too.
+			const fixHatMandatePath = join(
+				resolvePluginRoot(),
+				"studios",
+				studio,
+				"stages",
+				fixStage,
+				"hats",
+				`${hat}.md`,
+			)
+			const fixHatModel = resolveStudioMandateModel({
+				mandatePath: fixHatMandatePath,
+				studio,
+				stage: fixStage,
+			})
 			const dispatchBlock = emitSubagentDispatchBlock({
 				unit: `fix-${fbId}`,
 				hat,
 				bolt: fixBolt,
 				agentType: hatDef?.agent_type ?? "general-purpose",
-				model: hatDef?.model,
+				model: fixHatModel ?? hatDef?.model,
 				promptBody: promptLines.join("\n"),
 				heading: `#### Subagent: \`${hat}\`${isLast ? " (final — validates closure)" : " (relays next hat to parent)"}`,
 			})

@@ -27,6 +27,62 @@ function titleCase(s: string): string {
 		.join(" ")
 }
 
+/**
+ * Strip engine witness fields from a frontmatter snapshot before it
+ * reaches the review SPA. The cursor's drift-sweep witnesses
+ * (`reviews.<role>.body_sha256`, `approvals.<role>.witnesses[].sha256`,
+ * etc.) are load-bearing for the engine but visual noise to a human
+ * reviewer who sees them as "scary sha artifacts." We keep the
+ * timestamp + role name so the "approved" / "reviewed at" surface
+ * still works; we drop the hashes themselves.
+ */
+function scrubEngineWitnessFields(
+	fm: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+	if (!fm || typeof fm !== "object") return fm
+	const out: Record<string, unknown> = { ...fm }
+	for (const key of ["reviews", "approvals"] as const) {
+		const v = out[key]
+		if (!v || typeof v !== "object") continue
+		const cleaned: Record<string, unknown> = {}
+		for (const [role, record] of Object.entries(v as Record<string, unknown>)) {
+			if (record && typeof record === "object") {
+				const r = record as Record<string, unknown>
+				const {
+					body_sha256: _bs,
+					witnesses: _w,
+					...rest
+				} = r
+				cleaned[role] = rest
+			} else {
+				cleaned[role] = record
+			}
+		}
+		out[key] = cleaned
+	}
+	return out
+}
+
+interface ParsedUnitLike {
+	frontmatter?: Record<string, unknown>
+	rawContent?: string
+}
+
+/**
+ * Strip witness fields from every unit's frontmatter before the SPA
+ * sees them. Mirrors `scrubEngineWitnessFields` but walks an array of
+ * parsed units in one pass — used for the `data.units` projection.
+ * Also strips the rawContent's frontmatter section so the YAML
+ * preview (when rendered in raw mode by any consumer) doesn't leak
+ * the same fields back through that side channel.
+ */
+function scrubUnitsForWire<T extends ParsedUnitLike>(units: T[]): T[] {
+	return units.map((u) => ({
+		...u,
+		frontmatter: scrubEngineWitnessFields(u.frontmatter) ?? u.frontmatter,
+	}))
+}
+
 /** Read intent.md frontmatter fresh from disk. Mirrors getCurrentState's
  *  philosophy — the cached `session.parsedIntent.frontmatter` was captured
  *  at session creation, and fields like `intent_completion_review` could
@@ -184,8 +240,19 @@ export function respondSessionApi(
 		data.decision = session.decision
 		data.feedback = session.feedback
 		if (session.annotations) data.annotations = session.annotations
-		if (session.parsedIntent) data.intent = session.parsedIntent
-		if (session.parsedUnits) data.units = session.parsedUnits
+		if (session.parsedIntent) {
+			// Scrub engine witness fields (sha256 hashes, witness arrays)
+			// from intent FM before sending to the SPA — they're load-
+			// bearing for the cursor's drift sweep but visual noise to a
+			// human reviewer.
+			const pi = session.parsedIntent as ParsedUnitLike
+			data.intent = {
+				...pi,
+				frontmatter: scrubEngineWitnessFields(pi.frontmatter),
+			}
+		}
+		if (session.parsedUnits)
+			data.units = scrubUnitsForWire(session.parsedUnits as ParsedUnitLike[])
 		if (session.parsedCriteria) data.criteria = session.parsedCriteria
 		if (session.parsedMermaid) data.mermaid = session.parsedMermaid
 		if (session.intentMockups) data.intent_mockups = session.intentMockups

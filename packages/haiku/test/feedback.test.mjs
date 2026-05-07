@@ -561,6 +561,69 @@ try {
 		assert.ok(parsed.message.includes("FB-04 created"))
 	})
 
+	test("MCP tool persists inline_anchor when an agent attaches an excerpt", () => {
+		// adversarial-review and studio-review hats attach an inline_anchor
+		// so the SPA can flash the underlying span when the reviewer
+		// clicks the feedback card. The wire shape is snake_case;
+		// writeFeedbackFile normalises to camelCase before persisting.
+		const result = handleStateTool("haiku_feedback", {
+			intent: intentSlug,
+			stage: stageName,
+			title: "Citation missing for claim",
+			body: "Body asserts X but no citation provided.",
+			origin: "adversarial-review",
+			inline_anchor: {
+				selected_text: "this claim has no citation backing it",
+				paragraph: 3,
+				location: "Unit: Threat model",
+				file_path: `.haiku/intents/${intentSlug}/stages/${stageName}/units/unit-01-threat-model.md`,
+				comment_id: "agent-anchor-001",
+				content_sha: "deadbeef".repeat(8),
+			},
+		})
+		assert.ok(
+			!result.isError,
+			`expected success, got: ${getTextResult(result)}`,
+		)
+		const parsed = JSON.parse(getTextResult(result))
+		// Verify the anchor landed on disk in the expected snake_case shape.
+		const fbPath = join(projDir, parsed.file)
+		const raw = readFileSync(fbPath, "utf8")
+		assert.ok(
+			raw.includes("inline_anchor:"),
+			`expected inline_anchor block in FM, got:\n${raw.slice(0, 800)}`,
+		)
+		assert.ok(raw.includes("selected_text: this claim has no citation"))
+		assert.ok(raw.includes("paragraph: 3"))
+		assert.ok(raw.includes("comment_id: agent-anchor-001"))
+		assert.ok(raw.includes("content_sha: " + "deadbeef".repeat(8)))
+	})
+
+	test("MCP tool rejects malformed inline_anchor (missing selected_text)", () => {
+		// The schema forces selected_text + paragraph + location at the
+		// gate. A half-built anchor is rejected before it can land on disk.
+		const result = handleStateTool("haiku_feedback", {
+			intent: intentSlug,
+			stage: stageName,
+			title: "Bad anchor test",
+			body: "body",
+			inline_anchor: {
+				paragraph: 0,
+				location: "somewhere",
+				// selected_text intentionally omitted
+			},
+		})
+		assert.ok(result.isError, "expected gate rejection")
+		const parsed = JSON.parse(getTextResult(result))
+		assert.strictEqual(parsed.error, "haiku_feedback_input_invalid")
+		assert.ok(
+			parsed.errors.some((e) =>
+				e.path?.startsWith("/inline_anchor"),
+			),
+			`expected /inline_anchor in errors; got ${JSON.stringify(parsed.errors)}`,
+		)
+	})
+
 	test("MCP tool rejects missing intent", () => {
 		const result = handleStateTool("haiku_feedback", {
 			intent: "",

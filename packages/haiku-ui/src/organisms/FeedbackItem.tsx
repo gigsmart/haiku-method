@@ -534,6 +534,72 @@ export const FeedbackItem = forwardRef<HTMLDivElement, FeedbackItemProps>(
 								</div>
 							</div>
 						)}
+						{/* Fix-hat history — surfaces the chain of hats the workflow
+						    engine ran against this finding, with per-iteration
+						    result + reason + commit. Answers "what did the agent
+						    do to address this?" — closure_reply is the agent's
+						    plain-language summary; iterations[] is the audit
+						    trail behind it. Default-collapsed so it doesn't
+						    crowd the resolution callout. */}
+						{item.iterations && item.iterations.length > 0 && (
+							<details
+								className="mt-3 text-xs"
+								data-testid={`feedback-iterations-${item.feedback_id}`}
+							>
+								<summary className="cursor-pointer select-none text-stone-600 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 font-medium">
+									Fix history ({item.iterations.length}{" "}
+									{item.iterations.length === 1 ? "step" : "steps"})
+								</summary>
+								<ol className="mt-2 space-y-1.5 border-l-2 border-stone-200 dark:border-stone-700 pl-3">
+									{item.iterations.map((it, idx) => {
+										const resultClass =
+											it.result === "closed"
+												? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+												: it.result === "advanced"
+													? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+													: it.result === "reopened"
+														? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+														: it.result === "rejected"
+															? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
+															: "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300"
+										return (
+											<li
+												// biome-ignore lint/suspicious/noArrayIndexKey: iterations[] is append-only and ordered; the index is the canonical key
+												key={`${item.feedback_id}-iter-${idx}`}
+												className="text-stone-700 dark:text-stone-200"
+											>
+												<div className="flex items-center gap-2 flex-wrap">
+													<span className="font-mono text-[11px] text-stone-500 dark:text-stone-400">
+														bolt {it.bolt}
+													</span>
+													<span className="font-semibold">{it.hat}</span>
+													{it.result && (
+														<span
+															className={`px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider ${resultClass}`}
+														>
+															{it.result}
+														</span>
+													)}
+													{it.commit && (
+														<code
+															className="text-[11px] text-stone-500 dark:text-stone-400 font-mono"
+															title={it.commit}
+														>
+															{it.commit.slice(0, 7)}
+														</code>
+													)}
+												</div>
+												{it.reason && (
+													<div className="mt-0.5 text-stone-600 dark:text-stone-300 [overflow-wrap:anywhere]">
+														{it.reason}
+													</div>
+												)}
+											</li>
+										)
+									})}
+								</ol>
+							</details>
+						)}
 						{/* Replies thread — always visible on expand when the
 						    item has any replies, so the conversation reads
 						    top-to-bottom without an extra click. */}

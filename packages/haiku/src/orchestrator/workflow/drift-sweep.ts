@@ -12,8 +12,36 @@
 // previously-signed reviews. The body-only hash decouples
 // agent/human authored prose from engine bookkeeping.
 //
-// Output and discovery witnesses are full-file hashes — those files
-// are agent-authored and don't carry workflow frontmatter.
+// Output and discovery witnesses use `outputSha256`, which body-hashes
+// markdown / text-with-FM extensions and full-file-hashes everything
+// else. The sign-time helper picks the same strategy per-extension, so
+// the sign-time and check-time hashes always line up regardless of
+// whether the engine has stamped FM on the file in the meantime. Pure
+// content drift, no state-of-file noise.
+//
+// Backward-compat: in-flight intents may have witnesses stamped before
+// 2026-05-07 with the old whole-file hash strategy. The check-time
+// helper `outputMatchesAnyStrategy` accepts EITHER hash — body-only
+// (new) OR whole-file (legacy) — as a non-drift signal. This makes the
+// common transition path migration-free: pre-change witnesses where
+// the file is unchanged keep validating against their original
+// whole-file hash, post-change witnesses validate against the
+// body-only hash, and real content changes break both. Once every
+// active intent re-signs at least once, the legacy fallback is dead
+// code we can drop.
+//
+// Narrow edge case: a pre-change whole-file witness on a markdown
+// file whose FM (NOT body) was mutated out-of-band before the next
+// sign cycle will report a one-time false drift event — the legacy
+// hash includes FM, so it stops matching once FM changes; the new
+// hash compares body-only against an FM-inclusive stored hash, so it
+// can't match either. Acceptable cost: the engine doesn't mutate
+// output FM (only unit FM), so this only fires when a human edits
+// an output's FM by hand between the upgrade and the next sign.
+// One drift event, dedup'd by source_ref against any open FB, cleared
+// by the next sign cycle. The alternative (dual-stamping at sign
+// time or a dedicated migration pass) is more complexity than the
+// case warrants.
 //
 // Works in both git and filesystem persistence modes — the sweep no
 // longer requires a git repo. When git is available, drift events
@@ -25,7 +53,7 @@ import { existsSync, readdirSync } from "node:fs"
 import { join, relative } from "node:path"
 import { primaryRepoRoot } from "../../state-tools.js"
 import { isDriftDetectionDisabled } from "./drift-baseline.js"
-import { bodySha256, fileSha256 } from "./sign-slot.js"
+import { bodySha256, fileSha256, outputSha256 } from "./sign-slot.js"
 import { readFileSync } from "node:fs"
 import matter from "gray-matter"
 
@@ -109,6 +137,36 @@ function pickWitnesses(record: unknown): Record<string, string> | null {
 		if (typeof v === "string" && v.length === 64) out[k] = v
 	}
 	return out
+}
+
+/**
+ * Backward-compat output hash check. Returns true when the file's
+ * current content matches the stored witness under EITHER hashing
+ * strategy:
+ *   - `outputSha256` (post-2026-05-07): body-only for markdown / text,
+ *     full-file for binaries.
+ *   - `fileSha256` (legacy): full-file regardless of extension.
+ *
+ * Both hashes are computed eagerly so the call shape is the same in
+ * either branch — premature optimisation here would just complicate
+ * the comparator without a measurable saving (witnesses are O(declared
+ * outputs per unit), and SHA-256 of small markdown files is sub-ms).
+ *
+ * Returns null when the file doesn't exist on disk (caller treats that
+ * as "not a drift signal here" — deletion is reported elsewhere). The
+ * empty-string return from `outputSha256` / `fileSha256` for a missing
+ * file is the trigger; both helpers behave the same way in that case.
+ */
+function outputMatchesAnyStrategy(
+	absolutePath: string,
+	storedHash: string,
+): { matches: boolean; current: string | null } | null {
+	const current = outputSha256(absolutePath)
+	if (!current) return null // file gone
+	if (current === storedHash) return { matches: true, current }
+	const legacy = fileSha256(absolutePath)
+	if (legacy === storedHash) return { matches: true, current: legacy }
+	return { matches: false, current }
 }
 
 function listUnitsInStage(stageDir: string): string[] {
@@ -222,9 +280,9 @@ export function runDriftSweep(args: {
 			if (!witnesses) continue // legacy slot, no baseline yet
 			for (const [outRel, storedHash] of Object.entries(witnesses)) {
 				const outAbs = join(args.intentDir, outRel)
-				const currentHash = fileSha256(outAbs)
-				if (!currentHash) continue // file deleted; not a drift signal here
-				if (currentHash !== storedHash) {
+				const cmp = outputMatchesAnyStrategy(outAbs, storedHash)
+				if (!cmp) continue // file deleted; not a drift signal here
+				if (!cmp.matches) {
 					events.push({
 						unit: unitName,
 						role,
@@ -243,9 +301,10 @@ export function runDriftSweep(args: {
 
 		// discovery.<agent> witnesses the discovery output file plus
 		// the studio mandate. Same hash-compare model. Both witnessed
-		// files use full-file hashes (no frontmatter stripping); the
-		// mandate is plugin-source markdown without runtime fm churn,
-		// and discovery outputs are agent-authored.
+		// files run through `outputSha256`, which body-hashes markdown
+		// (the common case for both discovery outputs and plugin-source
+		// mandates) and falls back to full-file hashes for any other
+		// extension. Sign-time and check-time pick the same strategy.
 		const discovery = (fm.discovery as Record<string, unknown>) ?? {}
 		for (const [agent, record] of Object.entries(discovery)) {
 			scanned++
@@ -256,8 +315,8 @@ export function runDriftSweep(args: {
 			const outputStored =
 				typeof r.output_sha256 === "string" ? r.output_sha256 : null
 			if (outputStored) {
-				const outputCurrent = fileSha256(outputAbs)
-				if (outputCurrent && outputCurrent !== outputStored) {
+				const cmp = outputMatchesAnyStrategy(outputAbs, outputStored)
+				if (cmp && !cmp.matches) {
 					events.push({
 						unit: unitName,
 						role: agent,
@@ -281,8 +340,8 @@ export function runDriftSweep(args: {
 			const mandateStored =
 				typeof r.mandate_sha256 === "string" ? r.mandate_sha256 : null
 			if (mandateStored) {
-				const mandateCurrent = fileSha256(mandateAbs)
-				if (mandateCurrent && mandateCurrent !== mandateStored) {
+				const cmp = outputMatchesAnyStrategy(mandateAbs, mandateStored)
+				if (cmp && !cmp.matches) {
 					events.push({
 						unit: unitName,
 						role: agent,

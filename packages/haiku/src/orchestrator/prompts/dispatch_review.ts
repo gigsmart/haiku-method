@@ -14,13 +14,35 @@
 // dispatch): `haiku_unit_read`, `haiku_feedback` (create), nothing
 // else. No advance_hat, no run_next, no triage tools — review-agents
 // are pure finders, not workflow drivers.
+//
+// Model routing — same `resolveStudioMandateModel` cascade as
+// review.ts and intent_review.ts: review-agent mandate `model:` →
+// stage `default_model:` → studio `default_model:`. Pre-fix this
+// builder emitted no model annotation, so review-agents inherited
+// the parent model (Opus by default). Now they pick up the studio's
+// `default_model: sonnet` for routine reviews and escalate per-mandate
+// when an agent's job genuinely needs Opus.
 
+import { resolvePluginRoot } from "../../config.js"
 import { definePromptBuilder } from "./define.js"
+import { resolveStudioMandateModel } from "./_helpers.js"
+import { join } from "node:path"
 
-export default definePromptBuilder(({ slug, action }) => {
+export default definePromptBuilder(({ slug, studio, action }) => {
 	const stage = (action.stage as string) || ""
 	const role = (action.role as string) || ""
 	const units = (action.units as string[]) || []
+
+	const mandatePath = join(
+		resolvePluginRoot(),
+		"studios",
+		studio,
+		"stages",
+		stage,
+		"review-agents",
+		`${role}.md`,
+	)
+	const modelTier = resolveStudioMandateModel({ mandatePath, studio, stage })
 
 	const lines: string[] = []
 	lines.push(`# Dispatch review-agent \`${role}\` on stage \`${stage}\``)
@@ -31,6 +53,12 @@ export default definePromptBuilder(({ slug, action }) => {
 	lines.push("")
 	for (const u of units) lines.push(`  - \`${u}\``)
 	lines.push("")
+	if (modelTier) {
+		lines.push(
+			`**Model:** spawn the Task with \`model: "${modelTier}"\` (resolved via the review-agent mandate cascade).`,
+		)
+		lines.push("")
+	}
 	lines.push("## What to do")
 	lines.push("")
 	lines.push(
