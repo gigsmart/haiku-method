@@ -118,8 +118,95 @@ export function IntentReview({
 				<>
 					<div className="flex flex-wrap items-center gap-2 mb-6">
 						<StatusBadge label="Review type" status="intent" />
-						<StatusBadge label="Status" status={intent.frontmatter.status} />
+						<StatusBadge
+							label="Status"
+							status={(() => {
+								// v4: derive from `sealed_at`. v3 fallback: raw `status`.
+								const fm = intent.frontmatter as Record<string, unknown>
+								if (typeof fm.sealed_at === "string" && fm.sealed_at) {
+									return "sealed"
+								}
+								if (typeof fm.status === "string" && fm.status) {
+									return fm.status
+								}
+								return "active"
+							})()}
+						/>
+						{(() => {
+							// Schema indicator. v4 stamps plugin_version on
+							// intent.md; v3 has no field. Show a small chip
+							// so the reviewer knows which schema they're
+							// looking at — useful during the rolling
+							// migration window.
+							const fm = intent.frontmatter as Record<string, unknown>
+							const ver =
+								typeof fm.plugin_version === "string"
+									? fm.plugin_version
+									: ""
+							const schema = ver
+								? `v${ver.split(".")[0] ?? "?"}`
+								: "v3"
+							return <StatusBadge label="Schema" status={schema} />
+						})()}
 					</div>
+
+					{(() => {
+						// Migrated-from-v3 banner. The v0→v4 migrator stamps
+						// `migrated: true` on synthesized approvals (intent
+						// or unit scope) to flag that the approval is a
+						// synthetic stand-in for a v3 "completed" record,
+						// not a real user signature. Surface this so the
+						// reviewer doesn't trust the synthetic approval
+						// as if it were manually signed.
+						const intentFm = intent.frontmatter as Record<
+							string,
+							unknown
+						>
+						const intentApprovals =
+							(intentFm.approvals as Record<string, { migrated?: boolean }>) ||
+							{}
+						const intentMigrated = Object.values(intentApprovals).some(
+							(a) => a?.migrated === true,
+						)
+						let unitMigratedCount = 0
+						for (const u of units) {
+							const ufm = u.frontmatter as Record<string, unknown>
+							const uapps =
+								(ufm.approvals as Record<string, { migrated?: boolean }>) ||
+								{}
+							if (Object.values(uapps).some((a) => a?.migrated === true)) {
+								unitMigratedCount += 1
+							}
+						}
+						if (!intentMigrated && unitMigratedCount === 0) return null
+						return (
+							<div className="mb-6 rounded-md border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-600 p-4 text-sm">
+								<div className="font-bold text-amber-800 dark:text-amber-300 mb-1">
+									Migrated from v3
+								</div>
+								<div className="text-amber-700 dark:text-amber-200">
+									{intentMigrated && (
+										<p className="mb-1">
+											One or more intent-level approvals were synthesized by
+											the v0→v4 migrator from a v3 <code>completed</code>{" "}
+											record. The approval is a stand-in — not a real user
+											signature.
+										</p>
+									)}
+									{unitMigratedCount > 0 && (
+										<p>
+											{unitMigratedCount} unit{unitMigratedCount === 1 ? "" : "s"}{" "}
+											have synthesized approvals (look for the{" "}
+											<em>migrated</em> indicator on the unit row). These were
+											stamped by the migrator to preserve the v3 completion
+											signal; the cursor treats them as approved but the user
+											never signed them.
+										</p>
+									)}
+								</div>
+							</div>
+						)
+					})()}
 
 					{overviewMarkdown && (
 						<Card as="article" ariaLabelledBy="intent-overview-heading">
@@ -195,8 +282,22 @@ export function IntentReview({
 									</thead>
 									<tbody>
 										{stageNames.map((name) => {
-											const state = stageStates[name]
+											const state = stageStates[name] as
+												| {
+														status?: string
+														mergedIntoMain?: boolean
+												  }
+												| undefined
 											const stageUnits = unitsByStage.get(name) ?? []
+											// v4: completion derived from mergedIntoMain.
+											// v3 fallback: state.status.
+											const statusLabel =
+												state?.mergedIntoMain === true
+													? "completed"
+													: (state?.status ??
+														(state?.mergedIntoMain === false
+															? "active"
+															: "pending"))
 											return (
 												<tr
 													key={name}
@@ -206,10 +307,7 @@ export function IntentReview({
 														{name}
 													</td>
 													<td className="py-3 pr-3">
-														<StatusBadge
-															label="Status"
-															status={state?.status ?? "pending"}
-														/>
+														<StatusBadge label="Status" status={statusLabel} />
 													</td>
 													<td className="py-3 text-sm text-stone-500 dark:text-stone-400">
 														{stageUnits.length}

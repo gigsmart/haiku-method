@@ -239,60 +239,11 @@ test("mode:autopilot auto-advances a completed `ask` gate stage", () => {
 // This test is updated to verify the CURRENT contract (legacy boolean is
 // honored) rather than the original Fix 1 contract. When the migration
 // lands and the fallback is removed, this test flips back.
-test("mode:continuous + autopilot:true boolean DOES auto-advance ask gates (legacy fallback per a61e6f69e)", () => {
-	const slug = "test-legacy-autopilot-flag"
-	const { haikuRoot, cleanup } = fixture(
-		slug,
-		{
-			studio: "software",
-			mode: "continuous",
-			autopilot: true, // legacy boolean — honored as backwards-compat fallback (a61e6f69e)
-			stages: ["inception"],
-			active_stage: "inception",
-		},
-		{
-			inception: {
-				status: "active",
-				phase: "gate",
-				started_at: "2026-01-01T00:00:00Z",
-				completed_at: null,
-				gate_entered_at: "2026-01-01T01:00:00Z",
-				gate_outcome: null,
-				visits: 1,
-				iterations: [{ index: 1, started_at: "2026-01-01T00:00:00Z" }],
-			},
-		},
-	)
-
-	const origCwd = process.cwd()
-	let result
-	try {
-		process.chdir(join(haikuRoot, ".."))
-		result = runWorkflowTick(slug, haikuRoot)
-	} finally {
-		process.chdir(origCwd)
-		cleanup()
-	}
-
-	assert.ok(result, "tick must return a result")
-	assert.ok(result.action, "result must have an action")
-	// With the legacy autopilot:true boolean honored, the inception ask
-	// gate is promoted to auto. inception is the only stage, so the gate
-	// completes the intent (or routes to the studio review) rather than
-	// emitting gate_review for human approval. Both advance_stage and
-	// advance_phase shapes prove the boolean was honored.
-	assert.notStrictEqual(
-		result.action.action,
-		"gate_review",
-		`legacy autopilot:true boolean MUST be honored (a61e6f69e) and skip the ask-gate review prompt; got: ${result.action.action} — message: ${result.action.message}`,
-	)
-	assert.ok(
-		result.action.action === "advance_stage" ||
-			result.action.action === "advance_phase" ||
-			result.action.action === "auto_gate_passed",
-		`expected advance_stage / advance_phase / auto_gate_passed, got: ${result.action.action}`,
-	)
-})
+// v4: legacy `autopilot: true` boolean fallback removed. Per the
+// mode taxonomy lock (`mode: continuous | discrete | discrete-hybrid |
+// autopilot | quick`), autopilot is its own first-class mode, not a
+// boolean override on top of continuous. Intents authored before v4
+// with the legacy boolean are migrated by the v0→v4 soft-scrub.
 
 // ── Part C: Fix 2 regression — partial studio override doesn't truncate stages ─
 

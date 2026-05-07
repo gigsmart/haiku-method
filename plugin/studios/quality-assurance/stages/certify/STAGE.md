@@ -2,7 +2,7 @@
 name: certify
 description: Quality sign-off and release readiness assessment
 hats: [certifier, reviewer]
-fix_hats: [certifier, feedback-assessor]
+fix_hats: [classifier, certifier, feedback-assessor]
 review: external
 elaboration: autonomous
 inputs:

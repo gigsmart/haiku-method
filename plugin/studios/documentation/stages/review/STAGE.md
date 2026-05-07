@@ -2,7 +2,7 @@
 name: review
 description: Review documentation for accuracy, clarity, and completeness
 hats: [editor, subject-matter-expert, verifier]
-fix_hats: [editor, feedback-assessor]
+fix_hats: [classifier, editor, feedback-assessor]
 review: ask
 elaboration: collaborative
 inputs:

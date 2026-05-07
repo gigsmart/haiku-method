@@ -2,7 +2,7 @@
 name: evaluate
 description: Analyze tradeoffs and model scenarios for each option
 hats: [evaluator, risk-analyst, verifier]
-fix_hats: [evaluator, feedback-assessor]
+fix_hats: [classifier, evaluator, feedback-assessor]
 review: ask
 elaboration: collaborative
 inputs:

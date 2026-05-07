@@ -2,7 +2,7 @@
 name: intake
 description: Understand legal requirements and assess risk
 hats: [paralegal, risk-assessor]
-fix_hats: [paralegal, feedback-assessor]
+fix_hats: [classifier, paralegal, feedback-assessor]
 review: auto
 elaboration: collaborative
 inputs: []

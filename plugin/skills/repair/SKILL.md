@@ -7,6 +7,18 @@ description: Scan intents for metadata issues, auto-apply safe fixes, push to al
 
 Call `haiku_repair` to scan intents for metadata issues. The MCP tool auto-applies the fixes it can do mechanically; remaining issues need agent or user attention.
 
+> **v4 note (2026-05-06):** `haiku_repair` is split-purpose under v4.
+>
+> **Still load-bearing under v4:**
+> - **Drift baseline rebuilds** — when `drift-baseline.ts` reports a corrupt baseline, the recovery path is `haiku_repair`.
+> - **Worktree relocation** — older H·AI·K·U versions rooted `.haiku/worktrees/` at cwd instead of the primary repo; repair migrates them via `git worktree move`. Still relevant for any user upgrading from those versions.
+> - **Mainline PR/MR generation** — repair pushes fixes and opens PRs against mainline for already-merged branches. The migrator can't do this; only repair walks intent branches sequentially.
+>
+> **Obsolete under v4 (no-ops on v4 intents):**
+> - The metadata-cleanup checks listed in "Auto-Applied Fixes" below — `state.json` synthesis, unit-level `status: "completed"`, `active_stage` validation — target v3 frontmatter shape. Under v4 those fields are derived or removed; the v0-to-v4 soft-scrub migrator runs at `haiku_run_next` time and handles schema migration in-band. These checks see nothing to fix on a v4 intent and no-op.
+>
+> Run `haiku_repair` when (a) you're upgrading from a pre-2026-04 H·AI·K·U build (worktree relocation), (b) drift baseline reports corruption, or (c) you're auditing a known-v3 intent that hasn't been opened on a v4 build yet.
+
 ## Default Behavior (Git Repo)
 
 In a git repository, `haiku_repair` (with no arguments) scans **every** intent branch (`haiku/<slug>/main`) sequentially via temporary worktrees. For each branch:

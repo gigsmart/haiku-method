@@ -2,7 +2,7 @@
 name: publish
 description: Format, validate links, and publish the documentation
 hats: [publisher, verifier]
-fix_hats: [publisher, feedback-assessor]
+fix_hats: [classifier, publisher, feedback-assessor]
 review: auto
 elaboration: autonomous
 inputs:

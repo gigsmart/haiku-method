@@ -50,14 +50,26 @@ export type GateType = z.infer<typeof GateTypeSchema>
 export const StageStateInfoSchema = z
 	.object({
 		stage: z.string(),
-		status: z.string(),
-		phase: z.string(),
+		// v4: stage state is fully derived. `mergedIntoMain` is the only
+		// load-bearing predicate — true when the stage branch is an
+		// ancestor of intent main (git --is-ancestor). Everything else
+		// the SPA used to render (phase, status, gate_outcome) is
+		// re-derived from per-unit + per-feedback frontmatter on the
+		// stage branch.
+		mergedIntoMain: z.boolean(),
+		// Compat shims — v3 SPA consumers read these fields. The API
+		// response sets them to derived values until M6's SPA-consumer
+		// rewrite lands. Optional + nullable so newer clients can ignore.
+		status: z.string().optional().describe("Deprecated v3 shim — derived"),
+		phase: z.string().optional().describe("Deprecated v3 shim — derived"),
 		started_at: z.string().optional(),
 		completed_at: z.string().nullable().optional(),
 		gate_entered_at: z.string().nullable().optional(),
 		gate_outcome: z.string().nullable().optional(),
 	})
-	.describe("Per-stage status snapshot")
+	.describe(
+		"Per-stage status snapshot. v4: only `stage` and `mergedIntoMain` are authoritative; other fields are deprecated v3 shims pending SPA rewrite.",
+	)
 export type StageStateInfo = z.infer<typeof StageStateInfoSchema>
 
 export const KnowledgeFileSchema = z.object({

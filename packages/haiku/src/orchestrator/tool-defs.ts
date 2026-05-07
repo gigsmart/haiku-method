@@ -201,74 +201,24 @@ export const orchestratorToolDefs = [
 			required: ["intent_slug", "stage", "path", "decision", "rationale"],
 		},
 	},
+	// v4: haiku_classify_drift removed. Drift sweep auto-files FBs;
+	// the feedback track handles assessment.
 	{
-		name: "haiku_classify_drift",
+		name: "haiku_dispatch_quality_gates",
 		description:
-			"Record classification outcomes for a `manual_change_assessment` action. The agent submits one Classification per dispatched finding; the tool atomically writes the Assessment record, creates any inline feedback items, updates baselines for terminal outcomes (ignore, inline-fix), writes pending-assessment markers for non-terminal outcomes (surface-as-feedback, trigger-revisit), and dispatches haiku_revisit for trigger-revisit. Rejects stale tick_ids, illegal outcomes (per change_kind matrix), missing rationales on non-ignore outcomes, and revisit targets at or downstream of the active stage.",
+			"Run a unit's declared quality_gates as the post-execute approval-track actor. On all-pass, stamps approvals.quality_gates on each unit. On failure, files an FB targeting the unit (origin: agent, target_invalidates: [quality_gates]). Engine-callable from the cursor's dispatch_quality_gates action.",
 		inputSchema: {
 			type: "object" as const,
 			properties: {
-				intent_slug: {
-					type: "string",
-					description: "Slug of the active intent.",
-				},
-				tick_id: {
-					type: "string",
-					description:
-						"The tick_id from the dispatched manual_change_assessment action. Must match the active drift dispatch; stale ids are rejected with `tick_id_stale`.",
-				},
-				classifications: {
+				intent: { type: "string", description: "Intent slug" },
+				stage: { type: "string", description: "Stage name" },
+				units: {
 					type: "array",
-					description:
-						"One Classification per dispatched finding. Length must match the dispatch's findings array. Each entry has: path, outcome, rationale_excerpt, optionally linked_feedback_id (required for surface-as-feedback) and linked_revisit_target_stage (required for trigger-revisit).",
-					items: {
-						type: "object",
-						properties: {
-							path: { type: "string" },
-							outcome: {
-								type: "string",
-								enum: [
-									"ignore",
-									"inline-fix",
-									"surface-as-feedback",
-									"trigger-revisit",
-								],
-							},
-							rationale_excerpt: { type: "string" },
-							linked_feedback_id: { type: ["string", "null"] },
-							linked_revisit_target_stage: { type: ["string", "null"] },
-						},
-						required: ["path", "outcome", "rationale_excerpt"],
-					},
-				},
-				agent_rationale: {
-					type: "string",
-					description:
-						"Free-form prose explaining the classifications. Must contain at least one non-whitespace character.",
-				},
-				feedback_creates: {
-					type: "array",
-					description:
-						"Inline feedback creates — one per surface-as-feedback classification that omits linked_feedback_id. Each entry has for_classification_path, title, body, origin (must be 'agent'), and optional resolution.",
-					items: {
-						type: "object",
-						properties: {
-							for_classification_path: { type: "string" },
-							title: { type: "string" },
-							body: { type: "string" },
-							origin: { type: "string" },
-							resolution: { type: ["string", "null"] },
-						},
-						required: ["for_classification_path", "title", "body", "origin"],
-					},
+					items: { type: "string" },
+					description: "Unit names to run gates for",
 				},
 			},
-			required: [
-				"intent_slug",
-				"tick_id",
-				"classifications",
-				"agent_rationale",
-			],
+			required: ["intent", "stage", "units"],
 		},
 	},
 	{

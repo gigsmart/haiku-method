@@ -18,6 +18,7 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router"
 import { ArtifactsPane } from "../../../pages/review/ArtifactsPane"
 import { useReviewContext } from "./-context"
+import { isIntentTerminal } from "./-review-helpers"
 
 function ReviewIndex(): React.ReactElement {
 	const {
@@ -29,14 +30,7 @@ function ReviewIndex(): React.ReactElement {
 		setInlineComments,
 		setPins,
 	} = useReviewContext()
-	const intentFm = session.intent?.frontmatter
-	const intentStatus = (intentFm?.status as string | undefined) ?? ""
-	const intentPhase = (intentFm?.phase as string | undefined) ?? ""
-	const isIntentTerminal =
-		intentStatus === "completed" ||
-		intentPhase === "awaiting_completion_review" ||
-		intentPhase === "intent_completion"
-	if (isIntentTerminal) {
+	if (isIntentTerminal(session)) {
 		return (
 			<Navigate to="/review/$sessionId/intent" params={{ sessionId }} replace />
 		)

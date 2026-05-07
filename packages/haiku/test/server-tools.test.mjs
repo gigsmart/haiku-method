@@ -135,7 +135,8 @@ const expectedStateTools = [
 	"haiku_unit_start",
 	"haiku_unit_advance_hat",
 	"haiku_unit_reject_hat",
-	"haiku_unit_increment_bolt",
+	// v4: haiku_unit_increment_bolt removed (bolt derived from
+	// iterations.length).
 	"haiku_knowledge_list",
 	"haiku_knowledge_read",
 	"haiku_studio_list",
@@ -232,18 +233,23 @@ test("haiku_intent_create has optional slug and context", () => {
 	assert.ok(!tool.inputSchema.required.includes("context"))
 })
 
-test("haiku_revisit removed — revisit flows through haiku_feedback now", () => {
+test("haiku_revisit removed — feedback closure with targets.invalidates handles rewinds", () => {
 	const tool = orchestratorToolDefs.find((t) => t.name === "haiku_revisit")
 	assert.strictEqual(
 		tool,
 		undefined,
-		"haiku_revisit removed — use haiku_feedback with resolution: stage_revisit",
+		"haiku_revisit removed — closing an FB with targets.invalidates reroutes the cursor through the listed approval roles",
 	)
 	const fbTool = stateToolDefs.find((t) => t.name === "haiku_feedback")
 	assert.ok(fbTool, "haiku_feedback should still exist")
+	// v4: `resolution` is gone from the create-time schema. The
+	// equivalent is `target_unit` + `target_invalidates` set at create
+	// time — closure with the listed roles invalidates the targeted
+	// unit's approvals.
 	assert.ok(
-		"resolution" in fbTool.inputSchema.properties,
-		"haiku_feedback should accept resolution at creation time",
+		"target_unit" in fbTool.inputSchema.properties ||
+			"target_invalidates" in fbTool.inputSchema.properties,
+		"haiku_feedback should accept target_unit / target_invalidates at creation time",
 	)
 })
 

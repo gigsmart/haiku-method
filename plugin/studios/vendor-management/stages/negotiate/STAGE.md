@@ -2,7 +2,7 @@
 name: negotiate
 description: Negotiate terms and review contract provisions
 hats: [negotiator, legal-reviewer]
-fix_hats: [negotiator, feedback-assessor]
+fix_hats: [classifier, negotiator, feedback-assessor]
 review: external
 elaboration: collaborative
 inputs:

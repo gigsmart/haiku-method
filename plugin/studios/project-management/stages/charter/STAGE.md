@@ -2,7 +2,7 @@
 name: charter
 description: Define project scope, stakeholders, and success criteria
 hats: [sponsor, scoper, verifier]
-fix_hats: [sponsor, feedback-assessor]
+fix_hats: [classifier, sponsor, feedback-assessor]
 review: external
 elaboration: collaborative
 inputs: []

@@ -182,34 +182,38 @@ test("sets a writable field (title)", () => {
 	rmSync(root, { recursive: true, force: true })
 })
 
-test("rejects engine-only field (status)", () => {
+test("rejects engine-only field (approvals)", () => {
+	// v4: status / completion_review_dispatched are no longer intent
+	// fields. The equivalent invariant: approvals (the SHA-witnessed
+	// signature collection) must never be agent-set. Reviewer agents
+	// stamp via dispatch tools; user gates stamp via haiku_await_gate.
 	const { root, haiku } = projectRoot()
 	const iDir = makeIntent(haiku, "x")
 	withCwd(root, () => {
 		const r = call("haiku_intent_set", {
 			intent: "x",
-			field: "status",
-			value: "completed",
+			field: "approvals",
+			value: { user: { at: "2026-01-01T00:00:00Z" } },
 		})
 		assert.strictEqual(r.isError, true)
 		assert.strictEqual(r.parsed.error, "intent_field_engine_only")
 	})
-	// File unchanged.
+	// File unchanged — agent write rejected.
 	const fm = parseFrontmatter(
 		readFileSync(join(iDir, "intent.md"), "utf8"),
 	).data
-	assert.strictEqual(fm.status, "active")
+	assert.strictEqual(fm.approvals, undefined)
 	rmSync(root, { recursive: true, force: true })
 })
 
-test("rejects engine-only completion_review_dispatched", () => {
+test("rejects engine-only sealed_at", () => {
 	const { root, haiku } = projectRoot()
 	makeIntent(haiku, "x")
 	withCwd(root, () => {
 		const r = call("haiku_intent_set", {
 			intent: "x",
-			field: "completion_review_dispatched",
-			value: true,
+			field: "sealed_at",
+			value: "2026-01-01T00:00:00Z",
 		})
 		assert.strictEqual(r.isError, true)
 		assert.strictEqual(r.parsed.error, "intent_field_engine_only")

@@ -95,7 +95,11 @@ function IntentOverviewRoute(): React.ReactElement {
 								<tbody>
 									{stageNames.map((name) => {
 										const s = stageStates[name] as
-											| { status?: string; phase?: string }
+											| {
+													status?: string
+													phase?: string
+													mergedIntoMain?: boolean
+											  }
 											| undefined
 										const unitCount = units.filter(
 											(u) => (u.frontmatter.stage ?? "") === name,
@@ -106,10 +110,19 @@ function IntentOverviewRoute(): React.ReactElement {
 										const outputCount = outputArtifacts.filter(
 											(a) => a.stage === name,
 										).length
+										// v4: derive status from mergedIntoMain.
+										// merged → "completed"; not merged → "active".
+										// Fall back to v3 status for un-migrated sessions.
+										const v4Status = (() => {
+											if (s?.mergedIntoMain === true) return "completed"
+											if (s?.mergedIntoMain === false) return "active"
+											return undefined
+										})()
+										const displayStatus = s?.status ?? v4Status
 										const statusColor =
-											s?.status === "active"
+											displayStatus === "active"
 												? "text-teal-600 dark:text-teal-400"
-												: s?.status === "completed"
+												: displayStatus === "completed"
 													? "text-green-600 dark:text-green-400"
 													: "text-stone-500 dark:text-stone-400"
 										return (
@@ -132,7 +145,7 @@ function IntentOverviewRoute(): React.ReactElement {
 													</button>
 												</td>
 												<td className={`py-2.5 pr-3 font-mono ${statusColor}`}>
-													{s?.status ?? "—"}
+													{displayStatus ?? "—"}
 												</td>
 												<td className="py-2.5 pr-3 font-mono text-stone-600 dark:text-stone-300">
 													{s?.phase ?? "—"}

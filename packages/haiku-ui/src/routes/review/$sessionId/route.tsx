@@ -315,26 +315,53 @@ function ReviewLayoutLoaded({
 		intentStageOrder.length > 0 ? intentStageOrder : stageStateKeys
 	const stageProgressData = orderedStageNames.map((name) => {
 		const state = stageStates[name] as
-			| { status?: string; visits?: number; pending_feedback?: number }
+			| {
+					status?: string
+					visits?: number
+					pending_feedback?: number
+					mergedIntoMain?: boolean
+			  }
 			| undefined
+		// v4: derive a v3-compatible status string from mergedIntoMain.
+		// merged → "completed"; not merged → "current" if first
+		// unmerged, else "pending". Legacy v3 status field still wins
+		// when present (server hasn't migrated this intent yet).
+		const v3Status = state?.status
+		const v4Status = (() => {
+			if (state?.mergedIntoMain === true) return "completed"
+			if (state?.mergedIntoMain === false) return "current"
+			return "pending"
+		})()
+		const derivedStatus = v3Status
+			? v3Status === "active"
+				? "current"
+				: v3Status
+			: v4Status
 		return {
 			name,
-			status:
-				state?.status === "active" ? "current" : (state?.status ?? "pending"),
+			status: derivedStatus,
 			visits: state?.visits ?? 0,
 			pendingCount: state?.pending_feedback ?? 0,
 		}
 	})
 
-	// Intent-terminal detection: when intent is in
-	// `awaiting_completion_review` or `status: completed`, the per-stage
-	// review pane has nothing meaningful to render (every stage is done;
-	// no "current" stage). Render IntentCompleteView instead. The merge
-	// into mainline is the only remaining action.
+	// Intent-terminal detection: render IntentCompleteView when every
+	// stage is merged into intent main. The legacy v3 detection on
+	// `intent.status === "completed"` and the `awaiting_completion_review`
+	// / `intent_completion` phase strings is preserved as a fallback for
+	// un-migrated sessions still on a v3 backend.
 	const intentFm = session.intent?.frontmatter
 	const intentStatus = (intentFm?.status as string | undefined) ?? ""
 	const intentPhase = (intentFm?.phase as string | undefined) ?? ""
+	const intentSealed = (intentFm?.sealed_at as string | undefined) ?? ""
+	const allStagesMerged =
+		stageStateKeys.length > 0 &&
+		stageStateKeys.every(
+			(name) => (stageStates[name] as { mergedIntoMain?: boolean })?.mergedIntoMain === true,
+		)
 	const isIntentTerminal =
+		intentSealed.length > 0 ||
+		allStagesMerged ||
 		intentStatus === "completed" ||
 		intentPhase === "awaiting_completion_review" ||
 		intentPhase === "intent_completion"

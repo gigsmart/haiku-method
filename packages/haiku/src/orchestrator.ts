@@ -34,7 +34,6 @@ import type { ReviewAnnotations } from "./sessions.js"
 import {
 	intentDir,
 	parseFrontmatter,
-	setBuildContinueDispatchHandler,
 	validateSlugArgs,
 } from "./state-tools.js"
 import { writeActionPromptFile } from "./subagent-prompt-file.js"
@@ -57,19 +56,11 @@ export {
 // Re-exports from extracted submodules. Callers of the old monolith
 // continue to import from "./orchestrator.js"; new code can import
 // directly from the per-concern modules.
-export {
-	checkExternalState,
-	type ExternalReviewState,
-	handleExternalChangesRequested,
-} from "./orchestrator/external-review.js"
+//
+// v4: external-review.ts and revisit.ts deleted. External review =
+// merge into intent main; revisit = feedback closure with
+// targets.invalidates rerouting the cursor naturally.
 export { enrichActionWithPreview } from "./orchestrator/preview.js"
-export {
-	buildFeedbackDispatchAction,
-	classifyPendingForRevisit,
-	resetFixLoopBolts,
-	revisit,
-	revisitCurrentStage,
-} from "./orchestrator/revisit.js"
 export {
 	buildFeedbackAssessorPrompt,
 	resolveIntentStages,
@@ -138,21 +129,22 @@ export interface OrchestratorAction {
  * `action.prompt_file` is present (see PR #281). All other multi-line
  * emitters route through here.
  */
-const FILE_BACKED_ACTIONS: ReadonlySet<string> = new Set<string>([
-	"pre_review",
-	"spec_review",
-	"review",
-	"review_fix",
-	"gate_review",
-	"intent_completion_review",
-	"intent_completion_fix",
-	"feedback_dispatch",
-	"feedback_triage",
-	"start_units",
-	"continue_units",
-	"start_unit",
-	"continue_unit",
-	"integrate_fix_chains",
+/**
+ * Actions that DO NOT route through prompt-file dispatch. P1 (2026-05-06):
+ * file-backed dispatch is now the default for every action with a
+ * non-trivial prompt body. The skip-set carries only:
+ *
+ *   - `noop` / `sealed` / `error` — no instructional body to file-back.
+ *   - Anything else where the body is trivially short (a "you done"
+ *     terminus message that the agent doesn't need to re-read).
+ *
+ * Adding an action here must be deliberate. The default — every tick
+ * gets a prompt file — is the cleaner I/O contract for the agent.
+ */
+const FILE_BACKED_SKIP_ACTIONS: ReadonlySet<string> = new Set<string>([
+	"noop",
+	"sealed",
+	"error",
 ])
 
 /**
@@ -187,15 +179,17 @@ export function buildRunInstructions(
 		perActionBody = perActionBuilder({ slug, studio, action, dir })
 	}
 
-	// File-backed dispatch: when this action is in FILE_BACKED_ACTIONS
-	// AND the prompt builder produced a multi-line body, write the body
-	// to a tmpfile, stamp `prompt_file` on the action, and replace the
+	// File-backed dispatch (P1, 2026-05-06): the default for every
+	// action with a non-trivial prompt body is to write the body to a
+	// tmpfile, stamp `prompt_file` on the action, and replace the
 	// per-action body with a short "read the file" pointer. The action
 	// JSON below the announcement section then carries `prompt_file`,
 	// so the agent's tool response surfaces the path in both places.
+	// Skip-set covers actions whose body is trivially short (noop,
+	// sealed, error).
 	if (
 		perActionBody &&
-		FILE_BACKED_ACTIONS.has(action.action) &&
+		!FILE_BACKED_SKIP_ACTIONS.has(action.action) &&
 		!action.prompt_file
 	) {
 		try {
@@ -390,39 +384,11 @@ export async function handleOrchestratorTool(
 	return text(`Unknown orchestrator tool: ${name}`)
 }
 
-// ── Per-unit dispatch hook ────────────────────────────────────────────────
-//
-// Wired at module load. `haiku_unit_advance_hat` calls back into here
-// when a unit transitions to its next hat mid-wave: we synthesize a
-// per-unit `continue_unit` action, render the prompt internally via
-// `buildRunInstructions` (which writes the prompt-file and stamps
-// `prompt_file` onto the action), and return the action. The advance
-// handler then writes that action to a result file the parent reads
-// to dispatch the next hat directly — no `haiku_run_next` round-trip
-// needed for hat-to-hat transitions within the same unit.
-setBuildContinueDispatchHandler(
-	(slug, stage, unit, hat, bolt): OrchestratorAction => {
-		const iDir = intentDir(slug)
-		const intentMd = readFileSync(join(iDir, "intent.md"), "utf8")
-		const { data: iFm } = parseFrontmatter(intentMd)
-		const studio = (iFm.studio as string) || ""
-		const worktreePath = join(process.cwd(), ".haiku", "worktrees", slug, unit)
-		const action: OrchestratorAction = {
-			action: "continue_unit",
-			intent: slug,
-			stage,
-			unit,
-			hat,
-			bolt,
-			hats: resolveUnitHatsInStudio(studio, stage, slug, unit),
-			worktree: existsSync(worktreePath) ? worktreePath : null,
-			stage_metadata: resolveStageMetadata(studio, stage),
-			message: `Continue unit '${unit}' on hat '${hat}' — single-unit dispatch (the unit holds its wave slot through its full hat sequence; siblings stay in flight).`,
-		}
-		// Mutates `action` to add `prompt_file` (and rewrites `message`
-		// to the file pointer). We discard the rendered body string —
-		// the parent dispatches against `prompt_file` directly.
-		buildRunInstructions(slug, studio, action, iDir)
-		return action
-	},
-)
+// v4: per-unit dispatch hook removed.
+//   Rationale: subagents are single-hat in v4. When a hat advances
+//   mid-wave, the subagent terminates with a clean message; the parent
+//   reads it and calls haiku_run_next on the next tick. The cursor
+//   returns the next start_unit_hat instruction; the parent spawns a
+//   fresh subagent for that hat. No in-context hat iteration, no
+//   Workflow Result file relay, no rogue cursor driving from inside
+//   subagent contexts.

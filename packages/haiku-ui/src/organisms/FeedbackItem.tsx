@@ -139,6 +139,10 @@ export interface FeedbackItemProps {
 		body: string,
 		closeAsAnswered?: boolean,
 	) => Promise<void>
+	/** Optional handler for dismissing the closure-reply card. Fired when
+	 *  the reviewer clicks "Dismiss" on the agent's "Resolved" panel.
+	 *  Parent owns persistence (POST to dismiss-reply endpoint). */
+	onDismissClosureReply?: (id: string) => Promise<void>
 	/** Server mutation is in flight — show a spinner + disable buttons so
 	 *  the user can't double-click through the round trip. The optimistic
 	 *  state has already been applied locally; this is a confirmation
@@ -185,6 +189,7 @@ export const FeedbackItem = forwardRef<HTMLDivElement, FeedbackItemProps>(
 			onStatusChange,
 			onDelete,
 			onReply,
+			onDismissClosureReply,
 			pending,
 			style,
 			className,
@@ -475,6 +480,60 @@ export const FeedbackItem = forwardRef<HTMLDivElement, FeedbackItemProps>(
 								</button>
 							)}
 						</div>
+						{/* Closure reply — set by the terminal fix-hat advance.
+						    Distinct from generic `replies` because it carries
+						    `unread` semantics (filterable in the sidebar) and
+						    represents the AGENT's resolution-of-record. */}
+						{item.closure_reply && (
+							<div
+								className={`mt-3 rounded-md border-l-4 ${
+									item.closure_reply_unread
+										? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-400 dark:border-emerald-500"
+										: "bg-stone-50 dark:bg-stone-800/40 border-stone-300 dark:border-stone-600"
+								} p-3`}
+								data-testid={`feedback-closure-reply-${item.feedback_id}`}
+							>
+								<div className="flex items-start justify-between gap-3">
+									<div className="flex-1 min-w-0">
+										<div className="flex items-center gap-2 mb-1">
+											<span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+												Resolved
+											</span>
+											{item.closure_reply_unread && (
+												<span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-700 text-white">
+													new
+												</span>
+											)}
+											{item.closure_reply.at && (
+												<time
+													dateTime={item.closure_reply.at}
+													className="text-[11px] text-stone-500 dark:text-stone-400"
+												>
+													{item.closure_reply.at
+														.slice(0, 16)
+														.replace("T", " ")}
+												</time>
+											)}
+										</div>
+										<div className="text-xs text-stone-700 dark:text-stone-200 whitespace-pre-wrap [overflow-wrap:anywhere]">
+											{item.closure_reply.text}
+										</div>
+									</div>
+									{item.closure_reply_unread && onDismissClosureReply && (
+										<button
+											type="button"
+											onClick={(e) => {
+												e.stopPropagation()
+												void onDismissClosureReply(item.feedback_id)
+											}}
+											className={`shrink-0 ${ACTION_BUTTON_BASE} ${DISMISS_CLASSES}`}
+										>
+											Dismiss
+										</button>
+									)}
+								</div>
+							</div>
+						)}
 						{/* Replies thread — always visible on expand when the
 						    item has any replies, so the conversation reads
 						    top-to-bottom without an extra click. */}

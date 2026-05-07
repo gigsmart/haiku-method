@@ -2,7 +2,7 @@
 name: decide
 description: Apply decision framework and produce recommendation
 hats: [advisor, facilitator, verifier]
-fix_hats: [advisor, feedback-assessor]
+fix_hats: [classifier, advisor, feedback-assessor]
 review: external
 elaboration: collaborative
 inputs:

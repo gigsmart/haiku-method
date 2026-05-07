@@ -2,7 +2,7 @@
 name: deliver
 description: Facilitate training delivery and coordinate logistics
 hats: [facilitator, coordinator, verifier]
-fix_hats: [facilitator, feedback-assessor]
+fix_hats: [classifier, facilitator, feedback-assessor]
 review: auto
 elaboration: autonomous
 inputs:

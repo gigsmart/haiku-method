@@ -384,6 +384,28 @@ export function readStageArtifactDefs(
 			}
 		}
 	}
+	// P8 (2026-05-06): discovery template uniqueness guard. Two
+	// discovery templates within the same stage must NOT share a
+	// `location:` field — discovery agents fan out in parallel; if
+	// two write to the same path the merge back to the stage branch
+	// is a guaranteed conflict (and downstream the cursor's
+	// `existsSync` check can't distinguish whose output it sees).
+	// Surface the collision at studio-load time so the studio author
+	// fixes the template, not so the operator hits it at runtime.
+	const discoveryByLocation = new Map<string, string[]>()
+	for (const d of defs) {
+		if (d.kind !== "discovery" || !d.location) continue
+		const arr = discoveryByLocation.get(d.location) ?? []
+		arr.push(d.name)
+		discoveryByLocation.set(d.location, arr)
+	}
+	for (const [location, names] of discoveryByLocation) {
+		if (names.length > 1) {
+			throw new Error(
+				`Studio configuration error: discovery templates [${names.join(", ")}] in stage '${stage}' of studio '${studio}' share the same location '${location}'. Each discovery template must declare a unique 'location:' frontmatter field — parallel agents writing to the same path produce merge conflicts and ambiguous existence checks.`,
+			)
+		}
+	}
 	return defs
 }
 

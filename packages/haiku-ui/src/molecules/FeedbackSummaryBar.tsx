@@ -33,6 +33,12 @@ export interface FeedbackSummaryBarProps {
 	items: FeedbackItemData[]
 	activeStatus: FeedbackStatus | null
 	onFilter: (status: FeedbackStatus | null) => void
+	/** Optional: when true, the visible items are restricted to those
+	 *  with an unread closure reply (`closure_reply_unread === true`).
+	 *  The chip is rendered next to the status pills with its own
+	 *  count. Click toggles. Independent from the status filter. */
+	unreadReplyOnly?: boolean
+	onToggleUnreadReplyOnly?: () => void
 	className?: string
 }
 
@@ -57,9 +63,15 @@ export function FeedbackSummaryBar({
 	items,
 	activeStatus,
 	onFilter,
+	unreadReplyOnly,
+	onToggleUnreadReplyOnly,
 	className,
 }: FeedbackSummaryBarProps): React.ReactElement | null {
 	const counts = useMemo(() => countByStatus(items), [items])
+	const unreadReplyCount = useMemo(
+		() => items.filter((i) => i.closure_reply_unread === true).length,
+		[items],
+	)
 
 	if (items.length === 0) return null
 
@@ -99,6 +111,30 @@ export function FeedbackSummaryBar({
 					</button>
 				)
 			})}
+			{onToggleUnreadReplyOnly && unreadReplyCount > 0 && (
+				<button
+					type="button"
+					data-testid="feedback-unread-reply-filter"
+					aria-pressed={unreadReplyOnly === true}
+					aria-label={`Filter by unread closure replies (${unreadReplyCount})`}
+					onClick={onToggleUnreadReplyOnly}
+					className={[
+						touchTargetClass,
+						"inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border transition-colors",
+						unreadReplyOnly
+							? "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700"
+							: "border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-emerald-300 dark:hover:border-emerald-700",
+						focusRingCompactClass,
+					].join(" ")}
+				>
+					<span
+						className="h-2 w-2 rounded-full bg-emerald-700"
+						aria-hidden="true"
+					/>
+					<span>Unread replies</span>
+					<span className="tabular-nums">{unreadReplyCount}</span>
+				</button>
+			)}
 		</fieldset>
 	)
 }

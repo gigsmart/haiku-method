@@ -2,7 +2,7 @@
 name: migrate
 description: Implement migration scripts, adapters, and data transforms
 hats: [migration-engineer, integration-tester, verifier]
-fix_hats: [migration-engineer, feedback-assessor]
+fix_hats: [classifier, migration-engineer, feedback-assessor]
 review: ask
 elaboration: autonomous
 inputs:

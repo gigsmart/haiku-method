@@ -2,7 +2,7 @@
 name: deliver
 description: Finalize and package the deliverable for its audience
 hats: [publisher, verifier]
-fix_hats: [publisher, feedback-assessor]
+fix_hats: [classifier, publisher, feedback-assessor]
 review: auto
 elaboration: autonomous
 inputs:

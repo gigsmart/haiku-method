@@ -2,7 +2,7 @@
 name: adoption
 description: Drive product adoption, usage patterns, and feature discovery
 hats: [adoption-coach, usage-analyst, verifier]
-fix_hats: [adoption-coach, feedback-assessor]
+fix_hats: [classifier, adoption-coach, feedback-assessor]
 review: auto
 elaboration: autonomous
 inputs:

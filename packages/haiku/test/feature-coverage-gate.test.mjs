@@ -219,31 +219,13 @@ try {
 		)
 	})
 
-	await test("stage with one orphan feature → advance fails with feature_coverage_gap", () => {
-		const { projDir, intentDirPath, slug, stage } = createProject("fc-orphan")
-		writeFeature(intentDirPath, "login.feature", "Feature: Login\n")
-		writeFeature(intentDirPath, "billing.feature", "Feature: Billing\n")
-		writeUnit(intentDirPath, stage, "unit-01-login", {
-			body: "Implement features/login.feature.",
-		})
-		// billing is orphaned.
-		process.chdir(projDir)
-		const result = runNext(slug)
-		assert.strictEqual(result.action, "error")
-		assert.strictEqual(result.error, "feature_coverage_gap")
-		assert.ok(
-			Array.isArray(result.uncovered) && result.uncovered.length === 1,
-			`expected 1 uncovered, got ${JSON.stringify(result.uncovered)}`,
-		)
-		assert.ok(
-			result.uncovered[0].includes("billing.feature"),
-			`expected billing.feature in uncovered, got ${result.uncovered[0]}`,
-		)
-		assert.ok(
-			result.message.includes("billing.feature"),
-			"message should name the orphan",
-		)
-	})
+	// v4: feature_coverage_gap as a run_next-emitted error has been
+	// folded into the spec review track. The cursor no longer returns
+	// `error` for orphaned features at run_next; instead the spec
+	// reviewer's mandate covers feature-coverage and files an FB if
+	// orphans exist. The test's assertion shape no longer applies.
+	// The other tests in this file (closes-cite, scenarios match) still
+	// validate the underlying coverage logic.
 
 	await test("coverage detected via closes: cite", () => {
 		const { projDir, intentDirPath, slug, stage } = createProject("fc-closes")

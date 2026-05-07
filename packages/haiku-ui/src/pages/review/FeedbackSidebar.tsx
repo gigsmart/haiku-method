@@ -124,6 +124,7 @@ export function FeedbackSidebar({
 		handleStatusChange,
 		handleDelete,
 		handleReply,
+		handleDismissClosureReply,
 		createFeedback,
 	} = useFeedbackSidebarController()
 
@@ -134,11 +135,11 @@ export function FeedbackSidebar({
 	// fires revisit with whatever pending items have accumulated — no
 	// blob-text pooling at the decide step.
 	const [composerText, setComposerText] = useState("")
-	// Resolution the reviewer wants this comment routed through. `null`
-	// means "let the agent triage" — the default and most common path.
-	const [composerResolution, setComposerResolution] = useState<
-		null | "question" | "inline_fix" | "stage_revisit"
-	>(null)
+	// (2026-05-06) The `resolution` dropdown was removed. Comments now
+	// always create with `origin: "user-chat"` and `resolution: null`;
+	// the agent classifies routing via target_unit / target_invalidates
+	// at FB-create time + (future) classifier-hat analysis of the body.
+	// The reviewer's job is to type what they mean, not to triage.
 	const [addingComment, setAddingComment] = useState(false)
 	const [submitting, setSubmitting] = useState<DecisionKind | null>(null)
 	const [revisitOpen, setRevisitOpen] = useState(false)
@@ -231,21 +232,14 @@ export function FeedbackSidebar({
 		setAddingComment(true)
 		try {
 			const firstLine = body.split("\n")[0]?.slice(0, 80) || "Comment"
-			const origin =
-				composerResolution === "question" ? "user-question" : "user-chat"
 			await createFeedback({
 				title: firstLine,
 				body,
-				origin,
+				origin: "user-chat",
 				source_ref: null,
-				resolution: composerResolution ?? undefined,
 			})
 			setComposerText("")
-			setComposerResolution(null)
-			announce(
-				"polite",
-				composerResolution === "question" ? "Question added" : "Comment added",
-			)
+			announce("polite", "Comment added")
 		} catch (err) {
 			announce(
 				"assertive",
@@ -254,7 +248,7 @@ export function FeedbackSidebar({
 		} finally {
 			setAddingComment(false)
 		}
-	}, [announce, composerResolution, composerText, createFeedback])
+	}, [announce, composerText, createFeedback])
 
 	const submit = useCallback(
 		async (decision: DecisionKind): Promise<void> => {
@@ -414,6 +408,7 @@ export function FeedbackSidebar({
 					onDelete={handleDelete}
 					onRetry={retry}
 					onReply={handleReply}
+					onDismissClosureReply={handleDismissClosureReply}
 					busyIds={busyIds}
 					creating={creating}
 				/>
@@ -461,36 +456,6 @@ export function FeedbackSidebar({
 					aria-disabled={addingComment || undefined}
 					className="w-full text-xs p-2 border border-stone-300 dark:border-stone-600 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:outline-none resize-none disabled:bg-stone-100 disabled:text-stone-500 dark:disabled:bg-stone-800 dark:disabled:text-stone-400 disabled:cursor-not-allowed"
 				/>
-				<div className="flex items-center gap-2">
-					<label
-						htmlFor="feedback-resolution-route"
-						className="text-[11px] font-semibold text-stone-600 dark:text-stone-300 shrink-0"
-					>
-						Route:
-					</label>
-					<select
-						id="feedback-resolution-route"
-						value={composerResolution ?? ""}
-						onChange={(e) => {
-							const v = e.target.value
-							setComposerResolution(
-								v === ""
-									? null
-									: (v as "question" | "inline_fix" | "stage_revisit"),
-							)
-						}}
-						disabled={addingComment}
-						aria-label="How should the agent resolve this comment"
-						className="flex-1 text-xs px-2 py-1.5 rounded-md border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-teal-500 focus:outline-none disabled:bg-stone-100 disabled:text-stone-500 dark:disabled:bg-stone-800 dark:disabled:text-stone-400 disabled:cursor-not-allowed"
-					>
-						<option value="">Let agent decide</option>
-						<option value="question">Question · wants a reply</option>
-						<option value="inline_fix">Inline fix · one-bolt patch</option>
-						<option value="stage_revisit">
-							Stage revisit · re-run the stage
-						</option>
-					</select>
-				</div>
 				<div className="flex gap-2 flex-wrap">
 					{(mode === "add" || mode === "disabled") && (
 						<button

@@ -2,7 +2,7 @@
 name: publish
 description: Distribute content across channels
 hats: [distributor, community-manager, verifier]
-fix_hats: [distributor, feedback-assessor]
+fix_hats: [classifier, distributor, feedback-assessor]
 review: auto
 elaboration: autonomous
 inputs:

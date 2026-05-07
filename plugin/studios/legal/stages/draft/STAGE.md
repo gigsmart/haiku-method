@@ -2,7 +2,7 @@
 name: draft
 description: Create legal documents and contracts
 hats: [drafter, editor, verifier]
-fix_hats: [drafter, feedback-assessor]
+fix_hats: [classifier, drafter, feedback-assessor]
 review: ask
 elaboration: collaborative
 inputs:

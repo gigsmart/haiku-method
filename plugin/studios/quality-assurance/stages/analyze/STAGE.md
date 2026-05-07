@@ -2,7 +2,7 @@
 name: analyze
 description: Analyze test results and compute quality metrics
 hats: [analyst, statistician, verifier]
-fix_hats: [analyst, feedback-assessor]
+fix_hats: [classifier, analyst, feedback-assessor]
 review: ask
 elaboration: autonomous
 inputs:

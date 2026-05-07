@@ -2,7 +2,7 @@
 name: transformation
 description: Transform and model data for the target schema
 hats: [transformer, data-modeler, verifier]
-fix_hats: [transformer, feedback-assessor]
+fix_hats: [classifier, transformer, feedback-assessor]
 review: ask
 elaboration: autonomous
 inputs:

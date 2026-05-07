@@ -26,7 +26,23 @@ import {
 } from "haiku-api"
 import { HAIKU_UI_HTML } from "../haiku-ui-html.js"
 import { broadcastIntent } from "../intent-broadcaster.js"
-import { isOpen as isFeedbackOpen } from "../orchestrator/workflow/feedback-triage-gate.js"
+// v4: feedback-triage-gate deleted. Replacement predicate: an FB is
+// "open" when its frontmatter `closed_at` is null. (status / closed_by
+// fields no longer exist post-migration.) Inlined here to avoid a
+// circular import via state-tools.
+const isFeedbackOpen = (
+	fb: { closed_at?: string | null; status?: string; closed_by?: string | null },
+): boolean => {
+	if (typeof fb.closed_at === "string" && fb.closed_at.length > 0) return false
+	// Migration shim: pre-v4 FBs that haven't been migrated yet still
+	// carry status / closed_by. Treat the v3 closed/addressed/rejected
+	// trio as not-open so the route doesn't 409 on legacy data.
+	if (fb.status === "closed" || fb.status === "addressed" || fb.status === "rejected") {
+		return false
+	}
+	if (typeof fb.closed_by === "string" && fb.closed_by.length > 0) return false
+	return true
+}
 import {
 	getSession,
 	type QuestionAnnotations,

@@ -18,6 +18,35 @@ export interface UnitsTableHandle {
 }
 
 /**
+ * v4-aware unit-status derivation.
+ *
+ * v3 wrote `status` directly to the unit FM (`pending` | `in_progress`
+ * | `completed` | `rejected`). v4 stopped writing it — completion is
+ * derived from `iterations[]` (terminal `result === "advance"`) plus
+ * branch-merge state. Since the SPA only has the FM, the most useful
+ * approximation is the LAST iteration's result; that's the verifier's
+ * call, which is what the operator actually wants to see in the table.
+ *
+ * Prefers explicit v3 `status` when present (un-migrated sessions still
+ * emit it) so live v3 deployments don't lose their existing labels.
+ */
+export function deriveUnitStatus(
+	frontmatter: Record<string, unknown>,
+): string {
+	if (typeof frontmatter.status === "string" && frontmatter.status) {
+		return frontmatter.status
+	}
+	const iters = frontmatter.iterations
+	if (Array.isArray(iters) && iters.length > 0) {
+		const last = iters[iters.length - 1] as { result?: string } | undefined
+		if (last?.result === "advance") return "completed"
+		if (last?.result === "reject") return "rejected"
+		return "in_progress"
+	}
+	return "pending"
+}
+
+/**
  * UnitsTable — tabular stage-grouped unit listing for the intent
  * review's "Units" tab. Each row expands inline to render the full
  * unit markdown body through the inline-comments surface. New /
@@ -95,7 +124,9 @@ export const UnitsTable = forwardRef<
 			{stageOrder.map((stage) => {
 				const stageUnits = byStage.get(stage) || []
 				const completed = stageUnits.filter(
-					(u) => u.frontmatter.status === "completed",
+					(u) =>
+						deriveUnitStatus(u.frontmatter as Record<string, unknown>) ===
+						"completed",
 				).length
 				return (
 					<div key={stage}>
@@ -191,7 +222,9 @@ export const UnitsTable = forwardRef<
 																<div className="flex flex-wrap items-center gap-2 mb-3">
 																	<StatusBadge
 																		label="Status"
-																		status={u.frontmatter.status}
+																		status={deriveUnitStatus(
+																			u.frontmatter as Record<string, unknown>,
+																		)}
 																	/>
 																	{u.frontmatter.stage && (
 																		<StatusBadge
@@ -259,7 +292,9 @@ export const UnitsTable = forwardRef<
 														<td className="py-3 pr-3">
 															<StatusBadge
 																label="Status"
-																status={u.frontmatter.status}
+																status={deriveUnitStatus(
+																	u.frontmatter as Record<string, unknown>,
+																)}
 															/>
 														</td>
 														<td className="py-3 text-sm text-stone-500 dark:text-stone-400">

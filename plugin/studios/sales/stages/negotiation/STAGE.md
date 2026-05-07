@@ -2,7 +2,7 @@
 name: negotiation
 description: Handle objections, negotiate terms, and align stakeholders
 hats: [negotiator, legal-reviewer]
-fix_hats: [negotiator, feedback-assessor]
+fix_hats: [classifier, negotiator, feedback-assessor]
 review: [ask, await]
 elaboration: collaborative
 inputs:

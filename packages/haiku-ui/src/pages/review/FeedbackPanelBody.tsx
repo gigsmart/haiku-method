@@ -24,6 +24,7 @@ export interface FeedbackPanelBodyProps {
 		body: string,
 		closeAsAnswered?: boolean,
 	) => Promise<void>
+	onDismissClosureReply?: (id: string) => Promise<void>
 	/** Feedback ids currently in flight — surfaced per-row as a
 	 *  "Saving…" spinner + disabled action buttons. */
 	busyIds?: ReadonlySet<string>
@@ -41,6 +42,7 @@ export function FeedbackPanelBody({
 	onDelete,
 	onRetry,
 	onReply,
+	onDismissClosureReply,
 	busyIds,
 	creating,
 }: FeedbackPanelBodyProps): React.ReactElement {
@@ -51,11 +53,25 @@ export function FeedbackPanelBody({
 	const [activeStatus, setActiveStatus] = useState<FeedbackStatus | null>(
 		"pending",
 	)
+	// Independent toggle for "unread closure replies only" — orthogonal
+	// to the status filter (a reply lives on a closed FB; the user
+	// filtering by "pending" never sees them otherwise).
+	const [unreadReplyOnly, setUnreadReplyOnly] = useState(false)
 
 	const filtered = useMemo(() => {
-		if (!activeStatus) return items
-		return items.filter((item) => item.status === activeStatus)
-	}, [items, activeStatus])
+		let next = items
+		if (unreadReplyOnly) {
+			next = next.filter((i) => i.closure_reply_unread === true)
+		}
+		if (activeStatus && !unreadReplyOnly) {
+			// When the unread-reply filter is on, the status filter is
+			// implicitly disabled — closure replies live on closed FBs
+			// which would never match a "pending" status filter. Without
+			// this carve-out, toggling unread-replies returns zero rows.
+			next = next.filter((item) => item.status === activeStatus)
+		}
+		return next
+	}, [items, activeStatus, unreadReplyOnly])
 
 	return (
 		<div className="flex flex-col flex-1 min-h-0">
@@ -73,6 +89,8 @@ export function FeedbackPanelBody({
 					items={items}
 					activeStatus={activeStatus}
 					onFilter={setActiveStatus}
+					unreadReplyOnly={unreadReplyOnly}
+					onToggleUnreadReplyOnly={() => setUnreadReplyOnly((v) => !v)}
 				/>
 			</div>
 			{/* The FeedbackList owns its own scroll: the plain <ul> branch
@@ -88,6 +106,7 @@ export function FeedbackPanelBody({
 					onStatusChange={onStatusChange}
 					onDelete={onDelete}
 					onReply={onReply}
+					onDismissClosureReply={onDismissClosureReply}
 					busyIds={busyIds}
 				/>
 			</div>

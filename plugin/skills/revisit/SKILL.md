@@ -11,7 +11,7 @@ Return to a specific stage or phase to address issues found during execution. Re
 
 1. **Find the active intent.** Call `haiku_intent_list`. If multiple are active, ask the user which one.
 
-2. **Confirm the target stage and reasons.** Ask the user (a) which stage to revisit (default: the current `active_stage`) and (b) what should change. Each reason becomes one feedback item — short, actionable, scoped to a single concern.
+2. **Confirm the target stage and reasons.** Ask the user (a) which stage to revisit (default: the current active stage — under v4 derived from the cursor walk as the first stage with `mergedIntoMain: false`) and (b) what should change. Each reason becomes one feedback item — short, actionable, scoped to a single concern.
 
 3. **Log a stage_revisit feedback for each reason.** For each reason:
 

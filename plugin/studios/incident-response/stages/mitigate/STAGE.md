@@ -2,7 +2,7 @@
 name: mitigate
 description: Apply immediate fixes to stop the bleeding — rollbacks, feature flags, scaling
 hats: [mitigator, verifier]
-fix_hats: [mitigator, feedback-assessor]
+fix_hats: [classifier, mitigator, feedback-assessor]
 review: [ask, await]
 elaboration: collaborative
 inputs:

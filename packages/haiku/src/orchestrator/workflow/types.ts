@@ -91,6 +91,7 @@ export type StateName =
 	| "escalate"
 	| "design_direction_required"
 	| "design_direction_complete"
+	| "clarify_required"
 	| "safe_intent_repair"
 	| "composite_run_stage"
 	| "upstream_reconciliation_required"

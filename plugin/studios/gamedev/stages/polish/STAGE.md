@@ -2,7 +2,7 @@
 name: polish
 description: Tuning, game feel, performance, bug triage, and juice
 hats: [gameplay-engineer, tuner, performance-engineer, qa]
-fix_hats: [gameplay-engineer, feedback-assessor]
+fix_hats: [classifier, gameplay-engineer, feedback-assessor]
 review: [external, ask]
 elaboration: collaborative
 inputs:

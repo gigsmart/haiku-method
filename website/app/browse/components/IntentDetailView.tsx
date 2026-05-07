@@ -253,6 +253,28 @@ export function IntentDetailView({
 							{intent.status}
 						</strong>
 					</span>
+					{(() => {
+						// Schema indicator chip — mirrors the SPA's Schema
+						// badge. v4 stamps `plugin_version` on intent.md;
+						// v3 has no field. The reviewer should be able to
+						// tell which schema they're looking at during the
+						// rolling migration window.
+						const ver =
+							typeof intent.raw.plugin_version === "string"
+								? (intent.raw.plugin_version as string)
+								: ""
+						const schema = ver
+							? `v${ver.split(".")[0] ?? "?"}`
+							: "v3"
+						return (
+							<span>
+								Schema:{" "}
+								<strong className="text-stone-700 dark:text-stone-300">
+									{schema}
+								</strong>
+							</span>
+						)
+					})()}
 				</div>
 			</header>
 

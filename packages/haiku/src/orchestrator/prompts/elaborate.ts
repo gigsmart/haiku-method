@@ -49,6 +49,7 @@ import {
 } from "./_helpers.js"
 import { definePromptBuilder } from "./define.js"
 import type { PromptBuilderContext } from "./types.js"
+import { WORKFLOW_CONTRACTS_ANNOUNCEMENT_BLOCK } from "./WORKFLOW_CONTRACTS_ANNOUNCEMENT_BLOCK.js"
 import { WORKFLOW_CONTRACTS_ELABORATE_BLOCK } from "./WORKFLOW_CONTRACTS_ELABORATE_BLOCK.js"
 
 interface PendingFeedback {
@@ -480,7 +481,7 @@ function renderElaborate(ctx: PromptBuilderContext): string {
 			join(studio, "stages", stage, "STAGE.md"),
 		)
 
-		let fanOutText = `## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${discoveryArtifacts.length} discovery artifact${plural}: ${artifactNames}.\n\n**Spawn one subagent per artifact** using the \`prompt_file\` attribute on each \`<subagent>\` block — pass \`"Read <prompt_file> and execute its instructions exactly."\` as the spawn prompt (substituting the attribute's path). Each subagent writes inside its own isolation worktree — the workflow engine merges their work back into the stage branch on the next \`haiku_run_next\`.\n\n${batchDispatchDirective(discoveryArtifacts.length, "discovery subagents")}\n\n`
+		let fanOutText = `## Discovery Fan-Out (REQUIRED)\n\nThis stage produces ${discoveryArtifacts.length} discovery artifact${plural}: ${artifactNames}.\n\n${WORKFLOW_CONTRACTS_ANNOUNCEMENT_BLOCK}\n\n**Spawn one subagent per artifact** using the \`prompt_file\` attribute on each \`<subagent>\` block — pass \`"Read <prompt_file> and execute its instructions exactly."\` as the spawn prompt (substituting the attribute's path). Each subagent writes inside its own isolation worktree — the workflow engine merges their work back into the stage branch on the next \`haiku_run_next\`.\n\n${batchDispatchDirective(discoveryArtifacts.length, "discovery subagents")}\n\n`
 
 		for (const a of discoveryArtifacts) {
 			const wt = createDiscoveryWorktree(slug, stage, a.name)

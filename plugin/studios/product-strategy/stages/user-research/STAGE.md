@@ -2,7 +2,7 @@
 name: user-research
 description: Understand user needs, pain points, and jobs-to-be-done
 hats: [user-researcher, insights-synthesizer, verifier]
-fix_hats: [user-researcher, feedback-assessor]
+fix_hats: [classifier, user-researcher, feedback-assessor]
 review: ask
 elaboration: collaborative
 inputs:

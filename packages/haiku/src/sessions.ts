@@ -224,6 +224,15 @@ export interface ReviewSession {
 	/** ISO timestamp set when the most recent await ended (decision,
 	 *  timeout, or abort). */
 	last_await_ended_at?: string | null
+	/** ISO timestamp set the first time an await tool emitted a
+	 *  user-facing announcement (the "review ready at <URL>" copy that
+	 *  the agent posts to the human). Subsequent await-tool calls on
+	 *  the same session check this and SKIP the announcement to avoid
+	 *  re-announcing the same URL on every retry / timeout cycle. The
+	 *  user already knows; nothing changed. Cleared when the session
+	 *  is replaced (a new haiku_run_next session_id wipes the old
+	 *  session entirely, so this is implicitly per-session). */
+	announced_at?: string | null
 	/** Parsed data for the SPA — stored at session creation so /api/session can return it */
 	parsedIntent?: unknown
 	parsedUnits?: unknown[]
@@ -367,9 +376,14 @@ export function clearPreviousReviewSnapshot(intentDir: string): void {
 	previousReviewByIntentDir.delete(intentDir)
 }
 
-// Cap total in-memory sessions and apply a 30-minute TTL to prevent unbounded growth
+// Cap total in-memory sessions and apply a TTL to prevent unbounded
+// growth. Bumped from 30min → 4h on 2026-05-06 to match the
+// haiku_await_gate review timeout — at 30min, a session created at
+// the start of a long human review would evict mid-wait and the
+// agent would see "session not found" instead of "still waiting."
+// MAX_SESSIONS still bounds memory regardless.
 const MAX_SESSIONS = 100
-const SESSION_TTL_MS = 30 * 60 * 1000
+const SESSION_TTL_MS = 4 * 60 * 60 * 1000
 const sessionCreatedAt = new Map<string, number>()
 
 /** Drop the previous-review snapshot for an intent_dir if no remaining
@@ -556,6 +570,7 @@ export function updateSession(
 			| "await_count"
 			| "last_await_started_at"
 			| "last_await_ended_at"
+			| "announced_at"
 		>
 	>,
 ): ReviewSession | undefined {

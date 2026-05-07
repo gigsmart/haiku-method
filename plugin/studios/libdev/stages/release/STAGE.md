@@ -2,7 +2,7 @@
 name: release
 description: Publish, changelog, documentation, and deprecation policy
 hats: [release-engineer, doc-writer, verifier]
-fix_hats: [release-engineer, feedback-assessor]
+fix_hats: [classifier, release-engineer, feedback-assessor]
 review: auto
 elaboration: autonomous
 inputs:

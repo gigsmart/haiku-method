@@ -152,6 +152,34 @@ export function parseFrontmatter(
 	}
 }
 
+/**
+ * Derive a v3-compatible unit status from v4 frontmatter.
+ *
+ * v3 wrote `status: pending|in_progress|completed|rejected` directly.
+ * v4 dropped the field — the LAST entry in `iterations[]` carries the
+ * terminal result. The website browse page still presents a single
+ * status string per unit, so we collapse the v4 shape into the v3
+ * vocabulary at parse time.
+ *
+ * Prefers explicit v3 `status` when present (un-migrated intents still
+ * have it), falls back to last-iteration result for v4.
+ */
+export function deriveUnitStatus(data: Record<string, unknown>): string {
+	if (typeof data.status === "string" && data.status.length > 0) {
+		return data.status
+	}
+	const iterations = data.iterations
+	if (Array.isArray(iterations) && iterations.length > 0) {
+		const last = iterations[iterations.length - 1] as
+			| { result?: string }
+			| undefined
+		if (last?.result === "advance") return "completed"
+		if (last?.result === "reject") return "rejected"
+		return "in_progress"
+	}
+	return "pending"
+}
+
 /** Parse a unit's frontmatter + content into a HaikuUnit */
 export function parseUnit(
 	unitFile: string,
@@ -163,7 +191,7 @@ export function parseUnit(
 	return {
 		name: unitFile.replace(".md", ""),
 		stage: stageName,
-		status: (data.status as string) || "pending",
+		status: deriveUnitStatus(data),
 		dependsOn: (data.depends_on as string[]) || [],
 		refs: (data.refs as string[]) || [],
 		outputs: (data.outputs as string[]) || [],

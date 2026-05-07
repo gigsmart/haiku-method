@@ -2,7 +2,7 @@
 name: close
 description: Execute the deal, handoff to customer success, and document learnings
 hats: [closer, handoff-coordinator, verifier]
-fix_hats: [closer, feedback-assessor]
+fix_hats: [classifier, closer, feedback-assessor]
 review: [external, await]
 elaboration: collaborative
 inputs:

@@ -2,7 +2,7 @@
 name: manufacturing
 description: DFM, assembly process, QA sampling, and production ramp
 hats: [manufacturing-engineer, qa-lead, verifier]
-fix_hats: [manufacturing-engineer, feedback-assessor]
+fix_hats: [classifier, manufacturing-engineer, feedback-assessor]
 review: await
 elaboration: autonomous
 inputs:

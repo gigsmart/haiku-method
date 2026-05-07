@@ -210,6 +210,42 @@ export function useFeedback(intent: string | null, stage: string | null) {
 		[intent, stage, apiClient, markBusy, clearBusy],
 	)
 
+	const dismissClosureReply = useCallback(
+		async (feedbackId: string): Promise<void> => {
+			if (!(intent && stage)) return
+			const url = `/api/feedback/${encodeURIComponent(intent)}/${encodeURIComponent(stage)}/${encodeURIComponent(feedbackId)}/dismiss-reply`
+			markBusy(feedbackId)
+			// Optimistic flip: clear closure_reply_unread immediately so
+			// the highlight goes away on click; refetch reconciles the
+			// real state. On error the catch block restores it.
+			let prevSnapshot: typeof itemsRef.current | null = null
+			setItems((prev) => {
+				prevSnapshot = prev
+				return prev.map((i) =>
+					i.feedback_id === feedbackId
+						? { ...i, closure_reply_unread: false }
+						: i,
+				)
+			})
+			try {
+				const res = await fetch(url, {
+					method: "POST",
+					headers: { ...authHeader() },
+				})
+				if (!res.ok) {
+					const errBody = await res.json().catch(() => ({}))
+					throw new Error(errBody.error || `HTTP ${res.status}`)
+				}
+			} catch (err) {
+				if (prevSnapshot) setItems(prevSnapshot)
+				throw err
+			} finally {
+				clearBusy(feedbackId)
+			}
+		},
+		[intent, stage, markBusy, clearBusy],
+	)
+
 	const replyToFeedback = useCallback(
 		async (
 			feedbackId: string,
@@ -255,5 +291,6 @@ export function useFeedback(intent: string | null, stage: string | null) {
 		updateFeedback,
 		deleteFeedback,
 		replyToFeedback,
+		dismissClosureReply,
 	}
 }

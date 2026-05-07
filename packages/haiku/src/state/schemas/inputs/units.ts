@@ -138,21 +138,8 @@ export const validateHaikuUnitRejectHatInputSchema = stateAjv.compile(
 	HAIKU_UNIT_REJECT_HAT_INPUT_SCHEMA,
 )
 
-// ── haiku_unit_increment_bolt ─────────────────────────────────────
-
-export const HAIKU_UNIT_INCREMENT_BOLT_INPUT_SCHEMA = Type.Object(
-	{
-		...intentStageUnit,
-		state_file: stateFile,
-	},
-	{ additionalProperties: false },
-)
-export type HaikuUnitIncrementBoltInput = Static<
-	typeof HAIKU_UNIT_INCREMENT_BOLT_INPUT_SCHEMA
->
-export const validateHaikuUnitIncrementBoltInputSchema = stateAjv.compile(
-	HAIKU_UNIT_INCREMENT_BOLT_INPUT_SCHEMA,
-)
+// v4: haiku_unit_increment_bolt removed. Bolt is derived from
+// iterations.length; agents never increment it directly.
 
 // ── haiku_unit_read ───────────────────────────────────────────────
 

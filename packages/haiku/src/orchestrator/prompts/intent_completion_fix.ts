@@ -25,6 +25,7 @@ import {
 	resolveStudioMandateModel,
 } from "./_helpers.js"
 import { definePromptBuilder } from "./define.js"
+import { WORKFLOW_CONTRACTS_ANNOUNCEMENT_BLOCK } from "./WORKFLOW_CONTRACTS_ANNOUNCEMENT_BLOCK.js"
 import { WORKFLOW_CONTRACTS_FIX_LOOP_BLOCK } from "./WORKFLOW_CONTRACTS_FIX_LOOP_BLOCK.js"
 
 interface FixItem {
@@ -70,6 +71,10 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 	sections.push(
 		"### Self-Extending Chain Dispatch\n\nEach finding below launches ONE subagent (the first hat). That subagent calls `haiku_feedback_advance_hat` when done and relays the next hat's `<subagent>` block back to the parent for spawning. **The parent spawns the relayed block — the subagent does NOT.** The chain ends when the final hat (assessor) returns without a relay block. Chains run in parallel across findings.\n",
 	)
+
+	if (items.length > 1) {
+		sections.push(WORKFLOW_CONTRACTS_ANNOUNCEMENT_BLOCK)
+	}
 
 	// Build each finding's fix chain in reverse hat order so every hat's
 	// prompt can embed the next hat's relay block at write time. Only the

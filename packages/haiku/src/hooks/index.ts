@@ -14,6 +14,7 @@
 
 import { readFileSync } from "node:fs"
 import contextMonitor from "./context-monitor.js"
+import editAutoReadHint from "./edit-auto-read-hint.js"
 import guardWorkflowFields from "./guard-workflow-fields.js"
 import injectStateFile from "./inject-state-file.js"
 import promptGuard from "./prompt-guard.js"
@@ -24,6 +25,7 @@ import workflowGuard from "./workflow-guard.js"
 
 const HOOKS: readonly HookDef[] = [
 	contextMonitor,
+	editAutoReadHint,
 	guardWorkflowFields,
 	injectStateFile,
 	promptGuard,

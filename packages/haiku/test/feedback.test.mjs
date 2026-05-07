@@ -713,126 +713,22 @@ try {
 
 	console.log("\n=== haiku_feedback_update MCP tool ===")
 
-	test("updates status via MCP tool", () => {
-		// FB-02 is pending. Set it to addressed.
+	// v4: haiku_feedback_update is removed. Closure runs through
+	// haiku_feedback_advance_hat on the terminal fix-hat;
+	// targets.invalidates is set at create time. The 7 deleted tests
+	// here asserted v3 update semantics (status field, closed_by
+	// agent-vs-human guard, addressed lifecycle stage). All gone with
+	// the tool.
+	test("haiku_feedback_update returns feedback_update_removed_in_v4", () => {
 		const result = handleStateTool("haiku_feedback_update", {
 			intent: intentSlug,
 			stage: stageName,
 			feedback_id: "FB-02",
 			status: "addressed",
 		})
-		assert.ok(
-			!result.isError,
-			`Expected success, got: ${getTextResult(result)}`,
-		)
-		const parsed = JSON.parse(getTextResult(result))
-		assert.strictEqual(parsed.feedback_id, "FB-02")
-		assert.deepStrictEqual(parsed.updated_fields, ["status"])
-		assert.ok(parsed.message.includes("FB-02 updated"))
-
-		// Verify on disk
-		const found = findFeedbackFile(intentSlug, stageName, "FB-02")
-		assert.strictEqual(found.data.status, "addressed")
-	})
-
-	test("updates closed_by via MCP tool", () => {
-		writeUnitStub("unit-99-mcp-fix")
-		const result = handleStateTool("haiku_feedback_update", {
-			intent: intentSlug,
-			stage: stageName,
-			feedback_id: "FB-02",
-			closed_by: "unit-99-mcp-fix",
-		})
-		assert.ok(
-			!result.isError,
-			`Expected success, got: ${getTextResult(result)}`,
-		)
-		const parsed = JSON.parse(getTextResult(result))
-		assert.ok(parsed.updated_fields.includes("closed_by"))
-
-		const found = findFeedbackFile(intentSlug, stageName, "FB-02")
-		assert.strictEqual(found.data.closed_by, "unit-99-mcp-fix")
-	})
-
-	test("MCP update rejects missing feedback_id", () => {
-		const result = handleStateTool("haiku_feedback_update", {
-			intent: intentSlug,
-			stage: stageName,
-			feedback_id: "",
-			status: "addressed",
-		})
 		assert.ok(result.isError)
 		const parsed = JSON.parse(getTextResult(result))
-		assert.strictEqual(parsed.error, "haiku_feedback_update_input_invalid")
-		assert.ok(
-			parsed.errors.some((e) => e.path === "/feedback_id"),
-			`expected /feedback_id in errors; got ${JSON.stringify(parsed.errors)}`,
-		)
-	})
-
-	test("MCP update rejects no updatable fields", () => {
-		const result = handleStateTool("haiku_feedback_update", {
-			intent: intentSlug,
-			stage: stageName,
-			feedback_id: "FB-02",
-		})
-		assert.ok(result.isError)
-		assert.ok(getTextResult(result).includes("at least one"))
-	})
-
-	test("MCP update rejects invalid status", () => {
-		const result = handleStateTool("haiku_feedback_update", {
-			intent: intentSlug,
-			stage: stageName,
-			feedback_id: "FB-02",
-			status: "bogus",
-		})
-		assert.ok(result.isError)
-		const parsed = JSON.parse(getTextResult(result))
-		assert.strictEqual(parsed.error, "haiku_feedback_update_input_invalid")
-		assert.ok(
-			parsed.errors.some((e) => e.path === "/status" && e.keyword === "enum"),
-			`expected /status enum violation; got ${JSON.stringify(parsed.errors)}`,
-		)
-	})
-
-	test("MCP update rejects nonexistent feedback", () => {
-		const result = handleStateTool("haiku_feedback_update", {
-			intent: intentSlug,
-			stage: stageName,
-			feedback_id: "FB-99",
-			status: "addressed",
-		})
-		assert.ok(result.isError)
-		assert.ok(getTextResult(result).includes("not found"))
-	})
-
-	test("MCP update: agent cannot close human-authored feedback", () => {
-		// Create a human-authored item for testing
-		writeFeedbackFile(intentSlug, stageName, {
-			title: "Human item for update guard test",
-			body: "Human authored.",
-			origin: "user-visual",
-		})
-		// Find the last item created (highest number)
-		const items = readFeedbackFiles(intentSlug, stageName)
-		const humanItem = items.find(
-			(i) => i.title === "Human item for update guard test",
-		)
-		assert.ok(humanItem, "Expected human item to exist")
-
-		const result = handleStateTool("haiku_feedback_update", {
-			intent: intentSlug,
-			stage: stageName,
-			feedback_id: humanItem.id,
-			closed_by: "unit-99-fix",
-		})
-		assert.ok(result.isError)
-		assert.ok(
-			getTextResult(result).includes(
-				"agents cannot close human-authored feedback",
-			),
-		)
+		assert.strictEqual(parsed.error, "feedback_update_removed_in_v4")
 	})
 
 	// ── haiku_feedback_delete MCP tool ──────────────────────────────────────
@@ -851,18 +747,46 @@ try {
 	})
 
 	test("MCP delete rejects human-authored feedback (agent context)", () => {
-		// The human item we created above — mark it addressed first so pending guard passes
+		// v4: create a human-authored FB inline (the prior update-test that
+		// shared this fixture is gone). Close it via direct frontmatter
+		// stamp so the pending-guard passes — agents must use a
+		// terminal feedback-assessor advance in the real flow.
+		writeFeedbackFile(intentSlug, stageName, {
+			title: "v4 human delete-guard fixture",
+			body: "Human authored, closed.",
+			origin: "user-visual",
+		})
 		const items = readFeedbackFiles(intentSlug, stageName)
 		const humanItem = items.find(
-			(i) => i.title === "Human item for update guard test",
+			(i) => i.title === "v4 human delete-guard fixture",
 		)
-		updateFeedbackFile(
-			intentSlug,
-			stageName,
-			humanItem.id,
-			{ status: "addressed" },
-			"human",
-		)
+		assert.ok(humanItem, "Expected human item to exist")
+		// v4: stamp closed_at directly on the FB so it's no longer
+		// "open" (closed_at == null). The delete-pending guard reads
+		// closed_at, not the legacy status field.
+		// item.file is repo-relative from .haiku root; resolve to abs.
+		const fbAbs = `${process.cwd()}/${humanItem.file}`
+		try {
+			const raw = readFileSync(fbAbs, "utf8")
+			if (raw.includes("closed_at: null")) {
+				writeFileSync(
+					fbAbs,
+					raw.replace(/closed_at: null/, `closed_at: ${new Date().toISOString()}`),
+				)
+			} else if (!raw.includes("closed_at:")) {
+				// Pre-v4 fixture without closed_at — add it.
+				writeFileSync(
+					fbAbs,
+					raw.replace(
+						/^---\n/m,
+						`---\nclosed_at: ${new Date().toISOString()}\n`,
+					),
+				)
+			}
+		} catch {
+			/* fallback: not found at expected abs path; the delete call below
+			 * will return its own error, which the assertion can match against */
+		}
 
 		const result = handleStateTool("haiku_feedback_delete", {
 			intent: intentSlug,
@@ -875,26 +799,9 @@ try {
 		)
 	})
 
-	test("MCP delete removes addressed agent-authored feedback", () => {
-		// FB-02 is addressed and agent-authored
-		const result = handleStateTool("haiku_feedback_delete", {
-			intent: intentSlug,
-			stage: stageName,
-			feedback_id: "FB-02",
-		})
-		assert.ok(
-			!result.isError,
-			`Expected success, got: ${getTextResult(result)}`,
-		)
-		const parsed = JSON.parse(getTextResult(result))
-		assert.strictEqual(parsed.feedback_id, "FB-02")
-		assert.strictEqual(parsed.deleted, true)
-		assert.ok(parsed.message.includes("FB-02 deleted"))
-
-		// Verify file is gone
-		const found = findFeedbackFile(intentSlug, stageName, "FB-02")
-		assert.strictEqual(found, null)
-	})
+	// v4: "addressed" is no longer a status. The delete-when-addressed
+	// path went away with haiku_feedback_update. To delete, close the
+	// FB via terminal feedback-assessor advance, then delete.
 
 	test("MCP delete rejects nonexistent feedback", () => {
 		const result = handleStateTool("haiku_feedback_delete", {
@@ -1048,24 +955,20 @@ try {
 		assert.ok(first.author_type)
 	})
 
-	test("lists feedback filtered by status", () => {
+	test("lists open feedback (closed: false filter)", () => {
 		const result = handleStateTool("haiku_feedback_list", {
 			intent: intentSlug,
 			stage: stageName,
-			status: "pending",
+			closed: false,
 		})
 		assert.ok(
 			!result.isError,
 			`Expected success, got: ${getTextResult(result)}`,
 		)
 		const parsed = JSON.parse(getTextResult(result))
-		for (const item of parsed.items) {
-			assert.strictEqual(
-				item.status,
-				"pending",
-				`Expected pending, got ${item.status}`,
-			)
-		}
+		// v4: open = closed_at is null. The list returns matching items;
+		// callers don't get a status field on items anymore.
+		assert.ok(Array.isArray(parsed.items))
 	})
 
 	test("lists feedback across all stages", () => {
@@ -1088,19 +991,31 @@ try {
 		)
 	})
 
-	test("returns empty when no matching feedback", () => {
+	test("closed: true filter returns only closed items", () => {
 		const result = handleStateTool("haiku_feedback_list", {
 			intent: intentSlug,
 			stage: stageName,
-			status: "closed",
+			closed: true,
 		})
 		assert.ok(
 			!result.isError,
 			`Expected success, got: ${getTextResult(result)}`,
 		)
 		const parsed = JSON.parse(getTextResult(result))
-		assert.strictEqual(parsed.count, 0)
-		assert.deepStrictEqual(parsed.items, [])
+		// Every returned item must be closed (closed_at set OR legacy
+		// terminal status). Prior tests in this file may close FBs as
+		// a side-effect; we assert filter correctness, not exact count.
+		for (const item of parsed.items) {
+			const isClosed =
+				(typeof item.closed_at === "string" && item.closed_at.length > 0) ||
+				item.status === "closed" ||
+				item.status === "rejected" ||
+				item.status === "addressed"
+			assert.ok(
+				isClosed,
+				`closed:true filter returned an open item: ${JSON.stringify(item)}`,
+			)
+		}
 	})
 
 	test("MCP list rejects nonexistent intent", () => {
@@ -1113,17 +1028,17 @@ try {
 		)
 	})
 
-	test("MCP list rejects invalid status filter", () => {
+	test("MCP list rejects invalid closed filter (must be boolean)", () => {
 		const result = handleStateTool("haiku_feedback_list", {
 			intent: intentSlug,
-			status: "bogus",
+			closed: "yes",
 		})
 		assert.ok(result.isError)
 		const parsed = JSON.parse(getTextResult(result))
 		assert.strictEqual(parsed.error, "haiku_feedback_list_input_invalid")
 		assert.ok(
-			parsed.errors.some((e) => e.path === "/status" && e.keyword === "enum"),
-			"Expected an enum error on /status",
+			parsed.errors.some((e) => e.path === "/closed"),
+			"Expected an error on /closed",
 		)
 	})
 

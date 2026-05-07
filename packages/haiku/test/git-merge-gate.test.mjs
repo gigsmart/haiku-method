@@ -177,52 +177,10 @@ test("completed+advanced stage IS merged advances past it to next", () => {
 
 console.log("\n=== gate_outcome=advanced handler ===")
 
-test("stage NOT merged emits awaiting_external_review with branch names", () => {
-	const { root, git, cleanup } = makeGitRepo()
-	try {
-		git("git checkout -b haiku/adv-gate/main")
-		git("git checkout -b haiku/adv-gate/inception")
-		git("git commit --allow-empty -m 'inception stage work'")
-		git("git checkout haiku/adv-gate/main")
-		// Stage branch NOT merged into intent main
-
-		process.chdir(root)
-		_resetIsGitRepoForTests()
-		setHaikuRootForTests(join(root, ".haiku"))
-
-		const haikuRoot = join(root, ".haiku")
-		writeIntent(root, "adv-gate", {
-			studio: "software",
-			active_stage: "inception",
-		})
-		writeStageState(root, "adv-gate", "inception", {
-			stage: "inception",
-			status: "completed",
-			phase: "gate",
-			gate_outcome: "advanced",
-		})
-
-		const result = runWorkflowTick("adv-gate", haikuRoot)
-		assert.ok(result, "tick should return a result")
-		assert.strictEqual(result.state, "gate_review")
-		assert.ok(result.action, "should have an action")
-		assert.strictEqual(result.action.action, "awaiting_external_review")
-		assert.strictEqual(result.action.stage, "inception")
-		assert.ok(
-			result.action.message.includes("haiku/adv-gate/inception"),
-			`message should name the stage branch, got: ${result.action.message}`,
-		)
-		assert.ok(
-			result.action.message.includes("haiku/adv-gate/main"),
-			`message should name the intent main branch, got: ${result.action.message}`,
-		)
-	} finally {
-		process.chdir(origCwd)
-		_resetIsGitRepoForTests()
-		setHaikuRootForTests(null)
-		cleanup()
-	}
-})
+// v4: `awaiting_external_review` action removed. External review is
+// now signaled by the actual merge into intent main — no separate
+// polling action. The cursor's firstUnmergedStage check naturally
+// stays on the un-merged stage until the user merges the MR.
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Section 3 — checkoutFromBranchOnIntentMain (git-worktree.ts:1379-1454)

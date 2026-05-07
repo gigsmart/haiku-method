@@ -15,6 +15,7 @@ import {
 	classifyArtifact,
 	mergeKnowledge as mergeKnowledgeShared,
 	parseIntentFromRaw as parseIntentFromRawShared,
+	deriveStageStatusFromUnits,
 	parseStageStateJson,
 } from "./intent-parsing"
 import { parseSettingsYaml } from "./resolve-links"
@@ -601,17 +602,23 @@ export class GitLabProvider implements BrowseProvider {
 			}
 		}
 
-		// state.json — shared parsing keeps gitlab + github in sync
+		// state.json — shared parsing keeps gitlab + github in sync.
+		// v4 intents have no state.json (deleted by the migrator); the
+		// dual-path falls through to per-unit derivation.
+		const stateBlob = data.blobByPath.get(`${stagePath}/state.json`)
 		const { phase, startedAt, completedAt, gateOutcome, stateStatus } =
-			parseStageStateJson(data.blobByPath.get(`${stagePath}/state.json`))
+			parseStageStateJson(stateBlob)
 
-		// state.json.status is authoritative (written by the orchestrator on the
-		// stage branch). Fall back to active_stage from intent.md when absent —
-		// the intent branch may lag for the first stage of a new intent.
+		// Status resolution priority:
+		//   1. v3 state.json.status (authoritative when present)
+		//   2. v4 derived from per-unit iterations[] + approvals
+		//   3. v3 active_stage / stage-order fallback
 		let status: "pending" | "active" | "complete" = "pending"
 		if (stateStatus === "active") status = "active"
 		else if (stateStatus === "completed") status = "complete"
-		else if (stageName === activeStage) status = "active"
+		else if (units.length > 0 || stateBlob == null) {
+			status = deriveStageStatusFromUnits(units)
+		} else if (stageName === activeStage) status = "active"
 		else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage))
 			status = "complete"
 

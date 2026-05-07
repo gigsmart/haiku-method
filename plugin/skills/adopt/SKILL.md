@@ -30,5 +30,5 @@ Reverse-engineer an existing feature into H·AI·K·U intent artifacts for `/hai
 ### Phase 6 — Write artifacts (intent.md, unit files, discovery.md, operations/)
 ### Phase 7 — Handoff (summary + next steps)
 
-**CRITICAL:** MUST NOT modify existing code. All artifacts have status: completed.
+**CRITICAL:** MUST NOT modify existing code. Adopted units describe what already exists — they are written with synthetic terminal `iterations[]` (last entry `result: "advance"`) and signed `reviews{} / approvals{}` so the cursor sees them as completed and never dispatches a hat against them. Forward-only invariant: completed work is immutable.
 Wait for user confirmation at each gate (Phase 3, 4, 5).

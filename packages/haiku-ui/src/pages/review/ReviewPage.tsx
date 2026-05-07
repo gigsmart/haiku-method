@@ -58,9 +58,21 @@ export interface ReviewPageProps {
 }
 
 function resolveActiveStage(session: ReviewPageSessionData): string | null {
+	// v4: active stage = first stage NOT yet merged into intent main.
+	// status field is gone; mergedIntoMain is the v4 authoritative
+	// signal. Fallback to the legacy `status === "active"` check for
+	// pre-migration sessions still in flight on a v3 backend.
 	const stageStates = session.stage_states ?? {}
 	const names = Object.keys(stageStates)
-	const active = names.find((s) => stageStates[s]?.status === "active")
+	const active = names.find((s) => {
+		const ss = stageStates[s]
+		if (!ss) return false
+		// v4: first unmerged stage is active
+		if (ss.mergedIntoMain === false) return true
+		// v3 fallback
+		if (ss.status === "active") return true
+		return false
+	})
 	return active ?? names[0] ?? null
 }
 
@@ -381,12 +393,31 @@ export function ReviewPage({
 			: stageStateKeys
 	const stageProgressData = orderedStageNames.map((name) => {
 		const state = stageStates[name] as
-			| { status?: string; visits?: number; pending_feedback?: number }
+			| {
+					status?: string
+					visits?: number
+					pending_feedback?: number
+					mergedIntoMain?: boolean
+			  }
 			| undefined
+		// v4: derive a v3-compatible status string from mergedIntoMain.
+		// merged → "completed"; not merged → "current" if first
+		// unmerged, else "pending". Legacy v3 status field still wins
+		// when present (server hasn't migrated this intent yet).
+		const v3Status = state?.status
+		const v4Status = (() => {
+			if (state?.mergedIntoMain === true) return "completed"
+			if (state?.mergedIntoMain === false) return "current"
+			return "pending"
+		})()
+		const derivedStatus = v3Status
+			? v3Status === "active"
+				? "current"
+				: v3Status
+			: v4Status
 		return {
 			name,
-			status:
-				state?.status === "active" ? "current" : (state?.status ?? "pending"),
+			status: derivedStatus,
 			visits: state?.visits ?? 0,
 			pendingCount: state?.pending_feedback ?? 0,
 		}
@@ -524,11 +555,15 @@ export function ReviewPage({
 							<>
 								<StageBanner
 									stageName={selectedStage ?? activeStage ?? "review"}
-									stageStatus={
-										selectedStage === activeStage
-											? "current"
-											: (stageStates[selectedStage ?? ""]?.status ?? "pending")
-									}
+									stageStatus={(() => {
+										if (selectedStage === activeStage) return "current"
+										const ss = stageStates[selectedStage ?? ""] as
+											| { status?: string; mergedIntoMain?: boolean }
+											| undefined
+										// v4: completion = mergedIntoMain. v3 fallback: status.
+										if (ss?.mergedIntoMain === true) return "completed"
+										return ss?.status ?? "pending"
+									})()}
 									stagePhase={stageStates[selectedStage ?? ""]?.phase ?? null}
 									gateBadges={gateBadges}
 									adHoc={isAdHoc}
@@ -827,7 +862,11 @@ function IntentOverviewPane({
 								<tbody>
 									{stageNames.map((name) => {
 										const s = stageStates[name] as
-											| { status?: string; phase?: string }
+											| {
+													status?: string
+													phase?: string
+													mergedIntoMain?: boolean
+											  }
 											| undefined
 										const unitCount = units.filter(
 											(u) => (u.frontmatter.stage ?? "") === name,
@@ -838,10 +877,18 @@ function IntentOverviewPane({
 										const outputCount = outputArtifacts.filter(
 											(a) => a.stage === name,
 										).length
+										// v4: derive a v3-compatible status string from
+										// mergedIntoMain. v3 fallback: explicit status.
+										const displayStatus = (() => {
+											if (s?.mergedIntoMain === true) return "completed"
+											if (s?.status) return s.status
+											if (s?.mergedIntoMain === false) return "active"
+											return undefined
+										})()
 										const statusColor =
-											s?.status === "active"
+											displayStatus === "active"
 												? "text-teal-600 dark:text-teal-400"
-												: s?.status === "completed"
+												: displayStatus === "completed"
 													? "text-green-600 dark:text-green-400"
 													: "text-stone-500 dark:text-stone-400"
 										return (
@@ -853,7 +900,7 @@ function IntentOverviewPane({
 													{name}
 												</td>
 												<td className={`py-2.5 pr-3 font-mono ${statusColor}`}>
-													{s?.status ?? "—"}
+													{displayStatus ?? "—"}
 												</td>
 												<td className="py-2.5 pr-3 font-mono text-stone-600 dark:text-stone-300">
 													{s?.phase ?? "—"}

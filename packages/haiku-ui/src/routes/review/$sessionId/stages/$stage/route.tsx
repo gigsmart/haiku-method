@@ -14,7 +14,11 @@ import {
 } from "../../../../../molecules/DriftBanner"
 import { RereviewBanner } from "../../../../../pages/review/shared/RereviewBanner"
 import { useReviewContext } from "../../-context"
-import { gateBadgeCopy, resolveGateModes } from "../../-review-helpers"
+import {
+	gateBadgeCopy,
+	isIntentTerminal,
+	resolveGateModes,
+} from "../../-review-helpers"
 import { StageBanner } from "./-stage-banner"
 
 function StageLayout(): React.ReactElement {
@@ -38,30 +42,30 @@ function StageLayout(): React.ReactElement {
 		return () => obs.disconnect()
 	}, [])
 
-	// Terminal-intent guard: when the intent is in
-	// `awaiting_completion_review` or `status: completed`, deep links
-	// to `/stages/<X>` would render with the stage banner highlighting
-	// the (now-done) stage and the chrome labeling it "current". The
-	// IntentCompleteView lives at /intent — redirect there so the
-	// chrome reflects "we're reviewing the intent, not a stage."
-	const intentFm = session.intent?.frontmatter
-	const intentStatus = (intentFm?.status as string | undefined) ?? ""
-	const intentPhase = (intentFm?.phase as string | undefined) ?? ""
-	const isIntentTerminal =
-		intentStatus === "completed" ||
-		intentPhase === "awaiting_completion_review" ||
-		intentPhase === "intent_completion"
-	if (isIntentTerminal) {
+	// Terminal-intent guard: when the intent is sealed (v4) or in
+	// `awaiting_completion_review` / `status: completed` (v3), deep
+	// links to `/stages/<X>` would render with the stage banner
+	// highlighting the (now-done) stage and the chrome labeling it
+	// "current". IntentCompleteView lives at /intent — redirect there
+	// so the chrome reflects "we're reviewing the intent, not a stage."
+	if (isIntentTerminal(session)) {
 		return (
 			<Navigate to="/review/$sessionId/intent" params={{ sessionId }} replace />
 		)
 	}
 	const stageStates = session.stage_states ?? {}
+	const stageState = stageStates[stage] as
+		| { status?: string; phase?: string | null; mergedIntoMain?: boolean }
+		| undefined
+	// v4: completion = mergedIntoMain. v3 fallback: status === "completed".
+	// "current" still wins via active-stage match (the engine sits there).
 	const stageStatus =
 		stage === activeStage
 			? "current"
-			: (stageStates[stage]?.status ?? "pending")
-	const stagePhase = stageStates[stage]?.phase ?? null
+			: stageState?.mergedIntoMain === true
+				? "completed"
+				: (stageState?.status ?? "pending")
+	const stagePhase = stageState?.phase ?? null
 	const gateModes = resolveGateModes(session.gate_type)
 	const gateBadges = gateModes.map(gateBadgeCopy)
 	const isAdHoc = session.ad_hoc === true

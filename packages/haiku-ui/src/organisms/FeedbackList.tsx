@@ -51,6 +51,8 @@ export interface FeedbackListProps {
 		body: string,
 		closeAsAnswered?: boolean,
 	) => Promise<void>
+	/** Called when the user dismisses an agent closure-reply card. */
+	onDismissClosureReply?: (id: string) => Promise<void>
 	/** Set of feedback ids currently in flight (PUT / DELETE). Rows
 	 *  matching render a "Saving…" indicator + disable action buttons. */
 	busyIds?: ReadonlySet<string>
@@ -71,6 +73,7 @@ export function FeedbackList({
 	onStatusChange,
 	onDelete,
 	onReply,
+	onDismissClosureReply,
 	busyIds,
 	initialExpandedId = null,
 	height = DEFAULT_LIST_HEIGHT,
@@ -197,6 +200,7 @@ export function FeedbackList({
 						onStatusChange={onStatusChange}
 						onDelete={onDelete}
 						onReply={onReply}
+						onDismissClosureReply={onDismissClosureReply}
 						pending={busyIds?.has(item.feedback_id)}
 					/>
 				</li>

@@ -2,7 +2,7 @@
 name: security
 description: Supply chain, dependency audit, and consumer-misuse threat model
 hats: [threat-modeler, security-reviewer]
-fix_hats: [threat-modeler, feedback-assessor]
+fix_hats: [classifier, threat-modeler, feedback-assessor]
 review: [external, ask]
 elaboration: autonomous
 inputs:

@@ -32,18 +32,18 @@
 // introduce a third runtime.
 
 export type {
+	FeedbackFrontmatter,
+	FeedbackOrigin,
 	HaikuFeedbackInput,
-	HaikuFeedbackUpdateInput,
 } from "./feedback.js"
 export {
 	CREATE_TIME_FB_FIELDS,
 	FB_ID_PATTERN,
-	FEEDBACK_STATUSES,
+	FEEDBACK_FRONTMATTER_SCHEMA,
+	FEEDBACK_ORIGINS,
 	FSM_DRIVEN_FB_FIELDS,
 	HAIKU_FEEDBACK_INPUT_SCHEMA,
-	HAIKU_FEEDBACK_UPDATE_INPUT_SCHEMA,
 	validateHaikuFeedbackInputSchema,
-	validateHaikuFeedbackUpdateInputSchema,
 } from "./feedback.js"
 export type {
 	HaikuAwaitDesignDirectionInput,
@@ -76,6 +76,7 @@ export {
 	HAIKU_FEEDBACK_READ_INPUT_SCHEMA,
 	HAIKU_FEEDBACK_REJECT_HAT_INPUT_SCHEMA,
 	HAIKU_FEEDBACK_REJECT_INPUT_SCHEMA,
+	HAIKU_FEEDBACK_SET_TARGETS_INPUT_SCHEMA,
 	HAIKU_FEEDBACK_WRITE_INPUT_SCHEMA,
 	validateHaikuFeedbackAdvanceHatInputSchema,
 	validateHaikuFeedbackDeleteInputSchema,
@@ -84,6 +85,7 @@ export {
 	validateHaikuFeedbackReadInputSchema,
 	validateHaikuFeedbackRejectHatInputSchema,
 	validateHaikuFeedbackRejectInputSchema,
+	validateHaikuFeedbackSetTargetsInputSchema,
 	validateHaikuFeedbackWriteInputSchema,
 } from "./inputs/feedback-variants.js"
 export type {
@@ -180,7 +182,6 @@ export {
 export type {
 	HaikuUnitAdvanceHatInput,
 	HaikuUnitDeleteInput,
-	HaikuUnitIncrementBoltInput,
 	HaikuUnitListInput,
 	HaikuUnitReadInput,
 	HaikuUnitRejectHatInput,
@@ -191,7 +192,6 @@ export type {
 export {
 	HAIKU_UNIT_ADVANCE_HAT_INPUT_SCHEMA,
 	HAIKU_UNIT_DELETE_INPUT_SCHEMA,
-	HAIKU_UNIT_INCREMENT_BOLT_INPUT_SCHEMA,
 	HAIKU_UNIT_LIST_INPUT_SCHEMA,
 	HAIKU_UNIT_READ_INPUT_SCHEMA,
 	HAIKU_UNIT_REJECT_HAT_INPUT_SCHEMA,
@@ -200,7 +200,6 @@ export {
 	HAIKU_UNIT_WRITE_INPUT_SCHEMA,
 	validateHaikuUnitAdvanceHatInputSchema,
 	validateHaikuUnitDeleteInputSchema,
-	validateHaikuUnitIncrementBoltInputSchema,
 	validateHaikuUnitListInputSchema,
 	validateHaikuUnitReadInputSchema,
 	validateHaikuUnitRejectHatInputSchema,
@@ -208,14 +207,28 @@ export {
 	validateHaikuUnitStartInputSchema,
 	validateHaikuUnitWriteInputSchema,
 } from "./inputs/units.js"
-export type { IntentFrontmatter } from "./intent.js"
+export type { IntentFrontmatter, IntentMode } from "./intent.js"
 export {
 	AGENT_AUTHORABLE_INTENT_FIELDS,
 	FSM_DRIVEN_INTENT_FIELDS,
+	INTENT_APPROVALS_SCHEMA,
 	INTENT_FRONTMATTER_SCHEMA,
 	INTENT_IMMUTABLE_FIELDS,
+	INTENT_MODES,
 	validateIntentFrontmatterSchema,
 } from "./intent.js"
+export type {
+	Approval,
+	DiscoveryRecord,
+	Review,
+} from "./approval.js"
+export {
+	APPROVAL_SCHEMA,
+	DISCOVERY_RECORD_SCHEMA,
+	REVIEW_SCHEMA,
+} from "./approval.js"
+export type { Iteration } from "./iteration.js"
+export { ITERATION_SCHEMA } from "./iteration.js"
 export type { ErrorOutput, OkOutput } from "./output-envelope.js"
 export { ERROR_OUTPUT_SCHEMA, OK_OUTPUT_SCHEMA } from "./output-envelope.js"
 export type { StageState } from "./stage-state.js"

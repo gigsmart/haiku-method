@@ -2,7 +2,7 @@
 name: options
 description: Generate and structure strategic options
 hats: [ideator, modeler, verifier]
-fix_hats: [ideator, feedback-assessor]
+fix_hats: [classifier, ideator, feedback-assessor]
 review: ask
 elaboration: collaborative
 inputs:

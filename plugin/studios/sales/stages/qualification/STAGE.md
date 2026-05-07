@@ -2,7 +2,7 @@
 name: qualification
 description: Qualify the opportunity against ICP, budget, authority, need, and timeline
 hats: [qualifier, deal-strategist, verifier]
-fix_hats: [qualifier, feedback-assessor]
+fix_hats: [classifier, qualifier, feedback-assessor]
 review: ask
 elaboration: collaborative
 inputs:

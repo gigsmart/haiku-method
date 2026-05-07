@@ -20,7 +20,13 @@
 //   4. On infra failure: falls back to MCP elicitation when the host
 //      supports it; otherwise returns an actionable error.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import {
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	readFileSync,
+	writeFileSync,
+} from "node:fs"
 import { join } from "node:path"
 import { ensureOnStageBranch } from "../../git-worktree.js"
 import {
@@ -31,13 +37,19 @@ import {
 	getElicitInput,
 	isStagePreExecute,
 	listUnits,
-	resetFixLoopBolts,
 	workflowAdvancePhase,
 	workflowAdvanceStage,
 	workflowCompleteStage,
 	workflowIntentComplete,
 	writeReviewFeedbackFiles,
 } from "../../orchestrator.js"
+// v4: resetFixLoopBolts deleted with revisit.ts. Fix-loop bolts are
+// derived from feedback iterations[].length; there's no counter to
+// reset — terminal feedback-assessor advance closes the FB and the
+// next bolt is just the next iteration entry.
+const resetFixLoopBolts = (_slug: string, _stage: string): void => {
+	/* no-op */
+}
 import { reportError } from "../../sentry.js"
 import { logSessionEvent } from "../../session-metadata.js"
 import {
@@ -64,6 +76,10 @@ import {
 } from "../../state-tools.js"
 import { defineTool } from "../define.js"
 import { withAnnouncement } from "./_announce.js"
+import {
+	buildAwaitTimeoutResponse,
+	isAwaitWaitTimeoutError,
+} from "./_await_gate_timeout.js"
 import { text } from "./_text.js"
 import { withInstructions as renderInstructions } from "./_with_instructions.js"
 
@@ -72,6 +88,63 @@ function readFrontmatter(filePath: string): Record<string, unknown> {
 	const raw = readFileSync(filePath, "utf8")
 	const { data } = parseFrontmatter(raw)
 	return data
+}
+
+/**
+ * v4 helper: stamp the appropriate approval/review record for a gate
+ * approval. Replaces the v3 `workflowAdvancePhase/Stage/CompleteStage`
+ * call chain — in v4 the cursor sees the new sig on the next tick and
+ * routes forward (next role, merge_stage, intent_review, etc.)
+ * automatically.
+ *
+ * Mapping by gateContext:
+ *   - "intent_completion" → intent.approvals.user
+ *   - "intent_review"     → intent.approvals.user (spec is filed
+ *                           separately by review-agents)
+ *   - "elaborate_to_execute" → reviews.user on every unit in stage
+ *                              (pre-execute spec review)
+ *   - "stage_gate"        → approvals.user on every unit in stage
+ *                           (post-execute output approval)
+ *
+ * The next haiku_run_next tick walks the cursor and picks up where
+ * the new approval routes us.
+ */
+function stampGateApproval(
+	slug: string,
+	gateContext: string,
+	stage: string,
+): void {
+	const intentMd = join(intentDir(slug), "intent.md")
+	const at = new Date().toISOString()
+
+	if (gateContext === "intent_completion" || gateContext === "intent_review") {
+		const fm = readFrontmatter(intentMd)
+		const approvals =
+			fm.approvals && typeof fm.approvals === "object"
+				? (fm.approvals as Record<string, unknown>)
+				: {}
+		approvals.user = { at }
+		setFrontmatterField(intentMd, "approvals", approvals)
+		return
+	}
+
+	// Stage-scoped gates: stamp every unit in the stage.
+	const isPreExecute = gateContext === "elaborate_to_execute"
+	const targetField = isPreExecute ? "reviews" : "approvals"
+	const unitsDir = join(intentDir(slug), "stages", stage, "units")
+	if (!existsSync(unitsDir)) return
+	const entries = readdirSync(unitsDir)
+	for (const entry of entries) {
+		if (!entry.endsWith(".md")) continue
+		const unitPath = join(unitsDir, entry)
+		const fm = readFrontmatter(unitPath)
+		const records =
+			fm[targetField] && typeof fm[targetField] === "object"
+				? (fm[targetField] as Record<string, unknown>)
+				: {}
+		records.user = { at }
+		setFrontmatterField(unitPath, targetField, records)
+	}
 }
 
 export default defineTool({
@@ -219,10 +292,19 @@ export default defineTool({
 		}
 
 		try {
+			// Gate-review timeout (2026-05-06): bumped from 30min to 4h.
+			// 30min was too short for real human reviews (lunch, meetings,
+			// asking a colleague to look). The agent saw timeouts as errors
+			// and surfaced them noisily ("Gate review timed out — what now?")
+			// even though the human was still working. 4h covers the long
+			// tail of legitimate review duration while still bounding the
+			// MCP block in case of a stuck process. Session TTL in
+			// sessions.ts is matched so the in-memory session survives a
+			// full wait cycle.
 			const reviewResult = await _awaitGateReviewSession(sessionId, {
 				autoOpen,
 				reviewUrl,
-				timeoutMs: 30 * 60 * 1000,
+				timeoutMs: 4 * 60 * 60 * 1000,
 				signal,
 			})
 
@@ -253,8 +335,8 @@ export default defineTool({
 							.studio as string) || ""
 					// Guard: all declared stages must be completed before sealing.
 					// Belt-and-suspenders against state drift between gate-review
-					// preparation and approval (the user can take up to 30 minutes
-					// to decide; pre-tick's check at prepare-time isn't enough).
+					// preparation and approval (the user can take up to 4h to
+					// decide; pre-tick's check at prepare-time isn't enough).
 					const incompleteStages = findIncompleteStages(
 						slug,
 						studioForCompletion,
@@ -269,6 +351,7 @@ export default defineTool({
 							}),
 						)
 					}
+					stampGateApproval(slug, "intent_completion", stage)
 					workflowIntentComplete(slug)
 					syncSessionMetadata(slug, stFile)
 					const gateResult = {
@@ -283,6 +366,7 @@ export default defineTool({
 					return text(withInstructions(gateResult))
 				}
 				if (gateContext === "intent_review") {
+					stampGateApproval(slug, "intent_review", stage)
 					const intentFilePath = join(process.cwd(), intentDirPath, "intent.md")
 					setFrontmatterField(intentFilePath, "intent_reviewed", true)
 					// Pre-stage intent_review (current shape): no active stage,
@@ -319,6 +403,7 @@ export default defineTool({
 					return text(withInstructions(gateResult))
 				}
 				if (gateContext === "elaborate_to_execute" && nextPhase) {
+					stampGateApproval(slug, "elaborate_to_execute", stage)
 					workflowAdvancePhase(slug, stage, nextPhase)
 					syncSessionMetadata(slug, stFile)
 					const gateResult = {
@@ -335,6 +420,7 @@ export default defineTool({
 					return text(withInstructions(gateResult))
 				}
 				if (nextStage) {
+					stampGateApproval(slug, "stage_gate", stage)
 					workflowAdvanceStage(slug, stage, nextStage)
 					syncSessionMetadata(slug, stFile)
 					const gateResult = {
@@ -350,6 +436,7 @@ export default defineTool({
 					}
 					return text(withInstructions(gateResult))
 				}
+				stampGateApproval(slug, "stage_gate", stage)
 				workflowCompleteStage(slug, stage, "advanced")
 				syncSessionMetadata(slug, stFile)
 				const approvedStudio =
@@ -562,21 +649,19 @@ export default defineTool({
 				}
 			}
 
-			// Timeouts: agent should retry the await tool to keep waiting.
-			if (
-				errorMsg.includes("Review timeout") ||
-				errorMsg.includes("timeout") ||
-				errorMsg.includes("Timeout")
-			) {
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: `Gate review timed out after 30 minutes with no decision. Call haiku_await_gate { intent: "${slug}" } again to keep waiting, or haiku_run_next { intent: "${slug}" } to recreate the session.`,
-						},
-					],
-					isError: true,
-				}
+			// Timeouts are NOT errors — they're "still waiting" signals.
+			// (2026-05-06) Returning isError: true caused the agent to
+			// surface the timeout to the user as a failure ("Review
+			// timed out — what should we do?") and trigger noisy retry
+			// loops, even though the human was just busy. The wait
+			// timeout bound (4h, see _awaitGateReviewSession call above)
+			// catches stuck processes; it's not a user-facing fault.
+			// Calmer message + isError: false = the agent treats this as
+			// a continuation cue and silently re-awaits. See
+			// `isAwaitWaitTimeoutError` / `buildAwaitTimeoutResponse`
+			// (top of file) for the testable helpers.
+			if (isAwaitWaitTimeoutError(errorMsg)) {
+				return buildAwaitTimeoutResponse(slug)
 			}
 
 			const agentFixable =

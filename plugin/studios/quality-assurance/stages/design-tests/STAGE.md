@@ -2,7 +2,7 @@
 name: design-tests
 description: Design test cases and plan automation
 hats: [designer, automator, verifier]
-fix_hats: [designer, feedback-assessor]
+fix_hats: [classifier, designer, feedback-assessor]
 review: auto
 elaboration: autonomous
 inputs:

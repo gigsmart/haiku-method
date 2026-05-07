@@ -154,6 +154,27 @@ export const FeedbackItemSchema = z
 			.describe(
 				"Per-bolt history of the fix loop — one entry per hat that fires against this finding. Mirrors the `iterations:` frontmatter on unit files so reviewers can see at a glance why a finding needed multiple tries.",
 			),
+		/** Closure reply — set by the terminal fix-hat advance with a
+		 *  short plain-language explanation of what was done to address
+		 *  the FB. Surfaces in the SPA so the requester sees the
+		 *  resolution, not just the closure. Paired with
+		 *  `closure_reply_unread` so the SPA can filter for replies the
+		 *  reviewer hasn't acknowledged yet. */
+		closure_reply: z
+			.object({
+				text: z.string().max(2000),
+				at: z.string().max(40),
+			})
+			.optional()
+			.describe(
+				"Agent's plain-language reply to the requester at FB closure time. Set on the terminal fix-hat advance.",
+			),
+		closure_reply_unread: z
+			.boolean()
+			.optional()
+			.describe(
+				"True when the reply hasn't been acknowledged in the SPA yet. Flipped to false by the dismiss action.",
+			),
 	})
 	.describe("Wire shape of a feedback item")
 export type FeedbackItem = z.infer<typeof FeedbackItemSchema>

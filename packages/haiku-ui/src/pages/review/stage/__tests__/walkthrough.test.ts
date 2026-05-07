@@ -10,7 +10,10 @@
  */
 
 import { describe, expect, it } from "vitest"
-import { composeWalkthroughItems } from "../walkthrough"
+import {
+	composeWalkthroughItems,
+	resolveWalkthroughForDetail,
+} from "../walkthrough"
 
 const inputs = {
 	units: [{ slug: "unit-01-acceptance" }, { slug: "unit-02-design" }],
@@ -95,5 +98,67 @@ describe("composeWalkthroughItems", () => {
 		expect(items[3].tab).toBe("knowledge")
 		expect(items[4].tab).toBe("outputs")
 		expect(items[5].tab).toBe("outputs")
+	})
+})
+
+describe("resolveWalkthroughForDetail (UX fallback for off-tab browsing)", () => {
+	const gateUnits = composeWalkthroughItems("elaborate_to_execute", inputs)
+	const gateOutputs = composeWalkthroughItems("stage_gate", inputs)
+
+	it("returns gate items when no detail is open", () => {
+		expect(resolveWalkthroughForDetail(gateUnits, null, inputs)).toEqual(
+			gateUnits,
+		)
+	})
+
+	it("returns gate items when current detail IS in the gate set", () => {
+		const out = resolveWalkthroughForDetail(
+			gateUnits,
+			{ tab: "units", name: "unit-01-acceptance" },
+			inputs,
+		)
+		expect(out).toEqual(gateUnits)
+	})
+
+	it("falls back to tab-scoped knowledge walk when reviewer browses Knowledge during a units-only gate", () => {
+		const out = resolveWalkthroughForDetail(
+			gateUnits,
+			{ tab: "knowledge", name: "DISCOVERY" },
+			inputs,
+		)
+		expect(out.map((i) => i.tab)).toEqual(["knowledge", "knowledge"])
+		expect(out.map((i) => i.name)).toEqual(["DISCOVERY", "knowledge/UPLOAD-FLOW"])
+	})
+
+	it("falls back to tab-scoped outputs walk when reviewer browses Outputs during a units-only gate", () => {
+		const out = resolveWalkthroughForDetail(
+			gateUnits,
+			{ tab: "outputs", name: "ARCHITECTURE" },
+			inputs,
+		)
+		expect(out.map((i) => i.tab)).toEqual(["outputs", "outputs"])
+		expect(out.map((i) => i.name)).toEqual(["ARCHITECTURE", "wireframes/foo"])
+	})
+
+	it("falls back to tab-scoped units walk when reviewer browses Units during an outputs-only gate", () => {
+		const out = resolveWalkthroughForDetail(
+			gateOutputs,
+			{ tab: "units", name: "unit-02-design" },
+			inputs,
+		)
+		expect(out.map((i) => i.tab)).toEqual(["units", "units"])
+		expect(out.map((i) => i.name)).toEqual([
+			"unit-01-acceptance",
+			"unit-02-design",
+		])
+	})
+
+	it("returns empty fallback when current tab has no items", () => {
+		const out = resolveWalkthroughForDetail(
+			gateUnits,
+			{ tab: "knowledge", name: "missing" },
+			{ ...inputs, knowledgeVMs: [] },
+		)
+		expect(out).toEqual([])
 	})
 })

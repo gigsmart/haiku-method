@@ -1034,6 +1034,34 @@ export function ensureStageBranch(slug: string, stage: string): string {
  * branch, producing the exact "stage work shipped to dev without the
  * sweep fixes" problem.
  */
+/**
+ * Detect whether the current worktree is git-locked. P9 (2026-05-06):
+ * a locked worktree is sacred — the engine must never `git checkout`
+ * a branch on it, because that's how a parallel run_next from a
+ * different intent hijacks the working tree of an in-flight
+ * refactor. The lock file lives at `<git-dir>/worktrees/<name>/locked`
+ * for added worktrees, or `<git-dir>/locked` for the primary repo.
+ *
+ * Best-effort: returns `false` on any read error rather than throwing,
+ * because the lock check is a guard, not the main path.
+ */
+export function isCurrentWorktreeLocked(): boolean {
+	try {
+		const out = execFileSync("git", ["rev-parse", "--git-dir"], {
+			encoding: "utf8",
+			stdio: "pipe",
+		}).trim()
+		if (!out) return false
+		// `git rev-parse --git-dir` may return a relative path. Resolve
+		// against process.cwd() so the existsSync check works regardless.
+		const absGitDir = out.startsWith("/") ? out : join(process.cwd(), out)
+		const lockedPath = join(absGitDir, "locked")
+		return existsSync(lockedPath)
+	} catch {
+		return false
+	}
+}
+
 export function ensureOnStageBranch(
 	slug: string,
 	stage: string | undefined,
@@ -1046,8 +1074,13 @@ export function ensureOnStageBranch(
 	 *  emit a `commit_wip` action rather than a hard error requiring a human.
 	 *  Values: "dirty_tree" — uncommitted changes blocked a branch switch;
 	 *  "merge_conflict" — the merge left conflicts to resolve;
-	 *  "merge_in_progress" — MERGE_HEAD/REBASE_HEAD etc present. */
-	block?: "dirty_tree" | "merge_conflict" | "merge_in_progress"
+	 *  "merge_in_progress" — MERGE_HEAD/REBASE_HEAD etc present;
+	 *  "worktree_locked" — current worktree is locked, refusing to checkout. */
+	block?:
+		| "dirty_tree"
+		| "merge_conflict"
+		| "merge_in_progress"
+		| "worktree_locked"
 	/** For block=dirty_tree: the paths git reported as "would be overwritten". */
 	dirty_files?: string[]
 	/** The branch we were trying to reach when blocked. */
@@ -1055,6 +1088,37 @@ export function ensureOnStageBranch(
 } {
 	if (!isGitRepo())
 		return { ok: true, branch: "", message: "no git", switched: false }
+
+	// P9 (2026-05-06): hard refuse on locked worktrees. If the current
+	// working tree is locked (typically because another in-flight
+	// engine run or a manual `git worktree lock` reserved it for a
+	// specific purpose), DO NOT switch branches under it. Surface a
+	// clear error so the caller (or the user) sees what happened
+	// instead of a silently-hijacked tree.
+	if (isCurrentWorktreeLocked()) {
+		const targetBranchHint = stage
+			? `haiku/${slug}/${stage}`
+			: `haiku/${slug}/main`
+		const current = getCurrentBranch()
+		// Already on the target — no checkout needed; locked tree is
+		// fine because we're not switching anything.
+		if (current === targetBranchHint) {
+			return {
+				ok: true,
+				branch: current,
+				message: `worktree locked; already on '${current}', no switch needed`,
+				switched: false,
+			}
+		}
+		return {
+			ok: false,
+			branch: current,
+			message: `Refusing to checkout '${targetBranchHint}' on a locked worktree (current: '${current}'). Locked worktrees are reserved for in-flight work and must not be hijacked by a parallel intent's branch enforcement. Run from a different worktree, or unlock this one with \`git worktree unlock\` if the lock is stale.`,
+			switched: false,
+			block: "worktree_locked",
+			target_branch: targetBranchHint,
+		}
+	}
 
 	const intentMain = `haiku/${slug}/main`
 	const stageBranch = stage ? `haiku/${slug}/${stage}` : ""

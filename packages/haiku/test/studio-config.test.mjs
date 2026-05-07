@@ -102,9 +102,16 @@ test("design stage review agents include inception-coverage", () => {
 	)
 })
 
-test("development stage fix_hats are [builder, feedback-assessor]", () => {
+test("development stage fix_hats are [classifier, builder, feedback-assessor]", () => {
+	// Classifier is the v4 first-pass triage hat — runs before the
+	// implementer to decide target_unit / target_invalidates on
+	// user-authored FBs that landed without classification.
 	const fixHatNames = software.stages.development.fixHats.map((h) => h.name)
-	assert.deepStrictEqual(fixHatNames, ["builder", "feedback-assessor"])
+	assert.deepStrictEqual(fixHatNames, [
+		"classifier",
+		"builder",
+		"feedback-assessor",
+	])
 })
 
 test("each hat config carries a mandate path that exists on disk", () => {

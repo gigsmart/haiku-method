@@ -2,7 +2,7 @@
 name: analysis
 description: Perform variance analysis and track financial performance
 hats: [analyst, auditor]
-fix_hats: [analyst, feedback-assessor]
+fix_hats: [classifier, analyst, feedback-assessor]
 review: auto
 elaboration: autonomous
 inputs:

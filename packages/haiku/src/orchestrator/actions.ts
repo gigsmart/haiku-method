@@ -16,13 +16,9 @@ import type { OrchestratorAction } from "../orchestrator.js"
 import { MAX_STAGE_ITERATIONS } from "../state-tools.js"
 import { emitTelemetry } from "../telemetry.js"
 
-export {
-	buildManualChangeAssessmentAction,
-	isManualChangeAssessment,
-	type ManualChangeAssessmentAction,
-	type ManualChangeAssessmentCtx,
-	type Outcome as ManualChangeAssessmentOutcome,
-} from "./workflow/handlers/manual-change-assessment.js"
+// v4: manual_change_assessment removed. Drift detection runs in
+// the cursor's Track C and surfaces as drift_detected → FB; the
+// feedback track handles assessment. No separate handler needed.
 
 /** Compact feedback summary for orchestrator action responses.
  *  Returns id/title/origin/author/status + file path — NO body.

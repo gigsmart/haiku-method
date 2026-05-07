@@ -2,7 +2,7 @@
 name: monitor
 description: Track vendor performance and SLA compliance
 hats: [monitor, relationship-manager, verifier]
-fix_hats: [monitor, feedback-assessor]
+fix_hats: [classifier, monitor, feedback-assessor]
 review: auto
 elaboration: autonomous
 inputs:

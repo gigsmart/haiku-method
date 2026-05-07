@@ -1,43 +1,58 @@
-// state/schemas/unit.ts — TypeBox-defined schema for unit
-// frontmatter shapes. AJV-validated when an agent calls
-// haiku_unit_write.
+// state/schemas/unit.ts — v4 unit frontmatter schema.
+//
+// In v4 a unit's lifecycle position is fully derived from its
+// `iterations[]`, `reviews{}`, `approvals{}`, and `discovery{}` records,
+// plus whether its branch has merged into the stage branch. There is
+// no `status` field. There is no `hat` field. There is no `bolt`
+// field. Each was a duplicate-source-of-truth fiction; the cursor
+// reads the records directly.
+//
+// Engine-driven fields the agent must NEVER write:
+//   - started_at  : stamped when the first hat is dispatched
+//   - discovery   : per-studio-agent record of when discovery ran
+//   - iterations  : append-only log of hat dispatches
+//   - reviews     : per-reviewer-role record of spec review
+//   - approvals   : per-reviewer-role record of output approval
+//
+// Agent-authorable fields:
+//   - title, description
+//   - inputs[]   : cross-stage upstream artifact paths this unit reads
+//   - outputs[]  : artifact paths this unit produces
+//   - depends_on[]: sibling unit names that must complete first (DAG)
+//   - quality_gates[]: build-class executable checks at advance time
+//   - model      : subagent tier override (haiku|sonnet|opus)
+//   - closes[]   : FB IDs this unit addresses on revisit iterations
+//   - applicable_skills[]: slash-command slugs surfaced to hat subagents
+//
+// Tool-level invalidation contract (enforced in haiku_unit_write and
+// haiku_unit_set, not in this schema): any write that mutates a unit's
+// spec body or any agent-authorable FM field MUST clear `reviews.*`
+// and `approvals.*` on the same unit. Spec change → all sigs reset →
+// cursor reroutes through reviews and approvals on the next tick.
+// This is the primary protection; the drift sweep is the secondary
+// catch for direct-edit bypasses.
 //
 // What JSONSchema covers (enforced by AJV):
 //   - allow-list of properties + per-field types
 //   - `model` enum
-//   - `quality_gates` inner shape (`{name, command, dir?}` with required keys)
+//   - `quality_gates` inner shape (`{name, command, dir?}`)
 //   - `title` minLength
 //   - `propertyNames.not.enum` forbids workflow-driven fields
 //
-// What JSONSchema can NOT cover (runtime context required, lives in
-// validateUnitFrontmatter as additional steps):
-//   - depends_on self-reference (needs the unit's own name)
-//   - depends_on resolves to actual siblings (needs sibling list)
-//   - depends_on doesn't form a cycle (needs full stage DAG)
-//   - body placeholder strings (needs body inspection)
-//   - ghost-FB closes references (needs FB list)
-//
-// SSOT: TypeBox builder → JSONSchema (consumed by AJV at compile,
-// referenced from the agent-facing tool defs) AND TypeScript type
-// (`Static<typeof UNIT_FRONTMATTER_SCHEMA>`). Same expression, no
-// drift between the runtime check and the type the handler reads.
+// What lives in validateUnitFrontmatter (runtime context):
+//   - depends_on self-reference, sibling resolution, cycle detection
+//   - body placeholder strings
+//   - ghost-FB closes references
 
 import { type Static, Type } from "@sinclair/typebox"
 import { stateAjv } from "./_ajv.js"
 
-// Engine-driven fields the agent must never write directly. Listed as
-// a const tuple so it appears in the schema's `propertyNames.not.enum`
-// AND is exported as the canonical FSM-DRIVEN list. Any new
-// engine-only field is added here in one place.
 const FSM_DRIVEN_UNIT_FIELDS_LIST = [
-	"status",
-	"hat",
-	"bolt",
-	"iterations",
 	"started_at",
-	"completed_at",
-	"hat_started_at",
-	"scope_reject_attempts",
+	"discovery",
+	"iterations",
+	"reviews",
+	"approvals",
 ] as const
 
 // Path-shape check: must be a non-empty string with no embedded
@@ -54,6 +69,11 @@ export const UNIT_FRONTMATTER_SCHEMA = Type.Object(
 				minLength: 1,
 				description:
 					"Unit title — non-empty string. Defaults to first H1 in the body, or to the unit name.",
+			}),
+		),
+		description: Type.Optional(
+			Type.String({
+				description: "Optional unit description.",
 			}),
 		),
 		depends_on: Type.Optional(
@@ -83,7 +103,7 @@ export const UNIT_FRONTMATTER_SCHEMA = Type.Object(
 				}),
 				{
 					description:
-						"Build-class only: list of `{name, command, dir?}` executable gate objects. Run at advance_hat time; non-zero exit blocks. Prose strings are silently skipped — they give no enforcement.",
+						"Build-class only: list of `{name, command, dir?}` executable gate objects. Run at terminal advance_hat time; non-zero exit blocks. Prose strings are silently skipped — they give no enforcement.",
 				},
 			),
 		),
@@ -97,7 +117,7 @@ export const UNIT_FRONTMATTER_SCHEMA = Type.Object(
 		closes: Type.Optional(
 			Type.Array(Type.String(), {
 				description:
-					"On revisit iterations, list of FB IDs this unit addresses (e.g. `[FB-01, FB-03]`). Every pending FB must be claimed by some unit's `closes:` to allow advancement.",
+					"On revisit iterations, list of FB IDs this unit addresses (e.g. `[FB-01, FB-03]`). Informational — feedback closure happens via the FB's own iterations + targets.invalidates, not via this field.",
 			}),
 		),
 		applicable_skills: Type.Optional(
@@ -108,16 +128,12 @@ export const UNIT_FRONTMATTER_SCHEMA = Type.Object(
 		),
 	},
 	{
-		// workflow-driven fields. Agents MUST NOT set these — the workflow
+		// FSM-driven fields. Agents MUST NOT set these — the workflow
 		// engine owns transitions via haiku_unit_advance_hat /
-		// haiku_unit_reject_hat / haiku_unit_increment_bolt (which call
-		// setFrontmatterField directly, bypassing the agent-facing tools).
-		// AJV's propertyNames check rejects any of these at validate time;
-		// strict MCP clients reject at parse time before the call goes
-		// out. `hat_started_at` and `scope_reject_attempts` are workflow-
-		// internal counters touched only by advance_hat / reject_hat —
-		// listed here so haiku_unit_write and haiku_unit_set both refuse
-		// to set them.
+		// haiku_unit_reject_hat / haiku_unit_start (terminal advance does
+		// the merge into stage branch, which is the un-fakable completion
+		// witness). AJV's propertyNames check rejects any of these at
+		// validate time; strict MCP clients reject at parse time.
 		propertyNames: { not: { enum: [...FSM_DRIVEN_UNIT_FIELDS_LIST] } },
 		// Stage-specific fields are allowed (per-stage
 		// `phases/ELABORATION.md` documents them). Schema can't enumerate
@@ -130,19 +146,12 @@ export const UNIT_FRONTMATTER_SCHEMA = Type.Object(
 
 export type UnitFrontmatter = Static<typeof UNIT_FRONTMATTER_SCHEMA>
 
-/** Compiled validator — instantiated once at module load, runs on
- *  every haiku_unit_write call. Returns boolean and populates
- *  `validateUnitFrontmatterSchema.errors` on failure. */
 export const validateUnitFrontmatterSchema = stateAjv.compile(
 	UNIT_FRONTMATTER_SCHEMA,
 )
 
-/** Field names a haiku_unit_write / _set call may legally touch.
- *  Reads directly from the schema — JSONSchema is the SSOT. */
 export const AGENT_AUTHORABLE_UNIT_FIELDS = Object.keys(
 	UNIT_FRONTMATTER_SCHEMA.properties ?? {},
 ) as ReadonlyArray<string>
 
-/** Field names the workflow engine owns. Agent-facing tools refuse
- *  to set these. Reads directly from the schema. */
 export const FSM_DRIVEN_UNIT_FIELDS = FSM_DRIVEN_UNIT_FIELDS_LIST

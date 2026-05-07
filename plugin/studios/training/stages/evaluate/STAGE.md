@@ -2,7 +2,7 @@
 name: evaluate
 description: Measure training effectiveness and analyze feedback
 hats: [evaluator, analyst, verifier]
-fix_hats: [evaluator, feedback-assessor]
+fix_hats: [classifier, evaluator, feedback-assessor]
 review: ask
 elaboration: autonomous
 inputs:

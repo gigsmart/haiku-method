@@ -1,52 +1,47 @@
-// state/schemas/intent.ts — TypeBox-defined schema for intent
-// frontmatter shapes. Mirrors plugin/schemas/intent.schema.json.
-// AJV-validated when an agent calls haiku_intent_set; the
-// `propertyNames.not.enum` list rejects engine-only fields the
-// workflow engine owns (status, active_stage, phase,
-// completion_review_*, completed_at, etc).
+// state/schemas/intent.ts — v4 intent.md frontmatter schema.
 //
-// Parallel to UNIT_FRONTMATTER_SCHEMA — same SSOT pattern.
+// In v4 the cursor walks aggregate state across intent.md + every
+// unit.md + every feedback.md. There is no `state.json`, no
+// `active_stage`, no `phase`. Everything that used to live there is
+// derived.
+//
+// Engine-driven (FSM) fields the agent must NEVER write:
+//   - plugin_version  : stamped on creation, immutable
+//   - started_at      : stamped on first run_next that produces work
+//   - approvals.*     : signed by reviewers, drift-swept against SHA
+//   - sealed_at       : terminal write-lock when every approval signed
+//
+// Agent-authorable fields (creation + select_mode/select_studio):
+//   - title, description, slug, mode, studio, granularity
+//   - skip_stages (mode config)
+//   - intent_completion_review (config flag)
+//   - follows (parent-link, creation-time only)
+//
+// `studio` is immutable post-create — accepted by AJV (so test
+// fixtures still build) but rejected by the haiku_intent_set handler
+// with a stable named code.
+//
+// `mode` is engine-managed: set via haiku_select_mode (with elicitation),
+// never via haiku_intent_create or haiku_intent_set. /haiku:change-mode
+// drives mid-flight changes through the same tool.
 
 import { type Static, Type } from "@sinclair/typebox"
 import { stateAjv } from "./_ajv.js"
+import { APPROVAL_SCHEMA } from "./approval.js"
 
 const FSM_DRIVEN_INTENT_FIELDS_LIST = [
-	// Engine-managed lifecycle fields
-	"status",
-	"active_stage",
-	"phase",
+	"plugin_version",
 	"started_at",
-	"completed_at",
-	"created_at",
+	"approvals",
+	"sealed_at",
 	// Mode is engine-managed: set via haiku_select_mode (with elicitation),
-	// never via haiku_intent_create or haiku_intent_set. /haiku:change-mode
-	// drives mid-flight changes through the same tool.
+	// never via haiku_intent_create or haiku_intent_set.
 	"mode",
-	// Completion-review state machine
-	"completion_review_dispatched",
-	"completion_review_skipped",
-	"completion_review_entered_at",
-	"completion_review_dispatched_at",
-	// Engine-derived collections. `stages` is set by haiku_select_mode for
-	// non-quick modes (full studio list) or haiku_select_stage for quick
-	// (single-element allow-list). Never agent-set.
+	// Engine-derived stage list (set by haiku_select_mode).
 	"stages",
-	"composite",
-	"intent_reviewed",
-	// Intent-scope gate session pointers (intent_review, intent_completion).
-	// Stage-scope gates persist these on the stage's state.json instead.
-	"gate_review_session_id",
-	"gate_review_url",
-	"gate_review_context",
-	"gate_review_next_stage",
-	"gate_review_next_phase",
-	// Archive lifecycle (toggle via haiku_intent_archive / _unarchive)
+	// Archive lifecycle (toggle via haiku_intent_archive / _unarchive).
 	"archived",
 	"archived_at",
-	// Parent-link (creation-time only)
-	"follows",
-	// Legacy alias for mode
-	"autopilot",
 ] as const
 
 export const INTENT_MODES = [
@@ -54,32 +49,49 @@ export const INTENT_MODES = [
 	"discrete",
 	"autopilot",
 	"discrete-hybrid",
-	// `quick` operates like continuous but is single-stage (the agent
-	// elicits which stage). Promotes the prior /haiku:quick skill into
-	// a real mode value so validation + transitions are uniform.
 	"quick",
 ] as const
 
 export type IntentMode = (typeof INTENT_MODES)[number]
 
+// Approvals at intent scope share the same shape as unit-scope approvals.
+// Per-key for: spec, continuity, <intent-completion-review-agent-N>, user.
+// The cursor walks `Object.entries(approvals)` and routes through any
+// null entry. The exact key set is derived from the studio's configured
+// intent-completion review-agents at tick time.
+const INTENT_APPROVALS_SCHEMA = Type.Record(
+	Type.String(),
+	Type.Union([APPROVAL_SCHEMA, Type.Null()]),
+)
+
 export const INTENT_FRONTMATTER_SCHEMA = Type.Object(
 	{
 		title: Type.Optional(Type.String({ minLength: 1 })),
-		// `mode` is now engine-managed (in FSM_DRIVEN list) but stays
-		// accepted by the AJV schema so test fixtures and on-disk reads
-		// still validate. Direct agent writes are rejected by the
-		// haiku_intent_set handler with `intent_field_engine_only`.
+		description: Type.Optional(Type.String()),
+		// `slug` is intentionally NOT in the frontmatter. The intent
+		// directory name IS the slug — `dirname(intent.md)` is the
+		// single source of truth. Branches `haiku/<slug>` and
+		// `haiku/<slug>/<stage>` derive from the path. Renames are
+		// not supported in v4 — start a new intent with `follows:
+		// <old-slug>` if you need a different identity.
+		// `mode` accepted by AJV (so on-disk reads + tests validate)
+		// but engine-only at write time — see FSM list.
 		mode: Type.Optional(Type.String({ enum: [...INTENT_MODES] })),
 		skip_stages: Type.Optional(Type.Array(Type.String())),
 		intent_completion_review: Type.Optional(Type.Boolean()),
-		// `studio` is set on creation by haiku_select_studio and is
-		// immutable thereafter — accepted by AJV (so tests building
-		// fixtures don't fail) but rejected by the haiku_intent_set
-		// handler with a dedicated `intent_field_immutable` code.
 		studio: Type.Optional(Type.String()),
+		granularity: Type.Optional(Type.String()),
+		// Parent-link (creation-time only). Stores a slug reference.
+		// If the referenced intent is renamed (unsupported but possible
+		// out-of-band), the link breaks gracefully — `follows` is
+		// informational, not load-bearing for cursor decisions.
+		follows: Type.Optional(Type.String()),
 	},
 	{
 		propertyNames: { not: { enum: [...FSM_DRIVEN_INTENT_FIELDS_LIST] } },
+		// Other config fields under stage-specific or studio-specific
+		// extensions are allowed; AJV permits unknowns. The deny list
+		// catches FSM-driven fields at write time.
 		additionalProperties: true,
 	},
 )
@@ -96,6 +108,15 @@ export const AGENT_AUTHORABLE_INTENT_FIELDS = Object.keys(
 
 export const FSM_DRIVEN_INTENT_FIELDS = FSM_DRIVEN_INTENT_FIELDS_LIST
 
-/** Fields immutable after intent creation (handler-rejected, not
- *  schema-rejected — AJV accepts them so test fixtures still build). */
-export const INTENT_IMMUTABLE_FIELDS: ReadonlyArray<string> = ["studio"]
+/** Fields immutable after intent creation. AJV accepts them so test
+ *  fixtures still build; the haiku_intent_set handler returns a
+ *  stable `intent_field_immutable` code on attempt. `slug` is NOT
+ *  here — slug isn't a frontmatter field at all (it's the dir name). */
+export const INTENT_IMMUTABLE_FIELDS: ReadonlyArray<string> = [
+	"studio",
+	"plugin_version",
+	"follows",
+]
+
+// Re-exported approval shape for callers that read intent.approvals.*.
+export { INTENT_APPROVALS_SCHEMA }

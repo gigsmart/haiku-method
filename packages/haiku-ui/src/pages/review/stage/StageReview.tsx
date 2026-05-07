@@ -51,7 +51,10 @@ import {
 	shaOf,
 	useSeenTracker,
 } from "./useSeenTracker"
-import { composeWalkthroughItems } from "./walkthrough"
+import {
+	composeWalkthroughItems,
+	resolveWalkthroughForDetail,
+} from "./walkthrough"
 
 export interface StageReviewProps {
 	session: ReviewPageSessionData
@@ -491,7 +494,7 @@ export function StageReview({
 	// module for the routing table. Memoized on the same triggers as
 	// before — recomputing every render is intended.
 	const gateContext = session.gate_context
-	const walkthroughItems = useMemo(
+	const gateWalkthroughItems = useMemo(
 		() =>
 			composeWalkthroughItems(gateContext, {
 				units,
@@ -500,6 +503,23 @@ export function StageReview({
 			}),
 		// biome-ignore lint/correctness/useExhaustiveDependencies: knowledgeVMs/outputVMs are derived arrays that change identity each render but only the contained name strings matter for walkthrough order; recomputing on every render is the intended behavior
 		[gateContext, units, knowledgeVMs, outputVMs],
+	)
+	// UX fix (2026-05-06): when the reviewer is browsing a tab that's
+	// NOT in the gate's walkthrough set (e.g. on Knowledge during an
+	// elaborate_to_execute gate which scopes to units-only), the
+	// prev/next buttons should walk WITHIN the current tab — not yank
+	// the reviewer back to units they're not focused on.
+	// `resolveWalkthroughForDetail` owns the fallback logic; covered
+	// by walkthrough.test.ts.
+	const walkthroughItems = useMemo(
+		() =>
+			resolveWalkthroughForDetail(gateWalkthroughItems, detail, {
+				units,
+				knowledgeVMs,
+				outputVMs,
+			}),
+		// biome-ignore lint/correctness/useExhaustiveDependencies: derived arrays whose identity flips per render; only the names matter
+		[detail, gateWalkthroughItems, units, knowledgeVMs, outputVMs],
 	)
 	const walkIndex = detail
 		? walkthroughItems.findIndex(

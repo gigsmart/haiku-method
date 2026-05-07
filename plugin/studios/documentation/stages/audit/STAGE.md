@@ -2,7 +2,7 @@
 name: audit
 description: Assess existing documentation, identify gaps, and prioritize what to write or update
 hats: [auditor, gap-analyst, verifier]
-fix_hats: [auditor, feedback-assessor]
+fix_hats: [classifier, auditor, feedback-assessor]
 review: auto
 elaboration: autonomous
 inputs: []

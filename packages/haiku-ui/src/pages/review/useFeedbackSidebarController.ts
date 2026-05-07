@@ -46,6 +46,7 @@ export interface UseFeedbackSidebarControllerResult {
 		body: string,
 		closeAsAnswered?: boolean,
 	) => Promise<void>
+	handleDismissClosureReply: (id: string) => Promise<void>
 	createFeedback: ReturnType<typeof useFeedbackContext>["createFeedback"]
 }
 
@@ -62,6 +63,7 @@ export function useFeedbackSidebarController(): UseFeedbackSidebarControllerResu
 		deleteFeedback: hookDelete,
 		createFeedback,
 		replyToFeedback,
+		dismissClosureReply,
 	} = useFeedbackContext()
 
 	const retry = useCallback(() => {
@@ -117,6 +119,21 @@ export function useFeedbackSidebarController(): UseFeedbackSidebarControllerResu
 		[announce, replyToFeedback],
 	)
 
+	const handleDismissClosureReply = useCallback(
+		async (id: string): Promise<void> => {
+			try {
+				await dismissClosureReply(id)
+				announce("polite", `Dismissed closure reply on feedback ${id}`)
+			} catch (err) {
+				const message =
+					err instanceof Error ? err.message : "Dismiss reply failed"
+				announce("assertive", message)
+				throw err
+			}
+		},
+		[announce, dismissClosureReply],
+	)
+
 	return {
 		items,
 		loading,
@@ -127,6 +144,7 @@ export function useFeedbackSidebarController(): UseFeedbackSidebarControllerResu
 		handleStatusChange,
 		handleDelete,
 		handleReply,
+		handleDismissClosureReply,
 		createFeedback,
 	}
 }

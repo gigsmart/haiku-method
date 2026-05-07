@@ -48,3 +48,43 @@ export function composeWalkthroughItems(
 		...outputVMs.map((a) => ({ tab: "outputs" as const, name: a.name })),
 	]
 }
+
+/**
+ * Resolve the actual walkthrough items given the gate-driven set + the
+ * detail the reviewer is currently looking at.
+ *
+ * UX contract (2026-05-06): when the reviewer is browsing a tab that
+ * is NOT in the gate's walkthrough set (e.g. on Knowledge during an
+ * `elaborate_to_execute` gate which scopes to units-only), the
+ * prev/next buttons should walk WITHIN the current tab — not yank the
+ * reviewer back to a tab they're not focused on. Falls back to the
+ * gate-driven set when the current detail tab IS in the gate scope,
+ * or when there's no active detail.
+ *
+ * Pure function — no React dependency. The component memoizes around it.
+ */
+export function resolveWalkthroughForDetail(
+	gateItems: WalkthroughItem[],
+	detail: { tab: "units" | "knowledge" | "outputs"; name: string } | null,
+	inputs: WalkthroughInputs,
+): WalkthroughItem[] {
+	if (!detail) return gateItems
+	const inGate = gateItems.some(
+		(i) => i.tab === detail.tab && i.name === detail.name,
+	)
+	if (inGate) return gateItems
+	// Tab-scoped fallback for the active tab.
+	if (detail.tab === "units") {
+		return inputs.units.map((u) => ({ tab: "units" as const, name: u.slug }))
+	}
+	if (detail.tab === "knowledge") {
+		return inputs.knowledgeVMs.map((a) => ({
+			tab: "knowledge" as const,
+			name: a.name,
+		}))
+	}
+	return inputs.outputVMs.map((a) => ({
+		tab: "outputs" as const,
+		name: a.name,
+	}))
+}

@@ -44,6 +44,7 @@ import { sanitizeFeedbackBody } from "../state/sanitize-feedback.js"
 import {
 	appendFeedbackReply,
 	deleteFeedbackFile,
+	dismissFeedbackClosureReply,
 	FEEDBACK_STATUSES,
 	type FeedbackItem,
 	gitCommitStateBackgroundPush,
@@ -127,6 +128,8 @@ export function registerFeedbackRoutes(instance: FastifyInstance): void {
 					created_at: r.created_at,
 				})),
 				inline_anchor: i.inline_anchor ?? null,
+				closure_reply: i.closure_reply ?? undefined,
+				closure_reply_unread: i.closure_reply_unread,
 				scope: "stage" as const,
 			})),
 		}
@@ -198,6 +201,8 @@ export function registerFeedbackRoutes(instance: FastifyInstance): void {
 					created_at: r.created_at,
 				})),
 				inline_anchor: i.inline_anchor ?? null,
+				closure_reply: i.closure_reply ?? undefined,
+				closure_reply_unread: i.closure_reply_unread,
 				scope: "intent" as const,
 			})),
 		}
@@ -404,6 +409,57 @@ export function registerFeedbackRoutes(instance: FastifyInstance): void {
 				detail: result.updated_fields.join(","),
 			})
 			reply.send(response)
+		},
+	)
+
+	// ── Dismiss closure-reply (mark "read") ────────────────────────────
+	// The terminal fix-hat advance stamps `closure_reply_unread: true`
+	// on the FB. This route flips it to false when the reviewer
+	// acknowledges the agent's reply card in the SPA.
+	instance.post<{
+		Params: { intent: string; stage: string; feedbackId: string }
+	}>(
+		"/api/feedback/:intent/:stage/:feedbackId/dismiss-reply",
+		async (req, reply) => {
+			if (!requireTunnelAuth(req, reply, null)) return
+			const { intent, stage, feedbackId } = req.params
+			if (
+				!(isValidSlug(intent) && isValidSlug(stage) && isValidSlug(feedbackId))
+			) {
+				reply.status(400).send({
+					error:
+						"Invalid slug — must not contain path separators or traversal sequences",
+				})
+				return
+			}
+			if (!validateIntent(intent)) {
+				reply.status(404).send({ error: "Intent not found" })
+				return
+			}
+			if (!validateStage(intent, stage)) {
+				reply.status(404).send({ error: "Stage not found" })
+				return
+			}
+			if (!verifyFeedbackMutationAuth(req, reply, intent)) return
+			const result = dismissFeedbackClosureReply(intent, stage, feedbackId)
+			if (!result) {
+				reply.status(404).send({
+					error: stage
+						? `Feedback '${feedbackId}' not found in stage '${stage}'`
+						: `Feedback '${feedbackId}' not found (intent-scope)`,
+				})
+				return
+			}
+			gitCommitStateBackgroundPush(
+				`feedback: dismiss reply ${feedbackId}${stage ? ` in ${stage}` : ""}`,
+			)
+			reply.send({
+				feedback_id: feedbackId,
+				dismissed: !result.already_dismissed,
+				message: result.already_dismissed
+					? `Feedback ${feedbackId} reply was already dismissed.`
+					: `Feedback ${feedbackId} reply dismissed.`,
+			})
 		},
 	)
 

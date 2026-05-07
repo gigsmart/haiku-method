@@ -2,7 +2,7 @@
 name: validation
 description: Verify data integrity, functional parity, and performance
 hats: [validator, regression-tester, verifier]
-fix_hats: [validator, feedback-assessor]
+fix_hats: [classifier, validator, feedback-assessor]
 review: ask
 elaboration: autonomous
 inputs:

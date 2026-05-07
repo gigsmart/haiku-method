@@ -45,6 +45,11 @@ function authedAssetUrl(url: string | undefined | null): string {
 }
 
 export interface IntentCompleteViewStageState {
+	// v4: mergedIntoMain is the authoritative completion signal
+	// (stage branch is an ancestor of intent main). status / phase /
+	// completed_at survive as deprecated v3 shims for un-migrated
+	// sessions still served by a v3 backend.
+	mergedIntoMain?: boolean
 	status?: string
 	phase?: string
 	completed_at?: string | null
@@ -246,8 +251,14 @@ export function IntentCompleteView({
 						<tbody>
 							{stageOrder.map((stageName) => {
 								const s = stageStates[stageName] ?? {}
-								const stageStatus = s.status ?? "—"
-								const isCompleted = stageStatus === "completed"
+								// v4: mergedIntoMain is the authoritative
+								// completion signal. Fall back to the legacy
+								// status field for un-migrated sessions.
+								const isCompleted =
+									s.mergedIntoMain === true || s.status === "completed"
+								const stageStatus = isCompleted
+									? "completed"
+									: (s.status ?? "—")
 								return (
 									<tr
 										key={stageName}

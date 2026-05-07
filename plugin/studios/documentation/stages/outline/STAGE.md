@@ -2,7 +2,7 @@
 name: outline
 description: Structure the documentation with clear information architecture
 hats: [architect, outline-reviewer]
-fix_hats: [architect, feedback-assessor]
+fix_hats: [classifier, architect, feedback-assessor]
 review: ask
 elaboration: collaborative
 inputs:

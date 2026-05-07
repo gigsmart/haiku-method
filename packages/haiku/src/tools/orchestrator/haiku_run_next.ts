@@ -51,24 +51,22 @@ function dispatchOrchestratorAction(slug: string): OrchestratorActionType {
 	}
 	return {
 		action: "error",
-		message: `runWorkflowTick produced no action for intent '${slug}' (state: ${tick.state}). Indicates a derive-state output without a registered handler.`,
+		message: `runWorkflowTick produced no action for intent '${slug}' (track: ${tick.position.track}). The cursor is mid-wave or sealed — wait for outstanding subagents and retick.`,
 	}
 }
 
 import { reportError } from "../../sentry.js"
 import { logSessionEvent } from "../../session-metadata.js"
+import { getSession, updateSession } from "../../sessions.js"
 import {
 	findHaikuRoot,
 	intentDir,
 	intentFromCurrentBranch,
 	listVisibleIntents,
 	parseFrontmatter,
-	readJson,
 	setFrontmatterField,
-	stageStatePath,
 	syncSessionMetadata,
 	validateBranch,
-	writeJson,
 } from "../../state-tools.js"
 import { resolveStudio } from "../../studio-reader.js"
 import { emitTelemetry } from "../../telemetry.js"
@@ -159,7 +157,23 @@ export default defineTool({
 			const intentFile = join(findHaikuRoot(), "intents", slug, "intent.md")
 			if (existsSync(intentFile)) {
 				const im = readFrontmatter(intentFile)
-				const activeStage = (im.active_stage as string) || ""
+				// v4: active_stage is derived (first stage not merged into
+				// intent main). intent.md no longer carries it. Resolve via
+				// cursor.firstUnmergedStage which uses git --is-ancestor.
+				const studio = (im.studio as string) || ""
+				let activeStage = ""
+				if (studio) {
+					try {
+						const { firstUnmergedStage } = await import(
+							"../../orchestrator/workflow/cursor.js"
+						)
+						activeStage = firstUnmergedStage(slug, studio) || ""
+					} catch {
+						activeStage = (im.active_stage as string) || ""
+					}
+				} else {
+					activeStage = (im.active_stage as string) || ""
+				}
 				const guard = ensureOnStageBranch(slug, activeStage || undefined)
 				if (!guard.ok) {
 					return buildGuardResponse(slug, activeStage, guard, "run_next entry")
@@ -170,19 +184,23 @@ export default defineTool({
 		// Gap 8: If external_review_url is passed and stage is blocked,
 		// store it. Placed AFTER the stage-branch guard so this write
 		// lands on the stage branch, not intent main.
+		// v4: external_review_url is no longer persisted on stage state.json
+		// (state.json is gone). Discrete-mode external review now signals
+		// approval through the actual GitHub MR merge into intent main —
+		// the cursor's firstUnmergedStage check naturally advances when the
+		// merge lands. The url itself, if a caller still passes it, is
+		// stamped on intent.md as a transient marker for the review UI to
+		// display; nothing in the engine reads it.
 		if (args.external_review_url) {
 			try {
 				const root = findHaikuRoot()
 				const intentFile = join(root, "intents", slug, "intent.md")
 				if (existsSync(intentFile)) {
-					const intentFm = readFrontmatter(intentFile)
-					const activeStage = (intentFm.active_stage as string) || ""
-					if (activeStage) {
-						const ssPath = stageStatePath(slug, activeStage)
-						const ssData = readJson(ssPath)
-						ssData.external_review_url = args.external_review_url as string
-						writeJson(ssPath, ssData)
-					}
+					setFrontmatterField(
+						intentFile,
+						"external_review_url",
+						args.external_review_url as string,
+					)
 				}
 			} catch {
 				/* non-fatal */
@@ -299,53 +317,42 @@ export default defineTool({
 					nextPhase,
 				})
 
-				// Persist session pointers so haiku_await_gate can recover
-				// them without an explicit session_id arg. Stage-scope
-				// gates land on stage state.json; intent-scope gates
-				// (intent_review pre-stage, intent_completion post-final)
-				// have no stage to write to, so they land on intent.md
-				// frontmatter as engine-managed fields.
+				// v4: gate session pointers land on intent.md regardless of
+				// scope (stage state.json is gone). Stage-scope gates use
+				// keyed fields so multiple stages can have concurrent
+				// sessions without colliding (a discrete-mode intent could
+				// have an external MR open on stage A while stage B's user
+				// gate is also open on the local review server).
+				//
+				// M6 will move these to a session-server side store; for now
+				// stamping intent.md as a transient pointer keeps await_gate
+				// recovery working.
 				try {
-					if (stage) {
-						const ssPath = stageStatePath(slug, stage)
-						const ssData = readJson(ssPath)
-						ssData.gate_review_session_id = prepared.session_id
-						ssData.gate_review_url = prepared.review_url
-						ssData.gate_review_context = gateContext
-						ssData.gate_review_next_stage = nextStage
-						ssData.gate_review_next_phase = nextPhase
-						writeJson(ssPath, ssData)
-					} else {
-						const intentMdPath = join(intentDir(slug), "intent.md")
+					const intentMdPath = join(intentDir(slug), "intent.md")
+					const sessionKey = stage
+						? `gate_review_session_${stage}`
+						: "gate_review_session_id"
+					const urlKey = stage ? `gate_review_url_${stage}` : "gate_review_url"
+					setFrontmatterField(intentMdPath, sessionKey, prepared.session_id)
+					setFrontmatterField(intentMdPath, urlKey, prepared.review_url)
+					setFrontmatterField(
+						intentMdPath,
+						"gate_review_context",
+						gateContext,
+					)
+					if (nextStage !== undefined && nextStage !== null) {
 						setFrontmatterField(
 							intentMdPath,
-							"gate_review_session_id",
-							prepared.session_id,
+							"gate_review_next_stage",
+							nextStage,
 						)
+					}
+					if (nextPhase !== undefined && nextPhase !== null) {
 						setFrontmatterField(
 							intentMdPath,
-							"gate_review_url",
-							prepared.review_url,
+							"gate_review_next_phase",
+							nextPhase,
 						)
-						setFrontmatterField(
-							intentMdPath,
-							"gate_review_context",
-							gateContext,
-						)
-						if (nextStage !== undefined && nextStage !== null) {
-							setFrontmatterField(
-								intentMdPath,
-								"gate_review_next_stage",
-								nextStage,
-							)
-						}
-						if (nextPhase !== undefined && nextPhase !== null) {
-							setFrontmatterField(
-								intentMdPath,
-								"gate_review_next_phase",
-								nextPhase,
-							)
-						}
 					}
 				} catch {
 					/* non-fatal — agent can still pass session_id explicitly */
@@ -369,6 +376,18 @@ export default defineTool({
 				// body in the assembled response, so updating only one
 				// of the two surfaces leaves the agent reading
 				// inconsistent guidance. Update both files together.
+				// Per-session announcement dedup (2026-05-06): when the
+				// agent retries run_next on the same session (e.g. after
+				// an await timeout), we get the same gate_review action
+				// and the same review_url — but the user already has the
+				// URL. Re-posting it is noisy and confusing. Stamp
+				// `announced_at` on the session the first time we emit
+				// the announcement; on subsequent emissions, use a
+				// quieter copy that doesn't re-announce.
+				const existingSession = getSession(prepared.session_id)
+				const alreadyAnnounced =
+					existingSession?.session_type === "review" &&
+					!!existingSession.announced_at
 				const isIntentReview = gateContext === "intent_review" || !stage
 				const subject = isIntentReview
 					? `Intent "${slug}" is ready for your review before any stage starts`
@@ -376,9 +395,24 @@ export default defineTool({
 				const tellUser = prepared.browser_attached
 					? `${subject}. The page you're on (${prepared.review_url}) just refreshed to this gate.`
 					: `${subject}. Open ${prepared.review_url} to approve or request changes.`
-				const message = prepared.browser_attached
+				const firstTimeMessage = prepared.browser_attached
 					? `${subject}. The user is already watching the SPA at ${prepared.review_url} (browser_attached=true), so do NOT re-post the URL. IMPORTANT: Call haiku_await_gate { intent: "${slug}" } in the SAME turn — do NOT end your turn here. The tool blocks on the user's decision and checks the live websocket itself, so it will not launch a duplicate browser tab.`
 					: `${subject} at: ${prepared.review_url}\n\nIMPORTANT: In the SAME turn, do BOTH of these — do NOT stop after posting the URL: (1) post the URL above to the user (so they can open it on any device — headless host, remote control, mobile, web), and (2) call haiku_await_gate { intent: "${slug}" } to block on their decision. If you stop after step 1, the user clicks Approve and nothing happens because no tool call is waiting. The tool decides whether to launch a local browser based on whether a SPA tab is already attached — you do not need to pass auto_open.`
+				// Already-announced variant: shorter, no URL repost,
+				// instructs the agent to call await_gate silently.
+				const subsequentMessage = `${subject}. The review URL was already posted to the user earlier in this session — do NOT re-post it. Call haiku_await_gate { intent: "${slug}" } silently in the same turn to keep blocking on the user's decision.`
+				const message = alreadyAnnounced
+					? subsequentMessage
+					: firstTimeMessage
+				if (!alreadyAnnounced) {
+					try {
+						updateSession(prepared.session_id, {
+							announced_at: new Date().toISOString(),
+						})
+					} catch {
+						/* non-fatal — session may not be in-memory yet */
+					}
+				}
 
 				const gateAction: Record<string, unknown> = {
 					action: "gate_review",

@@ -2,7 +2,7 @@
 name: onboard
 description: Integrate vendor and complete setup
 hats: [integrator, coordinator, verifier]
-fix_hats: [integrator, feedback-assessor]
+fix_hats: [classifier, integrator, feedback-assessor]
 review: auto
 elaboration: autonomous
 inputs:

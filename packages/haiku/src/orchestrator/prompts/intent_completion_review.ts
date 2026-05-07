@@ -15,12 +15,15 @@ import {
 	resolveStudioMandateModel,
 } from "./_helpers.js"
 import { definePromptBuilder } from "./define.js"
+import { WORKFLOW_CONTRACTS_ANNOUNCEMENT_BLOCK } from "./WORKFLOW_CONTRACTS_ANNOUNCEMENT_BLOCK.js"
 
 export default definePromptBuilder(({ slug, studio, action }) => {
 	const agents = (action.agents as string[]) || []
 	const agentPaths = readStudioReviewAgentPaths(studio)
 	const sections: string[] = []
 
+	const announceBlock =
+		agents.length > 1 ? `\n\n${WORKFLOW_CONTRACTS_ANNOUNCEMENT_BLOCK}` : ""
 	sections.push(
 		[
 			`## Intent-Completion Review: ${slug}`,
@@ -29,7 +32,7 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 			"",
 			"### Review Agent Fan-Out (REQUIRED)",
 			"",
-			`**Spawn exactly one subagent per review agent in parallel — no duplicates.** Findings are logged at **intent scope** (stage omitted) via \`haiku_feedback\`. After every agent completes, call \`haiku_run_next { intent: "${slug}" }\` — the workflow will dispatch the studio fix-hat loop against any findings, or open the final gate if the review is clean.`,
+			`**Spawn exactly one subagent per review agent in parallel — no duplicates.** Findings are logged at **intent scope** (stage omitted) via \`haiku_feedback\`. After every agent completes, call \`haiku_run_next { intent: "${slug}" }\` — the workflow will dispatch the studio fix-hat loop against any findings, or open the final gate if the review is clean.${announceBlock}`,
 		].join("\n"),
 	)
 

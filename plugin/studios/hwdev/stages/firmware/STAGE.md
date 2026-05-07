@@ -2,7 +2,7 @@
 name: firmware
 description: Embedded software for the hardware platform
 hats: [firmware-engineer, reviewer]
-fix_hats: [firmware-engineer, feedback-assessor]
+fix_hats: [classifier, firmware-engineer, feedback-assessor]
 review: [external, ask]
 elaboration: collaborative
 inputs:

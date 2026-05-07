@@ -2,7 +2,7 @@
 name: extraction
 description: Design and implement data extraction from sources
 hats: [extractor, connector-reviewer]
-fix_hats: [extractor, feedback-assessor]
+fix_hats: [classifier, extractor, feedback-assessor]
 review: ask
 elaboration: autonomous
 inputs:

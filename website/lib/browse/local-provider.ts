@@ -1,4 +1,9 @@
-import { parseStageStateJson } from "./intent-parsing"
+import {
+	deriveStageStatusFromUnits,
+	deriveV4ActiveStage,
+	parseIntentFromRaw,
+	parseStageStateJson,
+} from "./intent-parsing"
 import { parseSettingsYaml } from "./resolve-links"
 import type {
 	BrowseProvider,
@@ -97,40 +102,10 @@ export class LocalProvider implements BrowseProvider {
 		for (const slug of intentDirs) {
 			const raw = await this.readFile(`.haiku/intents/${slug}/intent.md`)
 			if (!raw) continue
-			const { data, content } = parseFrontmatter(raw, {
-				provider: "local",
-				path: `.haiku/intents/${slug}/intent.md`,
-				slug,
-			})
-			const studio = (data.studio as string) || "ideation"
-			const stages = (data.stages as string[]) || []
-
-			intents.push({
-				slug,
-				title: (data.title as string) || slug,
-				studio,
-				activeStage: (data.active_stage as string) || "",
-				mode: (data.mode as string) || "continuous",
-				createdAt:
-					(data.created_at as string) || (data.created as string) || null,
-				startedAt: (data.started_at as string) || null,
-				completedAt: (data.completed_at as string) || null,
-				studioStages: (data.stages as string[]) || [],
-				composite:
-					(data.composite as Array<{ studio: string; stages: string[] }>) ||
-					null,
-				...normalizeIntentStatus(
-					(data.status as string) || "active",
-					(data.completed_at as string) || null,
-					stages.length > 0 ? stages.indexOf(data.active_stage as string) : 0,
-					stages.length,
-				),
-				stagesTotal: stages.length,
-				archived: data.archived === true,
-				follows: (data.follows as string) || null,
-				content,
-				raw: data,
-			})
+			// Route through the shared parser so v3↔v4 dual-pathing
+			// (sealed_at-derived status, plugin_version detection,
+			// activeStage default) lands consistently across providers.
+			intents.push(parseIntentFromRaw("local", slug, raw))
 		}
 
 		return intents
@@ -173,7 +148,8 @@ export class LocalProvider implements BrowseProvider {
 				)
 			}
 
-			// Read stage state.json
+			// Read stage state.json (v3 only — v4 deletes it during
+			// migration. Absence is normal for v4 intents.)
 			const stateRaw = await this.readFile(
 				`.haiku/intents/${slug}/stages/${stageName}/state.json`,
 			)
@@ -185,12 +161,19 @@ export class LocalProvider implements BrowseProvider {
 				stateStatus,
 			} = parseStageStateJson(stateRaw)
 
-			// state.json.status is authoritative (written by the orchestrator on the
-			// stage branch). Fall back to active_stage from intent.md when absent.
+			// Status resolution priority:
+			//   1. v3 state.json.status (when present, authoritative)
+			//   2. v4 derived from per-unit iterations[] + approvals
+			//   3. v3 active_stage / stage-order fallback (un-migrated
+			//      intents where state.json is missing for whatever reason)
 			let status: "pending" | "active" | "complete" = "pending"
 			if (stateStatus === "active") status = "active"
 			else if (stateStatus === "completed") status = "complete"
-			else if (stageName === activeStage) status = "active"
+			else if (units.length > 0 || stateRaw == null) {
+				// v4 path: state.json was missing AND we have units to
+				// inspect. Fold per-unit FMs into a single status.
+				status = deriveStageStatusFromUnits(units)
+			} else if (stageName === activeStage) status = "active"
 			else if (stageNames.indexOf(stageName) < stageNames.indexOf(activeStage))
 				status = "complete"
 
@@ -257,11 +240,25 @@ export class LocalProvider implements BrowseProvider {
 			operations.push({ name, content: oContent || "" })
 		}
 
+		// v4 active-stage refinement: when intent.md has no
+		// active_stage (v4 dropped the field), walk the loaded stages
+		// in declaration order and pick the first one that isn't
+		// "complete." Keeps v3 behavior intact when active_stage is
+		// stamped on intent.md.
+		const stageStatusByName: Record<
+			string,
+			"pending" | "active" | "complete"
+		> = {}
+		for (const s of stages) stageStatusByName[s.name] = s.status
+		const refinedActiveStage = activeStage
+			? activeStage
+			: deriveV4ActiveStage(stageNames, stageStatusByName)
+
 		return {
 			slug,
 			title: (data.title as string) || slug,
 			studio,
-			activeStage,
+			activeStage: refinedActiveStage,
 			mode: (data.mode as string) || "continuous",
 			createdAt:
 				(data.created_at as string) || (data.created as string) || null,
@@ -273,7 +270,7 @@ export class LocalProvider implements BrowseProvider {
 			...normalizeIntentStatus(
 				(data.status as string) || "active",
 				(data.completed_at as string) || null,
-				stageNames.indexOf(activeStage),
+				stageNames.indexOf(refinedActiveStage),
 				stageNames.length,
 			),
 			stagesTotal: stageNames.length,
