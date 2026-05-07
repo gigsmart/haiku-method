@@ -1114,97 +1114,57 @@ async function run() {
 		"\n=== VULN-REPORT V-01: extension + MIME allowlist (knowledge) ===",
 	)
 
-	await test("knowledge: text/html upload rejected with 415 (V-01: html upload rejected)", async () => {
-		const fileContent = Buffer.from(
-			"<html><script>alert('xss')</script></html>",
-		)
-		const { body, contentType } = buildMultipart(
+	await test("knowledge: previously-blocked file types now upload successfully (designer .html / .svg, researcher .docx, etc.)", async () => {
+		// Real-world cases: designers exporting .html mockups from
+		// Sketch / Figma, researchers attaching .docx / .xlsx / .csv
+		// notes, and any other non-trivial format. The upload-side
+		// allowlist used to reject these; now they're accepted and
+		// `serveFile` (path-safety.ts) downgrades them to
+		// `application/octet-stream` + `Content-Disposition: attachment`
+		// at serve time, which is where the real V-01 defense lives.
+		const cases = [
 			{
-				target_filename: "evil-doc.html",
-				attribute_to_user: "attacker",
+				name: "designer-export.html",
+				ct: "text/html",
+				content: "<!DOCTYPE html><html><body>mockup</body></html>",
 			},
-			[
+			{
+				name: "diagram.svg",
+				ct: "image/svg+xml",
+				content: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+			},
+		]
+		for (const c of cases) {
+			const { body, contentType } = buildMultipart(
 				{
-					name: "file",
-					filename: "evil-doc.html",
-					content: fileContent,
-					contentType: "text/html",
+					target_filename: c.name,
+					attribute_to_user: "designer",
 				},
-			],
-		)
-		const res = await fetch(
-			`${baseUrl}/api/intents/${intentSlug}/uploads/knowledge`,
-			{
-				method: "POST",
-				headers: { "Content-Type": contentType },
-				body,
-			},
-		)
-		assert.strictEqual(res.status, 415, `Expected 415, got ${res.status}`)
-		const dest = join(intentDirPath, "knowledge", "evil-doc.html")
-		assert.ok(!existsSync(dest), "Rejected `.html` file must not land on disk")
-	})
-
-	await test("knowledge: MIME spoof rejected — text/plain claim with .html target_filename (V-01 defence-in-depth)", async () => {
-		const fileContent = Buffer.from(
-			"<html><script>alert('spoof')</script></html>",
-		)
-		const { body, contentType } = buildMultipart(
-			{
-				target_filename: "spoofed.html",
-				attribute_to_user: "attacker",
-			},
-			[
+				[
+					{
+						name: "file",
+						filename: c.name,
+						content: Buffer.from(c.content),
+						contentType: c.ct,
+					},
+				],
+			)
+			const res = await fetch(
+				`${baseUrl}/api/intents/${intentSlug}/uploads/knowledge`,
 				{
-					name: "file",
-					filename: "innocent.txt",
-					content: fileContent,
-					contentType: "text/plain",
+					method: "POST",
+					headers: { "Content-Type": contentType },
+					body,
 				},
-			],
-		)
-		const res = await fetch(
-			`${baseUrl}/api/intents/${intentSlug}/uploads/knowledge`,
-			{
-				method: "POST",
-				headers: { "Content-Type": contentType },
-				body,
-			},
-		)
-		assert.strictEqual(
-			res.status,
-			415,
-			`MIME spoof should still reject — expected 415, got ${res.status}`,
-		)
-	})
-
-	await test("knowledge: .svg upload rejected even when MIME claims image/svg+xml (V-01)", async () => {
-		const fileContent = Buffer.from(
-			'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
-		)
-		const { body, contentType } = buildMultipart(
-			{
-				target_filename: "diagram.svg",
-				attribute_to_user: "po",
-			},
-			[
-				{
-					name: "file",
-					filename: "diagram.svg",
-					content: fileContent,
-					contentType: "image/svg+xml",
-				},
-			],
-		)
-		const res = await fetch(
-			`${baseUrl}/api/intents/${intentSlug}/uploads/knowledge`,
-			{
-				method: "POST",
-				headers: { "Content-Type": contentType },
-				body,
-			},
-		)
-		assert.strictEqual(res.status, 415, `Expected 415, got ${res.status}`)
+			)
+			assert.strictEqual(
+				res.status,
+				200,
+				`${c.name} should upload successfully (got ${res.status}). Knowledge accepts any file; serveFile handles XSS at serve time.`,
+			)
+			const dest = join(intentDirPath, "knowledge", c.name)
+			assert.ok(existsSync(dest), `${c.name} must land on disk after accepted upload`)
+		}
 	})
 
 	// ── Bolt-3 hardening (closes red-team R-01/R-02/R-03/R-04) ───────────────
@@ -1362,56 +1322,55 @@ async function run() {
 		)
 	})
 
-	await test("knowledge: .js upload rejected with 415 (red-team R-01 on knowledge route)", async () => {
-		const { body, contentType } = buildMultipart(
+	await test("knowledge: previously-blocked .js / octet-stream now upload successfully — serveFile is the security boundary", async () => {
+		// Same reasoning as the .html / .svg test above: the upload
+		// boundary used to reject these, but serveFile downgrades any
+		// non-allowlisted MIME to `application/octet-stream` +
+		// `Content-Disposition: attachment` at serve time, so the V-01 /
+		// R-01 / R-03 threats are closed there. Removing the upload-side
+		// rejection unblocks legitimate use cases (designer exports,
+		// research data files) without re-opening the XSS class.
+		const cases = [
 			{
-				target_filename: "evil.js",
-				attribute_to_user: "attacker",
+				name: "snippet.js",
+				ct: "application/javascript",
+				content: "console.log('reference snippet')",
 			},
-			[
+			{
+				name: "research-bundle.bin",
+				ct: "application/octet-stream",
+				content: "opaque-binary-payload",
+			},
+		]
+		for (const c of cases) {
+			const { body, contentType } = buildMultipart(
 				{
-					name: "file",
-					filename: "evil.js",
-					content: Buffer.from("alert(1)"),
-					contentType: "application/javascript",
+					target_filename: c.name,
+					attribute_to_user: "researcher",
 				},
-			],
-		)
-		const res = await fetch(
-			`${baseUrl}/api/intents/${intentSlug}/uploads/knowledge`,
-			{
-				method: "POST",
-				headers: { "Content-Type": contentType },
-				body,
-			},
-		)
-		assert.strictEqual(res.status, 415, `Expected 415, got ${res.status}`)
-	})
-
-	await test("knowledge: octet-stream rejected (red-team R-03 on knowledge route)", async () => {
-		const { body, contentType } = buildMultipart(
-			{
-				target_filename: "blob.bin",
-				attribute_to_user: "tooling",
-			},
-			[
+				[
+					{
+						name: "file",
+						filename: c.name,
+						content: Buffer.from(c.content),
+						contentType: c.ct,
+					},
+				],
+			)
+			const res = await fetch(
+				`${baseUrl}/api/intents/${intentSlug}/uploads/knowledge`,
 				{
-					name: "file",
-					filename: "blob.bin",
-					content: Buffer.from("blob"),
-					contentType: "application/octet-stream",
+					method: "POST",
+					headers: { "Content-Type": contentType },
+					body,
 				},
-			],
-		)
-		const res = await fetch(
-			`${baseUrl}/api/intents/${intentSlug}/uploads/knowledge`,
-			{
-				method: "POST",
-				headers: { "Content-Type": contentType },
-				body,
-			},
-		)
-		assert.strictEqual(res.status, 415, `Expected 415, got ${res.status}`)
+			)
+			assert.strictEqual(
+				res.status,
+				200,
+				`${c.name} should upload successfully (got ${res.status}).`,
+			)
+		}
 	})
 
 	await test("stage-output: attribute_to_user with HTML payload rejected with bad_attribute_to_user (red-team R-04 audit-log XSS guard)", async () => {

@@ -59,7 +59,15 @@ export interface KnowledgeDropZoneProps {
 }
 
 const DEFAULT_MAX_BYTES = 10 * 1024 * 1024 // 10 MiB
-const DEFAULT_ACCEPT = ".md,.pdf,.png,.jpg,.jpeg,.svg,.txt"
+// Knowledge artifacts are read by the agent (no privilege concern) and
+// served back to reviewers through `serveFile`, which downgrades any
+// non-allowlisted MIME to `application/octet-stream` +
+// `Content-Disposition: attachment` (see http/path-safety.ts) — so an
+// upload-time extension allowlist is redundant belt-and-suspenders. Real-
+// world cases this used to break: designers exporting `.html` from
+// Sketch / Figma, researchers uploading `.docx` / `.xlsx` / `.csv`, etc.
+// Default to "*" — accept anything; the size cap is the only real limit.
+const DEFAULT_ACCEPT = "*"
 
 function classifyMimeMismatch(file: File, accept: string): string | null {
 	if (!accept || accept === "*" || accept === "*/*") return null
@@ -249,8 +257,9 @@ export function KnowledgeDropZone({
 					or click to browse
 				</span>
 				<span className="text-xs text-stone-600 dark:text-stone-300">
-					{accept.replace(/,/g, "  ")} · max{" "}
-					{Math.round(maxBytes / (1024 * 1024))} MB each
+					{accept === "*" || accept === "*/*"
+						? `any file type · max ${Math.round(maxBytes / (1024 * 1024))} MB each`
+						: `${accept.replace(/,/g, "  ")} · max ${Math.round(maxBytes / (1024 * 1024))} MB each`}
 				</span>
 			</div>
 			<input

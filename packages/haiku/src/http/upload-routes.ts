@@ -862,35 +862,18 @@ export async function registerUploadRoutes(
 					return
 				}
 
-				// VULN-REPORT V-01: stored-XSS via knowledge uploads.
-				// Block .html / .svg / .xml etc. at the upload boundary so the
-				// reviewer's tunnel origin cannot be hijacked when the file is
-				// later served back by serveFile. Defends against MIME-spoofing
-				// (text/plain claim with .html extension) by checking BOTH the
-				// uploaded filename and the target_filename. MIME type must be
-				// on the knowledge allowlist.
-				const knowBlockedFromFilename = hasBlockedExtension(filePart.filename)
-				const knowBlockedFromTarget = hasBlockedExtension(targetFilename)
-				if (knowBlockedFromFilename || knowBlockedFromTarget) {
-					reply.status(415).send({
-						error: "unsupported_media_type",
-						code: "unsupported_media_type",
-						message: `Files with extensions ${Array.from(BLOCKED_EXTENSIONS).join(", ")} are rejected — they render inline and become a stored-XSS vector. Convert to a non-executable format (PDF, PNG screenshot, plain text) and retry.`,
-						blocked_extensions: Array.from(BLOCKED_EXTENSIONS),
-					})
-					return
-				}
-				const knowMime = normaliseMime(filePart.mimetype)
-				if (!ALLOWED_MIMES_KNOWLEDGE.has(knowMime)) {
-					reply.status(415).send({
-						error: "unsupported_media_type",
-						code: "unsupported_media_type",
-						message: `MIME type '${knowMime || "<none>"}' is not on the knowledge upload allowlist. Allowed: ${Array.from(ALLOWED_MIMES_KNOWLEDGE).sort().join(", ")}.`,
-						received_mime: knowMime,
-						allowed_mimes: Array.from(ALLOWED_MIMES_KNOWLEDGE).sort(),
-					})
-					return
-				}
+				// Knowledge uploads accept ANY file type. The agent reads
+				// these via `Read` (no privilege concern), and `serveFile`
+				// in http/path-safety.ts downgrades any non-allowlisted
+				// MIME to `application/octet-stream` +
+				// `Content-Disposition: attachment` before the reviewer's
+				// browser sees it — so V-01 (stored-XSS via knowledge
+				// HTML) is closed at serve time, not by an upload-side
+				// blocklist. The upload allowlist that used to live here
+				// rejected legitimate designer / researcher artifacts
+				// (Sketch HTML exports, .docx / .xlsx / .csv) and was
+				// pure friction. Size cap below is the only meaningful
+				// limit.
 
 				// target_filename must be a basename — no path segments.
 				const filenameDecoded = (() => {

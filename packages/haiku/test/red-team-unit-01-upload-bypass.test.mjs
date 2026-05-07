@@ -264,12 +264,21 @@ async function run() {
 		)
 	})
 
-	await test("R-05 (knowledge route): .js upload via octet-stream rejected on knowledge route", async () => {
+	await test("R-05 (knowledge route): .js + octet-stream now uploads successfully — V-01 defense moved to serveFile", async () => {
+		// The knowledge route used to reject .js + octet-stream at the
+		// upload boundary. That guard rejected legitimate designer /
+		// researcher artifacts (Sketch HTML exports, .docx, .csv) too.
+		// V-01 / R-05 are now closed at serve time: serveFile in
+		// http/path-safety.ts downgrades any non-allowlisted MIME to
+		// `application/octet-stream` + `Content-Disposition: attachment`
+		// before the reviewer's browser sees it. The serve-side defense
+		// has its own coverage; this test guards against re-introducing
+		// the upload-side rejection.
 		const payload = Buffer.from("alert('knowledge .js')")
 		const { body, contentType } = buildMultipart(
 			{
 				target_filename: "pwn-knowledge.js",
-				attribute_to_user: "attacker",
+				attribute_to_user: "researcher",
 			},
 			[
 				{
@@ -290,8 +299,8 @@ async function run() {
 		)
 		assert.strictEqual(
 			res.status,
-			415,
-			`R-05: .js + octet-stream on knowledge route MUST be rejected. Got ${res.status}.`,
+			200,
+			`Knowledge route accepts any file; serveFile is the XSS boundary. Got ${res.status}.`,
 		)
 	})
 
