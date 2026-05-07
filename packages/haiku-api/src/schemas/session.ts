@@ -382,6 +382,69 @@ export type DirectionSessionPayload = z.infer<
 	typeof DirectionSessionPayloadSchema
 >
 
+// ─── Picker session ──────────────────────────────────────────────────────
+
+export const PickerKindSchema = z.enum([
+	"studio",
+	"mode",
+	"stage",
+	"confirm",
+	"url_input",
+])
+export type PickerKind = z.infer<typeof PickerKindSchema>
+
+export const PickerOptionSchema = z
+	.object({
+		id: z.string(),
+		label: z.string(),
+		description: z.string().optional(),
+	})
+	.describe(
+		"One option in a picker session — id is the canonical value the wire echoes back, label/description are display-only",
+	)
+export type PickerOption = z.infer<typeof PickerOptionSchema>
+
+export const PickerSelectionSchema = z
+	.object({
+		id: z.string(),
+	})
+	.describe("Saved picker selection (nullable on the session)")
+export type PickerSelection = z.infer<typeof PickerSelectionSchema>
+
+export const PickerSessionPayloadSchema = z
+	.object({
+		session_id: z.string(),
+		session_type: z.literal("picker"),
+		status: SessionStatusSchema,
+		intent_slug: z.string().optional(),
+		kind: PickerKindSchema,
+		title: z.string(),
+		prompt: z.string(),
+		options: z.array(PickerOptionSchema),
+		selection: PickerSelectionSchema.nullable().optional(),
+	})
+	.describe(
+		"Picker session payload (GET /api/session/:id, session_type=picker) — engine-side blocking selection for studio/mode/stage and destructive-confirm",
+	)
+export type PickerSessionPayload = z.infer<typeof PickerSessionPayloadSchema>
+
+export const PickerSelectRequestSchema = z
+	.object({
+		id: z.string().min(1).max(256),
+	})
+	.describe(
+		"POST /picker/:sessionId/select request body — id must match one of the session's options",
+	)
+export type PickerSelectRequest = z.infer<typeof PickerSelectRequestSchema>
+
+export const PickerSelectResponseSchema = z
+	.object({
+		ok: z.literal(true),
+		id: z.string(),
+	})
+	.describe("Success response from POST /picker/:sessionId/select")
+export type PickerSelectResponse = z.infer<typeof PickerSelectResponseSchema>
+
 // ─── Discriminated-union session payload ─────────────────────────────────
 
 export const SessionPayloadSchema = z
@@ -389,6 +452,7 @@ export const SessionPayloadSchema = z
 		ReviewSessionPayloadSchema,
 		QuestionSessionPayloadSchema,
 		DirectionSessionPayloadSchema,
+		PickerSessionPayloadSchema,
 	])
 	.describe(
 		"GET /api/session/:id response body — discriminated on session_type",

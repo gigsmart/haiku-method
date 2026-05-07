@@ -403,6 +403,36 @@ export function registerSessionRoutes(instance: FastifyInstance): void {
 				reply.status(400).send({ error: "Missing required field: id" })
 				return
 			}
+			// url_input pickers carry a free-text URL in `id` instead of
+			// a selection from a fixed set. Validate URL shape (http(s)://
+			// or git+ssh-shaped) but skip the option-set check.
+			if (session.kind === "url_input") {
+				const trimmed = id.trim()
+				if (trimmed.length < 4 || trimmed.length > 2048) {
+					reply.status(400).send({
+						error: "URL must be 4–2048 characters",
+					})
+					return
+				}
+				if (
+					!/^https?:\/\//i.test(trimmed) &&
+					!/^git@/i.test(trimmed) &&
+					!/^ssh:\/\//i.test(trimmed)
+				) {
+					reply.status(400).send({
+						error:
+							"URL must start with http://, https://, ssh://, or git@ — paste the full URL",
+					})
+					return
+				}
+				const { updatePickerSession } = await import("../sessions.js")
+				updatePickerSession(req.params.sessionId, {
+					status: "answered",
+					selection: { id: trimmed },
+				})
+				reply.send({ ok: true, id: trimmed })
+				return
+			}
 			const validIds = new Set(session.options.map((o) => o.id))
 			if (!validIds.has(id)) {
 				reply.status(400).send({

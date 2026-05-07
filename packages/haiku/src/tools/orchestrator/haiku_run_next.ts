@@ -650,9 +650,21 @@ export default defineTool({
 			return `${JSON.stringify(resultForJson, null, 2)}\n\n---\n\n${adapted}`
 		}
 
-		// External review: include instructions about recording the URL.
-		if (result.action === "external_review_requested") {
-			result.message = `${(result.message as string) || ""}\n\nIMPORTANT: Ask the user WHERE they submitted the work for review (PR URL, MR link, email, Slack channel, etc.). Record the URL by calling haiku_run_next { intent: "${slug}", external_review_url: "<url>" } so the workflow engine can track approval status.`
+		// External review: extend the action message with explicit
+		// instructions for the agent to open the change-request via the
+		// host VCS CLI (gh / glab) and record the resulting URL. We do
+		// NOT auto-open a URL picker here — the canonical agent flow is
+		// agent-runs-gh-pr-create, captures the URL itself, and calls
+		// haiku_run_next { external_review_url }. The url_input picker
+		// kind is available as a fallback when the agent can't reach
+		// gh / glab (operator can invoke it via /haiku:repair or
+		// equivalent).
+		if (
+			result.action === "external_review_requested" &&
+			!args.external_review_url &&
+			!intentMeta.external_review_url
+		) {
+			result.message = `${(result.message as string) || ""}\n\nIMPORTANT: Open the change request via your host VCS CLI (\`gh pr create\` for GitHub, \`glab mr create\` for GitLab) — the agent has direct access. Capture the PR/MR URL the CLI prints, then call haiku_run_next { intent: "${slug}", external_review_url: "<url>" } so the workflow engine can poll for approval. If gh/glab isn't available in this environment, ask the user for the URL in chat and pass it the same way.`
 		}
 
 		// Gate review — engine-side blocking path.

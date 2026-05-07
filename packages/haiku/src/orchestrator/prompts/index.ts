@@ -40,7 +40,12 @@ import error from "./error.js"
 import escalate from "./escalate.js"
 import fix_quality_gates from "./fix_quality_gates.js"
 import gate_blocked from "./gate_blocked.js"
-import gate_review from "./gate_review.js"
+// gate_review prompt builder removed — under v4, the gate_review
+// action never reaches the agent. haiku_run_next prepares the session,
+// blocks on haiku_await_gate inline, and returns the post-decision
+// next action (advance_phase / advance_stage / external_review_requested
+// / changes_requested / etc.). The old prompt that told the agent to
+// "post URL + call haiku_await_gate" is dead.
 import intent_approved from "./intent_approved.js"
 import intent_complete from "./intent_complete.js"
 import intent_completion_fix from "./intent_completion_fix.js"
@@ -87,7 +92,6 @@ export const actionPromptBuilders: ReadonlyMap<string, PromptBuilder> = new Map<
 	["escalate", escalate],
 	["fix_quality_gates", fix_quality_gates],
 	["gate_blocked", gate_blocked],
-	["gate_review", gate_review],
 	["intent_approved", intent_approved],
 	["intent_complete", intent_complete],
 	["intent_completion_fix", intent_completion_fix],

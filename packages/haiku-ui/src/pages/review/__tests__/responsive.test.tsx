@@ -61,6 +61,9 @@ function buildMockClient(items: FeedbackItemData[]): ApiClient {
 		async submitDirection() {
 			return {} as never
 		},
+		async submitPicker() {
+			return {} as never
+		},
 		async submitRevisit() {
 			return {} as never
 		},

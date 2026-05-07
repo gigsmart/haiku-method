@@ -18,6 +18,8 @@ import {
 	type FeedbackUpdateRequest,
 	type FeedbackUpdateResponse,
 	paths,
+	type PickerSelectRequest,
+	type PickerSelectResponse,
 	type QuestionAnswerRequest,
 	type QuestionAnswerResponse,
 	type ReviewCurrentPayload,
@@ -81,6 +83,10 @@ export interface ApiClient {
 		sessionId: string,
 		body: DirectionSelectRequest,
 	): Promise<DirectionSelectResponse>
+	submitPicker(
+		sessionId: string,
+		body: PickerSelectRequest,
+	): Promise<PickerSelectResponse>
 	submitRevisit(
 		sessionId: string,
 		body: RevisitRequest,
@@ -180,6 +186,15 @@ export function createDefaultApiClient(): ApiClient {
 				keepalive: true,
 			})
 			return parseJsonOrThrow<DirectionSelectResponse>(res)
+		},
+		async submitPicker(sessionId, body) {
+			const res = await fetch(paths.pickerSelect(sessionId), {
+				method: "POST",
+				headers: withAuth(JSON_HEADERS),
+				body: JSON.stringify(body),
+				keepalive: true,
+			})
+			return parseJsonOrThrow<PickerSelectResponse>(res)
 		},
 		async submitRevisit(sessionId, body) {
 			const res = await fetch(paths.revisit(sessionId), {

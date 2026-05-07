@@ -97,6 +97,24 @@ function isExternalGate(gateType: string | undefined): boolean {
 	return !!gateType && gateType.includes("external")
 }
 
+/**
+ * Whether the gate accepts the local Approve button. Pure-external gates
+ * (gateType is exactly "external") satisfy ONLY through the external
+ * VCS merge — local Approve would advance the workflow without the PR
+ * actually merging, which is wrong. Compound gates ("external,ask" or
+ * "ask,external") accept either path; ask/auto/await accept Approve.
+ */
+function gateAcceptsLocalApprove(gateType: string | undefined): boolean {
+	if (!gateType) return true
+	const tokens = gateType
+		.split(",")
+		.map((t) => t.trim().toLowerCase())
+		.filter(Boolean)
+	if (tokens.length === 0) return true
+	if (tokens.length === 1 && tokens[0] === "external") return false
+	return true
+}
+
 export function FeedbackSidebar({
 	stage,
 	activeStage,
@@ -203,6 +221,7 @@ export function FeedbackSidebar({
 	)
 	const hasTyped = composerText.trim().length > 0
 	const showExternal = isExternalGate(gateType)
+	const showLocalApprove = gateAcceptsLocalApprove(gateType)
 	const isCurrent = !!stage && stage === activeStage
 
 	// Decide which action to emphasize. Typed text → Add is the primary
@@ -496,7 +515,7 @@ export function FeedbackSidebar({
 							{submitting ? "Submitting…" : `Request Changes (${pendingCount})`}
 						</button>
 					)}
-					{mode === "approve" && !adHoc && (
+					{mode === "approve" && !adHoc && showLocalApprove && (
 						<button
 							type="button"
 							onClick={() => void submit("approved")}

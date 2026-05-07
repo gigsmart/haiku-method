@@ -195,3 +195,72 @@ test("migrator deletes per-stage state.json files", async () => {
 		rmSync(root, { recursive: true, force: true })
 	}
 })
+
+test("migrator deletes pre-v4 baseline noise (baseline.json, drift-markers.json, baseline-content/) at every scope", async () => {
+	const { root, intentDir } = makeV3IntentDir()
+	try {
+		// Seed legacy artifacts at intent scope.
+		writeFileSync(
+			join(intentDir, "baseline.json"),
+			JSON.stringify({ entries: [] }),
+		)
+		writeFileSync(
+			join(intentDir, "drift-markers.json"),
+			JSON.stringify({ pending: [] }),
+		)
+		mkdirSync(join(intentDir, "baseline-content"), { recursive: true })
+		writeFileSync(
+			join(intentDir, "baseline-content", "snap.txt"),
+			"old snapshot",
+		)
+
+		// And at stage scope.
+		writeFileSync(
+			join(intentDir, "stages", "design", "baseline.json"),
+			JSON.stringify({ entries: [] }),
+		)
+		writeFileSync(
+			join(intentDir, "stages", "design", "drift-markers.json"),
+			JSON.stringify({ pending: [] }),
+		)
+		mkdirSync(join(intentDir, "stages", "design", "baseline-content"), {
+			recursive: true,
+		})
+		writeFileSync(
+			join(intentDir, "stages", "design", "baseline-content", "snap.txt"),
+			"old stage snapshot",
+		)
+
+		const { __testOnly } = await import(
+			"../src/orchestrator/migrations/v0-to-v4.js"
+		)
+		__testOnly.v0ToV4({ intentDir, repoRoot: root })
+
+		// Intent scope.
+		assert.strictEqual(existsSync(join(intentDir, "baseline.json")), false)
+		assert.strictEqual(
+			existsSync(join(intentDir, "drift-markers.json")),
+			false,
+		)
+		assert.strictEqual(
+			existsSync(join(intentDir, "baseline-content")),
+			false,
+		)
+
+		// Stage scope.
+		assert.strictEqual(
+			existsSync(join(intentDir, "stages", "design", "baseline.json")),
+			false,
+		)
+		assert.strictEqual(
+			existsSync(join(intentDir, "stages", "design", "drift-markers.json")),
+			false,
+		)
+		assert.strictEqual(
+			existsSync(join(intentDir, "stages", "design", "baseline-content")),
+			false,
+		)
+	} finally {
+		rmSync(root, { recursive: true, force: true })
+	}
+})

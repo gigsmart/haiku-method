@@ -179,13 +179,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 		{
 			name: "haiku_await_visual_answer",
 			description:
-				"Block on a pending visual-question session until the user submits answers (or the wait times out at 30 min). Pair with `ask_user_visual_question`: when that tool returns a `session_ready` payload with a URL, post the URL to the user (essential for headless / SSH / web-client / mobile / remote-control setups), then call this tool to wait. Pass `auto_open: false` to skip the browser launch when the user will follow the URL on a different device.",
+				"Resume entry point for a pending visual-question session. Under v4 the canonical flow blocks INSIDE ask_user_visual_question — the engine creates the session, opens the browser, and waits for the user's answer all in one tool call. Use haiku_await_visual_answer only when the original blocking call timed out, the MCP host disconnected, or the agent restart lost the in-memory wait. Returns the same answer + screenshot annotations as the canonical path.",
 			inputSchema: jsonSchemaOf(HAIKU_AWAIT_VISUAL_ANSWER_INPUT_SCHEMA),
 		},
 		{
 			name: "haiku_await_design_direction",
 			description:
-				"Block on a pending design-direction session until the user submits a selection (or the wait times out at 30 min). Pair with `pick_design_direction`: when that tool returns a `session_ready` payload, post the URL to the user, then call this tool to wait. Pass `auto_open: false` for remote/headless setups where the user follows the URL on a different device.",
+				"Resume entry point for a pending design-direction session. Under v4 the canonical flow blocks INSIDE pick_design_direction — the engine creates the session, opens the browser, and waits for the user's submission (select / regenerate / generate / upload) all in one tool call. Use haiku_await_design_direction only when the original blocking call timed out or was lost. Returns the same announcement + next-step shape.",
 			inputSchema: jsonSchemaOf(HAIKU_AWAIT_DESIGN_DIRECTION_INPUT_SCHEMA),
 		},
 		{

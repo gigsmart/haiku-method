@@ -81,6 +81,9 @@ describe("ReviewPage — status-change announcement", () => {
 			async submitDirection() {
 				return {} as never
 			},
+			async submitPicker() {
+				return {} as never
+			},
 			async submitRevisit() {
 				return {} as never
 			},

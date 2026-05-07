@@ -24,6 +24,7 @@ function makeStubClient(overrides: Partial<ApiClient> = {}): ApiClient {
 		submitDecision: vi.fn(),
 		submitAnswer: vi.fn(),
 		submitDirection: vi.fn(),
+		submitPicker: vi.fn(),
 		submitRevisit: vi.fn(
 			async (
 				_sessionId: string,

@@ -10,4 +10,5 @@
  */
 
 export { DirectionPageModule as DirectionModule } from "./direction"
+export { PickerPageModule as PickerModule } from "./picker"
 export { QuestionPageModule as QuestionModule } from "./question"

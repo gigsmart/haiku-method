@@ -264,5 +264,13 @@ export function respondSessionApi(
 		data.archetypes = session.archetypes
 		data.selection = session.selection
 	}
+	if (session.session_type === "picker") {
+		data.intent_slug = session.intent_slug
+		data.kind = session.kind
+		data.title = session.title
+		data.prompt = session.prompt
+		data.options = session.options
+		data.selection = session.selection
+	}
 	reply.send(data)
 }

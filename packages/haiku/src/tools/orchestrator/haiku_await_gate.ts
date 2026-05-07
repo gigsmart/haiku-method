@@ -163,20 +163,16 @@ function stampGateApproval(
 export default defineTool({
 	name: "haiku_await_gate",
 	description:
-		"Block on a pending gate-review session for an intent until the user " +
-		"approves, requests changes, or the wait times out. Launches the review " +
-		"URL in the default browser best-effort, BUT only when no SPA tab is " +
-		"already attached for this session (live-websocket check is authoritative " +
-		"— passing `auto_open: true` will never create a duplicate tab). Set " +
-		"`auto_open: false` only when the local-browser launch is known to fail " +
-		"(headless containers, sandboxed runners). Returns the resulting " +
-		"orchestrator action (advance_stage / changes_requested / " +
-		"external_review_requested / etc.).\n\n" +
-		"Call this AFTER haiku_run_next returns a `gate_review` action — that " +
-		"action carries the review_url and session_id, and the recommended flow is " +
-		"(1) post the URL to the user in chat, (2) call this tool. The tool reads " +
-		"the persisted session_id from stage state by default; pass `session_id` " +
-		"explicitly to override.",
+		"Resume / recovery entry point for a pending gate-review session. " +
+		"Under v4 the canonical flow blocks INSIDE haiku_run_next — the " +
+		"engine prepares the session, opens the browser best-effort, awaits " +
+		"the user's decision, and returns the post-decision action all in " +
+		"one tool call. Use haiku_await_gate only when the original tick " +
+		"timed out, the MCP host disconnected, or the agent restart lost " +
+		"the in-memory blocking call; reads gate_review_session_id from " +
+		"intent.md to reattach. Returns the same post-decision action " +
+		"shape (advance_stage / advance_phase / changes_requested / " +
+		"external_review_requested / intent_complete / etc.).",
 	inputSchema: jsonSchemaOf(HAIKU_AWAIT_GATE_INPUT_SCHEMA),
 	async handle(args, signal) {
 		// AJV gate first — every MCP tool input gets a real schema check

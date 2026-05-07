@@ -284,10 +284,10 @@ When all pre-advance checks pass, the tick emits one mainline action describing 
 
 | Action | Meaning | What the agent does |
 |---|---|---|
-| `select_studio` | Studio not yet chosen on the intent | Call `haiku_select_studio` (elicits a studio from the user) |
-| `select_mode` | Studio chosen, mode not yet chosen | Call `haiku_select_mode` (elicits a mode: continuous, discrete, autopilot, quick). Mode is engine-managed — agents never set it directly. |
-| `select_stage` | Mode is `quick` and the single stage isn't picked yet | Call `haiku_select_stage` (elicits exactly one stage from the studio's stage list) |
-| `gate_review` (intent_review) | Pre-stage approval of the minimal intent — fires after studio + mode + (if quick) stage are set, before stage 0 begins | Surface the review URL to the user; call `haiku_await_gate` |
+| `select_studio` | Studio not yet chosen on the intent | (engine-side blocking — `haiku_run_next` runs the SPA picker inline and re-ticks; agent sees the next real action) |
+| `select_mode` | Studio chosen, mode not yet chosen | (engine-side blocking — same shape; mode picker has cards-with-mini-timeline layout) |
+| `select_stage` | Mode is `quick` and the single stage isn't picked yet | (engine-side blocking — same shape; stage picker is a simple list) |
+| `gate_review` (intent_review) | Pre-stage approval of the minimal intent — fires after studio + mode + (if quick) stage are set, before stage 0 begins | (engine-side blocking — `haiku_run_next` prepares the session, awaits the user's decision via `haiku_await_gate.handle()` inline, and re-ticks for advance cases or returns the post-decision action for terminal cases) |
 | `start_stage` | First entry to a new stage | Acknowledge, retick |
 | `elaborate` | Stage is in elaborate phase | Collaborate with the user, draft units, record decisions |
 | `pre_review` | Pre-execute review of unit specs | Spawn review-agent subagents |
@@ -296,7 +296,7 @@ When all pre-advance checks pass, the tick emits one mainline action describing 
 | `spec_review` | Engine-owned spec-conformance gate (universal hard gate, runs before quality review on every stage) | Spawn the single built-in spec-conformance subagent (no per-studio mandate file, no opt-out); advance to gate for fix loop if findings filed. |
 | `review` | Quality adversarial review of stage outputs | Spawn quality review-agent subagents |
 | `review_fix` | Fix loop against open findings | Spawn fix-chain subagents (per-finding chains) |
-| `gate_review` | Stage gate (human or external approval) | (engine blocks; agent may surface to user) |
+| `gate_review` | Stage gate (human or external approval) | (engine-side blocking — `haiku_run_next` opens the review SPA and awaits the decision inline; agent sees the post-decision action: `advance_phase` / `advance_stage` / `external_review_requested` / `changes_requested` / `intent_complete`) |
 | `advance_phase` | Phase boundary internal to a stage | Acknowledge, retick |
 | `advance_stage` | Stage boundary | Acknowledge, retick |
 | `intent_completion_review` | Studio-level review (intent-scope) | Spawn studio review agents |

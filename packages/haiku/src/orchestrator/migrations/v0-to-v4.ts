@@ -401,11 +401,41 @@ function v0ToV4(ctx: MigrationContext): void {
 			if (existsSync(stateJson)) {
 				rmSync(stateJson, { force: true })
 			}
+
+			// 2d. Pre-v4 drift artifacts — delete unconditionally. The
+			// v4 cursor uses body-sha256-in-fm as the drift witness, so
+			// the legacy baseline.json manifest, baseline-content/
+			// snapshot dir, and drift-markers.json sidecar are all
+			// strict noise after migration.
+			for (const stale of [
+				"baseline.json",
+				"drift-markers.json",
+				"baseline-content",
+			]) {
+				const stalePath = join(stageDir, stale)
+				if (existsSync(stalePath)) {
+					rmSync(stalePath, { recursive: true, force: true })
+				}
+			}
 		}
 	}
 
 	// 3. Intent-scope feedback
 	migrateFeedbackInDir(join(intentDir, "feedback"), intentDir)
+
+	// 4. Intent-scope drift artifacts. Same reasoning as the per-stage
+	// pass: v4 doesn't write or read these, so leaving them around just
+	// confuses git status / diffs after migration.
+	for (const stale of [
+		"baseline.json",
+		"drift-markers.json",
+		"baseline-content",
+	]) {
+		const stalePath = join(intentDir, stale)
+		if (existsSync(stalePath)) {
+			rmSync(stalePath, { recursive: true, force: true })
+		}
+	}
 }
 
 // Register the edge. Pre-v4 intents have no plugin_version field;

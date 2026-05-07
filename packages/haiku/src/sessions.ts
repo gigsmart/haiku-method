@@ -389,7 +389,12 @@ export interface PickerSelection {
 	id: string
 }
 
-export type PickerKind = "studio" | "mode" | "stage" | "confirm"
+export type PickerKind =
+	| "studio"
+	| "mode"
+	| "stage"
+	| "confirm"
+	| "url_input"
 
 export interface PickerSession {
 	session_type: "picker"

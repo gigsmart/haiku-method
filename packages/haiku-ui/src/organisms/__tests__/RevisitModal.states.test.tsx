@@ -35,6 +35,7 @@ function makeStubClient(
 		submitDecision: vi.fn(),
 		submitAnswer: vi.fn(),
 		submitDirection: vi.fn(),
+		submitPicker: vi.fn(),
 		submitRevisit:
 			submitRevisit ??
 			vi.fn(

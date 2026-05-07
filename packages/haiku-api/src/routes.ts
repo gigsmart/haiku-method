@@ -45,6 +45,8 @@ import {
 } from "./schemas/revisit.js"
 import {
 	HeartbeatResponseSchema,
+	PickerSelectRequestSchema,
+	PickerSelectResponseSchema,
 	SessionPayloadSchema,
 } from "./schemas/session.js"
 
@@ -89,6 +91,8 @@ export const paths = {
 	stageArtifact: (id: string, path: string) => `/stage-artifacts/${id}/${path}`,
 	directionPage: (id: string) => `/direction/${id}`,
 	directionSelect: (id: string) => `/direction/${id}/select`,
+	pickerPage: (id: string) => `/picker/${id}`,
+	pickerSelect: (id: string) => `/picker/${id}/select`,
 	questionImage: (id: string, index: number) =>
 		`/question-image/${id}/${index}`,
 	questionPage: (id: string) => `/question/${id}`,
@@ -225,6 +229,29 @@ export const routes: readonly RouteSpec[] = [
 		// match the feedback-create ceiling so multi-annotation
 		// submissions don't trip the default 1 MB body limit.
 		maxBodyBytes: FEEDBACK_CREATE_MAX_BYTES,
+	},
+
+	// Picker ─────────────────────────────────────────────────────────────
+	{
+		method: "GET",
+		pathTemplate: "/picker/{sessionId}",
+		operationId: "getPickerPage",
+		request: null,
+		response: null,
+		summary: "Serve the picker selection page (HTML SPA entry).",
+		tag: "picker",
+		transport: "loopback",
+	},
+	{
+		method: "POST",
+		pathTemplate: "/picker/{sessionId}/select",
+		operationId: "postPickerSelect",
+		request: PickerSelectRequestSchema,
+		response: PickerSelectResponseSchema,
+		summary:
+			"Record a picker selection. Body { id } must match one of the session's options; flips status → answered.",
+		tag: "picker",
+		transport: "loopback",
 	},
 
 	// Question ───────────────────────────────────────────────────────────
