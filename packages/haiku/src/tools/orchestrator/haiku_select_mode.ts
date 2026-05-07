@@ -1,23 +1,20 @@
 // tools/orchestrator/haiku_select_mode.ts — Pick a mode for an
-// intent. Mirrors haiku_select_studio's three-resolution-path shape:
+// intent. Two paths:
 //   1. Single explicit option → auto-select.
-//   2. Elicitation handler available → render a picker (with
-//      "Show all..." escape if the supplied options are a strict
-//      subset of available modes).
-//   3. No elicitation → return action: select_mode_conversational
-//      so the agent asks the user via chat.
+//   2. Otherwise → open the SPA picker and block on the user's
+//      choice. MCP elicitation has been removed (2026-05-07).
 //
 // Mode is engine-managed. The agent never types `mode: <value>` into
-// any frontmatter writer — the value flows through this elicitation
-// tool only. /haiku:start drives a fresh selection; /haiku:change-mode
+// any frontmatter writer — the value flows through this picker tool
+// only. /haiku:start drives a fresh selection; /haiku:change-mode
 // drives a mid-flight change against an already-started intent.
 //
 // Side effects:
 //   - Writes `mode` to intent.md.
 //   - For non-quick modes, ALSO writes `stages` to the studio's full
-//     stage list (engine-derived, never agent-set). This is what makes
-//     the next derive-state tick fall through to `intent_review`
-//     instead of dead-ending on `select_stage`.
+//     stage list (engine-derived, never agent-set). This is what
+//     makes the next derive-state tick fall through to
+//     `intent_review` instead of dead-ending on `select_stage`.
 //   - For quick mode, leaves `stages` empty so the workflow routes
 //     to `select_stage` next.
 //
@@ -26,14 +23,14 @@
 //   - Cannot transition INTO quick (would amputate later stages).
 //   - Cannot transition OUT OF quick (would suddenly add stages
 //     mid-flight, the inverse problem).
-// /haiku:change-mode hides the `quick` option from the elicit list
-// when the intent has started; /haiku:start only fires before any
-// stage starts so this constraint is not load-bearing there.
+// The picker hides `quick` from the option list under those
+// constraints.
 
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { ensureOnStageBranch } from "../../git-worktree.js"
-import { getElicitInput, resolveStudioStages } from "../../orchestrator.js"
+import { resolveStudioStages } from "../../orchestrator.js"
+import { runPicker } from "../../server/picker.js"
 import {
 	HAIKU_SELECT_MODE_INPUT_SCHEMA,
 	type HaikuSelectModeInput,
@@ -65,11 +62,11 @@ function readFrontmatter(filePath: string): Record<string, unknown> {
 
 const MODE_DESCRIPTIONS: Record<string, string> = {
 	continuous:
-		"Stages auto-advance through the studio. Reviewer approves each gate; the engine drives forward without per-stage PRs.",
+		"You're in chat for every stage gate. Best for first-time use or work you want to steer.",
 	discrete:
-		"Every stage opens an external PR/MR. The merge IS the approval signal — the workflow waits at each gate until merged.",
+		"Each stage opens a real GitHub PR / GitLab MR. Merging the PR is your approval signal.",
 	autopilot:
-		"Per-stage gates auto-approve. The pre-stage intent_review gate (one-time, before any stage starts) and the final intent-completion gate (single delivery PR) both still require human review — autopilot trades per-stage friction for a single delivery PR, not zero human gates.",
+		"Agent runs the whole pipeline. Only the pre-intent review and the final delivery PR require human attention.",
 	"discrete-hybrid":
 		"Continuous within most stages, but specific stages declared with external review still pop a per-stage PR.",
 	quick:
@@ -79,9 +76,9 @@ const MODE_DESCRIPTIONS: Record<string, string> = {
 export default defineTool({
 	name: "haiku_select_mode",
 	description:
-		"Select an execution mode for an intent. Pass the intent slug and optionally a list of mode names to limit the selection. If only one option is provided, auto-selects it. If elicitation is available, prompts the user; otherwise returns the mode list for conversational selection. Side effects: writes `mode` to intent.md; for non-quick modes also writes `stages` (the studio's full stage list). For quick mode, leaves `stages` empty so the workflow routes to select_stage next. Refuses transitions into or out of `quick` once the intent has started a stage.",
+		"Select an execution mode for an intent. Pass the intent slug and optionally a list of mode names to limit the selection. If only one option is provided, auto-selects it. Otherwise opens a SPA picker and blocks on the user's selection. Side effects: writes `mode` to intent.md; for non-quick modes also writes `stages` (the studio's full stage list). For quick mode, leaves `stages` empty so the workflow routes to select_stage next. Refuses transitions into or out of `quick` once the intent has started a stage.",
 	inputSchema: jsonSchemaOf(HAIKU_SELECT_MODE_INPUT_SCHEMA),
-	async handle(args) {
+	async handle(args, signal) {
 		const inputErr = validateToolInput(
 			args,
 			validateHaikuSelectModeInputSchema,
@@ -119,23 +116,13 @@ export default defineTool({
 
 		// Filter the mode option list:
 		//   - Drop `quick` once the intent has started a stage (can't
-		//     amputate mid-flight) AND when the current mode is not
-		//     quick (can't grow mid-flight either).
+		//     amputate or grow mid-flight).
 		//   - Drop `discrete-hybrid` from the user-facing picker since
-		//     it's a derived/virtual mode (per project memory) — the
-		//     engine computes hybrid behavior from `continuous` + per-
-		//     stage external gates, no need to ask the user for it.
+		//     it's a derived/virtual mode — the engine computes hybrid
+		//     behavior from `continuous` + per-stage external gates.
 		const allModes = INTENT_MODES.filter((m) => m !== "discrete-hybrid")
 		const modesAvailable = allModes.filter((m) => {
-			if (m === "quick") {
-				if (intentStarted && currentMode !== "quick") return false
-				if (intentStarted && currentMode === "quick") return false
-				// pre-start: quick is allowed
-				return !intentStarted
-			}
-			// Non-quick modes are always available, but if currentMode is
-			// quick and intent has started, refuse to leave quick (would
-			// suddenly grow stages mid-flight).
+			if (m === "quick") return !intentStarted
 			if (currentMode === "quick" && intentStarted) return false
 			return true
 		})
@@ -152,7 +139,6 @@ export default defineTool({
 		const optionsRaw = validated.options ?? []
 		const options = optionsRaw.map((o) => o.toLowerCase())
 
-		// Validate any explicit options against the filtered availability.
 		if (options.length > 0) {
 			const invalid = options.filter(
 				(o) => !modesAvailable.includes(o as (typeof modesAvailable)[number]),
@@ -167,116 +153,43 @@ export default defineTool({
 			}
 		}
 
-		const elicit = getElicitInput()
 		let chosenMode = ""
-
 		if (options.length === 1) {
 			chosenMode = options[0]
-		} else if (elicit) {
-			let elicitChoices: string[]
-			let showAllOption = false
-			if (options.length === 0 || options.length >= modesAvailable.length) {
-				elicitChoices = [...modesAvailable]
-			} else {
-				elicitChoices = [...options, "Show all modes..."]
-				showAllOption = true
-			}
-
-			const descriptionLines = elicitChoices
-				.filter((m) => m !== "Show all modes...")
-				.map((m) => `${m}: ${MODE_DESCRIPTIONS[m] || m}`)
-				.join("\n")
-
-			try {
-				const result = await elicit({
-					message: `Select an execution mode for intent "${slug}":\n\n${descriptionLines}`,
-					requestedSchema: {
-						type: "object" as const,
-						properties: {
-							mode: {
-								type: "string",
-								title: "Mode",
-								description: "Which execution mode to use",
-								enum: elicitChoices,
-							},
-						},
-						required: ["mode"],
-					},
-				})
-				if (result.action === "accept" && result.content) {
-					const content = result.content as Record<string, string>
-					if (content.mode === "Show all modes..." && showAllOption) {
-						const reElicit = await elicit({
-							message: `All available modes:\n\n${modesAvailable
-								.map((m) => `${m}: ${MODE_DESCRIPTIONS[m] || m}`)
-								.join("\n")}`,
-							requestedSchema: {
-								type: "object" as const,
-								properties: {
-									mode: {
-										type: "string",
-										title: "Mode",
-										enum: [...modesAvailable],
-									},
-								},
-								required: ["mode"],
-							},
-						})
-						if (reElicit.action === "accept" && reElicit.content) {
-							chosenMode =
-								(reElicit.content as Record<string, string>).mode || ""
-						} else {
-							return text(
-								JSON.stringify({
-									action: "cancelled",
-									message: withAnnouncement(
-										"The user cancelled mode selection.",
-										"Ask the user how they'd like to proceed — retry the picker, switch intents, or abandon this intent.",
-									),
-								}),
-							)
-						}
-					} else {
-						chosenMode = content.mode || ""
-					}
-				} else {
-					return text(
-						JSON.stringify({
-							action: "cancelled",
-							message: withAnnouncement(
-								"The user cancelled mode selection.",
-								"Ask the user how they'd like to proceed — retry the picker, switch intents, or abandon this intent.",
-							),
-						}),
-					)
-				}
-			} catch {
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: "Elicitation failed. Pass a single mode in the options array to auto-select.",
-						},
-					],
-					isError: true,
-				}
-			}
 		} else {
-			const modeDescriptions = modesAvailable
-				.map((m) => `- **${m}**: ${MODE_DESCRIPTIONS[m] || m}`)
-				.join("\n")
-			return text(
-				JSON.stringify(
-					{
-						action: "select_mode_conversational",
-						intent: slug,
-						available_modes: modesAvailable,
-						message: `Elicitation unavailable. Ask the user which mode to use, then call haiku_select_mode { intent: "${slug}", options: ["<chosen-mode>"] } with a single option to auto-select.\n\nAvailable modes:\n${modeDescriptions}`,
-					},
-					null,
-					2,
-				),
-			)
+			const presentModes =
+				options.length === 0
+					? [...modesAvailable]
+					: (options as (typeof modesAvailable))
+			const pickerOptions = presentModes.map((m) => ({
+				id: m,
+				label: m,
+				description: MODE_DESCRIPTIONS[m] ?? m,
+			}))
+			const result = await runPicker({
+				intentSlug: slug,
+				kind: "mode",
+				title: intentStarted
+					? `Change mode for "${slug}"`
+					: `Pick a mode for "${slug}"`,
+				prompt: intentStarted
+					? "You can adjust the mode mid-flight; in-flight stages keep their current shape until the next gate."
+					: "Modes change how often the engine pauses for you. You can adjust this later, but the studio stays locked.",
+				options: pickerOptions,
+				signal,
+			})
+			if (result.timedOut || !result.selection) {
+				return text(
+					JSON.stringify({
+						action: "cancelled",
+						message: withAnnouncement(
+							"Mode picker timed out without a selection.",
+							"Ask the user how they'd like to proceed — retry the picker or abandon this intent.",
+						),
+					}),
+				)
+			}
+			chosenMode = result.selection.id
 		}
 
 		chosenMode = chosenMode.toLowerCase()
@@ -294,8 +207,6 @@ export default defineTool({
 			}
 		}
 
-		// Re-enforce branch after elicitation completed (the user may have
-		// flipped branches while the picker was open).
 		const guard = ensureOnStageBranch(slug, undefined)
 		if (!guard.ok) {
 			return {
@@ -310,10 +221,6 @@ export default defineTool({
 		}
 
 		setFrontmatterField(intentFile, "mode", chosenMode)
-
-		// Stages bookkeeping. For non-quick modes, set stages to the
-		// studio's full list (engine-derived, never agent-set). For
-		// quick, clear stages so the workflow routes to select_stage.
 		if (chosenMode === "quick") {
 			deleteFrontmatterFields(intentFile, ["stages"])
 		} else {
@@ -340,7 +247,7 @@ export default defineTool({
 						chosenMode === "quick"
 							? withAnnouncement(
 									`The user picked **quick** mode for "${slug}".`,
-									`Call haiku_run_next { intent: "${slug}" } — the workflow engine will elicit which single stage next.`,
+									`Call haiku_run_next { intent: "${slug}" } — the engine will open the stage picker next.`,
 								)
 							: withAnnouncement(
 									`The user picked **${chosenMode}** mode for "${slug}"${currentMode && currentMode !== chosenMode ? ` (was ${currentMode})` : ""}.`,

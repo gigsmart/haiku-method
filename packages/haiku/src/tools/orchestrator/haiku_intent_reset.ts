@@ -4,9 +4,9 @@
 // instruction telling the caller to recreate via haiku_intent_create
 // with the preserved title/description/context.
 //
-// Confirmation REQUIRES an elicitInput handler (set on server boot).
-// Without it, the tool refuses — the action is too destructive to
-// proceed silently.
+// Confirmation goes through the SPA picker (kind: "confirm").
+// Without an SPA-side response (timeout / cancellation), the tool
+// refuses — the action is too destructive to proceed silently.
 
 import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync, rmSync } from "node:fs"
@@ -18,7 +18,8 @@ import {
 	deleteStageBranch,
 	getMainlineBranch,
 } from "../../git-worktree.js"
-import { getElicitInput, resolveStudioStages } from "../../orchestrator.js"
+import { resolveStudioStages } from "../../orchestrator.js"
+import { runPicker } from "../../server/picker.js"
 import {
 	findHaikuRoot,
 	gitCommitState,
@@ -31,7 +32,7 @@ import { text } from "./_text.js"
 export default defineTool({
 	name: "haiku_intent_reset",
 	description:
-		"Reset an intent — destructively delete all stage branches, the intent main branch, and the intent directory, then return instructions to recreate the intent with the same title/description/context. Requires user confirmation via elicitation.",
+		"Reset an intent — destructively delete all stage branches, the intent main branch, and the intent directory, then return instructions to recreate the intent with the same title/description/context. Requires user confirmation via the SPA picker.",
 	inputSchema: {
 		type: "object" as const,
 		properties: {
@@ -39,7 +40,7 @@ export default defineTool({
 		},
 		required: ["intent"],
 	},
-	async handle(args) {
+	async handle(args, signal) {
 		const slug = args.intent as string
 
 		const root = findHaikuRoot()
@@ -60,38 +61,26 @@ export default defineTool({
 		// Description = body minus the H1 heading, trimmed.
 		const description = body.replace(/^#\s+.*\n+/, "").trim() || title
 
-		const elicit = getElicitInput()
-		if (!elicit) {
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: "Reset requires user confirmation via elicitation.",
-					},
-				],
-				isError: true,
-			}
-		}
-		const result = await elicit({
-			message: `Reset intent "${slug}"?\n\nThis will DELETE all state (stages, units, knowledge) and recreate the intent with the same description.\n\nDescription: "${description}"`,
-			requestedSchema: {
-				type: "object" as const,
-				properties: {
-					confirm: {
-						type: "string",
-						title: "Confirm Reset",
-						description: "This cannot be undone",
-						enum: ["Reset", "Cancel"],
-					},
+		const result = await runPicker({
+			intentSlug: slug,
+			kind: "confirm",
+			title: `Reset intent "${slug}"?`,
+			prompt: `This will DELETE all state (stages, units, knowledge) and recreate the intent with the same description: "${description}". This cannot be undone.`,
+			options: [
+				{
+					id: "reset",
+					label: "Yes, reset",
+					description: "Wipe state and recreate the intent",
 				},
-				required: ["confirm"],
-			},
+				{
+					id: "cancel",
+					label: "Cancel",
+					description: "Keep the intent as-is",
+				},
+			],
+			signal,
 		})
-
-		if (
-			result.action !== "accept" ||
-			(result.content as Record<string, string>)?.confirm !== "Reset"
-		) {
+		if (result.timedOut || !result.selection || result.selection.id !== "reset") {
 			return text(
 				JSON.stringify({ action: "cancelled", message: "Reset cancelled." }),
 			)

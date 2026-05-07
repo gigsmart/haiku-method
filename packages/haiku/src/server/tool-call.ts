@@ -498,29 +498,34 @@ export async function handleToolCall(
 		launchBrowserBestEffort(reviewUrl, "Ad-hoc review")
 
 		// Block until the reviewer hits Done or Request Changes (or the
-		// pane times out). The UI posts a decide frame with decision set
-		// to "approved" (Done) or "changes_requested" (Request Changes),
-		// which flips session.status to "decided" and wakes
-		// waitForSession. The tool return then relays a concrete
-		// instruction to the agent so run_next / revisit is the obvious
-		// next step, not a guess.
+		// pane times out). The UI posts a `decide` frame (WS) or
+		// POSTs `/review/:id/decide` (HTTP) — both write
+		// `session.pending_decision` and broadcast a
+		// `pending_decision_changed` event, exactly like the
+		// gate-review path. We mirror `awaitGateReviewSession`'s
+		// consumption pattern: wake on every state change, look for
+		// `pending_decision`, drain it, return.
+		//
+		// Drain on entry too: the reviewer may have decided before the
+		// agent re-entered this tool (rare but legal) — the queued
+		// decision should be picked up immediately.
 		try {
-			while (true) {
-				let timedOut = false
-				try {
-					await waitForSession(session.session_id, 30 * 60 * 1000, signal)
-				} catch (err) {
-					if (signal?.aborted) throw err
-					timedOut = true
-				}
+			const drainPending = (): {
+				decision: string
+				feedback?: string
+			} | null => {
+				const cur = getSession(session.session_id)
+				if (!cur || cur.session_type !== "review") return null
+				if (!cur.pending_decision) return null
+				const queued = cur.pending_decision
+				updateSession(session.session_id, { pending_decision: null })
+				return { decision: queued.decision, feedback: queued.feedback }
+			}
 
-				const updated = getSession(session.session_id)
-				if (
-					updated &&
-					updated.session_type === "review" &&
-					updated.status === "decided"
-				) {
-					if (updated.decision === "changes_requested") {
+			while (true) {
+				const queued = drainPending()
+				if (queued) {
+					if (queued.decision === "changes_requested") {
 						return {
 							content: [
 								{
@@ -538,6 +543,14 @@ export async function handleToolCall(
 							},
 						],
 					}
+				}
+
+				let timedOut = false
+				try {
+					await waitForSession(session.session_id, 30 * 60 * 1000, signal)
+				} catch (err) {
+					if (signal?.aborted) throw err
+					timedOut = true
 				}
 
 				if (timedOut) break

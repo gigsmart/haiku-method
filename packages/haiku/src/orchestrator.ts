@@ -312,16 +312,11 @@ let _awaitGateReviewSession:
 	  }>)
 	| null = null
 
-/**
- * Callback for elicitation — asks the user a question via the MCP client's native UI.
- * Used as fallback when the review UI fails to open.
- */
-let _elicitInput:
-	| ((params: { message: string; requestedSchema: unknown }) => Promise<{
-			action: string
-			content?: unknown
-	  }>)
-	| null = null
+// 2026-05-07: MCP elicitation has been removed. Studio / mode /
+// stage selection and intent reset confirmation now go through the
+// SPA picker (`runPicker` in src/server/picker.ts). The elicit
+// handler getter/setter are gone; nothing in the engine should
+// import them.
 
 export function setGateReviewHandlers(handlers: {
 	prepare: typeof _prepareGateReview
@@ -329,17 +324,6 @@ export function setGateReviewHandlers(handlers: {
 }): void {
 	_prepareGateReview = handlers.prepare
 	_awaitGateReviewSession = handlers.await
-}
-
-export function setElicitInputHandler(handler: typeof _elicitInput): void {
-	_elicitInput = handler
-}
-
-/** Per-tool orchestrator handlers reach the elicit handler through this
- *  getter — keeps the variable module-private while still allowing
- *  extracted per-tool files to call it. */
-export function getElicitInput(): typeof _elicitInput {
-	return _elicitInput
 }
 
 /** Per-tool orchestrator handlers reach the gate-review prepare/await

@@ -304,6 +304,56 @@ export function registerSessionRoutes(instance: FastifyInstance): void {
 		},
 	)
 
+	// ── Picker: SPA shell + select ─────────────────────────────────────
+	// Generic single-select picker (studio / mode / stage / confirm).
+	// Replaces MCP elicitation. The blocking tool (e.g.
+	// haiku_select_studio) waits on session.status === "answered".
+	instance.get<{ Params: { sessionId: string } }>(
+		"/picker/:sessionId",
+		async (req, reply) => {
+			const session = getSession(req.params.sessionId)
+			if (!session || session.session_type !== "picker") {
+				reply.status(404).send("Session not found")
+				return
+			}
+			reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
+		},
+	)
+	instance.post<{ Params: { sessionId: string } }>(
+		"/picker/:sessionId/select",
+		async (req, reply) => {
+			if (!requireTunnelAuth(req, reply, req.params.sessionId)) return
+			const session = getSession(req.params.sessionId)
+			if (!session || session.session_type !== "picker") {
+				reply.status(404).send({ error: "Session not found or expired" })
+				return
+			}
+			if (session.status === "answered") {
+				reply.status(409).send({ error: "Picker already submitted" })
+				return
+			}
+			const body = (req.body ?? {}) as Record<string, unknown>
+			const id = typeof body.id === "string" ? body.id : ""
+			if (!id) {
+				reply.status(400).send({ error: "Missing required field: id" })
+				return
+			}
+			const validIds = new Set(session.options.map((o) => o.id))
+			if (!validIds.has(id)) {
+				reply.status(400).send({
+					error: `id "${id}" is not in the option set: ${[...validIds].join(", ")}`,
+				})
+				return
+			}
+			const { updatePickerSession } = await import("../sessions.js")
+			updatePickerSession(req.params.sessionId, {
+				status: "answered",
+				selection: { id },
+			})
+			reply.send({ ok: true, id })
+		},
+	)
+
 	// ── API: session / heartbeat / revisit ─────────────────────────────
 	instance.get<{ Params: { sessionId: string } }>(
 		"/api/session/:sessionId",

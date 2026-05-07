@@ -1019,6 +1019,271 @@ test("cursor: discovery_required cleared when unit fm.discovery.<agent> is recor
 	})
 })
 
+// ── P12: gate stackup priority chain ──────────────────────────────────
+
+test("cursor: all three gates missing simultaneously → design_direction fires first", async () => {
+	if (!HAS_GIT) return
+	await withTmpRepo("cursor-gate-stackup", async ({ repoRoot, intentDir, slug }) => {
+		makeStudio({
+			repoRoot,
+			studio: "test",
+			stages: [
+				{
+					name: "design",
+					hats: ["planner", "builder", "verifier"],
+					fix_hats: ["classifier", "builder", "feedback-assessor"],
+					review: "ask",
+					review_agents: ["code-reviewer"],
+					requires_design_direction: true,
+				},
+			],
+		})
+		makeIntent({ intentDir, slug, studio: "test" })
+		// Plant clarify questions AND a discovery template AND
+		// requires_design_direction. None of the three gates have a
+		// recorded answer/selection — all three should be fireable.
+		// Priority chain: design_direction → clarify → discovery →
+		// elaborate. Verify the FIRST emit is design_direction_required.
+		const clarifyDir = join(
+			repoRoot,
+			".haiku",
+			"studios",
+			"test",
+			"stages",
+			"design",
+			"clarify",
+		)
+		mkdirSync(clarifyDir, { recursive: true })
+		writeFileSync(
+			join(clarifyDir, "audience.md"),
+			"---\nprompt: Audience?\n---\n\nbody\n",
+		)
+		const discoveryDir = join(
+			repoRoot,
+			".haiku",
+			"studios",
+			"test",
+			"stages",
+			"design",
+			"discovery",
+		)
+		mkdirSync(discoveryDir, { recursive: true })
+		writeFileSync(
+			join(discoveryDir, "tokens.md"),
+			"---\nname: tokens\nlocation: \"stages/design/TOKENS.md\"\nrequired: true\n---\n\nbody\n",
+		)
+		// Plant a wave-ready unit so discovery has SOMETHING to gate on.
+		writeUnit(intentDir, "design", "unit-01", {
+			title: "u1",
+			depends_on: [],
+			started_at: null,
+			iterations: [],
+			reviews: {},
+			approvals: {},
+			discovery: {},
+		})
+
+		const action = await runTick(repoRoot, slug)
+		assert.strictEqual(
+			action.action,
+			"design_direction_required",
+			`priority chain failed; expected design_direction first; got: ${action.action}`,
+		)
+	})
+})
+
+test("cursor: design_direction recorded → clarify fires next", async () => {
+	if (!HAS_GIT) return
+	await withTmpRepo("cursor-stackup-clarify", async ({ repoRoot, intentDir, slug }) => {
+		makeStudio({
+			repoRoot,
+			studio: "test",
+			stages: [
+				{
+					name: "design",
+					hats: ["planner", "builder", "verifier"],
+					fix_hats: ["classifier", "builder", "feedback-assessor"],
+					review: "ask",
+					review_agents: ["code-reviewer"],
+					requires_design_direction: true,
+				},
+			],
+		})
+		// Stamp design selection but NOT clarify answers.
+		makeIntent({
+			intentDir,
+			slug,
+			studio: "test",
+			extraFm: {
+				design_directions: {
+					design: { archetype: "x", at: "t" },
+				},
+			},
+		})
+		const clarifyDir = join(
+			repoRoot,
+			".haiku",
+			"studios",
+			"test",
+			"stages",
+			"design",
+			"clarify",
+		)
+		mkdirSync(clarifyDir, { recursive: true })
+		writeFileSync(
+			join(clarifyDir, "audience.md"),
+			"---\nprompt: Audience?\n---\n\nbody\n",
+		)
+		const action = await runTick(repoRoot, slug)
+		assert.strictEqual(action.action, "clarify_required")
+	})
+})
+
+test("cursor: design + clarify recorded → discovery fires next", async () => {
+	if (!HAS_GIT) return
+	await withTmpRepo("cursor-stackup-discovery", async ({ repoRoot, intentDir, slug }) => {
+		makeStudio({
+			repoRoot,
+			studio: "test",
+			stages: [
+				{
+					name: "design",
+					hats: ["planner", "builder", "verifier"],
+					fix_hats: ["classifier", "builder", "feedback-assessor"],
+					review: "ask",
+					review_agents: ["code-reviewer"],
+					requires_design_direction: true,
+				},
+			],
+		})
+		makeIntent({
+			intentDir,
+			slug,
+			studio: "test",
+			extraFm: {
+				design_directions: { design: { archetype: "x", at: "t" } },
+				clarifications: {
+					design: { answers: [], at: "t" },
+				},
+			},
+		})
+		const discoveryDir = join(
+			repoRoot,
+			".haiku",
+			"studios",
+			"test",
+			"stages",
+			"design",
+			"discovery",
+		)
+		mkdirSync(discoveryDir, { recursive: true })
+		writeFileSync(
+			join(discoveryDir, "tokens.md"),
+			"---\nname: tokens\nlocation: \"stages/design/TOKENS.md\"\nrequired: true\n---\n\nbody\n",
+		)
+		writeUnit(intentDir, "design", "unit-01", {
+			title: "u1",
+			depends_on: [],
+			started_at: null,
+			iterations: [],
+			reviews: {},
+			approvals: {},
+			discovery: {},
+		})
+		const action = await runTick(repoRoot, slug)
+		assert.strictEqual(action.action, "discovery_required")
+	})
+})
+
+// ── P18: pre-stage cursor on intent start ────────────────────────────
+
+test("cursor: brand-new intent (no stages dir at all) → elaborate on first declared stage", async () => {
+	if (!HAS_GIT) return
+	await withTmpRepo("cursor-pre-stage-fresh", async ({ repoRoot, intentDir, slug }) => {
+		makeStudio({ repoRoot, studio: "test" })
+		// makeIntent creates intent.md but does NOT create any stages/
+		// directory or unit files. This is the literal "intent_create
+		// just landed, agent's first run_next" state.
+		makeIntent({ intentDir, slug, studio: "test" })
+		const action = await runTick(repoRoot, slug)
+		assert.strictEqual(
+			action.action,
+			"elaborate",
+			`brand-new intent should emit elaborate; got ${action.action}`,
+		)
+		assert.strictEqual(action.stage, "design")
+	})
+})
+
+test("cursor: brand-new intent + stage with design_direction gate → design_direction_required (not elaborate)", async () => {
+	if (!HAS_GIT) return
+	await withTmpRepo("cursor-pre-stage-dd", async ({ repoRoot, intentDir, slug }) => {
+		makeStudio({
+			repoRoot,
+			studio: "test",
+			stages: [
+				{
+					name: "design",
+					hats: ["planner", "builder", "verifier"],
+					fix_hats: ["classifier", "builder", "feedback-assessor"],
+					review: "ask",
+					review_agents: ["code-reviewer"],
+					requires_design_direction: true,
+				},
+			],
+		})
+		makeIntent({ intentDir, slug, studio: "test" })
+		const action = await runTick(repoRoot, slug)
+		// Pre-stage cursor must fire the design-direction gate BEFORE
+		// emitting elaborate, even when no units exist yet.
+		assert.strictEqual(action.action, "design_direction_required")
+	})
+})
+
+test("cursor: brand-new intent with sealed_at already set → sealed (sanity)", async () => {
+	if (!HAS_GIT) return
+	await withTmpRepo("cursor-pre-stage-sealed", async ({ repoRoot, intentDir, slug }) => {
+		makeStudio({ repoRoot, studio: "test" })
+		makeIntent({
+			intentDir,
+			slug,
+			studio: "test",
+			sealed: true,
+			approvals: {
+				spec: { at: "2026-05-06T00:00:00Z" },
+				continuity: { at: "2026-05-06T00:00:00Z" },
+				user: { at: "2026-05-06T00:00:00Z" },
+			},
+		})
+		const action = await runTick(repoRoot, slug)
+		assert.strictEqual(action.action, "sealed")
+	})
+})
+
+test("cursor: intent with FB on a stage that hasn't started yet → start_feedback_hat preempts", async () => {
+	if (!HAS_GIT) return
+	await withTmpRepo("cursor-pre-stage-fb", async ({ repoRoot, intentDir, slug }) => {
+		makeStudio({ repoRoot, studio: "test" })
+		makeIntent({ intentDir, slug, studio: "test" })
+		// File a FB on the first stage even though no units exist yet.
+		// Cursor should still preempt — the FB needs triage before the
+		// stage gets units.
+		makeFeedback({
+			intentDir,
+			stage: "design",
+			id: "01",
+			title: "early concern",
+			body: "user-typed concern at intent start",
+			closed: false,
+		})
+		const action = await runTick(repoRoot, slug)
+		// Cursor must NOT silently emit elaborate when an open FB exists;
+		// FB triage takes priority. Either start_feedback_hat or another
+		// FB-related action is acceptable.
+		assert.notStrictEqual(action.action, "elaborate")
+	})
+})
+
 // ── Sealed intent ────────────────────────────────────────────────────
 
 test("cursor: sealed intent → sealed action", async () => {

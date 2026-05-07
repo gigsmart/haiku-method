@@ -498,7 +498,7 @@ export function ensureOnIntentMain(slug: string): boolean {
 	if (!branchExists(branch)) return true
 	if (getCurrentBranch() === branch) return true
 	try {
-		run(["git", "checkout", branch])
+		safeCheckout(["checkout", branch])
 		return true
 	} catch {
 		return false
@@ -515,18 +515,18 @@ function checkoutOrCreate(branch: string, baseBranch?: string): string {
 	const exists = tryRun(["git", "rev-parse", "--verify", branch])
 	if (exists) {
 		if (getCurrentBranch() !== branch) {
-			run(["git", "checkout", branch])
+			safeCheckout(["checkout", branch])
 		}
 	} else if (baseBranch) {
 		// Fork from baseBranch in a single command so we never bounce the
 		// working tree through baseBranch first. baseBranch must exist —
 		// let `git checkout -b` throw if not so the caller knows.
-		run(["git", "checkout", "-b", branch, baseBranch])
+		safeCheckout(["checkout", "-b", branch, baseBranch])
 	} else {
 		try {
-			run(["git", "checkout", "-b", branch])
+			safeCheckout(["checkout", "-b", branch])
 		} catch {
-			/* already on it or can't create */
+			/* already on it, can't create, or worktree locked */
 		}
 	}
 	return branch
@@ -620,6 +620,7 @@ export function mergeStageBranchForward(
 				...cwdArgs,
 				"merge",
 				fromBranch,
+				"--no-ff",
 				"--no-edit",
 				"-m",
 				`haiku: merge forward ${fromStage} → ${toStage}`,
@@ -733,6 +734,7 @@ export function mergeStageBranchIntoMain(
 					...cwdArgs,
 					"merge",
 					stageBranch,
+					"--no-ff",
 					"--no-edit",
 					"-m",
 					mergeMessage,
@@ -767,7 +769,7 @@ export function mergeStageBranchIntoMain(
 			// doesn't refuse with "would be overwritten."
 			autoCommitDirtyTree(stageBranch)
 			try {
-				run(["git", "checkout", mainBranch])
+				safeCheckout(["checkout", mainBranch])
 			} catch (checkoutErr) {
 				const raw =
 					checkoutErr instanceof Error
@@ -867,6 +869,7 @@ export function consolidateStageBranches(
 					cwd,
 					"merge",
 					lastStageBranch,
+					"--no-ff",
 					"--no-edit",
 					"-m",
 					"haiku: consolidate discrete stages into main",
@@ -1034,6 +1037,33 @@ export function ensureStageBranch(slug: string, stage: string): string {
  * branch, producing the exact "stage work shipped to dev without the
  * sweep fixes" problem.
  */
+/**
+ * Wrap a branch-switching `git checkout` with a worktree-lock guard.
+ * P10 (2026-05-06): every checkout that switches branches must go
+ * through this helper so locked worktrees can't be hijacked. The
+ * file-level `git checkout <ref> -- <path>` form is NOT a branch
+ * switch and doesn't need this guard — it's a content fetch.
+ *
+ * Throws on a locked worktree with a descriptive error so callers
+ * surface the failure to the user. Callers that catch in turn
+ * (ensureOnStageBranch, mergeStageBranchIntoMain, etc.) translate
+ * the throw into their own structured "block: worktree_locked"
+ * response.
+ */
+function safeCheckout(args: string[]): void {
+	if (isCurrentWorktreeLocked()) {
+		const targetHint = args[args.length - 1] ?? "<unknown>"
+		throw new Error(
+			`Refusing to \`git checkout ${args.join(" ")}\` — current worktree is locked. ` +
+				`Locked worktrees are reserved for in-flight work and must not be hijacked ` +
+				`by a parallel intent's branch enforcement. Run from a different worktree, ` +
+				`or unlock with \`git worktree unlock\` if the lock is stale. ` +
+				`(Target branch: ${targetHint})`,
+		)
+	}
+	run(["git", ...args])
+}
+
 /**
  * Detect whether the current worktree is git-locked. P9 (2026-05-06):
  * a locked worktree is sacred — the engine must never `git checkout`
@@ -1308,6 +1338,7 @@ export function ensureOnStageBranch(
 					"git",
 					"merge",
 					intentMain,
+					"--no-ff",
 					"--no-edit",
 					"-m",
 					`haiku: merge intent-main → stage ${stage} (workflow engine branch enforcement)`,
@@ -2061,7 +2092,12 @@ export function mergeUnitWorktree(
 	slug: string,
 	unit: string,
 	stage: string,
-): { success: boolean; message: string } {
+): {
+	success: boolean
+	message: string
+	isConflict?: boolean
+	conflictFiles?: string[]
+} {
 	if (!isGitRepo()) return { success: true, message: "no worktree" }
 	if (!stage)
 		return {
@@ -2225,10 +2261,24 @@ export function mergeUnitWorktree(
 			message: `merged ${unitBranch} → ${stageBranch}`,
 		}
 	} catch (err) {
-		return {
-			success: false,
-			message: err instanceof Error ? err.message : String(err),
+		// Match the structured envelope every other engine merge site
+		// returns: when this is a real merge_conflict on agent content,
+		// surface `isConflict: true`, the file paths, and a resolution
+		// message naming `git add` and `git commit`. Anything else is
+		// returned with the bare message (corruption, missing branch,
+		// dirty tree) — same shape as before.
+		const message = err instanceof Error ? err.message : String(err)
+		const conflictPaths = (err as { conflictPaths?: string[] } | null)
+			?.conflictPaths
+		if (Array.isArray(conflictPaths) && conflictPaths.length > 0) {
+			return {
+				success: false,
+				isConflict: true,
+				conflictFiles: conflictPaths,
+				message: `Merge ${unitBranch} → ${stageBranch} left ${conflictPaths.length} conflicted file(s): ${conflictPaths.join(", ")}. Resolve the conflicts on '${stageBranch}' (edit files, \`git add\`, \`git commit\`), then retry the unit merge.`,
+			}
 		}
+		return { success: false, message }
 	}
 }
 
@@ -2393,6 +2443,7 @@ export function mergeDiscoveryWorktree(
 					worktreePath,
 					"merge",
 					baseBranch,
+					"--no-ff",
 					"--no-edit",
 					"-m",
 					`haiku: sync ${stage} into discovery ${template}`,
@@ -2428,6 +2479,7 @@ export function mergeDiscoveryWorktree(
 				...(cwd ? ["-C", cwd] : []),
 				"merge",
 				discBranch,
+				"--no-ff",
 				"--no-edit",
 				"-m",
 				`haiku: merge discovery ${template} into ${stage}`,
@@ -2691,6 +2743,7 @@ export function mergeFixChainWorktree(
 					worktreePath,
 					"merge",
 					baseBranch,
+					"--no-ff",
 					"--no-edit",
 					"-m",
 					`haiku: sync ${scope} into fix-chain ${feedbackId}`,
@@ -2727,6 +2780,7 @@ export function mergeFixChainWorktree(
 				...(cwd ? ["-C", cwd] : []),
 				"merge",
 				fixBranch,
+				"--no-ff",
 				"--no-edit",
 				"-m",
 				`haiku: merge fix-chain ${feedbackId} into ${scope}`,
@@ -2874,7 +2928,7 @@ export function finalizeIntentBranches(
 	// 2. Make sure we end up on intent main.
 	if (getCurrentBranch() !== mainBranch) {
 		try {
-			run(["git", "checkout", mainBranch])
+			safeCheckout(["checkout", mainBranch])
 		} catch (err) {
 			return {
 				success: false,
@@ -2988,7 +3042,7 @@ export function prepareRevisitBranch(
 
 		// 2. Switch to target branch so merges land there.
 		if (getCurrentBranch() !== targetBranch) {
-			run(["git", "checkout", targetBranch])
+			safeCheckout(["checkout", targetBranch])
 		}
 
 		// 3. Merge main → target (approved upstream changes). On conflict,
@@ -3007,6 +3061,7 @@ export function prepareRevisitBranch(
 					"git",
 					"merge",
 					mainBranch,
+					"--no-ff",
 					"--no-edit",
 					"-m",
 					`haiku: merge main → ${targetStage} (revisit prep)`,
@@ -3047,6 +3102,7 @@ export function prepareRevisitBranch(
 						"git",
 						"merge",
 						fromBranch,
+						"--no-ff",
 						"--no-edit",
 						"-m",
 						`haiku: merge ${fromStage} → ${targetStage} (revisit carries future-stage work back)`,

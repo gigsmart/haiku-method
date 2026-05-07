@@ -35,7 +35,7 @@ import { text } from "./_text.js"
 export default defineTool({
 	name: "haiku_intent_create",
 	description:
-		"Create a new intent. Returns the slug + path. Title is required (crisp 3–8 word summary, ≤80 chars, single line). Studio, mode, and (for quick) stage are selected separately via the engine-controlled elicitation chain (haiku_select_studio → haiku_select_mode → optional haiku_select_stage). Always creates a fresh intent — `/haiku:start` does not resume; use `/haiku:pickup` for that.",
+		"Create a new intent. Returns the slug + path. Title is required (crisp 3–8 word summary, ≤80 chars, single line). Studio, mode, and (for quick) stage are selected by the engine on the next haiku_run_next call — the tick blocks on the SPA picker until the user chooses, then continues to real workflow actions. The agent does NOT call select_* tools directly; just call haiku_run_next after creating the intent. Always creates a fresh intent — `/haiku:start` does not resume; use `/haiku:pickup` for that.",
 	inputSchema: {
 		type: "object" as const,
 		properties: {
@@ -174,10 +174,10 @@ export default defineTool({
 
 		// Build intent.md with frontmatter + body. studio, mode, and
 		// stages are all engine-managed and start UNSET — the workflow
-		// drives haiku_select_studio → haiku_select_mode → (if quick)
-		// haiku_select_stage to populate them via elicitation. Setting
-		// any of them at create-time would let the agent dictate values
-		// the user should be choosing.
+		// tick (run-tick.ts) gates on each missing field and emits
+		// `select_studio` / `select_mode` / `select_stage`, which
+		// haiku_run_next intercepts to run the SPA picker inline. The
+		// agent never types these values into a frontmatter writer.
 		const context = args.context as string | undefined
 		const descriptionBody = (description || "").trim()
 		const intentContent = [

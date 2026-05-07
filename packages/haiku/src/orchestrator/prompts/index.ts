@@ -21,12 +21,14 @@ import advance_stage from "./advance_stage.js"
 import blocked from "./blocked.js"
 import changes_requested from "./changes_requested.js"
 import clarify_required from "./clarify_required.js"
+import close_feedback from "./close_feedback.js"
 import commit_wip from "./commit_wip.js"
 import complete from "./complete.js"
 import dag_cycle_detected from "./dag_cycle_detected.js"
 import design_direction_complete from "./design_direction_complete.js"
 import design_direction_required from "./design_direction_required.js"
 import discovery_missing from "./discovery_missing.js"
+import discovery_required from "./discovery_required.js"
 import dispatch_approval from "./dispatch_approval.js"
 import dispatch_quality_gates from "./dispatch_quality_gates.js"
 import dispatch_review from "./dispatch_review.js"
@@ -42,6 +44,8 @@ import intent_approved from "./intent_approved.js"
 import intent_complete from "./intent_complete.js"
 import intent_completion_fix from "./intent_completion_fix.js"
 import intent_completion_review from "./intent_completion_review.js"
+import intent_review from "./intent_review.js"
+import merge_intent from "./merge_intent.js"
 import merge_stage from "./merge_stage.js"
 import outputs_missing from "./outputs_missing.js"
 import review from "./review.js"
@@ -67,12 +71,14 @@ export const actionPromptBuilders: ReadonlyMap<string, PromptBuilder> = new Map<
 	["blocked", blocked],
 	["changes_requested", changes_requested],
 	["clarify_required", clarify_required],
+	["close_feedback", close_feedback],
 	["commit_wip", commit_wip],
 	["complete", complete],
 	["dag_cycle_detected", dag_cycle_detected],
 	["design_direction_complete", design_direction_complete],
 	["design_direction_required", design_direction_required],
 	["discovery_missing", discovery_missing],
+	["discovery_required", discovery_required],
 	["elaborate", elaborate],
 	["elaboration_insufficient", elaboration_insufficient],
 	["error", error],
@@ -84,6 +90,7 @@ export const actionPromptBuilders: ReadonlyMap<string, PromptBuilder> = new Map<
 	["intent_complete", intent_complete],
 	["intent_completion_fix", intent_completion_fix],
 	["intent_completion_review", intent_completion_review],
+	["intent_review", intent_review],
 	["outputs_missing", outputs_missing],
 	["review", review],
 	["review_fix", review_fix],
@@ -100,6 +107,7 @@ export const actionPromptBuilders: ReadonlyMap<string, PromptBuilder> = new Map<
 	["dispatch_approval", dispatch_approval],
 	["dispatch_quality_gates", dispatch_quality_gates],
 	["user_gate", user_gate],
+	["merge_intent", merge_intent],
 	["merge_stage", merge_stage],
 	["drift_detected", drift_detected],
 	["unit_inputs_missing", unit_inputs_missing],

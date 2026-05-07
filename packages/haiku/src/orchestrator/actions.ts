@@ -61,7 +61,11 @@ export function buildGuardResponse(
 		ok: boolean
 		branch: string
 		message: string
-		block?: "dirty_tree" | "merge_conflict" | "merge_in_progress"
+		block?:
+			| "dirty_tree"
+			| "merge_conflict"
+			| "merge_in_progress"
+			| "worktree_locked"
 		dirty_files?: string[]
 		target_branch?: string
 	},

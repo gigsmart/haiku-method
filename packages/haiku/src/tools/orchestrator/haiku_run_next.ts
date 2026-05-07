@@ -27,7 +27,13 @@
 // prompt instructions (rendered by buildRunInstructions, harness-
 // adapted by adaptInstructions).
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import {
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	readFileSync,
+	writeFileSync,
+} from "node:fs"
 import { join } from "node:path"
 import { ensureOnStageBranch } from "../../git-worktree.js"
 import { adaptInstructions } from "../../harness-instructions.js"
@@ -52,6 +58,51 @@ function dispatchOrchestratorAction(slug: string): OrchestratorActionType {
 	return {
 		action: "error",
 		message: `runWorkflowTick produced no action for intent '${slug}' (track: ${tick.position.track}). The cursor is mid-wave or sealed — wait for outstanding subagents and retick.`,
+	}
+}
+
+/**
+ * Run the SPA picker for studio / mode / stage selection in response
+ * to a tick that emitted `select_*`. Dispatches by name to the matching
+ * orchestrator tool handler — same code path the user-explicit
+ * `/haiku:change-mode` skill takes, but invoked engine-side so the
+ * agent never sees the prompt-to-call. The handler does the picker +
+ * frontmatter write + telemetry; we discard its rendered response and
+ * just signal "ok / not ok" back to the dispatch loop.
+ */
+async function runSelectionPicker(
+	actionName: string,
+	slug: string,
+	signal?: AbortSignal,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+	const { orchestratorToolHandlers } = await import("./index.js")
+	const tool = orchestratorToolHandlers.get(actionName as string)
+	if (!tool) {
+		return {
+			ok: false,
+			message: `Engine bug: no handler registered for selection action '${actionName}'.`,
+		}
+	}
+	try {
+		const result = await tool.handle({ intent: slug }, signal)
+		// Selection tools return text; the side effect (write to
+		// intent.md) is what matters. Surface their isError status as
+		// a hard failure so the agent sees a clean stop instead of
+		// looping forever on the same select_* tick.
+		if (result.isError) {
+			const text =
+				result.content
+					?.map((c) => (c.type === "text" ? c.text : ""))
+					.join("\n")
+					.trim() || `Picker failed for ${actionName}.`
+			return { ok: false, message: text }
+		}
+		return { ok: true }
+	} catch (err) {
+		return {
+			ok: false,
+			message: `Picker for ${actionName} threw: ${err instanceof Error ? err.message : String(err)}`,
+		}
 	}
 }
 
@@ -92,7 +143,7 @@ export default defineTool({
 			state_file: { type: "string" },
 		},
 	},
-	async handle(args) {
+	async handle(args, signal) {
 		// Auto-resolve `intent` when omitted. Resolution order:
 		//   1. Current git branch (`haiku/<slug>/main` or `haiku/<slug>/<stage>`)
 		//      — the user's checkout already names the intent, so the skill
@@ -210,7 +261,266 @@ export default defineTool({
 		// Workflow-engine dispatch: read disk → derive state → run
 		// per-state handler. The handler registry lives in
 		// orchestrator/workflow/handlers/.
-		const result = dispatchOrchestratorAction(slug)
+		//
+		// Selection-picker interception: when the tick emits
+		// `select_studio`, `select_mode`, or `select_stage`, the engine
+		// itself runs the SPA picker inline, writes the chosen value,
+		// and re-ticks. The agent NEVER sees these actions — it just
+		// experiences a blocking tick until the user picks. The select_*
+		// MCP tools still exist for explicit user-driven invocation
+		// (`/haiku:change-mode`, etc.) but the tick path drives them
+		// engine-side here so the agent stays out of the loop.
+		let result = dispatchOrchestratorAction(slug)
+		while (
+			result.action === "select_studio" ||
+			result.action === "select_mode" ||
+			result.action === "select_stage"
+		) {
+			const pickerResult = await runSelectionPicker(
+				result.action,
+				slug,
+				signal,
+			)
+			if (!pickerResult.ok) {
+				return {
+					content: [
+						{ type: "text" as const, text: pickerResult.message },
+					],
+					isError: true,
+				}
+			}
+			result = dispatchOrchestratorAction(slug)
+		}
+
+		// Auto-close for `close_feedback`: the cursor returns this when
+		// every fix-hat for an FB has signed advance. The prompt
+		// promises "the engine writes the closure" — same gap as
+		// merge_stage/merge_intent was. We stamp `closed_at` on the FB
+		// file and, when the FB has `origin: "drift"`, refresh the
+		// witnessed reviews/approvals timestamps on the targeted unit
+		// so the drift sweep stops flagging the same commit.
+		while (
+			result.action === "close_feedback" &&
+			typeof result.stage === "string" &&
+			typeof result.feedback_id === "string"
+		) {
+			try {
+				const stage = result.stage as string
+				const fbId = result.feedback_id as string
+				const fbDir = join(
+					findHaikuRoot(),
+					"intents",
+					slug,
+					"stages",
+					stage,
+					"feedback",
+				)
+				let fbFile = ""
+				let fbFm: Record<string, unknown> = {}
+				if (existsSync(fbDir)) {
+					for (const f of readdirSync(fbDir)) {
+						if (!f.endsWith(".md")) continue
+						if (!f.startsWith(`${fbId}-`) && !f.startsWith(`${fbId}.`)) continue
+						const path = join(fbDir, f)
+						const raw = readFileSync(path, "utf8")
+						const parsed = parseFrontmatter(raw)
+						fbFile = path
+						fbFm = parsed.data
+						break
+					}
+				}
+				if (!fbFile) break
+				const closedAt = new Date().toISOString()
+				setFrontmatterField(fbFile, "closed_at", closedAt)
+				// Refresh witnessed signed_at on the targeted unit when
+				// this is a drift FB — otherwise the drift sweep keeps
+				// finding the same commit past the original sign time.
+				if (fbFm.origin === "drift") {
+					const targets = (fbFm.targets as Record<string, unknown>) ?? {}
+					const targetUnit = targets.unit as string | undefined
+					if (targetUnit) {
+						const unitPath = join(
+							findHaikuRoot(),
+							"intents",
+							slug,
+							"stages",
+							stage,
+							"units",
+							`${targetUnit}.md`,
+						)
+						if (existsSync(unitPath)) {
+							const intentDirAbs = join(
+								findHaikuRoot(),
+								"intents",
+								slug,
+							)
+							const { buildApprovalRecord, buildReviewRecord } =
+								await import("../../orchestrator/workflow/sign-slot.js")
+							const raw = readFileSync(unitPath, "utf8")
+							const parsed = parseFrontmatter(raw)
+							const fm = parsed.data as Record<string, unknown>
+							const outputs = Array.isArray(fm.outputs)
+								? (fm.outputs as string[])
+								: []
+							const reviews =
+								fm.reviews && typeof fm.reviews === "object"
+									? { ...(fm.reviews as Record<string, unknown>) }
+									: {}
+							for (const role of Object.keys(reviews)) {
+								reviews[role] = buildReviewRecord(unitPath)
+							}
+							const approvals =
+								fm.approvals && typeof fm.approvals === "object"
+									? { ...(fm.approvals as Record<string, unknown>) }
+									: {}
+							for (const role of Object.keys(approvals)) {
+								approvals[role] = buildApprovalRecord(
+									intentDirAbs,
+									outputs,
+								)
+							}
+							setFrontmatterField(unitPath, "reviews", reviews)
+							setFrontmatterField(unitPath, "approvals", approvals)
+						}
+					}
+				}
+				result = dispatchOrchestratorAction(slug)
+			} catch (err) {
+				console.error(
+					`[haiku_run_next] close_feedback execution failed: ${err instanceof Error ? err.message : String(err)}`,
+				)
+				break
+			}
+		}
+
+		// Auto-merge for `merge_stage`: the cursor returns this when a
+		// stage's gates are all signed and the branch is ready to land
+		// on intent main. Until 2026-05-07 the engine relied on the
+		// agent calling run_next a second time to "trigger" the merge,
+		// but no handler actually executed the merge — the cursor just
+		// kept emitting merge_stage. Now we perform the merge inline,
+		// under the intent-main lock, then re-walk the cursor so the
+		// agent sees the next post-merge action (typically the next
+		// stage's elaborate, or intent_review when the final stage
+		// merged).
+		// Auto-seal for `merge_intent`: cursor returns this when every
+		// stage is merged and every intent-level approval is signed.
+		// The engine stamps `sealed_at` and re-walks. Same fix as
+		// merge_stage — was promised by the prompt, never executed by a
+		// handler.
+		if (result.action === "merge_intent") {
+			try {
+				const intentMd = join(findHaikuRoot(), "intents", slug, "intent.md")
+				if (existsSync(intentMd)) {
+					setFrontmatterField(
+						intentMd,
+						"sealed_at",
+						new Date().toISOString(),
+					)
+					result = dispatchOrchestratorAction(slug)
+				}
+			} catch (err) {
+				console.error(
+					`[haiku_run_next] merge_intent execution failed: ${err instanceof Error ? err.message : String(err)}`,
+				)
+			}
+		}
+
+		while (result.action === "merge_stage" && typeof result.stage === "string") {
+			const stageToMerge = result.stage
+			try {
+				const { isGitRepo } = await import("../../state-tools.js")
+				if (!isGitRepo()) {
+					// Filesystem mode: no git merge to perform. Mark the
+					// stage as merged on intent.md.stages_merged so the
+					// cursor's firstUnmergedStage advances on the next
+					// tick. (Same observable effect as a successful git
+					// merge, just without the SCM machinery.)
+					const intentMd = join(
+						findHaikuRoot(),
+						"intents",
+						slug,
+						"intent.md",
+					)
+					if (existsSync(intentMd)) {
+						const raw = readFileSync(intentMd, "utf8")
+						const parsed = parseFrontmatter(raw)
+						const fm = parsed.data as Record<string, unknown>
+						const merged: string[] = Array.isArray(fm.stages_merged)
+							? (fm.stages_merged as string[])
+							: []
+						if (!merged.includes(stageToMerge)) {
+							setFrontmatterField(intentMd, "stages_merged", [
+								...merged,
+								stageToMerge,
+							])
+						}
+					}
+					result = dispatchOrchestratorAction(slug)
+					continue
+				}
+				const { mergeStageBranchIntoMain } = await import(
+					"../../git-worktree.js"
+				)
+				const mergeOutcome = mergeStageBranchIntoMain(slug, stageToMerge)
+				if (!mergeOutcome.success) {
+					if (mergeOutcome.isConflict) {
+						return {
+							content: [
+								{
+									type: "text" as const,
+									text: `Stage merge ${stageToMerge} → main blocked by conflict: ${mergeOutcome.message}`,
+								},
+							],
+							isError: true,
+						}
+					}
+					// Non-conflict failure (dirty tree, missing branch,
+					// etc.). Return the original merge_stage action so
+					// the agent sees the engine's diagnostic message and
+					// can investigate, instead of hanging in a loop.
+					break
+				}
+				result = dispatchOrchestratorAction(slug)
+			} catch (err) {
+				console.error(
+					`[haiku_run_next] merge_stage execution failed: ${err instanceof Error ? err.message : String(err)}`,
+				)
+				break
+			}
+		}
+
+		// Revisit-branch guard: when the cursor returned a Track-B
+		// action whose `stage` is *earlier* than firstUnmergedStage
+		// (a feedback rewind), the pre-tick guard above checked out
+		// the wrong branch — it always uses firstUnmergedStage.
+		// Re-align so the agent's fix work lands on the right
+		// stage's branch. Only relevant for actions that name a
+		// concrete stage AND differ from the active one. Other
+		// actions (intent_review, merge_intent, sealed) don't carry
+		// a stage; they no-op this guard.
+		if (
+			typeof result.stage === "string" &&
+			result.stage.length > 0
+		) {
+			try {
+				const intentFile = join(findHaikuRoot(), "intents", slug, "intent.md")
+				if (existsSync(intentFile)) {
+					const guard = ensureOnStageBranch(slug, result.stage)
+					if (!guard.ok) {
+						return buildGuardResponse(
+							slug,
+							result.stage,
+							guard,
+							"run_next post-cursor revisit alignment",
+						)
+					}
+				}
+			} catch {
+				/* non-fatal — branch alignment is best-effort */
+			}
+		}
+
 		emitTelemetry("haiku.orchestrator.action", {
 			intent: slug,
 			action: result.action,

@@ -30,11 +30,14 @@ import {
 import { join } from "node:path"
 import { ensureOnStageBranch } from "../../git-worktree.js"
 import {
+	buildApprovalRecord,
+	buildReviewRecord,
+} from "../../orchestrator/workflow/sign-slot.js"
+import {
 	buildGuardResponse,
 	completeOrReviewIntent,
 	findIncompleteStages,
 	getAwaitGateReviewSession,
-	getElicitInput,
 	isStagePreExecute,
 	listUnits,
 	workflowAdvancePhase,
@@ -114,8 +117,8 @@ function stampGateApproval(
 	gateContext: string,
 	stage: string,
 ): void {
-	const intentMd = join(intentDir(slug), "intent.md")
-	const at = new Date().toISOString()
+	const intentDirAbs = intentDir(slug)
+	const intentMd = join(intentDirAbs, "intent.md")
 
 	if (gateContext === "intent_completion" || gateContext === "intent_review") {
 		const fm = readFrontmatter(intentMd)
@@ -123,7 +126,8 @@ function stampGateApproval(
 			fm.approvals && typeof fm.approvals === "object"
 				? (fm.approvals as Record<string, unknown>)
 				: {}
-		approvals.user = { at }
+		// Intent-scope user approval witnesses the intent body.
+		approvals.user = buildReviewRecord(intentMd)
 		setFrontmatterField(intentMd, "approvals", approvals)
 		return
 	}
@@ -131,7 +135,7 @@ function stampGateApproval(
 	// Stage-scoped gates: stamp every unit in the stage.
 	const isPreExecute = gateContext === "elaborate_to_execute"
 	const targetField = isPreExecute ? "reviews" : "approvals"
-	const unitsDir = join(intentDir(slug), "stages", stage, "units")
+	const unitsDir = join(intentDirAbs, "stages", stage, "units")
 	if (!existsSync(unitsDir)) return
 	const entries = readdirSync(unitsDir)
 	for (const entry of entries) {
@@ -142,7 +146,16 @@ function stampGateApproval(
 			fm[targetField] && typeof fm[targetField] === "object"
 				? (fm[targetField] as Record<string, unknown>)
 				: {}
-		records.user = { at }
+		// Reviews witness the unit body; approvals witness the
+		// declared output paths.
+		if (isPreExecute) {
+			records.user = buildReviewRecord(unitPath)
+		} else {
+			const outputs = Array.isArray(fm.outputs)
+				? (fm.outputs as string[])
+				: []
+			records.user = buildApprovalRecord(intentDirAbs, outputs)
+		}
 		setFrontmatterField(unitPath, targetField, records)
 	}
 }
@@ -240,7 +253,6 @@ export default defineTool({
 		const intentDirPath = `.haiku/intents/${slug}`
 
 		const _awaitGateReviewSession = getAwaitGateReviewSession()
-		const _elicitInput = getElicitInput()
 		if (!_awaitGateReviewSession) {
 			return text(
 				"Gate-review await handler not registered — server.ts wiring is broken. File a bug.",
@@ -687,195 +699,24 @@ export default defineTool({
 
 			if (stFile) {
 				logSessionEvent(stFile, {
-					event: "gate_elicitation_fallback",
+					event: "gate_review_ui_failed",
 					intent: slug,
 					stage,
 					error: errorMsg,
 				})
 			}
 
-			if (_elicitInput) {
-				try {
-					const elicitResult = await _elicitInput({
-						message:
-							gateContext === "intent_review"
-								? `Review UI failed (${errorMsg}). Approve intent '${slug}' to begin work?`
-								: `Review UI failed (${errorMsg}). Approve stage '${stage}' specs to proceed to execution?`,
-						requestedSchema: {
-							type: "object" as const,
-							properties: {
-								decision: {
-									type: "string",
-									title: "Decision",
-									description: "Approve specs or request changes",
-									enum: ["approve", "request_changes"],
-								},
-								feedback: {
-									type: "string",
-									title: "Feedback (optional)",
-									description: "Any notes or requested changes",
-								},
-							},
-							required: ["decision"],
-						},
-					})
-
-					const postElicitGuard = ensureOnStageBranch(slug, stage)
-					if (!postElicitGuard.ok) {
-						return buildGuardResponse(
-							slug,
-							stage,
-							postElicitGuard,
-							"after elicitation",
-						)
-					}
-
-					if (elicitResult.action === "accept" && elicitResult.content) {
-						const decision = (elicitResult.content as Record<string, string>)
-							.decision
-						const feedback =
-							(elicitResult.content as Record<string, string>).feedback || ""
-						if (decision === "approve") {
-							if (gateContext === "intent_review") {
-								const intentFilePath = join(
-									process.cwd(),
-									intentDirPath,
-									"intent.md",
-								)
-								setFrontmatterField(intentFilePath, "intent_reviewed", true)
-								// Mirror of the main approval path: pre-stage gate
-								// has no active stage to advance, so stamp
-								// intent_reviewed and clear the phase. Calling
-								// workflowAdvancePhase(slug, "", "execute") here
-								// would resolve to .haiku/intents/{slug}/stages//state.json
-								// (ENOENT, swallowed by the outer catch into a
-								// generic GATE BLOCKED) and leave phase: intent_review
-								// stranded on intent.md.
-								if (stage && nextPhase) {
-									workflowAdvancePhase(slug, stage, nextPhase)
-								} else {
-									deleteFrontmatterFields(intentFilePath, ["phase"])
-									sealIntentState(slug)
-								}
-								gitCommitState(
-									`haiku: intent ${slug} approved by user (elicitation)`,
-								)
-								syncSessionMetadata(slug, stFile)
-								return text(
-									withInstructions({
-										action: "intent_approved",
-										intent: slug,
-										stage: stage || null,
-										from_phase: "intent_review",
-										to_phase: nextPhase || "execute",
-										message: stage
-											? withAnnouncement(
-													`The user approved intent "${slug}" (via elicitation fallback) — advancing to ${nextPhase || "execute"}.`,
-													"Call haiku_run_next immediately.",
-												)
-											: withAnnouncement(
-													`The user approved intent "${slug}" (via elicitation fallback) — beginning stage 0.`,
-													"Call haiku_run_next immediately.",
-												),
-									}),
-								)
-							}
-							if (gateContext === "elaborate_to_execute" && nextPhase) {
-								workflowAdvancePhase(slug, stage, nextPhase)
-								syncSessionMetadata(slug, stFile)
-								return text(
-									withInstructions({
-										action: "advance_phase",
-										intent: slug,
-										stage,
-										from_phase: "elaborate",
-										to_phase: nextPhase,
-										message: withAnnouncement(
-											`The user approved the specs for stage "${stage}" (via elicitation fallback) — advancing to ${nextPhase}.`,
-											"Call haiku_run_next immediately.",
-										),
-									}),
-								)
-							}
-							if (nextStage) {
-								workflowAdvanceStage(slug, stage, nextStage)
-								syncSessionMetadata(slug, stFile)
-								return text(
-									withInstructions({
-										action: "advance_stage",
-										intent: slug,
-										stage,
-										next_stage: nextStage,
-										gate_outcome: "advanced",
-										message: withAnnouncement(
-											`The user approved stage "${stage}" (via elicitation fallback) — advancing to "${nextStage}".`,
-											"Call haiku_run_next immediately.",
-										),
-									}),
-								)
-							}
-							workflowCompleteStage(slug, stage, "advanced")
-							syncSessionMetadata(slug, stFile)
-							const elicitStudio =
-								(readFrontmatter(join(intentDir(slug), "intent.md"))
-									.studio as string) || ""
-							return text(
-								withInstructions(
-									completeOrReviewIntent(
-										slug,
-										elicitStudio,
-										withAnnouncement(
-											`The user approved the final stage "${stage}" (via elicitation fallback) — intent complete.`,
-											"Report the completion summary to the user.",
-										),
-									),
-								),
-							)
-						}
-						syncSessionMetadata(slug, stFile)
-						const changeMsg =
-							gateContext === "intent_review"
-								? withAnnouncement(
-										`The user requested changes on intent "${slug}" (via elicitation fallback): ${feedback}.`,
-										`Revise the intent description, then call haiku_run_next { intent: "${slug}" } again.`,
-									)
-								: withAnnouncement(
-										`The user requested changes on stage "${stage}" (via elicitation fallback): ${feedback}.`,
-										`Call haiku_run_next { intent: "${slug}" } again after fixing.`,
-									)
-						return text(
-							withInstructions({
-								action: "changes_requested",
-								intent: slug,
-								stage,
-								feedback,
-								message: changeMsg,
-							}),
-						)
-					}
-					syncSessionMetadata(slug, stFile)
-					return text(
-						withInstructions({
-							action: "gate_blocked",
-							intent: slug,
-							stage,
-							message: withAnnouncement(
-								`The user cancelled gate review${stage ? ` for stage "${stage}"` : ""}.`,
-								"Call haiku_run_next again to retry, or ask the user how they'd like to proceed.",
-							),
-						}),
-					)
-				} catch {
-					/* fall through */
-				}
-			}
-
+			// 2026-05-07: elicitation fallback removed. The SPA review
+			// pane is the only review surface. If it fails, surface the
+			// error so the user can investigate (port conflict, browser
+			// blocked, etc.) rather than silently down-shifting to a
+			// non-equivalent text confirm.
 			syncSessionMetadata(slug, stFile)
 			return {
 				content: [
 					{
 						type: "text" as const,
-						text: `GATE BLOCKED: Review UI and elicitation both failed. Error: ${errorMsg}. Logged to .haiku/logs/gate-review-error.log. Call haiku_run_next { intent: "${slug}" } to recreate the review session and retry.`,
+						text: `GATE BLOCKED: Review UI failed to start. Error: ${errorMsg}. Logged to .haiku/logs/gate-review-error.log. Investigate the SPA server (port conflict? blocked browser launch?) then call haiku_run_next { intent: "${slug}" } to retry.`,
 					},
 				],
 				isError: true,

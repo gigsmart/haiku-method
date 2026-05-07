@@ -55,7 +55,8 @@ function sweepPresence(): void {
 			(session.session_type === "review" && session.status !== "pending") ||
 			(session.session_type === "question" && session.status !== "pending") ||
 			(session.session_type === "design_direction" &&
-				session.status !== "pending")
+				session.status !== "pending") ||
+			(session.session_type === "picker" && session.status !== "pending")
 		) {
 			continue
 		}
@@ -347,9 +348,40 @@ export interface DesignDirectionSession {
 	selection: DirectionSelection | null
 }
 
+/** Generic single-select picker: studio/mode/stage selection,
+ *  destructive-action confirm, and any other "choose one from a list"
+ *  surface. Replaces MCP elicitation: the SPA renders the options,
+ *  the user picks, the wire posts to `/picker/:id/select` which
+ *  flips status → "answered". The blocking tool (e.g.
+ *  `haiku_select_studio`) drains the result and returns the
+ *  agent's next-step instruction. */
+export interface PickerOption {
+	id: string
+	label: string
+	description?: string
+}
+
+export interface PickerSelection {
+	id: string
+}
+
+export type PickerKind = "studio" | "mode" | "stage" | "confirm"
+
+export interface PickerSession {
+	session_type: "picker"
+	session_id: string
+	intent_slug: string
+	kind: PickerKind
+	title: string
+	prompt: string
+	options: PickerOption[]
+	status: "pending" | "answered"
+	selection: PickerSelection | null
+}
+
 const sessions = new Map<
 	string,
-	ReviewSession | QuestionSession | DesignDirectionSession
+	ReviewSession | QuestionSession | DesignDirectionSession | PickerSession
 >()
 
 // ─── Previous-review snapshots (for re-review delta) ────────────────
@@ -488,9 +520,45 @@ export function createDesignDirectionSession(
 	return session
 }
 
+export function createPickerSession(
+	params: Omit<
+		PickerSession,
+		"session_type" | "session_id" | "status" | "selection"
+	>,
+): PickerSession {
+	evictSessions()
+	const session_id = newSessionId()
+	const session: PickerSession = {
+		...params,
+		session_type: "picker",
+		session_id,
+		status: "pending",
+		selection: null,
+	}
+	sessions.set(session_id, session)
+	sessionCreatedAt.set(session_id, Date.now())
+	return session
+}
+
+export function updatePickerSession(
+	sessionId: string,
+	updates: Partial<Pick<PickerSession, "status" | "selection">>,
+): PickerSession | undefined {
+	const session = sessions.get(sessionId)
+	if (!session || session.session_type !== "picker") return undefined
+	Object.assign(session, updates)
+	notifySessionUpdate(sessionId)
+	return session
+}
+
 export function getSession(
 	sessionId: string,
-): ReviewSession | QuestionSession | DesignDirectionSession | undefined {
+):
+	| ReviewSession
+	| QuestionSession
+	| DesignDirectionSession
+	| PickerSession
+	| undefined {
 	return sessions.get(sessionId)
 }
 

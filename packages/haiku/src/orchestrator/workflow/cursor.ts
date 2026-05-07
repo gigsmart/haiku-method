@@ -48,11 +48,23 @@
 //                 gate, no agent gates, merge_stage auto-fires once
 //                 quality_gates is signed
 
+import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { basename, join } from "node:path"
 import matter from "gray-matter"
-import { primaryRepoRoot } from "../../state-tools.js"
+import { isGitRepo, primaryRepoRoot } from "../../state-tools.js"
 import { isBranchMerged } from "../../git-worktree.js"
+
+function tryRun(args: string[]): string {
+	try {
+		return execFileSync(args[0], args.slice(1), {
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "pipe"],
+		}).trim()
+	} catch {
+		return ""
+	}
+}
 import {
 	resolveStageFixHats,
 	resolveStageHats,
@@ -339,14 +351,119 @@ export function firstUnmergedStage(
 	studio: string,
 ): string | null {
 	const stages = resolveStudioStages(studio)
+	if (stages.length === 0) return null
+
+	// Filesystem mode (no git repo): use the intent.md `stages_merged`
+	// list as the canonical signal. Each merged stage gets its name
+	// pushed onto that list when run_next executes its `merge_stage`
+	// handler. The cursor returns the first stage NOT in the list.
+	if (!isGitRepo()) {
+		const intentMd = join(
+			primaryRepoRoot(),
+			".haiku",
+			"intents",
+			slug,
+			"intent.md",
+		)
+		const result = readFm(intentMd)
+		const merged: string[] = Array.isArray(result?.data?.stages_merged)
+			? (result.data.stages_merged as string[])
+			: []
+		for (const stage of stages) {
+			if (!merged.includes(stage)) return stage
+		}
+		return null
+	}
+
 	for (const stage of stages) {
 		const stageBranch = `haiku/${slug}/${stage}`
 		const intentMain = `haiku/${slug}/main`
-		if (!isBranchMerged(stageBranch, intentMain)) {
+		// A stage is "merged" iff:
+		//   1. Its branch is an ancestor of main, AND
+		//   2. Main is strictly ahead of the branch (i.e., main has at
+		//      least one commit the branch doesn't — which is what a
+		//      `--no-ff` merge commit guarantees).
+		//
+		// We can't conflate (a) "stage branch was merged into main"
+		// with (b) "stage branch was just created at main and points at
+		// the same commit." Case (b) happens whenever a side-effecting
+		// helper like `createDiscoveryWorktree` calls
+		// `ensureStageBranch` before any per-stage work — the branch
+		// exists but has no divergent commits. The architecture
+		// invariant says stage branches that exist must be **ahead of
+		// main, never behind**, so an existing-but-equal branch is
+		// uninitialized work, not merged work. Treat it as unmerged so
+		// the cursor pins to it.
+		if (!isStageBranchMerged(stageBranch, intentMain)) {
 			return stage
 		}
 	}
 	return null
+}
+
+/**
+ * Stage-aware merge check. Returns true ONLY when the stage's work
+ * actually landed on main: branch is an ancestor of main AND main has
+ * at least one commit ahead of the branch tip. A branch that exists
+ * but points at the same commit as main is NOT merged — it's
+ * uninitialized.
+ *
+ * Falls back to `isBranchMerged` (which handles squash-merge detection
+ * via the VCS provider) when the topology check is inconclusive.
+ */
+function isStageBranchMerged(branch: string, mainline: string): boolean {
+	if (!isGitRepo()) return false
+	const branchRef =
+		tryRun(["git", "rev-parse", "--verify", branch]) ||
+		tryRun(["git", "rev-parse", "--verify", `origin/${branch}`])
+	if (!branchRef) return false
+
+	const targets = [mainline, `origin/${mainline}`]
+	for (const target of targets) {
+		const targetRef = tryRun(["git", "rev-parse", "--verify", target])
+		if (!targetRef) continue
+		// branch is ancestor of main?
+		let isAncestor = false
+		try {
+			execFileSync(
+				"git",
+				["merge-base", "--is-ancestor", branchRef, targetRef],
+				{ stdio: "ignore" },
+			)
+			isAncestor = true
+		} catch {
+			isAncestor = false
+		}
+		if (!isAncestor) continue
+		// Main strictly ahead of branch? Count commits in main but not
+		// in branch. Zero means branch == main (uninitialized).
+		const aheadCount = tryRun([
+			"git",
+			"rev-list",
+			"--count",
+			`${branchRef}..${targetRef}`,
+		])
+		if (Number.parseInt(aheadCount, 10) > 0) return true
+	}
+
+	// Topology says branch is at-or-behind main but not strictly
+	// behind. Could still be a squash-merge (history rewritten);
+	// delegate to isBranchMerged's VCS-platform fallback for that
+	// case. isBranchMerged returns true for branch==main too, but the
+	// squash-merge path requires an actual merged PR/MR to exist.
+	const fallback = isBranchMerged(branch, mainline)
+	// If topology says branch == main (no aheadCount), only trust the
+	// fallback if it specifically detected a merged PR. Otherwise treat
+	// as unmerged (uninitialized).
+	if (!fallback) return false
+	// Re-check: was the fallback a topology yes (branch==main) or a
+	// VCS yes? `isBranchMerged` returns topology-yes for branch==main,
+	// which we want to reject. Only trust `fallback` here when the
+	// topology-yes path didn't apply — i.e., when there's a divergent
+	// branch the squash flattened. We already know branch is ancestor
+	// of main (the ancestor check above passed), so only the
+	// branch==main case slips through. Reject it.
+	return false
 }
 
 // ── Track B: feedback walk ───────────────────────────────────────────
@@ -476,20 +593,65 @@ function walkIntentTrack(args: {
 		? ["spec", "quality_gates"]
 		: ["spec", "quality_gates", ...reviewAgents, "user"]
 
-	// 1. Discovery (P7, 2026-05-06). When the studio declares
-	//    discovery artifacts for the stage, each wave-ready unit must
-	//    carry a `fm.discovery: { <agent>: { at } }` record for every
-	//    declared agent before the cursor dispatches a hat. Missing
-	//    records trigger `discovery_required` for the FIRST unit /
-	//    FIRST agent missing a record — agent-by-agent, unit-by-unit.
-	//    The agent runs the discovery template, produces the artifact,
-	//    stamps the record, and the cursor moves on.
-	//
-	//    The "first missing" approach (vs batched) keeps the dispatch
-	//    serial within a unit: discovery agents have ordered semantics
-	//    (one builds on another). When the studio wants parallel
-	//    discovery, the prompt builder fans out — but the cursor
-	//    drives one at a time.
+	// Gate priority chain (2026-05-06): collaboration before
+	// computation. Order:
+	//   1. design_direction_required — strategic decision; the user
+	//      picks a direction the rest of elaborate orbits.
+	//   2. clarify_required — stage-specific Q&A captured before
+	//      anything else fires.
+	//   3. discovery_required — the agents run to gather knowledge
+	//      WITH the user's design + clarifications already on disk,
+	//      so they have richer context.
+	//   4. elaborate / wave logic.
+
+	// 1. Design direction (P3). Hard gate: when the stage's STAGE.md
+	//    declares `requires_design_direction: true`, the cursor refuses
+	//    to advance until the user has selected a direction. Stored on
+	//    intent.md as `design_directions: { <stage>: { archetype, at } }`.
+	const stageMeta = resolveStageMetadata(studio, stage)
+	if (stageMeta?.requires_design_direction === true) {
+		const intentMdPath = join(intentDir, "intent.md")
+		if (existsSync(intentMdPath)) {
+			const intentFm = readFm(intentMdPath)?.data ?? {}
+			const directions =
+				intentFm.design_directions &&
+				typeof intentFm.design_directions === "object"
+					? (intentFm.design_directions as Record<string, unknown>)
+					: {}
+			if (!directions[stage]) {
+				return { kind: "design_direction_required", stage }
+			}
+		}
+	}
+
+	// 2. Clarify (P4). Every stage shipping `clarify/*.md` files gets
+	//    a hard gate. Answers recorded on intent.md as
+	//    `clarifications: { <stage>: { answers, at } }`. Stage-conditional.
+	const clarifyQuestions = readClarifyQuestions(studio, stage)
+	if (clarifyQuestions.length > 0) {
+		const intentMdPath = join(intentDir, "intent.md")
+		if (existsSync(intentMdPath)) {
+			const intentFm = readFm(intentMdPath)?.data ?? {}
+			const clarifications =
+				intentFm.clarifications &&
+				typeof intentFm.clarifications === "object"
+					? (intentFm.clarifications as Record<string, unknown>)
+					: {}
+			if (!clarifications[stage]) {
+				return {
+					kind: "clarify_required",
+					stage,
+					questions: clarifyQuestions,
+				}
+			}
+		}
+	}
+
+	// 3. Discovery (P7). When the studio declares discovery artifacts
+	//    for the stage, each wave-ready unit must carry a
+	//    `fm.discovery: { <agent>: { at } }` record for every declared
+	//    agent before the cursor dispatches a hat. First missing
+	//    record triggers `discovery_required`.
 	const discoveryDefs = readStageArtifactDefs(studio, stage).filter(
 		(d) => d.kind === "discovery",
 	)
@@ -508,58 +670,6 @@ function walkIntentTrack(args: {
 						agent: def.name,
 						units: [u.name],
 					}
-				}
-			}
-		}
-	}
-
-	// 1a. Design direction (P3, 2026-05-06). Hard gate: when the
-	//     stage's STAGE.md declares `requires_design_direction: true`,
-	//     the cursor refuses to advance until the user has selected a
-	//     direction. Selection is recorded on intent.md frontmatter as
-	//     `design_directions: { <stage>: { archetype, at } }`. Stages
-	//     that don't declare the flag never see this gate. No autopilot
-	//     bypass — autopilot is for the execute track, not for skipping
-	//     the design-direction conversation.
-	const stageMeta = resolveStageMetadata(studio, stage)
-	if (stageMeta?.requires_design_direction === true) {
-		const intentMdPath = join(intentDir, "intent.md")
-		if (existsSync(intentMdPath)) {
-			const intentFm = readFm(intentMdPath)?.data ?? {}
-			const directions =
-				intentFm.design_directions &&
-				typeof intentFm.design_directions === "object"
-					? (intentFm.design_directions as Record<string, unknown>)
-					: {}
-			if (!directions[stage]) {
-				return { kind: "design_direction_required", stage }
-			}
-		}
-	}
-
-	// 1b. Clarify (P4, 2026-05-06). Every stage that ships
-	//     `clarify/*.md` question files gets a hard gate at elaborate
-	//     entry — the cursor refuses to advance until the user has
-	//     answered. Answers are recorded on intent.md as
-	//     `clarifications: { <stage>: { answers, at } }`. Stages with
-	//     no clarify/ dir never see this gate. Collaboration belongs in
-	//     elaborate; this enforces it instead of leaving it to the
-	//     agent's discretion. No autopilot bypass.
-	const clarifyQuestions = readClarifyQuestions(studio, stage)
-	if (clarifyQuestions.length > 0) {
-		const intentMdPath = join(intentDir, "intent.md")
-		if (existsSync(intentMdPath)) {
-			const intentFm = readFm(intentMdPath)?.data ?? {}
-			const clarifications =
-				intentFm.clarifications &&
-				typeof intentFm.clarifications === "object"
-					? (intentFm.clarifications as Record<string, unknown>)
-					: {}
-			if (!clarifications[stage]) {
-				return {
-					kind: "clarify_required",
-					stage,
-					questions: clarifyQuestions,
 				}
 			}
 		}
@@ -712,10 +822,18 @@ export function derivePosition(args: {
 
 	// Read intent.md once — needed for mode (cursor walk shape) and
 	// for intent-scope approvals (terminal leg).
+	//
+	// `mode` is guaranteed to be set by the time the cursor walks: the
+	// pre-cursor gates in run-tick.ts emit `select_mode` when missing,
+	// and haiku_run_next blocks on the picker until it's set. If we
+	// reach here with no mode, a non-haiku_run_next caller bypassed the
+	// gate — fall back to "continuous" to keep the walk deterministic
+	// rather than crashing, but the gate is the real contract.
 	const intentMdPath = join(intentDir, "intent.md")
 	const intentResult = readFm(intentMdPath)
 	const mode =
-		typeof intentResult?.data.mode === "string"
+		typeof intentResult?.data.mode === "string" &&
+		(intentResult.data.mode as string).length > 0
 			? (intentResult.data.mode as string)
 			: "continuous"
 
@@ -734,12 +852,25 @@ export function derivePosition(args: {
 	// Stages are never sealed — feedback can rewind the cursor by
 	// adding new units to a previously-merged stage; that stage
 	// becomes ahead-of-main and firstUnmergedStage returns it.
+	//
+	// CRITICAL (2026-05-06 P11 bug fix): when EVERY stage is merged,
+	// `firstUnmergedStage` returns null. Older code fell back to
+	// `stages[0]` here and then ran drift sweep + walkIntentTrack
+	// against that long-finished stage — producing false drift events
+	// (the stage's units are older than the merge commits) AND
+	// short-circuiting at the noop return below, never reaching the
+	// intent-level review block. The fix: gate Track C / B / A on
+	// the REAL `activeStage`, not the fallback. When activeStage is
+	// null, fall through to intent-level approvals.
 	const activeStage = firstUnmergedStage(slug, studio)
-	const stage = activeStage ?? resolveStudioStages(studio)[0] ?? ""
 
-	// Track C — drift sweep first.
-	if (stage) {
-		const drift = runDriftSweep({ intentDir, stage, studio })
+	// Track C — drift sweep, only against the active stage.
+	if (activeStage) {
+		const drift = runDriftSweep({
+			intentDir,
+			stage: activeStage,
+			studio,
+		})
 		if (drift.events.length > 0) {
 			return {
 				track: "drift",
@@ -749,18 +880,23 @@ export function derivePosition(args: {
 	}
 
 	// Track B — feedback walk across stages 0..currentStage + intent.
-	if (stage) {
+	if (activeStage) {
 		const fbAction = walkFeedbackTrack({
 			intentDir,
 			studio,
-			currentStage: stage,
+			currentStage: activeStage,
 		})
 		if (fbAction) return { track: "feedback", action: fbAction }
 	}
 
 	// Track A — intent track on the active stage.
-	if (stage) {
-		const intentAction = walkIntentTrack({ intentDir, studio, stage, mode })
+	if (activeStage) {
+		const intentAction = walkIntentTrack({
+			intentDir,
+			studio,
+			stage: activeStage,
+			mode,
+		})
 		if (intentAction !== null) {
 			return { track: "intent", action: intentAction }
 		}

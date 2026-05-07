@@ -48,7 +48,18 @@ export function runWorkflowTick(
 	// the optional `root` arg here is reserved for future fixture
 	// override but currently unused.
 	void root
-	const iDir = intentDir(slug)
+	// Sad-path guard: `intentDir(slug)` walks up from cwd to find a
+	// `.haiku/` directory and throws if none exists. Return null so
+	// `dispatchOrchestratorAction` can surface a structured "intent
+	// not found" error instead of letting a stray throw bubble out
+	// of every haiku_run_next call placed outside an initialized
+	// project.
+	let iDir: string
+	try {
+		iDir = intentDir(slug)
+	} catch {
+		return null
+	}
 	const intentMdPath = join(iDir, "intent.md")
 	if (!existsSync(intentMdPath)) return null
 
@@ -98,6 +109,14 @@ export function runWorkflowTick(
 		}
 	}
 
+	// Pre-cursor selection gates. Each emits a structured `select_*`
+	// action when the corresponding field is missing on intent.md.
+	// haiku_run_next intercepts these, runs the SPA picker inline,
+	// writes the chosen value, and re-ticks — so the agent never sees
+	// a "Call haiku_select_*" instruction. The tick simply blocks until
+	// the user picks. Direct callers (tests, foreign callers of
+	// runWorkflowTick) get the structured action and can decide how to
+	// handle it.
 	const studio = (intentFm.studio as string) || ""
 	if (!studio) {
 		return {
@@ -105,7 +124,33 @@ export function runWorkflowTick(
 			action: {
 				action: "select_studio",
 				intent: slug,
-				message: `Intent '${slug}' has no studio. Call haiku_select_studio.`,
+				message: `Intent '${slug}' has no studio.`,
+			},
+		}
+	}
+
+	const mode = (intentFm.mode as string) || ""
+	if (!mode) {
+		return {
+			position: { track: "intent", action: null },
+			action: {
+				action: "select_mode",
+				intent: slug,
+				message: `Intent '${slug}' has no mode.`,
+			},
+		}
+	}
+
+	const stages = Array.isArray(intentFm.stages)
+		? (intentFm.stages as unknown[])
+		: []
+	if (mode === "quick" && stages.length === 0) {
+		return {
+			position: { track: "intent", action: null },
+			action: {
+				action: "select_stage",
+				intent: slug,
+				message: `Intent '${slug}' is in quick mode with no stage selected.`,
 			},
 		}
 	}

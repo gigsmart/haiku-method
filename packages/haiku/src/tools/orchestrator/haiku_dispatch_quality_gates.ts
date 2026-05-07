@@ -28,6 +28,7 @@ import {
 	timestamp,
 	writeFeedbackFile,
 } from "../../state-tools.js"
+import { buildApprovalRecord } from "../../orchestrator/workflow/sign-slot.js"
 import { defineTool } from "../define.js"
 import { text } from "./_text.js"
 
@@ -124,13 +125,17 @@ export default defineTool({
 	},
 })
 
-/** Stamp `approvals.<role> = { at: now }` on a unit's frontmatter. */
+/** Stamp `approvals.<role>` on a unit's frontmatter with a witnesses
+ *  map. Each declared output gets its sha256 captured at sign time so
+ *  the drift sweep can detect later edits to those files. */
 function stampApproval(unitPath: string, role: string): void {
 	const raw = readFileSync(unitPath, "utf8")
 	const parsed = matter(raw)
 	const data = parsed.data as Record<string, unknown>
 	const approvals = (data.approvals as Record<string, unknown>) ?? {}
-	approvals[role] = { at: timestamp() }
+	const outputs = Array.isArray(data.outputs) ? (data.outputs as string[]) : []
+	const intentDirAbs = unitPath.split("/stages/")[0]
+	approvals[role] = buildApprovalRecord(intentDirAbs, outputs)
 	data.approvals = approvals
 	const out = matter.stringify(parsed.content, data)
 	writeFileSync(unitPath, out)

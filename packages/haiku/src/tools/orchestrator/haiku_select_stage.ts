@@ -13,7 +13,8 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { ensureOnStageBranch } from "../../git-worktree.js"
-import { getElicitInput, resolveStudioStages } from "../../orchestrator.js"
+import { resolveStudioStages } from "../../orchestrator.js"
+import { runPicker } from "../../server/picker.js"
 import {
 	HAIKU_SELECT_STAGE_INPUT_SCHEMA,
 	type HaikuSelectStageInput,
@@ -44,9 +45,9 @@ function readFrontmatter(filePath: string): Record<string, unknown> {
 export default defineTool({
 	name: "haiku_select_stage",
 	description:
-		"Select the single stage for a quick-mode intent. Pass the intent slug and optionally a list with one stage name to auto-select. If elicitation is available, prompts the user; otherwise returns the stage list for conversational selection. Refuses if the intent's mode is not 'quick' or if a stage is already set.",
+		"Select the single stage for a quick-mode intent. Pass the intent slug and optionally a list with one stage name to auto-select. Otherwise opens a SPA picker and blocks on the user's choice. Refuses if the intent's mode is not 'quick' or if a stage is already set.",
 	inputSchema: jsonSchemaOf(HAIKU_SELECT_STAGE_INPUT_SCHEMA),
-	async handle(args) {
+	async handle(args, signal) {
 		const inputErr = validateToolInput(
 			args,
 			validateHaikuSelectStageInputSchema,
@@ -125,68 +126,30 @@ export default defineTool({
 			)
 		}
 
-		const elicit = getElicitInput()
 		let chosenStage = ""
-
 		if (options.length === 1) {
 			chosenStage = options[0]
-		} else if (elicit) {
-			const choices = studioStages
-			const description = `Pick which stage to run for the quick intent '${slug}'.\n\nStudio: ${studio}\nAvailable stages: ${choices.join(", ")}`
-			try {
-				const result = await elicit({
-					message: description,
-					requestedSchema: {
-						type: "object" as const,
-						properties: {
-							stage: {
-								type: "string",
-								title: "Stage",
-								description: "Which single stage to run",
-								enum: [...choices],
-							},
-						},
-						required: ["stage"],
-					},
-				})
-				if (result.action === "accept" && result.content) {
-					chosenStage = (result.content as Record<string, string>).stage || ""
-				} else {
-					return text(
-						JSON.stringify({
-							action: "cancelled",
-							message: withAnnouncement(
-								"The user cancelled stage selection.",
-								"Ask the user how they'd like to proceed — retry the picker, switch intents, or abandon this intent.",
-							),
-						}),
-					)
-				}
-			} catch {
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: "Elicitation failed. Pass a single stage in the options array to auto-select.",
-						},
-					],
-					isError: true,
-				}
-			}
 		} else {
-			return text(
-				JSON.stringify(
-					{
-						action: "select_stage_conversational",
-						intent: slug,
-						studio,
-						available_stages: studioStages,
-						message: `Elicitation unavailable. Ask the user which stage to run, then call haiku_select_stage { intent: "${slug}", options: ["<chosen-stage>"] }.\n\nAvailable stages: ${studioStages.join(", ")}`,
-					},
-					null,
-					2,
-				),
-			)
+			const result = await runPicker({
+				intentSlug: slug,
+				kind: "stage",
+				title: `Pick the single stage for "${slug}"`,
+				prompt: `Quick mode runs exactly one stage from the ${studio} studio.`,
+				options: studioStages.map((s) => ({ id: s, label: s })),
+				signal,
+			})
+			if (result.timedOut || !result.selection) {
+				return text(
+					JSON.stringify({
+						action: "cancelled",
+						message: withAnnouncement(
+							"Stage picker timed out without a selection.",
+							"Ask the user how they'd like to proceed — retry the picker or abandon this intent.",
+						),
+					}),
+				)
+			}
+			chosenStage = result.selection.id
 		}
 
 		if (!studioStages.includes(chosenStage)) {

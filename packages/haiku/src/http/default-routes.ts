@@ -73,7 +73,8 @@ export function registerDefaultRoutes(
 			(req.url === "/" ||
 				req.url.startsWith("/review/") ||
 				req.url.startsWith("/question/") ||
-				req.url.startsWith("/direction/"))
+				req.url.startsWith("/direction/") ||
+				req.url.startsWith("/picker/"))
 		) {
 			reply.type("text/html; charset=utf-8").send(HAIKU_UI_HTML)
 			return

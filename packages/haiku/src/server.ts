@@ -26,7 +26,6 @@ const server = new Server(
 import { getCapabilities, isClaudeCode } from "./harness.js"
 import {
 	orchestratorToolDefs,
-	setElicitInputHandler,
 	setGateReviewHandlers,
 } from "./orchestrator.js"
 // Prompts: for Claude Code, skills are native; for other harnesses, we bridge
@@ -346,10 +345,9 @@ setGateReviewHandlers({
 	await: awaitGateReviewSession,
 })
 
-// Wire up elicitation fallback for when the review UI fails
-setElicitInputHandler(async (params) => {
-	return server.elicitInput(params as Parameters<typeof server.elicitInput>[0])
-})
+// 2026-05-07: elicitation fallback removed. The SPA picker handles
+// every interactive surface (studio / mode / stage / confirm); the
+// SPA review pane handles every gate. No MCP elicitation is wired.
 
 // Start server
 async function main() {
