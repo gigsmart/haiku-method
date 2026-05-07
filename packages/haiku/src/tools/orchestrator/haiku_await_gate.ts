@@ -476,20 +476,67 @@ export default defineTool({
 				// both wrong for a successful external-review handoff.
 				workflowCompleteStage(slug, stage, "advanced")
 				syncSessionMetadata(slug, stFile)
+
+				// Engine-side PR opening: push the stage branch and
+				// invoke gh/glab with `--base haiku/<slug>/main` so the
+				// MR lands on the intent main branch (NOT the repo
+				// default). This was a real footgun — agents would run
+				// `gh pr create` without --base and the PR would target
+				// the repo default, breaking firstUnmergedStage detection
+				// for downstream pickup. The engine now does it
+				// programmatically; if both gh and glab fail, we surface
+				// the provider-specific compare URL so the user can open
+				// the MR in one click.
+				let externalReviewMessage: string
+				if (isGitRepo()) {
+					const { openStagePullRequest } = await import(
+						"../../git-worktree.js"
+					)
+					const opened = openStagePullRequest({ slug, stage })
+					if (opened.createdUrl) {
+						// Persist the URL on intent.md so the next tick
+						// (and the discoverReviewUrl polling in
+						// session-api) sees the PR without the agent
+						// having to round-trip back with
+						// external_review_url.
+						try {
+							const intentMd = join(intentDir(slug), "intent.md")
+							setFrontmatterField(
+								intentMd,
+								"external_review_url",
+								opened.createdUrl,
+							)
+						} catch {
+							/* non-fatal — agent can still pass via run_next */
+						}
+						externalReviewMessage = withAnnouncement(
+							`The user routed stage "${stage}" to external review. The engine opened the MR for you: ${opened.createdUrl}`,
+							`Tell the user: "I opened the MR at ${opened.createdUrl} — review and merge it when you're ready. Run /haiku:pickup after the merge to continue." The MR was created against \`haiku/${slug}/main\` (NOT the repo default) so the workflow engine can detect the merge.`,
+						)
+					} else if (opened.compareUrl) {
+						externalReviewMessage = withAnnouncement(
+							`The user routed stage "${stage}" to external review. ${opened.message}`,
+							`The engine couldn't open the MR programmatically (${opened.prError ?? opened.pushError ?? "no gh/glab on PATH"}). Tell the user to click ${opened.compareUrl} to open it manually — that link pre-fills base \`haiku/${slug}/main\` so the merge signal lands correctly. After they paste the resulting URL back to you, call haiku_run_next { intent: "${slug}", external_review_url: "<url>" }.`,
+						)
+					} else {
+						externalReviewMessage = withAnnouncement(
+							`The user routed stage "${stage}" to external review.`,
+							`${opened.message} Open ONE merge request from branch \`haiku/${slug}/${stage}\` to \`haiku/${slug}/main\` (NOT the repo default — the engine detects the merge by intent main, not by the default branch). Record the review URL via haiku_run_next { intent: "${slug}", external_review_url: "<url>" }.`,
+						)
+					}
+				} else {
+					externalReviewMessage = withAnnouncement(
+						`The user routed stage "${stage}" to external review.`,
+						`Submit the work for review through your project's review process. Record the review URL via haiku_run_next { intent: "${slug}", external_review_url: "<url>" }. Run /haiku:pickup again after the PR is merged.`,
+					)
+				}
+
 				const gateResult = {
 					action: "external_review_requested",
 					intent: slug,
 					stage,
 					feedback: reviewResult.feedback,
-					message: isGitRepo()
-						? withAnnouncement(
-								`The user routed stage "${stage}" to external review.`,
-								`Open ONE merge request from branch 'haiku/${slug}/${stage}' to 'haiku/${slug}/main'. Do NOT open separate MRs for individual units — all unit work is already merged into the stage branch. Include the H·AI·K·U browse link in the description so reviewers can see the intent, units, and knowledge artifacts. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:pickup again after the PR is merged.`,
-							)
-						: withAnnouncement(
-								`The user routed stage "${stage}" to external review.`,
-								`Submit the work for review through your project's review process. Record the review URL via haiku_run_next { intent, external_review_url }. Run /haiku:pickup again after the PR is merged.`,
-							),
+					message: externalReviewMessage,
 				}
 				return text(withInstructions(gateResult))
 			}

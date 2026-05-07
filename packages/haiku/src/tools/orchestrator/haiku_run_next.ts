@@ -225,6 +225,76 @@ export default defineTool({
 			}
 		}
 
+		// Pre-cursor reconciliation: when external review is pending OR
+		// the user might have merged a stage PR externally, fetch from
+		// origin and check for the "merged into wrong branch" footgun.
+		//
+		// The footgun: User A's stage PR landed on the repo default
+		// (`main`) instead of `haiku/<slug>/main`, so the cursor's
+		// firstUnmergedStage check keeps the stage pinned and User B's
+		// pickup never advances. Reconciliation fast-forwards intent
+		// main to the repo default when safe, so the merge propagates
+		// to where the cursor expects it.
+		//
+		// Skip on filesystem mode (no remote to fetch from), and when
+		// the intent has no studio yet (the picker gate fires first).
+		try {
+			const intentFile = join(findHaikuRoot(), "intents", slug, "intent.md")
+			if (existsSync(intentFile)) {
+				const im = readFrontmatter(intentFile)
+				const studio = (im.studio as string) || ""
+				const hasExternalReview =
+					typeof im.external_review_url === "string" &&
+					(im.external_review_url as string).length > 0
+				if (studio && hasExternalReview) {
+					const { isGitRepo: checkGitRepo } = await import(
+						"../../state-tools.js"
+					)
+					const { fetchOrigin } = await import("../../git-worktree.js")
+					if (checkGitRepo()) {
+						fetchOrigin()
+						const { resolveStudioStages } = await import(
+							"../../orchestrator.js"
+						)
+						const { reconcileMisroutedStageMerges } = await import(
+							"../../git-worktree.js"
+						)
+						const stages = resolveStudioStages(studio)
+						const reconciliations = reconcileMisroutedStageMerges(
+							slug,
+							stages,
+						)
+						const hardErrors = reconciliations.filter(
+							(r) => r.misrouted && !r.reconciled && r.error,
+						)
+						if (hardErrors.length > 0) {
+							return {
+								content: [
+									{
+										type: "text" as const,
+										text: `Stage merge routed to the wrong branch — manual reconciliation needed:\n\n${hardErrors.map((e) => `- **Stage ${e.stage}**: ${e.error}`).join("\n")}\n\nWhen reconciled, re-run \`haiku_run_next\` to continue.`,
+									},
+								],
+								isError: true,
+							}
+						}
+						// On successful reconciliation, the merge is now on
+						// haiku/<slug>/main and the cursor walk that follows
+						// will pick up the next stage naturally. No need to
+						// surface anything to the agent — the recovery is
+						// invisible (which is what the user wants for the
+						// pickup case).
+					}
+				}
+			}
+		} catch (err) {
+			// Reconciliation is best-effort; failures here just mean we
+			// surface the same wedged-stage state we'd see otherwise.
+			console.error(
+				`[haiku_run_next] pre-cursor reconciliation failed: ${err instanceof Error ? err.message : String(err)}`,
+			)
+		}
+
 		// Stage-branch enforcement: before ANY stage-scoped write, align
 		// the current checkout with the active stage branch. If main has
 		// drifted ahead (feedback files or state leaked there), merge
@@ -650,21 +720,55 @@ export default defineTool({
 			return `${JSON.stringify(resultForJson, null, 2)}\n\n---\n\n${adapted}`
 		}
 
-		// External review: extend the action message with explicit
-		// instructions for the agent to open the change-request via the
-		// host VCS CLI (gh / glab) and record the resulting URL. We do
-		// NOT auto-open a URL picker here — the canonical agent flow is
-		// agent-runs-gh-pr-create, captures the URL itself, and calls
-		// haiku_run_next { external_review_url }. The url_input picker
-		// kind is available as a fallback when the agent can't reach
-		// gh / glab (operator can invoke it via /haiku:repair or
-		// equivalent).
+		// External review: when the action surfaces with no URL on hand,
+		// try opening the MR programmatically here too. This is the
+		// fallback path for `external_review_requested` cases that
+		// originate from the cursor (rather than from gate-review's
+		// inline await_gate, which already tried). Engine-opened MRs
+		// always target `haiku/<slug>/main` so the merge signal lands on
+		// the intent main branch, not the repo default — that was the
+		// real-world footgun where stage-merge-detection broke because
+		// the PR landed on `main` and never on `haiku/<slug>/main`.
 		if (
 			result.action === "external_review_requested" &&
 			!args.external_review_url &&
-			!intentMeta.external_review_url
+			!intentMeta.external_review_url &&
+			typeof result.stage === "string" &&
+			(result.stage as string).length > 0
 		) {
-			result.message = `${(result.message as string) || ""}\n\nIMPORTANT: Open the change request via your host VCS CLI (\`gh pr create\` for GitHub, \`glab mr create\` for GitLab) — the agent has direct access. Capture the PR/MR URL the CLI prints, then call haiku_run_next { intent: "${slug}", external_review_url: "<url>" } so the workflow engine can poll for approval. If gh/glab isn't available in this environment, ask the user for the URL in chat and pass it the same way.`
+			try {
+				const { openStagePullRequest } = await import(
+					"../../git-worktree.js"
+				)
+				const opened = openStagePullRequest({
+					slug,
+					stage: result.stage as string,
+				})
+				if (opened.createdUrl) {
+					try {
+						const intentMd = join(
+							findHaikuRoot(),
+							"intents",
+							slug,
+							"intent.md",
+						)
+						setFrontmatterField(
+							intentMd,
+							"external_review_url",
+							opened.createdUrl,
+						)
+					} catch {
+						/* non-fatal */
+					}
+					result.message = `${(result.message as string) || ""}\n\nThe engine opened the MR for you: ${opened.createdUrl} — base is \`haiku/${slug}/main\` so the workflow engine can detect the merge. Tell the user; they review and merge when ready, then run /haiku:pickup.`
+				} else if (opened.compareUrl) {
+					result.message = `${(result.message as string) || ""}\n\nEngine couldn't open the MR via gh/glab (${opened.prError ?? opened.pushError ?? "no CLI found"}). Surface this URL to the user — clicking it opens the MR with base \`haiku/${slug}/main\` pre-filled: ${opened.compareUrl}. After the user pastes the resulting URL, call haiku_run_next { intent: "${slug}", external_review_url: "<url>" }.`
+				} else {
+					result.message = `${(result.message as string) || ""}\n\n${opened.message} Open ONE merge request from branch \`haiku/${slug}/${result.stage}\` to \`haiku/${slug}/main\` (NOT the repo default branch — the engine detects merges via intent main, not the repo default). Record the URL via haiku_run_next { intent: "${slug}", external_review_url: "<url>" }.`
+				}
+			} catch (err) {
+				result.message = `${(result.message as string) || ""}\n\nIMPORTANT: Open the change request from \`haiku/${slug}/${result.stage}\` to \`haiku/${slug}/main\` (NOT the repo default). Try \`gh pr create --base haiku/${slug}/main\` for GitHub or \`glab mr create --target-branch haiku/${slug}/main\` for GitLab. (Engine helper threw: ${err instanceof Error ? err.message : String(err)}.) Record the URL via haiku_run_next { intent: "${slug}", external_review_url: "<url>" }.`
+			}
 		}
 
 		// Gate review — engine-side blocking path.
