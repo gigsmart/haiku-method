@@ -641,40 +641,24 @@ export async function handleToolCall(
 			questionUrl = `http://127.0.0.1:${port}/question/${session.session_id}`
 		}
 
-		// Non-blocking — return URL + session_id; agent posts the URL
-		// to the user, then calls haiku_await_visual_answer to block
-		// on the response. Same motivation as the gate-review split:
-		// remote control / headless / SSH / mobile-chat hosts can't
-		// auto-launch browsers, so the URL must travel through chat.
-		//
-		// Note: bindSessionCancellation is NOT called here. With the
-		// non-blocking prepare, the create call returns immediately —
-		// there's nothing to cancel. The await tool
-		// (haiku_await_visual_answer) wires cancellation when it
-		// blocks. If the agent never invokes the await, the session
-		// has no MCP-level cancel hook but it still expires via the
-		// session TTL / presence-loss sweep.
-		return {
-			content: [
-				{
-					type: "text" as const,
-					text: JSON.stringify(
-						{
-							status: "session_ready",
-							session_id: session.session_id,
-							url: questionUrl,
-							next_tool: "haiku_await_visual_answer",
-							message: `Question session created. Tell the user the URL above (post it in chat — essential for headless / remote-control / mobile setups), then call haiku_await_visual_answer { session_id: "${session.session_id}" } to block on their answer. The await tool also tries to open the URL in the default browser; pass auto_open: false to skip.`,
-						},
-						null,
-						2,
-					),
-				},
-			],
-		}
+		// Single blocking call: launch the browser best-effort, then
+		// wait for the user's answer inline. The agent sees ONE tool
+		// call, not a "URL + call await" two-step. haiku_await_visual_answer
+		// stays as a resume entry point but isn't part of the canonical
+		// flow.
+		launchBrowserBestEffort(questionUrl, "Question session")
+		return await awaitVisualAnswerSession(session.session_id, {
+			url: questionUrl,
+			signal,
+		})
 	}
 
 	if (name === "haiku_await_visual_answer") {
+		// Resume / recovery entry point. Canonical flow inlines the
+		// await into ask_user_visual_question itself — this tool exists
+		// for the case where the original create call was discarded
+		// (MCP host timeout, agent restart) and the agent needs to
+		// re-attach to a still-pending session.
 		const a = (args ?? {}) as Record<string, unknown>
 		const visualInputErr = validateToolInput(
 			a,
@@ -699,160 +683,8 @@ export async function handleToolCall(
 			}
 		}
 
-		// Deliberately NOT calling bindSessionCancellation here — the
-		// previous implementation killed the SPA's WebSocket on every
-		// abort (Ctrl-C, MCP host timeout, retry), which guaranteed
-		// "session not found" on the next haiku_await_visual_answer
-		// call. The waitForSession loop below already propagates
-		// `signal` to unwind the await promptly; the session itself
-		// outlives the tool call so the next agent tick can pick it
-		// back up. Same fix shape as awaitGateReviewSession.
 		if (autoOpen && url) launchBrowserBestEffort(url, "Question session")
-
-		type ContentBlock =
-			| { type: "text"; text: string }
-			| { type: "image"; data: string; mimeType: string }
-
-		const buildAnsweredResponse = (): { content: ContentBlock[] } | null => {
-			const updated = getSession(sessionId)
-			if (
-				!updated ||
-				updated.session_type !== "question" ||
-				updated.status !== "answered" ||
-				!updated.answers
-			) {
-				return null
-			}
-			const annotationsForJson: Record<string, unknown> = {}
-			const ann = updated.annotations
-			if (ann?.comments?.length) annotationsForJson.comments = ann.comments
-			if (ann?.pins?.length) annotationsForJson.pins = ann.pins
-			if (ann?.screenshots?.length)
-				annotationsForJson.screenshot_count = ann.screenshots.length
-			const questionResult: Record<string, unknown> = {
-				status: "answered",
-				url,
-				answers: updated.answers,
-				message: withAnnouncement(
-					"The user answered your visual question — see the `answers` field below.",
-					"Acknowledge their answer in chat and continue with whatever the answer enables.",
-				),
-			}
-			if (updated.feedback) {
-				questionResult.feedback = updated.feedback
-			}
-			if (Object.keys(annotationsForJson).length > 0) {
-				questionResult.annotations = annotationsForJson
-			}
-			const content: ContentBlock[] = [
-				{
-					type: "text" as const,
-					text: JSON.stringify(questionResult, null, 2),
-				},
-			]
-			const screenshots = ann?.screenshots ?? []
-			if (screenshots.length > 0) {
-				content.push({
-					type: "text" as const,
-					text: `\n${screenshots.length} screenshot annotation${screenshots.length === 1 ? "" : "s"} attached below — each pair is the reviewer's note + the captured surface they were drawing on.`,
-				})
-				for (let i = 0; i < screenshots.length; i++) {
-					const s = screenshots[i]
-					content.push({
-						type: "text" as const,
-						text: `\nAnnotation ${i + 1} (image ${s.image_index + 1}): ${s.comment}`,
-					})
-					const match = /^data:(image\/[a-z+]+);base64,(.+)$/i.exec(
-						s.screenshot_data_url,
-					)
-					if (match) {
-						content.push({
-							type: "image" as const,
-							mimeType: match[1],
-							data: match[2],
-						})
-					} else {
-						content.push({
-							type: "text" as const,
-							text: `(screenshot for annotation ${i + 1} could not be decoded)`,
-						})
-					}
-				}
-			}
-			return { content }
-		}
-
-		// Drain on entry: if the user already answered before this await
-		// opened (race between SPA submit and the agent's tool call),
-		// return the answer immediately instead of blocking 30 minutes
-		// for an event that will never fire.
-		const drained = buildAnsweredResponse()
-		if (drained) return drained
-
-		// Loop on spurious wake: notifySessionUpdate may fire for a
-		// status transition other than "answered" (e.g., a future
-		// non-terminal state, or the same wake fanning out). Re-wait
-		// against the same overall deadline rather than falsely
-		// reporting timeout. Mirrors awaitGateReviewSession's
-		// while(true) pattern.
-		const MAX_WAIT_Q = 30 * 60 * 1000
-		const deadline = Date.now() + MAX_WAIT_Q
-		const timeoutMessage =
-			"User did not respond within 30 minutes. Call haiku_await_visual_answer again to keep waiting, or ask_user_visual_question to start a new session."
-		while (true) {
-			const remaining = deadline - Date.now()
-			if (remaining <= 0) break
-			try {
-				await waitForSession(sessionId, remaining, signal)
-			} catch (err) {
-				// Distinguish MCP cancellation from a real wait timeout.
-				// Re-throw on signal abort so the host gets the abort it
-				// initiated; only return a "timeout" response for actual
-				// deadline exhaustion. Mirrors awaitGateReviewSession's
-				// `if (signal?.aborted) throw err` pattern.
-				if (signal?.aborted) throw err
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: JSON.stringify(
-								{
-									status: "timeout",
-									session_id: sessionId,
-									...(url ? { url } : {}),
-									message: timeoutMessage,
-								},
-								null,
-								2,
-							),
-						},
-					],
-				}
-			}
-			const ready = buildAnsweredResponse()
-			if (ready) return ready
-			// Spurious wake — fall through and re-wait against the
-			// remaining deadline.
-		}
-
-		// Deadline elapsed without an answer.
-		return {
-			content: [
-				{
-					type: "text" as const,
-					text: JSON.stringify(
-						{
-							status: "timeout",
-							session_id: sessionId,
-							...(url ? { url } : {}),
-							message: timeoutMessage,
-						},
-						null,
-						2,
-					),
-				},
-			],
-		}
+		return await awaitVisualAnswerSession(sessionId, { url, signal })
 	}
 
 	if (name === "pick_design_direction") {
@@ -899,38 +731,23 @@ export async function handleToolCall(
 			directionUrl = `http://127.0.0.1:${port}/direction/${session.session_id}`
 		}
 
-		// Non-blocking — return URL + session_id; agent posts the URL
-		// to the user, then calls haiku_await_design_direction to
-		// block on the response. Same motivation as the gate-review
-		// and visual-question splits: the URL travels through chat
-		// regardless of whether the MCP host can launch a browser.
-		const intakeMode = archetypes.length === 0
-		return {
-			content: [
-				{
-					type: "text" as const,
-					text: JSON.stringify(
-						{
-							status: "session_ready",
-							session_id: session.session_id,
-							intent_slug: input.intent_slug,
-							url: directionUrl,
-							archetype_count: archetypes.length,
-							mode: intakeMode ? "intake" : "select",
-							next_tool: "haiku_await_design_direction",
-							message: intakeMode
-								? `Intake-mode design-direction session created — the picker will ask whether the user has designs to upload BEFORE any archetype generation happens. Tell the user the URL above (post it in chat — essential for headless / remote / mobile setups), then call haiku_await_design_direction { session_id: "${session.session_id}", intent_slug: "${input.intent_slug}" } to block on their response. If the user uploads files, the workflow records them as the chosen direction and skips generation entirely. If they click "Generate variants for me", you'll get back a 'generate' signal — produce archetypes and call pick_design_direction again with them.`
-								: `Design-direction session created. Tell the user the URL above (post it in chat — essential for headless / remote / mobile setups), then call haiku_await_design_direction { session_id: "${session.session_id}", intent_slug: "${input.intent_slug}" } to block on their selection. Pass auto_open: false on the await call when the user will open the URL on a different device.`,
-						},
-						null,
-						2,
-					),
-				},
-			],
-		}
+		// Single blocking call: launch the browser best-effort, then
+		// wait for the user's selection inline. The agent sees ONE tool
+		// call instead of "post URL + call haiku_await_design_direction".
+		// haiku_await_design_direction stays for the resume case (MCP
+		// host timeout, agent restart) but isn't part of the canonical
+		// flow.
+		launchBrowserBestEffort(directionUrl, "Direction session")
+		return await awaitDesignDirectionSession(session.session_id, {
+			url: directionUrl,
+			intentSlug: input.intent_slug,
+			signal,
+		})
 	}
 
 	if (name === "haiku_await_design_direction") {
+		// Resume / recovery entry point. Canonical flow inlines the
+		// await into pick_design_direction itself.
 		const a = (args ?? {}) as Record<string, unknown>
 		const directionInputErr = validateToolInput(
 			a,
@@ -954,230 +771,13 @@ export async function handleToolCall(
 				isError: true,
 			}
 		}
-		// Resolve intent_slug from the session record itself, falling
-		// back to the (optional) tool arg. The session was created by
-		// pick_design_direction with intent_slug already attached, so
-		// the agent doesn't need to echo it. Reading from the session
-		// avoids the silent-skip footgun where omitting the arg leaves
-		// intentSlug = "" and ensureOnStageBranch becomes a no-op.
 		const intentSlug = validated.intent_slug ?? existing.intent_slug ?? ""
-
-		// NOTE: deliberately not propagating `signal` into the session.
-		// The HTTP submit route persists the selection (+ screenshots) to
-		// disk before waking us, so even if the MCP client times out the
-		// request and discards our response, the next haiku_run_next will
-		// emit a `design_direction_complete` action that surfaces the
-		// selection from durable state. Forwarding the abort here only
-		// short-circuits the wait without producing a usable response.
-		bindSessionCancellation(sessionId, undefined)
-
 		if (autoOpen && url) launchBrowserBestEffort(url, "Direction session")
-
-		const MAX_WAIT_DD = 30 * 60 * 1000
-		try {
-			await waitForSession(sessionId, MAX_WAIT_DD)
-		} catch {
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: JSON.stringify(
-							{
-								status: "timeout",
-								url,
-								session_id: sessionId,
-								message:
-									"User did not respond within 30 minutes. Call haiku_await_design_direction again to keep waiting, or haiku_run_next to advance from durable state if a selection landed.",
-							},
-							null,
-							2,
-						),
-					},
-				],
-			}
-		}
-
-		// All durable persistence (state.json + PNG sidecars) happened on
-		// the HTTP submit route in `session-routes.ts`; this handler just
-		// returns a short ack so the agent knows to advance. The next
-		// `haiku_run_next` emits `design_direction_complete` with the
-		// archetype, comments, and screenshot paths read from disk.
-		const updatedDirectionSession = getSession(sessionId)
-		if (
-			updatedDirectionSession &&
-			updatedDirectionSession.session_type === "design_direction" &&
-			updatedDirectionSession.status === "answered" &&
-			updatedDirectionSession.selection
-		) {
-			const sel = updatedDirectionSession.selection
-
-			if (sel.mode === "regenerate") {
-				// Slot count helps the agent know how many archetypes to
-				// produce. Total archetypes presented minus the ones the
-				// user wants to keep = the replacement count.
-				const totalArchetypes = updatedDirectionSession.archetypes?.length ?? 0
-				const dropped = Math.max(totalArchetypes - sel.keep.length, 0)
-				const announcement =
-					sel.keep.length > 0
-						? `The user wants more variants. They'd like to keep: **${sel.keep.join("**, **")}**.${sel.comments ? ` Steering notes: ${sel.comments}` : ""}`
-						: `The user wants more variants. None of the current archetypes are keepers.${sel.comments ? ` Steering notes: ${sel.comments}` : ""}`
-				const nextStep =
-					dropped > 0
-						? `Generate ${dropped} replacement archetype${dropped === 1 ? "" : "s"} for the dropped slot${dropped === 1 ? "" : "s"} and call \`pick_design_direction\` again with the merged set.`
-						: `Generate replacement archetype(s) for the dropped slot(s) and call \`pick_design_direction\` again with the merged set.`
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: withAnnouncement(announcement, nextStep),
-						},
-					],
-				}
-			}
-
-			if (sel.mode === "generate") {
-				// Intake-first signal: the user has no uploads and wants
-				// the agent to produce archetypes. Mirror the regenerate
-				// hand-back — the durable state is unchanged, the agent
-				// produces variants and re-opens the picker.
-				const announcement = sel.comments
-					? `The user has no existing designs and wants you to generate variants. Steering notes: ${sel.comments}`
-					: "The user has no existing designs and wants you to generate variants."
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: withAnnouncement(
-								announcement,
-								"Generate 2-3 distinct archetypes (HTML wireframe snippets — different layouts, interaction patterns, or visual hierarchies) and call `pick_design_direction` again with `archetypes` populated.",
-							),
-						},
-					],
-				}
-			}
-
-			if (sel.mode === "upload") {
-				// Designer-provided files path — the HTTP submit route
-				// already wrote the files to disk under
-				// `stages/<stage>/artifacts/design-direction/uploads/`
-				// and recorded the same paths in stage state.json. The
-				// elaborate handler will surface them on the next tick
-				// the same way it surfaces select-mode screenshots. We
-				// re-enforce the stage branch (same reason as the select
-				// path: the user may have checked out another branch
-				// during the up-to-30-min wait) and return a short ack.
-				if (intentSlug) {
-					try {
-						const intentRaw = await readFile(
-							join(findHaikuRoot(), "intents", intentSlug, "intent.md"),
-							"utf-8",
-						)
-						const activeStage =
-							(parseFrontmatter(intentRaw).data.active_stage as string) || ""
-						if (activeStage) {
-							const guard = ensureOnStageBranch(intentSlug, activeStage)
-							if (!guard.ok) {
-								console.warn(
-									`[haiku_await_design_direction] stage-branch enforcement failed: ${guard.message}`,
-								)
-							}
-						}
-					} catch (err) {
-						console.warn(
-							`[haiku_await_design_direction] post-wait branch reconciliation skipped: ${err instanceof Error ? err.message : String(err)}`,
-						)
-					}
-				}
-				const fileLines = sel.files
-					.map(
-						(f, i) =>
-							`  ${i + 1}. \`${f.path}\`${f.caption ? ` — ${f.caption}` : ""}`,
-					)
-					.join("\n")
-				const announceParts = [
-					`The user uploaded ${sel.files.length} design file${
-						sel.files.length === 1 ? "" : "s"
-					} as the chosen direction (no archetype generation needed):`,
-					fileLines,
-				]
-				if (sel.comments) announceParts.push(`Comments: ${sel.comments}`)
-				return {
-					content: [
-						{
-							type: "text" as const,
-							text: withAnnouncement(
-								announceParts.join("\n"),
-								"Call `haiku_run_next` to continue — the workflow will surface the upload paths so you can `Read` each file and incorporate the designs into elaboration.",
-							),
-						},
-					],
-				}
-			}
-
-			// Select path — selection persisted by the HTTP submit route.
-			// Re-enforce stage branch since the user may have checked out
-			// another branch during the (up to 30-min) wait. Failures are
-			// non-fatal — branch state is reconciled by `haiku_run_next`'s
-			// own enforcement on the next tick — but we surface them so a
-			// debug-mode log shows when reconciliation will be needed.
-			if (intentSlug) {
-				try {
-					const intentRaw = await readFile(
-						join(findHaikuRoot(), "intents", intentSlug, "intent.md"),
-						"utf-8",
-					)
-					const activeStage =
-						(parseFrontmatter(intentRaw).data.active_stage as string) || ""
-					if (activeStage) {
-						const guard = ensureOnStageBranch(intentSlug, activeStage)
-						if (!guard.ok) {
-							console.warn(
-								`[haiku_await_design_direction] stage-branch enforcement failed: ${guard.message}`,
-							)
-						}
-					}
-				} catch (err) {
-					console.warn(
-						`[haiku_await_design_direction] post-wait branch reconciliation skipped: ${err instanceof Error ? err.message : String(err)}`,
-					)
-				}
-			}
-
-			const announceParts: string[] = [
-				`The user selected the **${sel.archetype}** direction.`,
-			]
-			if (sel.comments) {
-				announceParts.push(`Comments: ${sel.comments}`)
-			}
-			if (sel.annotations?.pins?.length) {
-				announceParts.push(`Pin annotations (${sel.annotations.pins.length}):`)
-				for (const pin of sel.annotations.pins) {
-					announceParts.push(
-						`  - [${pin.x.toFixed(1)}%, ${pin.y.toFixed(1)}%]: ${pin.text || "(no text)"}`,
-					)
-				}
-			}
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: withAnnouncement(
-							announceParts.join("\n"),
-							"Call `haiku_run_next` to continue — the workflow will surface any screenshot annotations the user attached.",
-						),
-					},
-				],
-			}
-		}
-
-		return {
-			content: [
-				{
-					type: "text" as const,
-					text: "The user did not select a design direction within the time limit. Ask them how they'd like to proceed.",
-				},
-			],
-		}
+		return await awaitDesignDirectionSession(sessionId, {
+			url,
+			intentSlug,
+			signal,
+		})
 	}
 
 	return {
@@ -1498,5 +1098,337 @@ export async function awaitGateReviewSession(
 			session_id: sessionId,
 			await_active: false,
 		})
+	}
+}
+
+/**
+ * Block on a design-direction session until the user submits, then
+ * build the MCP response based on which mode they picked
+ * (select / regenerate / generate / upload). Used by both the
+ * canonical inline path (pick_design_direction) and the resume entry
+ * point (haiku_await_design_direction).
+ *
+ * Durable persistence (state.json + intent.md design_directions[<stage>]
+ * + PNG sidecars + uploaded files) lands on the HTTP submit route in
+ * session-routes.ts before this function wakes; the response here is
+ * just the agent-facing description of what happened.
+ */
+export async function awaitDesignDirectionSession(
+	sessionId: string,
+	opts: {
+		url?: string
+		intentSlug?: string
+		signal?: AbortSignal
+		timeoutMs?: number
+	} = {},
+): Promise<{ content: Array<{ type: "text"; text: string }>; isError?: boolean }> {
+	const {
+		url = "",
+		intentSlug = "",
+		signal,
+		timeoutMs = 30 * 60 * 1000,
+	} = opts
+
+	try {
+		await waitForSession(sessionId, timeoutMs, signal)
+	} catch (err) {
+		if (signal?.aborted) throw err
+		return {
+			content: [
+				{
+					type: "text" as const,
+					text: JSON.stringify(
+						{
+							status: "timeout",
+							url,
+							session_id: sessionId,
+							message:
+								"User did not respond within 30 minutes. Call haiku_await_design_direction to keep waiting, or haiku_run_next to advance from durable state if a selection landed.",
+						},
+						null,
+						2,
+					),
+				},
+			],
+		}
+	}
+
+	const updated = getSession(sessionId)
+	if (
+		!updated ||
+		updated.session_type !== "design_direction" ||
+		updated.status !== "answered" ||
+		!updated.selection
+	) {
+		return {
+			content: [
+				{
+					type: "text" as const,
+					text: "The user did not select a design direction within the time limit. Ask them how they'd like to proceed.",
+				},
+			],
+		}
+	}
+
+	const sel = updated.selection
+
+	if (sel.mode === "regenerate") {
+		const totalArchetypes = updated.archetypes?.length ?? 0
+		const dropped = Math.max(totalArchetypes - sel.keep.length, 0)
+		const announcement =
+			sel.keep.length > 0
+				? `The user wants more variants. They'd like to keep: **${sel.keep.join("**, **")}**.${sel.comments ? ` Steering notes: ${sel.comments}` : ""}`
+				: `The user wants more variants. None of the current archetypes are keepers.${sel.comments ? ` Steering notes: ${sel.comments}` : ""}`
+		const nextStep =
+			dropped > 0
+				? `Generate ${dropped} replacement archetype${dropped === 1 ? "" : "s"} for the dropped slot${dropped === 1 ? "" : "s"} and call \`pick_design_direction\` again with the merged set.`
+				: `Generate replacement archetype(s) for the dropped slot(s) and call \`pick_design_direction\` again with the merged set.`
+		return {
+			content: [
+				{
+					type: "text" as const,
+					text: withAnnouncement(announcement, nextStep),
+				},
+			],
+		}
+	}
+
+	if (sel.mode === "generate") {
+		const announcement = sel.comments
+			? `The user has no existing designs and wants you to generate variants. Steering notes: ${sel.comments}`
+			: "The user has no existing designs and wants you to generate variants."
+		return {
+			content: [
+				{
+					type: "text" as const,
+					text: withAnnouncement(
+						announcement,
+						"Generate 2-3 distinct archetypes (HTML wireframe snippets — different layouts, interaction patterns, or visual hierarchies) and call `pick_design_direction` again with `archetypes` populated.",
+					),
+				},
+			],
+		}
+	}
+
+	// Branch enforcement after the up-to-30-min wait, applied to both
+	// upload + select paths. Failures are non-fatal — haiku_run_next's
+	// own pre-tick guard reconciles on the next call.
+	if (intentSlug) {
+		try {
+			const intentRaw = await readFile(
+				join(findHaikuRoot(), "intents", intentSlug, "intent.md"),
+				"utf-8",
+			)
+			const activeStage =
+				(parseFrontmatter(intentRaw).data.active_stage as string) || ""
+			if (activeStage) {
+				const guard = ensureOnStageBranch(intentSlug, activeStage)
+				if (!guard.ok) {
+					console.warn(
+						`[awaitDesignDirectionSession] stage-branch enforcement failed: ${guard.message}`,
+					)
+				}
+			}
+		} catch (err) {
+			console.warn(
+				`[awaitDesignDirectionSession] post-wait branch reconciliation skipped: ${err instanceof Error ? err.message : String(err)}`,
+			)
+		}
+	}
+
+	if (sel.mode === "upload") {
+		const fileLines = sel.files
+			.map(
+				(f, i) =>
+					`  ${i + 1}. \`${f.path}\`${f.caption ? ` — ${f.caption}` : ""}`,
+			)
+			.join("\n")
+		const announceParts = [
+			`The user uploaded ${sel.files.length} design file${
+				sel.files.length === 1 ? "" : "s"
+			} as the chosen direction (no archetype generation needed):`,
+			fileLines,
+		]
+		if (sel.comments) announceParts.push(`Comments: ${sel.comments}`)
+		return {
+			content: [
+				{
+					type: "text" as const,
+					text: withAnnouncement(
+						announceParts.join("\n"),
+						"Call `haiku_run_next` to continue — the workflow will surface the upload paths so you can `Read` each file and incorporate the designs into elaboration.",
+					),
+				},
+			],
+		}
+	}
+
+	// select mode
+	const announceParts: string[] = [
+		`The user selected the **${sel.archetype}** direction.`,
+	]
+	if (sel.comments) announceParts.push(`Comments: ${sel.comments}`)
+	if (sel.annotations?.pins?.length) {
+		announceParts.push(`Pin annotations (${sel.annotations.pins.length}):`)
+		for (const pin of sel.annotations.pins) {
+			announceParts.push(
+				`  - [${pin.x.toFixed(1)}%, ${pin.y.toFixed(1)}%]: ${pin.text || "(no text)"}`,
+			)
+		}
+	}
+	return {
+		content: [
+			{
+				type: "text" as const,
+				text: withAnnouncement(
+					announceParts.join("\n"),
+					"Call `haiku_run_next` to continue — the workflow will surface any screenshot annotations the user attached.",
+				),
+			},
+		],
+	}
+}
+
+type VisualAnswerContent =
+	| { type: "text"; text: string }
+	| { type: "image"; data: string; mimeType: string }
+
+/**
+ * Block on a question session until the user answers, then build the
+ * MCP response (text + image blocks for any screenshot annotations).
+ * Mirrors awaitGateReviewSession's drain-on-entry / loop-on-spurious
+ * pattern. Used by both the canonical inline path
+ * (ask_user_visual_question) and the resume entry point
+ * (haiku_await_visual_answer).
+ */
+export async function awaitVisualAnswerSession(
+	sessionId: string,
+	opts: { url?: string; signal?: AbortSignal; timeoutMs?: number } = {},
+): Promise<{ content: VisualAnswerContent[]; isError?: boolean }> {
+	const { url = "", signal, timeoutMs = 30 * 60 * 1000 } = opts
+
+	const buildAnsweredResponse = ():
+		| { content: VisualAnswerContent[] }
+		| null => {
+		const updated = getSession(sessionId)
+		if (
+			!updated ||
+			updated.session_type !== "question" ||
+			updated.status !== "answered" ||
+			!updated.answers
+		) {
+			return null
+		}
+		const annotationsForJson: Record<string, unknown> = {}
+		const ann = updated.annotations
+		if (ann?.comments?.length) annotationsForJson.comments = ann.comments
+		if (ann?.pins?.length) annotationsForJson.pins = ann.pins
+		if (ann?.screenshots?.length)
+			annotationsForJson.screenshot_count = ann.screenshots.length
+		const questionResult: Record<string, unknown> = {
+			status: "answered",
+			url,
+			answers: updated.answers,
+			message: withAnnouncement(
+				"The user answered your visual question — see the `answers` field below.",
+				"Acknowledge their answer in chat and continue with whatever the answer enables.",
+			),
+		}
+		if (updated.feedback) {
+			questionResult.feedback = updated.feedback
+		}
+		if (Object.keys(annotationsForJson).length > 0) {
+			questionResult.annotations = annotationsForJson
+		}
+		const content: VisualAnswerContent[] = [
+			{
+				type: "text" as const,
+				text: JSON.stringify(questionResult, null, 2),
+			},
+		]
+		const screenshots = ann?.screenshots ?? []
+		if (screenshots.length > 0) {
+			content.push({
+				type: "text" as const,
+				text: `\n${screenshots.length} screenshot annotation${screenshots.length === 1 ? "" : "s"} attached below — each pair is the reviewer's note + the captured surface they were drawing on.`,
+			})
+			for (let i = 0; i < screenshots.length; i++) {
+				const s = screenshots[i]
+				content.push({
+					type: "text" as const,
+					text: `\nAnnotation ${i + 1} (image ${s.image_index + 1}): ${s.comment}`,
+				})
+				const match = /^data:(image\/[a-z+]+);base64,(.+)$/i.exec(
+					s.screenshot_data_url,
+				)
+				if (match) {
+					content.push({
+						type: "image" as const,
+						mimeType: match[1],
+						data: match[2],
+					})
+				} else {
+					content.push({
+						type: "text" as const,
+						text: `(screenshot for annotation ${i + 1} could not be decoded)`,
+					})
+				}
+			}
+		}
+		return { content }
+	}
+
+	const drained = buildAnsweredResponse()
+	if (drained) return drained
+
+	const deadline = Date.now() + timeoutMs
+	const timeoutMessage =
+		"User did not respond within 30 minutes. Call haiku_await_visual_answer to keep waiting, or ask_user_visual_question to start a new session."
+	while (true) {
+		const remaining = deadline - Date.now()
+		if (remaining <= 0) break
+		try {
+			await waitForSession(sessionId, remaining, signal)
+		} catch (err) {
+			if (signal?.aborted) throw err
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify(
+							{
+								status: "timeout",
+								session_id: sessionId,
+								...(url ? { url } : {}),
+								message: timeoutMessage,
+							},
+							null,
+							2,
+						),
+					},
+				],
+			}
+		}
+		const ready = buildAnsweredResponse()
+		if (ready) return ready
+		// Spurious wake — re-enter wait against remaining deadline.
+	}
+
+	return {
+		content: [
+			{
+				type: "text" as const,
+				text: JSON.stringify(
+					{
+						status: "timeout",
+						session_id: sessionId,
+						...(url ? { url } : {}),
+						message: timeoutMessage,
+					},
+					null,
+					2,
+				),
+			},
+		],
 	}
 }

@@ -62,6 +62,33 @@ function dispatchOrchestratorAction(slug: string): OrchestratorActionType {
 }
 
 /**
+ * Extract the orchestrator action name from a haiku_await_gate
+ * response. The await tool renders its result as `<json>\n\n---\n\n<instructions>`
+ * — the JSON head carries `action: "<name>"`. Used by haiku_run_next's
+ * inline gate-review path to decide whether to re-tick (advance cases)
+ * or surface the await response directly (terminal / changes-requested
+ * / external-review cases).
+ */
+function extractActionFromAwaitResponse(response: {
+	content?: Array<{ type: string; text?: string }>
+}): string | null {
+	for (const block of response.content ?? []) {
+		if (block.type !== "text" || typeof block.text !== "string") continue
+		const headEnd = block.text.indexOf("\n\n---")
+		const head = headEnd >= 0 ? block.text.slice(0, headEnd) : block.text
+		const trimmed = head.trim()
+		if (!trimmed.startsWith("{")) continue
+		try {
+			const parsed = JSON.parse(trimmed) as { action?: unknown }
+			if (typeof parsed.action === "string") return parsed.action
+		} catch {
+			/* not JSON — keep scanning */
+		}
+	}
+	return null
+}
+
+/**
  * Run the SPA picker for studio / mode / stage selection in response
  * to a tick that emitted `select_*`. Dispatches by name to the matching
  * orchestrator tool handler — same code path the user-explicit
@@ -628,18 +655,17 @@ export default defineTool({
 			result.message = `${(result.message as string) || ""}\n\nIMPORTANT: Ask the user WHERE they submitted the work for review (PR URL, MR link, email, Slack channel, etc.). Record the URL by calling haiku_run_next { intent: "${slug}", external_review_url: "<url>" } so the workflow engine can track approval status.`
 		}
 
-		// Gate review — non-blocking prepare path.
+		// Gate review — engine-side blocking path.
 		//
-		// Previously this entire block synchronously opened the review
-		// UI, blocked on `_openReviewAndWait` for up to 30 minutes, and
-		// processed the user's decision inline. That worked when the
-		// MCP host could auto-launch a browser, but silently hung any
-		// remote / headless / SSH / web-client / mobile-chat setup
-		// where the URL never reached the user. The decision dispatch
-		// now lives in the new haiku_await_gate tool; here we just
-		// create the session, surface the URL to the agent, and ask
-		// the agent to post the URL → call haiku_await_gate.
-		if (result.action === "gate_review") {
+		// Single blocking tick: prepare the session, launch the browser
+		// best-effort, await the user's decision, post-process side
+		// effects, and (for advance cases) re-tick to surface the
+		// natural-next workflow action. The agent sees ONE blocking
+		// haiku_run_next call instead of the old "post URL + call
+		// haiku_await_gate" two-step. haiku_await_gate stays as a
+		// resume entry point for the case where the original tick
+		// timed out or was interrupted.
+		while (result.action === "gate_review") {
 			const stage = (result.stage as string | null) ?? ""
 			const nextStage = result.next_stage as string | null
 			const nextPhase = result.next_phase as string | null
@@ -712,78 +738,75 @@ export default defineTool({
 
 				syncSessionMetadata(slug, args.state_file as string | undefined)
 
-				// Browser-attached path: the user already has the SPA tab
-				// open from a prior gate this session, so the agent can
-				// skip "post URL to user" and just call haiku_await_gate.
-				// New-session path: post the URL, then await.
-				//
-				// Subject phrasing depends on gate scope: pre-stage
-				// `intent_review` has stage=null/"" (no stage exists yet),
-				// so saying "Stage "" is ready for review" is wrong and
-				// confuses the agent.
-				//
-				// NOTE: the same-turn imperative below intentionally
-				// mirrors the body of `prompts/gate_review.ts`. The
-				// announcement strings here render BEFORE the prompt
-				// body in the assembled response, so updating only one
-				// of the two surfaces leaves the agent reading
-				// inconsistent guidance. Update both files together.
-				// Per-session announcement dedup (2026-05-06): when the
-				// agent retries run_next on the same session (e.g. after
-				// an await timeout), we get the same gate_review action
-				// and the same review_url — but the user already has the
-				// URL. Re-posting it is noisy and confusing. Stamp
-				// `announced_at` on the session the first time we emit
-				// the announcement; on subsequent emissions, use a
-				// quieter copy that doesn't re-announce.
+				// Stamp announced_at on first prepare so the SPA's "new
+				// gate" toast doesn't double-fire if the resume entry
+				// point (haiku_await_gate) reattaches after a host
+				// timeout.
 				const existingSession = getSession(prepared.session_id)
 				const alreadyAnnounced =
 					existingSession?.session_type === "review" &&
 					!!existingSession.announced_at
-				const isIntentReview = gateContext === "intent_review" || !stage
-				const subject = isIntentReview
-					? `Intent "${slug}" is ready for your review before any stage starts`
-					: `Stage "${stage}" is ready for review`
-				const tellUser = prepared.browser_attached
-					? `${subject}. The page you're on (${prepared.review_url}) just refreshed to this gate.`
-					: `${subject}. Open ${prepared.review_url} to approve or request changes.`
-				const firstTimeMessage = prepared.browser_attached
-					? `${subject}. The user is already watching the SPA at ${prepared.review_url} (browser_attached=true), so do NOT re-post the URL. IMPORTANT: Call haiku_await_gate { intent: "${slug}" } in the SAME turn — do NOT end your turn here. The tool blocks on the user's decision and checks the live websocket itself, so it will not launch a duplicate browser tab.`
-					: `${subject} at: ${prepared.review_url}\n\nIMPORTANT: In the SAME turn, do BOTH of these — do NOT stop after posting the URL: (1) post the URL above to the user (so they can open it on any device — headless host, remote control, mobile, web), and (2) call haiku_await_gate { intent: "${slug}" } to block on their decision. If you stop after step 1, the user clicks Approve and nothing happens because no tool call is waiting. The tool decides whether to launch a local browser based on whether a SPA tab is already attached — you do not need to pass auto_open.`
-				// Already-announced variant: shorter, no URL repost,
-				// instructs the agent to call await_gate silently.
-				const subsequentMessage = `${subject}. The review URL was already posted to the user earlier in this session — do NOT re-post it. Call haiku_await_gate { intent: "${slug}" } silently in the same turn to keep blocking on the user's decision.`
-				const message = alreadyAnnounced
-					? subsequentMessage
-					: firstTimeMessage
 				if (!alreadyAnnounced) {
 					try {
 						updateSession(prepared.session_id, {
 							announced_at: new Date().toISOString(),
 						})
 					} catch {
-						/* non-fatal — session may not be in-memory yet */
+						/* non-fatal */
 					}
 				}
 
-				const gateAction: Record<string, unknown> = {
-					action: "gate_review",
-					intent: slug,
-					studio: intentStudio,
-					stage,
-					next_stage: nextStage,
-					next_phase: nextPhase,
-					gate_type: gateType,
-					gate_context: gateContext,
-					review_url: prepared.review_url,
-					session_id: prepared.session_id,
-					reused: prepared.reused,
-					browser_attached: prepared.browser_attached,
-					message,
-					tell_user: tellUser,
-					next_step: `Call haiku_await_gate { intent: "${slug}" } now (same turn) to block on the user's decision.`,
+				// Engine-side blocking: dispatch to haiku_await_gate
+				// inline. The await tool drains the session, blocks on
+				// the user's decision, runs every post-decision side
+				// effect (stampGateApproval, workflowAdvancePhase/Stage,
+				// writeReviewFeedbackFiles, sealIntentState, etc.), and
+				// returns a rendered response. We then either re-tick
+				// (advance cases — cursor surfaces the next real
+				// workflow action) or return the response directly
+				// (terminal / changes-requested / external-review
+				// cases).
+				const { orchestratorToolHandlers: gateHandlers } = await import(
+					"./index.js"
+				)
+				const awaitTool = gateHandlers.get("haiku_await_gate")
+				if (!awaitTool) {
+					return text(
+						"haiku_await_gate handler not registered — server.ts wiring is broken. File a bug.",
+					)
 				}
-				return text(withInstructions(gateAction))
+				const awaitResponse = await awaitTool.handle(
+					{
+						intent: slug,
+						session_id: prepared.session_id,
+						review_url: prepared.review_url,
+						...(stFile ? { state_file: stFile } : {}),
+					},
+					signal,
+				)
+				if (awaitResponse.isError) {
+					return awaitResponse
+				}
+
+				const awaitedAction = extractActionFromAwaitResponse(awaitResponse)
+				// "approved" decisions that advance the workflow get
+				// re-ticked: the cursor sees the new sigs and emits the
+				// next real action (start_unit_hat, elaborate, gate_review
+				// for the next gate, merge_stage, etc.). Everything else
+				// — external_review_requested, changes_requested,
+				// revise_unit_specs, intent_complete, revisit_*,
+				// stage_revisit, error — is a terminal-this-turn signal
+				// the agent should see directly.
+				const RETICK_ACTIONS: ReadonlySet<string> = new Set([
+					"advance_phase",
+					"advance_stage",
+					"intent_approved",
+				])
+				if (awaitedAction && RETICK_ACTIONS.has(awaitedAction)) {
+					result = dispatchOrchestratorAction(slug)
+					continue
+				}
+				return awaitResponse
 			} catch (err) {
 				const errorMsg = err instanceof Error ? err.message : String(err)
 				const errorStack = err instanceof Error ? err.stack : ""

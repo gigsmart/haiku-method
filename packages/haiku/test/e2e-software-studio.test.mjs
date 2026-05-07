@@ -336,7 +336,22 @@ function applyResponse(intentDir, action, root, slug) {
 			const intentMd = join(intentDir, "intent.md")
 			const fm = readFm(intentMd)
 			const dd = fm.design_directions && typeof fm.design_directions === "object" ? fm.design_directions : {}
-			dd[stage] = { archetype: "auto", at }
+			dd[stage] = { mode: "archetype", archetype: "auto", at }
+			writeFm(intentMd, { ...fm, design_directions: dd })
+			break
+		}
+		case "design_direction_complete":
+		case "design_direction_uploaded": {
+			// Mirrors haiku_run_next's surface-once stamp: once the
+			// agent has been handed the action, mark surfaced_at on the
+			// intent.md record so the next cursor walk falls through to
+			// elaborate instead of re-emitting.
+			const intentMd = join(intentDir, "intent.md")
+			const fm = readFm(intentMd)
+			const dd = fm.design_directions && typeof fm.design_directions === "object" ? { ...fm.design_directions } : {}
+			const rec = dd[stage] && typeof dd[stage] === "object" ? { ...dd[stage] } : {}
+			rec.surfaced_at = at
+			dd[stage] = rec
 			writeFm(intentMd, { ...fm, design_directions: dd })
 			break
 		}

@@ -168,7 +168,22 @@ function applyResponse(intentDir, action, root, slug) {
 				fm.design_directions && typeof fm.design_directions === "object"
 					? fm.design_directions
 					: {}
-			dd[stage] = { archetype: "auto", at }
+			dd[stage] = { mode: "archetype", archetype: "auto", at }
+			writeFm(intentMd, { ...fm, design_directions: dd })
+			break
+		}
+		case "design_direction_complete":
+		case "design_direction_uploaded": {
+			const intentMd = join(intentDir, "intent.md")
+			const fm = readFm(intentMd)
+			const dd =
+				fm.design_directions && typeof fm.design_directions === "object"
+					? { ...fm.design_directions }
+					: {}
+			const rec =
+				dd[stage] && typeof dd[stage] === "object" ? { ...dd[stage] } : {}
+			rec.surfaced_at = at
+			dd[stage] = rec
 			writeFm(intentMd, { ...fm, design_directions: dd })
 			break
 		}
