@@ -31,6 +31,7 @@ H·AI·K·U has never been that, and the post-mortems we wrote on [AI-DLC](https
 
 The reframe we landed on, then and now: the workflow is software. Hats, gates, drift, feedback — real components with real contracts. Prompts describe the work inside a step, not the shape of the program. v4 is where that idea finally has the scaffolding it needed.
 
+{/* Raw div instead of <Grid>: the third card needs sm:col-span-2, which Grid doesn't expose as a prop. */}
 <div className="not-prose my-8 grid gap-4 sm:grid-cols-2">
   <Card eyebrow="1 — Drift track" title="The drift sweep" accent="alert">
     Signed slots stamp content hashes. Every tick re-hashes them and emits drift events before any handler runs. No "remember to verify" paragraph in a prompt.

@@ -275,8 +275,8 @@ export function CursorCascade() {
 							</div>
 							<div className="px-6 py-4">
 								<div className="flex flex-col gap-5">
-									{track.groups.map((group) => (
-										<div key={group.label ?? "default"}>
+									{track.groups.map((group, i) => (
+										<div key={group.label ?? i}>
 											{group.label ? (
 												<div
 													className={`mb-3 font-mono text-[11px] font-semibold uppercase tracking-wider ${t.groupLabel}`}
