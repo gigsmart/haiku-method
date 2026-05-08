@@ -105,7 +105,16 @@ quality_gates:
       [ "$(grep -lE 'generateStaticParams|getStaticProps|getServerSideProps'
       .haiku/intents/autonomous-report-to-fix/stages/design/artifacts/report-landing/*.html
       2>/dev/null | wc -l | tr -d ' ')" = '0' ]
-status: pending
+status: active
+bolt: 1
+hat: designer-prep
+started_at: '2026-05-08T17:53:50Z'
+hat_started_at: '2026-05-08T17:53:50Z'
+iterations:
+  - hat: designer-prep
+    started_at: '2026-05-08T17:53:50Z'
+    completed_at: null
+    result: null
 ---
 # Report Landing Page Wireframes
 
