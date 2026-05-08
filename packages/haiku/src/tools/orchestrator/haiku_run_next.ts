@@ -140,6 +140,7 @@ import {
 	findHaikuRoot,
 	intentDir,
 	intentFromCurrentBranch,
+	isGitRepo,
 	listVisibleIntents,
 	parseFrontmatter,
 	setFrontmatterField,
@@ -171,17 +172,40 @@ export default defineTool({
 		},
 	},
 	async handle(args, signal) {
-		// Auto-resolve `intent` when omitted. Resolution order:
-		//   1. Current git branch (`haiku/<slug>/main` or `haiku/<slug>/<stage>`)
-		//      — the user's checkout already names the intent, so the skill
-		//      surface can stay thin and doesn't need to prompt.
-		//   2. Sole active intent on the filesystem — if there's exactly one,
-		//      use it; zero-or-many yields an error with available slugs.
+		// Auto-resolve `intent` when omitted. The contract: the engine
+		// only touches an intent when we're explicitly working with it.
+		// Two signals count as "explicitly":
+		//   1. Caller passed `intent` directly.
+		//   2. Current git branch is `haiku/<slug>/main` or
+		//      `haiku/<slug>/<stage>` — the checkout itself is the
+		//      declaration that this intent is in scope.
+		// In a git repo, those are the ONLY signals. Falling back to
+		// "the sole active intent on disk" is wrong: a checked-in intent
+		// directory with `status: active` does not mean the user is
+		// working on it right now (e.g. you're reviewing main, doing
+		// engine work on another worktree, or the intent was committed
+		// by an unrelated PR). Touching an intent the user isn't on
+		// pollutes its on-disk runtime journals (action-log.jsonl,
+		// state.json, baseline-content/) and shows up as untracked
+		// noise in `git status`.
+		// Filesystem mode (no git) has no branch signal, so the
+		// "sole active" fallback is the only auto-resolve available
+		// there — keep it gated behind !isGitRepo().
 		let slug = (args.intent as string) || ""
 		if (!slug) {
 			const branchMatch = intentFromCurrentBranch()
 			if (branchMatch) {
 				slug = branchMatch.slug
+			} else if (isGitRepo()) {
+				return {
+					content: [
+						{
+							type: "text" as const,
+							text: "No intent specified and the current branch isn't an intent branch (`haiku/<slug>/main` or `haiku/<slug>/<stage>`). Pass `intent` explicitly, or `git switch haiku/<slug>/main` to scope the engine to a specific intent. The engine refuses to auto-target an intent the user isn't actively on — that's how stray intent dirs end up touched and polluting `git status`.",
+						},
+					],
+					isError: true,
+				}
 			} else {
 				const root = findHaikuRoot()
 				const intentsDir = join(root, "intents")
@@ -207,7 +231,7 @@ export default defineTool({
 						content: [
 							{
 								type: "text" as const,
-								text: `Multiple active intents (${active.map((i) => i.slug).join(", ")}). Pass \`intent\` explicitly, or checkout an intent branch (\`git switch haiku/<slug>/main\`) so the workflow engine can auto-resolve.`,
+								text: `Multiple active intents (${active.map((i) => i.slug).join(", ")}). Pass \`intent\` explicitly.`,
 							},
 						],
 						isError: true,

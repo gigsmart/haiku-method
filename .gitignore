@@ -63,5 +63,9 @@ terraform.tfvars
 .haiku/worktrees/
 .haiku/**/baseline-content/
 .haiku/locks/
+# Per-intent runtime journals (the engine's WAL — never tracked)
+.haiku/**/action-log.jsonl
+.haiku/**/.last_action.json
+.haiku/**/write-audit.jsonl
 bun.lock
 plugin/bin/haiku.mjs.map
