@@ -79,6 +79,10 @@ hat_started_at: '2026-05-08T17:53:22Z'
 iterations:
   - hat: designer-prep
     started_at: '2026-05-08T17:53:22Z'
+    completed_at: '2026-05-08T17:58:28Z'
+    result: advance
+  - hat: designer
+    started_at: '2026-05-08T17:58:28Z'
     completed_at: null
     result: null
 ---
