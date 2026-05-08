@@ -21,21 +21,11 @@
 // callers (and tests) that still import from "./orchestrator.js",
 // plus the MCP tool handler dispatch.
 
-import { existsSync, readFileSync } from "node:fs"
-import { join } from "node:path"
 import { actionPromptBuilders } from "./orchestrator/prompts/index.js"
-import {
-	resolveStageMetadata,
-	resolveUnitHatsInStudio,
-} from "./orchestrator/studio.js"
 import { orchestratorToolDefs } from "./orchestrator/tool-defs.js"
 import { dispatchOrchestratorAction } from "./orchestrator/workflow/run-tick.js"
 import type { ReviewAnnotations } from "./sessions.js"
-import {
-	intentDir,
-	parseFrontmatter,
-	validateSlugArgs,
-} from "./state-tools.js"
+import { validateSlugArgs } from "./state-tools.js"
 import { writeActionPromptFile } from "./subagent-prompt-file.js"
 import { orchestratorToolHandlers } from "./tools/orchestrator/index.js"
 

@@ -58,8 +58,7 @@ import {
 	readFileFromBranch,
 	removeTempWorktree,
 } from "./git-worktree.js"
-import { getCapabilities } from "./harness.js"
-import { withIntentMainLock, withStageLock } from "./locks.js"
+import { withStageLock } from "./locks.js"
 import { escalate } from "./model-selection.js"
 import { clearMarkersForFeedbackSync } from "./orchestrator/workflow/baseline-clear-marker.js"
 import { reportError } from "./sentry.js"
@@ -67,7 +66,6 @@ import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
 import { sealIntentState } from "./state-integrity.js"
 import {
 	listStudios,
-	readHatDefs,
 	readOperationDefs,
 	readReflectionDefs,
 	readStageArtifactDefs,
@@ -75,12 +73,7 @@ import {
 	readStudioFixHatPaths,
 	resolveStudio,
 } from "./studio-reader.js"
-import {
-	nextRelayPath,
-	resultPathFor,
-	setSessionId,
-	writeResultFile,
-} from "./subagent-prompt-file.js"
+import { nextRelayPath, setSessionId } from "./subagent-prompt-file.js"
 import { emitTelemetry } from "./telemetry.js"
 import { getPluginVersion, MCP_VERSION } from "./version.js"
 
@@ -2494,9 +2487,7 @@ export function unitPath(slug: string, stage: string, unit: string): string {
 	const matches = readdirSync(dir).filter((f) => {
 		const fm = f.match(/^unit-(\d+)-(.+)\.md$/)
 		if (!fm) return false
-		return (
-			Number.parseInt(fm[1], 10) === targetNum && fm[2] === targetSlug
-		)
+		return Number.parseInt(fm[1], 10) === targetNum && fm[2] === targetSlug
 	})
 	if (matches.length === 1) return join(dir, matches[0])
 	return exact
@@ -3682,7 +3673,9 @@ function resolvesToUnit(entry: string, target: string): boolean {
 	const a = entry.match(/^unit-(\d+)-(.+)$/)
 	const b = target.match(/^unit-(\d+)-(.+)$/)
 	if (!a || !b) return false
-	return Number.parseInt(a[1], 10) === Number.parseInt(b[1], 10) && a[2] === b[2]
+	return (
+		Number.parseInt(a[1], 10) === Number.parseInt(b[1], 10) && a[2] === b[2]
+	)
 }
 
 export function validateUnitFrontmatter(
@@ -4759,8 +4752,9 @@ export function persistDesignDirectionUploads(opts: {
 		else ext = mime.replace(/^image\//, "")
 		// Sanitise filename: strip any path traversal, keep a slug.
 		const base =
-			slugifyTitle(opts.files[nn - 1]?.filename.replace(/\.[^.]+$/, "") ?? "") ||
-			`upload-${nn}`
+			slugifyTitle(
+				opts.files[nn - 1]?.filename.replace(/\.[^.]+$/, "") ?? "",
+			) || `upload-${nn}`
 		const filename = `up-${zeroPad(nn)}-${base}.${ext}`
 		writeFileSync(join(uploadsDir, filename), Buffer.from(m[2], "base64"))
 		const upload: DesignDirectionUpload = {
@@ -5860,8 +5854,13 @@ export function deleteFeedbackFile(
 	// from terminal status. Legacy fixtures with status: pending/fixing
 	// are also treated as open for backward compat.
 	const isOpenForDelete =
-		!(typeof found.data.closed_at === "string" && found.data.closed_at.length > 0) &&
-		(found.data.status === "pending" || found.data.status === "fixing" || !found.data.status)
+		!(
+			typeof found.data.closed_at === "string" &&
+			found.data.closed_at.length > 0
+		) &&
+		(found.data.status === "pending" ||
+			found.data.status === "fixing" ||
+			!found.data.status)
 	if (isOpenForDelete) {
 		return {
 			ok: false,
@@ -9001,8 +9000,7 @@ export function handleStateTool(
 												readFileSync(join(unitsDir, f), "utf8"),
 											)
 											const iters = ud.iterations
-											const hasIter =
-												Array.isArray(iters) && iters.length > 0
+											const hasIter = Array.isArray(iters) && iters.length > 0
 											const last = hasIter
 												? (iters as Array<{ result?: string }>)[
 														iters.length - 1
@@ -9010,13 +9008,11 @@ export function handleStateTool(
 												: undefined
 											const lastAdvance = last?.result === "advance"
 											const approvals =
-												(ud.approvals as
-													| Record<string, unknown>
-													| undefined) || {}
+												(ud.approvals as Record<string, unknown> | undefined) ||
+												{}
 											const userApproved = approvals.user != null
 											if (hasIter) anyStarted = true
-											if (!(lastAdvance && userApproved))
-												allComplete = false
+											if (!(lastAdvance && userApproved)) allComplete = false
 										}
 										derived = allComplete
 											? "completed"
@@ -10805,9 +10801,14 @@ export function handleStateTool(
 			// block the advance.
 			if (isLast) {
 				try {
-					clearMarkersForFeedbackSync(intentDir(intentArg), feedbackId, "closed", {
-						intentSlug: intentArg,
-					})
+					clearMarkersForFeedbackSync(
+						intentDir(intentArg),
+						feedbackId,
+						"closed",
+						{
+							intentSlug: intentArg,
+						},
+					)
 				} catch (err) {
 					emitTelemetry("haiku.drift.clear_marker_failed", {
 						intent: intentArg,
@@ -10847,7 +10848,9 @@ export function handleStateTool(
 			// not LLM compliance.
 			let nextSubagentDispatchBlock: string | null = null
 			if (!isLast && nextDispatchedHat) {
-				const sidecarUnit = stageArg ? `fix-${feedbackId}` : `intent-fix-${feedbackId}`
+				const sidecarUnit = stageArg
+					? `fix-${feedbackId}`
+					: `intent-fix-${feedbackId}`
 				try {
 					const sidecar = nextRelayPath({
 						unit: sidecarUnit,
@@ -11132,10 +11135,7 @@ export function handleStateTool(
 				existingTargets && Array.isArray(existingTargets.invalidates)
 					? (existingTargets.invalidates as string[])
 					: []
-			if (
-				existingUnit !== null ||
-				existingInvalidates.length > 0
-			) {
+			if (existingUnit !== null || existingInvalidates.length > 0) {
 				return reply(
 					{
 						error: "targets_already_set",
@@ -11170,7 +11170,10 @@ export function handleStateTool(
 				...stFound.data,
 				targets,
 			}
-			writeFileSync(stFound.path, matter.stringify(`\n${stFound.body}\n`, newData))
+			writeFileSync(
+				stFound.path,
+				matter.stringify(`\n${stFound.body}\n`, newData),
+			)
 			sealIntentState(intentArg)
 
 			return reply({

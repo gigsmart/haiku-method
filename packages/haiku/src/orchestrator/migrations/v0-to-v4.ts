@@ -53,18 +53,15 @@
 import {
 	existsSync,
 	mkdirSync,
-	readFileSync,
 	readdirSync,
+	readFileSync,
 	renameSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs"
 import { dirname, join } from "node:path"
 import matter from "gray-matter"
-import {
-	registerMigrator,
-	type MigrationContext,
-} from "../migrate-registry.js"
+import { type MigrationContext, registerMigrator } from "../migrate-registry.js"
 
 const TARGET_VERSION = "4.0.0"
 
@@ -127,9 +124,10 @@ const FB_TERMINAL_STATUSES = new Set([
 	"rejected",
 ])
 
-function readMatter(
-	path: string,
-): { data: Record<string, unknown>; body: string } {
+function readMatter(path: string): {
+	data: Record<string, unknown>
+	body: string
+} {
 	const raw = readFileSync(path, "utf8")
 	const parsed = matter(raw)
 	return { data: parsed.data as Record<string, unknown>, body: parsed.content }
@@ -184,9 +182,7 @@ function strip(
 	return out
 }
 
-function bestTimestamp(
-	candidates: Array<unknown>,
-): string {
+function bestTimestamp(candidates: Array<unknown>): string {
 	for (const c of candidates) {
 		if (typeof c === "string" && c.length > 0) return c
 	}
@@ -357,8 +353,7 @@ function migrateFeedbackFile(path: string, intentDir: string): void {
 	const { data, body } = readMatter(path)
 	const oldStatus =
 		typeof data.status === "string" ? (data.status as string) : ""
-	const oldClosedBy =
-		typeof data.closed_by === "string" ? data.closed_by : null
+	const oldClosedBy = typeof data.closed_by === "string" ? data.closed_by : null
 	const next = strip(data, DEPRECATED_FB_FIELDS)
 	if (typeof next.iterations !== "object" || !Array.isArray(next.iterations)) {
 		next.iterations = data.iterations ?? []

@@ -27,13 +27,7 @@
 // prompt instructions (rendered by buildRunInstructions, harness-
 // adapted by adaptInstructions).
 
-import {
-	existsSync,
-	mkdirSync,
-	readdirSync,
-	readFileSync,
-	writeFileSync,
-} from "node:fs"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { ensureOnStageBranch } from "../../git-worktree.js"
 import { adaptInstructions } from "../../harness-instructions.js"
@@ -285,10 +279,7 @@ export default defineTool({
 							"../../git-worktree.js"
 						)
 						const stages = resolveStudioStages(studio)
-						const reconciliations = reconcileMisroutedStageMerges(
-							slug,
-							stages,
-						)
+						const reconciliations = reconcileMisroutedStageMerges(slug, stages)
 						const hardErrors = reconciliations.filter(
 							(r) => r.misrouted && !r.reconciled && r.error,
 						)
@@ -398,16 +389,10 @@ export default defineTool({
 			result.action === "select_mode" ||
 			result.action === "select_stage"
 		) {
-			const pickerResult = await runSelectionPicker(
-				result.action,
-				slug,
-				signal,
-			)
+			const pickerResult = await runSelectionPicker(result.action, slug, signal)
 			if (!pickerResult.ok) {
 				return {
-					content: [
-						{ type: "text" as const, text: pickerResult.message },
-					],
+					content: [{ type: "text" as const, text: pickerResult.message }],
 					isError: true,
 				}
 			}
@@ -437,8 +422,7 @@ export default defineTool({
 					const parsed = parseFrontmatter(raw)
 					const fm = (parsed.data as Record<string, unknown>) || {}
 					const directions =
-						fm.design_directions &&
-						typeof fm.design_directions === "object"
+						fm.design_directions && typeof fm.design_directions === "object"
 							? { ...(fm.design_directions as Record<string, unknown>) }
 							: {}
 					const dd =
@@ -501,13 +485,10 @@ export default defineTool({
 							`${targetUnit}.md`,
 						)
 						if (existsSync(unitPath)) {
-							const intentDirAbs = join(
-								findHaikuRoot(),
-								"intents",
-								slug,
+							const intentDirAbs = join(findHaikuRoot(), "intents", slug)
+							const { buildApprovalRecord, buildReviewRecord } = await import(
+								"../../orchestrator/workflow/sign-slot.js"
 							)
-							const { buildApprovalRecord, buildReviewRecord } =
-								await import("../../orchestrator/workflow/sign-slot.js")
 							const raw = readFileSync(unitPath, "utf8")
 							const parsed = parseFrontmatter(raw)
 							const fm = parsed.data as Record<string, unknown>
@@ -526,10 +507,7 @@ export default defineTool({
 									? { ...(fm.approvals as Record<string, unknown>) }
 									: {}
 							for (const role of Object.keys(approvals)) {
-								approvals[role] = buildApprovalRecord(
-									intentDirAbs,
-									outputs,
-								)
+								approvals[role] = buildApprovalRecord(intentDirAbs, outputs)
 							}
 							setFrontmatterField(unitPath, "reviews", reviews)
 							setFrontmatterField(unitPath, "approvals", approvals)
@@ -564,11 +542,7 @@ export default defineTool({
 			try {
 				const intentMd = join(findHaikuRoot(), "intents", slug, "intent.md")
 				if (existsSync(intentMd)) {
-					setFrontmatterField(
-						intentMd,
-						"sealed_at",
-						new Date().toISOString(),
-					)
+					setFrontmatterField(intentMd, "sealed_at", new Date().toISOString())
 					result = dispatchOrchestratorAction(slug)
 				}
 			} catch (err) {
@@ -578,7 +552,10 @@ export default defineTool({
 			}
 		}
 
-		while (result.action === "merge_stage" && typeof result.stage === "string") {
+		while (
+			result.action === "merge_stage" &&
+			typeof result.stage === "string"
+		) {
 			const stageToMerge = result.stage
 			try {
 				const { isGitRepo } = await import("../../state-tools.js")
@@ -588,12 +565,7 @@ export default defineTool({
 					// cursor's firstUnmergedStage advances on the next
 					// tick. (Same observable effect as a successful git
 					// merge, just without the SCM machinery.)
-					const intentMd = join(
-						findHaikuRoot(),
-						"intents",
-						slug,
-						"intent.md",
-					)
+					const intentMd = join(findHaikuRoot(), "intents", slug, "intent.md")
 					if (existsSync(intentMd)) {
 						const raw = readFileSync(intentMd, "utf8")
 						const parsed = parseFrontmatter(raw)
@@ -661,10 +633,7 @@ export default defineTool({
 		// concrete stage AND differ from the active one. Other
 		// actions (intent_review, merge_intent, sealed) don't carry
 		// a stage; they no-op this guard.
-		if (
-			typeof result.stage === "string" &&
-			result.stage.length > 0
-		) {
+		if (typeof result.stage === "string" && result.stage.length > 0) {
 			try {
 				const intentFile = join(findHaikuRoot(), "intents", slug, "intent.md")
 				if (existsSync(intentFile)) {
@@ -760,21 +729,14 @@ export default defineTool({
 			(result.stage as string).length > 0
 		) {
 			try {
-				const { openStagePullRequest } = await import(
-					"../../git-worktree.js"
-				)
+				const { openStagePullRequest } = await import("../../git-worktree.js")
 				const opened = openStagePullRequest({
 					slug,
 					stage: result.stage as string,
 				})
 				if (opened.createdUrl) {
 					try {
-						const intentMd = join(
-							findHaikuRoot(),
-							"intents",
-							slug,
-							"intent.md",
-						)
+						const intentMd = join(findHaikuRoot(), "intents", slug, "intent.md")
 						setFrontmatterField(
 							intentMd,
 							"external_review_url",
@@ -852,11 +814,7 @@ export default defineTool({
 					const urlKey = stage ? `gate_review_url_${stage}` : "gate_review_url"
 					setFrontmatterField(intentMdPath, sessionKey, prepared.session_id)
 					setFrontmatterField(intentMdPath, urlKey, prepared.review_url)
-					setFrontmatterField(
-						intentMdPath,
-						"gate_review_context",
-						gateContext,
-					)
+					setFrontmatterField(intentMdPath, "gate_review_context", gateContext)
 					if (nextStage !== undefined && nextStage !== null) {
 						setFrontmatterField(
 							intentMdPath,

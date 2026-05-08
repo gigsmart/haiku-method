@@ -88,6 +88,9 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 		branch: fbBranch,
 	} of items) {
 		const fbAbsPath = join(haikuRoot, fbFile)
+		// Numeric form for tool args; `fbId` stays for prose / headings.
+		// See review_fix.ts for the same shape.
+		const fbNum = Number.parseInt(fbId.replace(/^FB-/i, ""), 10) || 0
 		sections.push(
 			`\n### Finding \`${fbId}\` — _${fbTitle}_ (bolt ${fixBolt}/${fixMaxBolts})\n`,
 		)
@@ -181,10 +184,10 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 					`   - **Stage A — Spec match.** Does the edit make the finding's requirement true as written?`,
 					`   - **Stage B — Quality / regression.** Inspect the diff (\`git show HEAD\`). Does the edit introduce a regression — broken neighboring behavior, scope creep, or violations of studio-wide standards?`,
 					`${step++}. **Decide:**`,
-					`   - **A passes AND B passes** → call \`haiku_feedback_advance_hat { intent: "${slug}", feedback_id: "${fbId}" }\` (omit \`stage\`). The workflow engine auto-closes the finding (this is the last hat in the fix_hats chain).`,
+					`   - **A passes AND B passes** → call \`haiku_feedback_advance_hat { intent: "${slug}", feedback_id: ${fbNum} }\` (omit \`stage\`). The workflow engine auto-closes the finding (this is the last hat in the fix_hats chain).`,
 					`   - **A fails** → leave status unchanged. Do NOT call \`haiku_feedback_advance_hat\`. The workflow engine counts this bolt.`,
 					`   - **A passes, B fails** → leave the original open AND log the regression as a new finding via \`haiku_feedback({ intent: "${slug}", title: "<regression from intent-fix:${fbId}>", body: "<diff hunk + impact>", origin: "studio-review", author: "fix-assessor" })\`. Omit \`stage\`. Do NOT call \`haiku_feedback_advance_hat\`.`,
-					`   - **Finding is invalid** → call \`haiku_feedback_reject { intent: "${slug}", feedback_id: "${fbId}", reason: "<concrete reason>" }\` — omit \`stage\`. Do NOT call \`haiku_feedback_advance_hat\`.`,
+					`   - **Finding is invalid** → call \`haiku_feedback_reject { intent: "${slug}", feedback_id: ${fbNum}, reason: "<concrete reason>" }\` — omit \`stage\`. Do NOT call \`haiku_feedback_advance_hat\`.`,
 					`${step++}. Return \`fix-assessor: closed | open | rejected — <reason>\`. Verb of completed action; zero hedging.`,
 				)
 			} else {
@@ -203,7 +206,7 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 					`**If you called \`haiku_feedback_reject\`** (stale / invalid finding): do NOT call advance_hat. Return your one-line rejection reason as your final message. Stop here. (You will NOT receive a next-hat dispatch block on this path — there is nothing to relay.)`,
 					"",
 					"**Otherwise (actionable finding — normal path):**",
-					`1. Call \`haiku_feedback_advance_hat { intent: "${slug}", feedback_id: "${fbId}" }\` (omit \`stage\` — intent scope) to record this hat's completion and progress the chain.`,
+					`1. Call \`haiku_feedback_advance_hat { intent: "${slug}", feedback_id: ${fbNum} }\` (omit \`stage\` — intent scope) to record this hat's completion and progress the chain.`,
 					"   - On error: return the error message as your final message. Stop here.",
 					"2. **The tool response contains a `next_subagent_dispatch_block` field.** Copy its full string contents verbatim as your final message (after your one-line work summary). Your parent will spawn the relayed subagent — do NOT run it yourself. Do NOT paraphrase, summarize, or otherwise modify the block.",
 					"",

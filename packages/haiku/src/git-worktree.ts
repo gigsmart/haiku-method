@@ -747,11 +747,9 @@ export function reconcileMisroutedStageMerges(
 				}
 			}
 			try {
-				execFileSync(
-					"git",
-					["merge", "--ff-only", `origin/${mainline}`],
-					{ stdio: "pipe" },
-				)
+				execFileSync("git", ["merge", "--ff-only", `origin/${mainline}`], {
+					stdio: "pipe",
+				})
 				result.reconciled = true
 			} catch {
 				// Try the local mainline as a fallback (some repos may

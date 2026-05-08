@@ -18,6 +18,7 @@
 
 import { type Static, Type } from "@sinclair/typebox"
 import { stateAjv } from "../_ajv.js"
+
 // v4: FEEDBACK_STATUSES no longer exists — closed_at: string | null is
 // the only lifecycle witness on FBs.
 

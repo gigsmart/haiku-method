@@ -31,11 +31,7 @@ import matter from "gray-matter"
 import { features } from "../../config.js"
 import { type ModelTier, resolveModel } from "../../model-selection.js"
 import { intentDir, stageDir } from "../../state-tools.js"
-import {
-	readHatDefs,
-	readStageDef,
-	readStudio,
-} from "../../studio-reader.js"
+import { readHatDefs, readStageDef, readStudio } from "../../studio-reader.js"
 import { definePromptBuilder } from "./define.js"
 
 /** Resolve the model for a fix-hat dispatch. Mirrors the cascade in
@@ -125,7 +121,7 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 	lines.push("## What to do")
 	lines.push("")
 	lines.push(
-		`Spawn ${feedbackIds.length} subagent${feedbackIds.length === 1 ? "" : "s"} (parallel, single message, ${feedbackIds.length} \`Task\` call${feedbackIds.length === 1 ? "" : "s"}). Each subagent block below carries the **canonical FB ID** — pass each \`feedback_id\` verbatim, no substitution required. The IDs are not placeholders; the agent should NEVER guess, normalize, or rewrite them.`,
+		`Spawn ${feedbackIds.length} subagent${feedbackIds.length === 1 ? "" : "s"} (parallel, single message, ${feedbackIds.length} \`Task\` call${feedbackIds.length === 1 ? "" : "s"}). Each subagent block below carries the **numeric FB ID** inlined into every tool call (e.g. \`feedback_id: 1\`). The MCP tools require an integer here — \`feedback_id: "FB-001"\` (string) is rejected at the AJV gate with \`<tool>_input_invalid\`. Pass the integer literal as written; do not requote, prefix, or zero-pad.`,
 	)
 	lines.push("")
 	if (modelTier) {
@@ -143,24 +139,29 @@ export default definePromptBuilder(({ slug, studio, action }) => {
 		? `, reply: "<short plain-language explanation of what was done — surfaces in the SPA so the requester sees the resolution>"`
 		: ""
 	for (const fbId of feedbackIds) {
+		// `fbId` is the canonical wire-form `FB-NNN` (cursor emits it
+		// from the on-disk filename). Tools take an integer at the
+		// schema gate, not the string form. Convert here so prompts
+		// embed the integer literal — `feedback_id: 1`, not
+		// `feedback_id: "FB-001"`. The display label in the heading
+		// keeps the FB-NNN form for human readability.
+		const fbNum = Number.parseInt(fbId.replace(/^FB-/i, ""), 10) || 0
 		lines.push(`### Subagent for \`${fbId}\``)
 		lines.push("")
 		lines.push("```")
+		lines.push(`Read plugin/studios/<studio>/stages/${stage}/hats/${hat}.md.`)
 		lines.push(
-			`Read plugin/studios/<studio>/stages/${stage}/hats/${hat}.md.`,
-		)
-		lines.push(
-			`Then call haiku_feedback_read { intent: "${slug}", stage: "${stage}", feedback_id: "${fbId}" } to load the FB body.`,
+			`Then call haiku_feedback_read { intent: "${slug}", stage: "${stage}", feedback_id: ${fbNum} } to load the FB body.`,
 		)
 		lines.push(`Execute the ${hat} mandate against the FB.`)
 		lines.push("When done, call ONE of:")
 		lines.push("  Success path:")
 		lines.push(
-			`    haiku_feedback_advance_hat { intent: "${slug}", stage: "${stage}", feedback_id: "${fbId}"${replyClauseTerminal} }`,
+			`    haiku_feedback_advance_hat { intent: "${slug}", stage: "${stage}", feedback_id: ${fbNum}${replyClauseTerminal} }`,
 		)
 		lines.push("  Block / reject path:")
 		lines.push(
-			`    haiku_feedback_reject_hat { intent: "${slug}", stage: "${stage}", feedback_id: "${fbId}", reason: "<why>" }`,
+			`    haiku_feedback_reject_hat { intent: "${slug}", stage: "${stage}", feedback_id: ${fbNum}, reason: "<why>" }`,
 		)
 		lines.push("Terminate with the tool's plain-text return.")
 		lines.push("```")

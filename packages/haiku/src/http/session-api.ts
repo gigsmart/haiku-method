@@ -48,11 +48,7 @@ function scrubEngineWitnessFields(
 		for (const [role, record] of Object.entries(v as Record<string, unknown>)) {
 			if (record && typeof record === "object") {
 				const r = record as Record<string, unknown>
-				const {
-					body_sha256: _bs,
-					witnesses: _w,
-					...rest
-				} = r
+				const { body_sha256: _bs, witnesses: _w, ...rest } = r
 				cleaned[role] = rest
 			} else {
 				cleaned[role] = record

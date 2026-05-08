@@ -17,12 +17,12 @@
 // cursor walks after that pass, so each role is unambiguous.
 
 import { readStudioReviewAgentPaths } from "../../studio-reader.js"
-import { definePromptBuilder } from "./define.js"
 import {
 	emitSubagentDispatchBlock,
 	inlineFile,
 	resolveStudioMandateModel,
 } from "./_helpers.js"
+import { definePromptBuilder } from "./define.js"
 
 export default definePromptBuilder(({ slug, studio, action }) => {
 	const role = (action.role as string) || ""

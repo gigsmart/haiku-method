@@ -58,10 +58,7 @@ export const FB_ID_PATTERN = "^(?:FB-)?\\d+$"
 // + close paths set them directly via setFrontmatterField, bypassing
 // the schema's `additionalProperties` filter.
 
-const FSM_DRIVEN_FB_FIELDS_LIST = [
-	"iterations",
-	"closed_at",
-] as const
+const FSM_DRIVEN_FB_FIELDS_LIST = ["iterations", "closed_at"] as const
 
 const FB_TARGETS_SCHEMA = Type.Object(
 	{

@@ -41,9 +41,9 @@ import {
 	mergeStageBranchIntoMain,
 	writeOnIntentMain,
 } from "../../git-worktree.js"
+import { withIntentMainLock } from "../../locks.js"
 import type { OrchestratorAction } from "../../orchestrator.js"
 import { resolveIntentStages } from "../../orchestrator.js"
-import { withIntentMainLock } from "../../locks.js"
 import { sealIntentState } from "../../state-integrity.js"
 import {
 	appendStageIteration,

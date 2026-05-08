@@ -24,10 +24,7 @@ const server = new Server(
 )
 
 import { getCapabilities, isClaudeCode } from "./harness.js"
-import {
-	orchestratorToolDefs,
-	setGateReviewHandlers,
-} from "./orchestrator.js"
+import { orchestratorToolDefs, setGateReviewHandlers } from "./orchestrator.js"
 // Prompts: for Claude Code, skills are native; for other harnesses, we bridge
 // skills → MCP prompts so they surface as invocable actions.
 import { completeArgument, getPrompt, listPrompts } from "./prompts/index.js"

@@ -123,7 +123,9 @@ export default defineTool({
 				.filter((s): s is NonNullable<typeof s> => s !== null)
 				.map((s) => s.name)
 			const presentNames =
-				mappedOptions.length === 0 ? allStudios.map((s) => s.name) : mappedOptions
+				mappedOptions.length === 0
+					? allStudios.map((s) => s.name)
+					: mappedOptions
 			const pickerOptions = allStudios
 				.filter((s) => presentNames.includes(s.name))
 				.map((s) => ({

@@ -95,9 +95,7 @@ export const INTENT_FRONTMATTER_SCHEMA = Type.Object(
 		// `Type.Unknown()` because the inner shape is open-ended (each
 		// stage may have a different question set) — the engine reads
 		// `clarifications[stage]` for a presence check, not validation.
-		clarifications: Type.Optional(
-			Type.Record(Type.String(), Type.Unknown()),
-		),
+		clarifications: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
 	},
 	{
 		propertyNames: { not: { enum: [...FSM_DRIVEN_INTENT_FIELDS_LIST] } },

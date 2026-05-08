@@ -1,17 +1,25 @@
 #!/usr/bin/env node
-// CI guard: assert the four named drift / reconciliation test files exist
-// AND would be discovered by `packages/haiku/test/run-all.mjs`.
+// CI guard: assert the named drift / cursor-walk test files exist AND
+// would be discovered by `packages/haiku/test/run-all.mjs`.
 //
-// Why this exists: the drift-detection-gate and upstream-reconciliation
-// tests are the only safety net catching a silent regression of the two
-// pre-tick gates (drift-gate silent-establish, reconciliation fingerprint
-// short-circuit). A future test-glob refactor or accidental file rename
-// could remove that coverage without breaking a single sibling test.
-// This script names the four files explicitly so CI fails loud if any
-// disappear or are excluded from the run-all.mjs discovery filter.
+// Why this exists: drift detection + cursor-walk are the safety net
+// catching a silent regression of the engine's drift-gate behavior
+// (baseline establish, marker bookkeeping, mid-flight e2e flow) and the
+// cursor's track-walk priorities. A future test-glob refactor or
+// accidental file rename could remove that coverage without breaking a
+// single sibling test. This script names the files explicitly so CI
+// fails loud if any disappear or are excluded from run-all.mjs.
+//
+// 2026-05-08 update: the v4 cursor refactor (commit b743524) absorbed
+// the standalone `drift-detection-gate.ts` and `upstream-reconciliation.ts`
+// modules into the cursor's pre-tick walk. Their tests
+// (drift-detection-gate.test.mjs, upstream-reconciliation.test.mjs)
+// were deleted with them. The v4-equivalent coverage lives in
+// cursor-walk.test.mjs, drift-mid-flight-e2e.test.mjs, and
+// drift-scenarios.test.mjs — those replace the deleted entries here.
 //
 // Usage: node scripts/check-ci-covers-drift-tests.mjs
-// Exit code: 0 = all four present + discoverable + non-empty, 1 = gap.
+// Exit code: 0 = all present + discoverable + non-empty, 1 = gap.
 
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
@@ -22,10 +30,11 @@ const testDir = join(repoRoot, "packages", "haiku", "test")
 const runAllPath = join(testDir, "run-all.mjs")
 
 const REQUIRED_FILES = [
-	"drift-detection-gate.test.mjs",
-	"upstream-reconciliation.test.mjs",
 	"drift-baseline.test.mjs",
 	"drift-markers.test.mjs",
+	"drift-mid-flight-e2e.test.mjs",
+	"drift-scenarios.test.mjs",
+	"cursor-walk.test.mjs",
 ]
 
 let failures = 0
@@ -114,13 +123,16 @@ console.log("─".repeat(60))
 
 if (failures > 0) {
 	console.error(
-		`\nFAIL: ${failures} drift-test coverage gap(s). The four named test files`,
+		`\nFAIL: ${failures} drift-test coverage gap(s). The named test files`,
 	)
 	console.error(
-		"      lock in the drift-gate silent-establish and reconciliation",
+		"      lock in the cursor's drift-gate baseline behavior, marker",
 	)
 	console.error(
-		"      fingerprint short-circuit contracts. Restore them or update",
+		"      bookkeeping, mid-flight FB→fix→seal flow, scenario coverage,",
+	)
+	console.error(
+		"      and the cursor track-walk priorities. Restore them or update",
 	)
 	console.error(
 		"      this script's REQUIRED_FILES if the contract has moved.",

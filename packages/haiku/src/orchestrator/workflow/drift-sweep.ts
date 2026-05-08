@@ -49,13 +49,12 @@
 // body), but that's commentary, not the detection signal.
 
 import { execFileSync } from "node:child_process"
-import { existsSync, readdirSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { join, relative } from "node:path"
+import matter from "gray-matter"
 import { primaryRepoRoot } from "../../state-tools.js"
 import { isDriftDetectionDisabled } from "./drift-baseline.js"
 import { bodySha256, fileSha256, outputSha256 } from "./sign-slot.js"
-import { readFileSync } from "node:fs"
-import matter from "gray-matter"
 
 export type DriftKind =
 	| "spec"
@@ -433,8 +432,7 @@ function collectOpenDriftSourceRefs(intentDir: string): Set<string> {
 			const fm = readFm(join(dir, f))
 			if (!fm) continue
 			if (fm.origin !== "drift") continue
-			if (typeof fm.closed_at === "string" && fm.closed_at.length > 0)
-				continue
+			if (typeof fm.closed_at === "string" && fm.closed_at.length > 0) continue
 			const ref = fm.source_ref
 			if (typeof ref === "string" && ref.length > 0) refs.add(ref)
 		}

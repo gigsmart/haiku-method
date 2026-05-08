@@ -22,19 +22,23 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import matter from "gray-matter"
+import { buildApprovalRecord } from "../../orchestrator/workflow/sign-slot.js"
 import {
 	intentDir,
 	runInlineQualityGates,
-	timestamp,
 	writeFeedbackFile,
 } from "../../state-tools.js"
-import { buildApprovalRecord } from "../../orchestrator/workflow/sign-slot.js"
 import { defineTool } from "../define.js"
 import { text } from "./_text.js"
 
 type GateFailure = {
 	unit: string
-	failures: Array<{ name: string; command: string; exit_code: number; output: string }>
+	failures: Array<{
+		name: string
+		command: string
+		exit_code: number
+		output: string
+	}>
 }
 
 export default defineTool({
@@ -93,10 +97,7 @@ export default defineTool({
 				// reopens (as null) and the cursor re-dispatches the
 				// gates. Closure of the FB clears the invalidation.
 				const failureSummary = result.failures
-					.map(
-						(f) =>
-							`- ${f.name}: \`${f.command}\` exited ${f.exit_code}`,
-					)
+					.map((f) => `- ${f.name}: \`${f.command}\` exited ${f.exit_code}`)
 					.join("\n")
 				writeFeedbackFile(intent, stage, {
 					title: `quality_gates failure on ${unit}`,

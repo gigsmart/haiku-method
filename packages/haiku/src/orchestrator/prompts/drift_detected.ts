@@ -50,7 +50,9 @@ export default definePromptBuilder(({ slug, action }) => {
 	lines.push(
 		`- \`target_invalidates: []\` — the assessor decides whether the drift is material; closure with empty invalidates means "cosmetic, no action"; a non-empty list re-routes the cursor through the named approval roles`,
 	)
-	lines.push(`- body: include the kind, file path, since timestamp, and commits`)
+	lines.push(
+		`- body: include the kind, file path, since timestamp, and commits`,
+	)
 	lines.push("")
 	lines.push(
 		`After filing each FB, call \`haiku_run_next { intent: "${slug}" }\`. The cursor walks Track B and dispatches the fix loop on the new FB(s).`,

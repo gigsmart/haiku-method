@@ -18,7 +18,7 @@
 //   // report.units: { unit: string; unknown: string[] }[]
 //   // report.feedback: { fb: string; unknown: string[] }[]
 
-import { existsSync, readFileSync, readdirSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import matter from "gray-matter"
 
@@ -119,7 +119,10 @@ export function auditIntentFields(intentDir: string): FieldHygieneReport {
 	const intentFile = join(intentDir, "intent.md")
 	if (existsSync(intentFile)) {
 		const { data } = matter(readFileSync(intentFile, "utf8"))
-		report.intent = unknownKeys(data as Record<string, unknown>, KNOWN_INTENT_KEYS)
+		report.intent = unknownKeys(
+			data as Record<string, unknown>,
+			KNOWN_INTENT_KEYS,
+		)
 	}
 
 	// 2. units (per stage)

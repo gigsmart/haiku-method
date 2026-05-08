@@ -53,9 +53,7 @@ export function registerMigrator(
 	}
 	const existing = edges.get(from) ?? []
 	if (existing.some((e) => e.to === to)) {
-		throw new Error(
-			`registerMigrator: duplicate edge ${from} → ${to}`,
-		)
+		throw new Error(`registerMigrator: duplicate edge ${from} → ${to}`)
 	}
 	existing.push({ to, migrator })
 	edges.set(from, existing)
@@ -65,10 +63,7 @@ export function registerMigrator(
  * Walk shortest path of registered edges from `from` to `to`. Returns
  * the ordered list of migrators to apply, or null if no path exists.
  */
-function findChain(
-	from: string,
-	to: string,
-): Migrator[] | null {
+function findChain(from: string, to: string): Migrator[] | null {
 	if (from === to) return []
 	const queue: Array<{ version: string; chain: Migrator[] }> = [
 		{ version: from, chain: [] },

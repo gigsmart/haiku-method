@@ -46,6 +46,7 @@ import {
 	workflowIntentComplete,
 	writeReviewFeedbackFiles,
 } from "../../orchestrator.js"
+
 // v4: resetFixLoopBolts deleted with revisit.ts. Fix-loop bolts are
 // derived from feedback iterations[].length; there's no counter to
 // reset — terminal feedback-assessor advance closes the FB and the
@@ -53,6 +54,7 @@ import {
 const resetFixLoopBolts = (_slug: string, _stage: string): void => {
 	/* no-op */
 }
+
 import { reportError } from "../../sentry.js"
 import { logSessionEvent } from "../../session-metadata.js"
 import {
@@ -151,9 +153,7 @@ function stampGateApproval(
 		if (isPreExecute) {
 			records.user = buildReviewRecord(unitPath)
 		} else {
-			const outputs = Array.isArray(fm.outputs)
-				? (fm.outputs as string[])
-				: []
+			const outputs = Array.isArray(fm.outputs) ? (fm.outputs as string[]) : []
 			records.user = buildApprovalRecord(intentDirAbs, outputs)
 		}
 		setFrontmatterField(unitPath, targetField, records)
@@ -489,9 +489,7 @@ export default defineTool({
 				// the MR in one click.
 				let externalReviewMessage: string
 				if (isGitRepo()) {
-					const { openStagePullRequest } = await import(
-						"../../git-worktree.js"
-					)
+					const { openStagePullRequest } = await import("../../git-worktree.js")
 					const opened = openStagePullRequest({ slug, stage })
 					if (opened.createdUrl) {
 						// Persist the URL on intent.md so the next tick

@@ -49,11 +49,11 @@
 //                 quality_gates is signed
 
 import { execFileSync } from "node:child_process"
-import { existsSync, readFileSync, readdirSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { basename, join } from "node:path"
 import matter from "gray-matter"
-import { isGitRepo, primaryRepoRoot } from "../../state-tools.js"
 import { isBranchMerged } from "../../git-worktree.js"
+import { isGitRepo, primaryRepoRoot } from "../../state-tools.js"
 
 function tryRun(args: string[]): string {
 	try {
@@ -65,17 +65,18 @@ function tryRun(args: string[]): string {
 		return ""
 	}
 }
+
+import {
+	readReviewAgentPaths,
+	readStageArtifactDefs,
+} from "../../studio-reader.js"
 import {
 	resolveStageFixHats,
 	resolveStageHats,
 	resolveStageMetadata,
 	resolveStudioStages,
 } from "../studio.js"
-import {
-	readReviewAgentPaths,
-	readStageArtifactDefs,
-} from "../../studio-reader.js"
-import { runDriftSweep, type DriftEvent } from "./drift-sweep.js"
+import { type DriftEvent, runDriftSweep } from "./drift-sweep.js"
 
 // ── CursorAction discriminated union ─────────────────────────────────
 
@@ -196,7 +197,15 @@ function readClarifyQuestions(
 	stage: string,
 ): Array<{ id: string; prompt: string; body: string }> {
 	const candidates = [
-		join(process.cwd(), ".haiku", "studios", studio, "stages", stage, "clarify"),
+		join(
+			process.cwd(),
+			".haiku",
+			"studios",
+			studio,
+			"stages",
+			stage,
+			"clarify",
+		),
 	]
 	const root = primaryRepoRoot()
 	if (root) {
@@ -217,7 +226,8 @@ function readClarifyQuestions(
 				out.push({
 					id: f.replace(/\.md$/, ""),
 					prompt:
-						(data.prompt as string) || f.replace(/\.md$/, "").replace(/-/g, " "),
+						(data.prompt as string) ||
+						f.replace(/\.md$/, "").replace(/-/g, " "),
 					body: parsed.content.trim(),
 				})
 			} catch {
@@ -313,7 +323,11 @@ export function nextHatForUnit(
 		const idx = configuredHats.indexOf(last.hat)
 		if (idx <= 0) {
 			// Reject on first hat — re-dispatch first hat.
-			return { hat: configuredHats[0], terminal: configuredHats.length === 1, rejected: true }
+			return {
+				hat: configuredHats[0],
+				terminal: configuredHats.length === 1,
+				rejected: true,
+			}
 		}
 		const prevIdx = idx - 1
 		return {
@@ -560,10 +574,7 @@ function nextActionForFeedback(
 		if (iterations.length === 0) return null
 		const last = iterations[iterations.length - 1]
 		if (last.result === null) return null // in-flight
-		if (
-			last.result === "advance" &&
-			last.hat === fixHats[fixHats.length - 1]
-		) {
+		if (last.result === "advance" && last.hat === fixHats[fixHats.length - 1]) {
 			return { kind: "close_feedback", stage, feedback_id: fbId }
 		}
 		return null
@@ -674,7 +685,11 @@ function walkIntentTrack(args: {
 						archetype?: string
 						comments?: string
 						annotations?: Array<{ comment: string; screenshot_path: string }>
-						uploads?: Array<{ filename: string; path: string; caption?: string }>
+						uploads?: Array<{
+							filename: string
+							path: string
+							caption?: string
+						}>
 						at?: string
 						surfaced_at?: string
 				  }
@@ -719,8 +734,7 @@ function walkIntentTrack(args: {
 		if (existsSync(intentMdPath)) {
 			const intentFm = readFm(intentMdPath)?.data ?? {}
 			const clarifications =
-				intentFm.clarifications &&
-				typeof intentFm.clarifications === "object"
+				intentFm.clarifications && typeof intentFm.clarifications === "object"
 					? (intentFm.clarifications as Record<string, unknown>)
 					: {}
 			if (!clarifications[stage]) {
@@ -787,9 +801,7 @@ function walkIntentTrack(args: {
 				const its = pickIterations(u.fm)
 				if (its.length === 0) return false
 				const last = its[its.length - 1]
-				return (
-					last.result === "advance" && last.hat === hats[hats.length - 1]
-				)
+				return last.result === "advance" && last.hat === hats[hats.length - 1]
 			})
 			.map((u) => u.name),
 	)

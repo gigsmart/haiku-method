@@ -165,7 +165,7 @@ const ALLOWED_MIMES_STAGE_OUTPUT: ReadonlySet<string> = new Set([
 /** Knowledge uploads — same allowlist as stage-output. Knowledge artifacts
  *  are documentation + research material; the same MIME set covers them.
  *  `application/octet-stream` removed in bolt 3 — see stage-output comment. */
-const ALLOWED_MIMES_KNOWLEDGE: ReadonlySet<string> = new Set([
+const _ALLOWED_MIMES_KNOWLEDGE: ReadonlySet<string> = new Set([
 	"image/png",
 	"image/jpeg",
 	"image/gif",

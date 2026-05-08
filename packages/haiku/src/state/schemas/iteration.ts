@@ -45,11 +45,7 @@ export const ITERATION_SCHEMA = Type.Object(
 				"ISO 8601 timestamp when this hat's terminal advance/reject landed. Null while the hat is in flight.",
 		}),
 		result: Type.Union(
-			[
-				Type.Literal("advance"),
-				Type.Literal("reject"),
-				Type.Null(),
-			],
+			[Type.Literal("advance"), Type.Literal("reject"), Type.Null()],
 			{
 				description:
 					"Outcome of this hat. `advance` = move to next hat (or close on terminal hat). `reject` = loop back to previous hat. Null while in flight.",

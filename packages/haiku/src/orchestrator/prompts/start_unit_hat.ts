@@ -30,11 +30,7 @@ import matter from "gray-matter"
 import { features } from "../../config.js"
 import { type ModelTier, resolveModel } from "../../model-selection.js"
 import { stageDir } from "../../state-tools.js"
-import {
-	readHatDefs,
-	readStageDef,
-	readStudio,
-} from "../../studio-reader.js"
+import { readHatDefs, readStageDef, readStudio } from "../../studio-reader.js"
 import { definePromptBuilder } from "./define.js"
 import { WORKFLOW_CONTRACTS_ANNOUNCEMENT_BLOCK } from "./WORKFLOW_CONTRACTS_ANNOUNCEMENT_BLOCK.js"
 

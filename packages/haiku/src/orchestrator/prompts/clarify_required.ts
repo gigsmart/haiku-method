@@ -22,7 +22,7 @@ interface ClarifyQuestion {
 export default definePromptBuilder(({ slug, action }) => {
 	const stage = (action.stage as string) || ""
 	const questions = ((action.questions as ClarifyQuestion[]) || []).filter(
-		(q) => q && q.id && q.prompt,
+		(q) => q?.id && q.prompt,
 	)
 
 	const lines: string[] = []

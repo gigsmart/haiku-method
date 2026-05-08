@@ -160,7 +160,7 @@ export default defineTool({
 			const presentModes =
 				options.length === 0
 					? [...modesAvailable]
-					: (options as (typeof modesAvailable))
+					: (options as typeof modesAvailable)
 			const pickerOptions = presentModes.map((m) => ({
 				id: m,
 				label: m,

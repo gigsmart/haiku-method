@@ -80,7 +80,11 @@ export default defineTool({
 			],
 			signal,
 		})
-		if (result.timedOut || !result.selection || result.selection.id !== "reset") {
+		if (
+			result.timedOut ||
+			!result.selection ||
+			result.selection.id !== "reset"
+		) {
 			return text(
 				JSON.stringify({ action: "cancelled", message: "Reset cancelled." }),
 			)

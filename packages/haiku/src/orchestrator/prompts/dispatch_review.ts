@@ -23,10 +23,10 @@
 // `default_model: sonnet` for routine reviews and escalate per-mandate
 // when an agent's job genuinely needs Opus.
 
-import { resolvePluginRoot } from "../../config.js"
-import { definePromptBuilder } from "./define.js"
-import { resolveStudioMandateModel } from "./_helpers.js"
 import { join } from "node:path"
+import { resolvePluginRoot } from "../../config.js"
+import { resolveStudioMandateModel } from "./_helpers.js"
+import { definePromptBuilder } from "./define.js"
 
 export default definePromptBuilder(({ slug, studio, action }) => {
 	const stage = (action.stage as string) || ""

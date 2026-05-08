@@ -161,7 +161,7 @@ const PickDesignDirectionInput = z.object({
 		.array(DesignArchetypeSchema)
 		.optional()
 		.describe(
-			"Inline array of design archetypes to choose from. Omit (or pass an empty array) on the FIRST call to enter intake mode — the picker asks whether the user has designs to upload before any generation work happens. Pass archetypes only after the user responds with `mode: \"generate\"`.",
+			'Inline array of design archetypes to choose from. Omit (or pass an empty array) on the FIRST call to enter intake mode — the picker asks whether the user has designs to upload before any generation work happens. Pass archetypes only after the user responds with `mode: "generate"`.',
 		),
 	archetypes_file: z
 		.string()
@@ -1121,13 +1121,11 @@ export async function awaitDesignDirectionSession(
 		signal?: AbortSignal
 		timeoutMs?: number
 	} = {},
-): Promise<{ content: Array<{ type: "text"; text: string }>; isError?: boolean }> {
-	const {
-		url = "",
-		intentSlug = "",
-		signal,
-		timeoutMs = 30 * 60 * 1000,
-	} = opts
+): Promise<{
+	content: Array<{ type: "text"; text: string }>
+	isError?: boolean
+}> {
+	const { url = "", intentSlug = "", signal, timeoutMs = 30 * 60 * 1000 } = opts
 
 	try {
 		await waitForSession(sessionId, timeoutMs, signal)
@@ -1307,9 +1305,9 @@ export async function awaitVisualAnswerSession(
 ): Promise<{ content: VisualAnswerContent[]; isError?: boolean }> {
 	const { url = "", signal, timeoutMs = 30 * 60 * 1000 } = opts
 
-	const buildAnsweredResponse = ():
-		| { content: VisualAnswerContent[] }
-		| null => {
+	const buildAnsweredResponse = (): {
+		content: VisualAnswerContent[]
+	} | null => {
 		const updated = getSession(sessionId)
 		if (
 			!updated ||

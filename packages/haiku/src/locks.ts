@@ -112,10 +112,7 @@ function tryAcquire(lockDir: string, tag: string): boolean {
 	// treats as wedged).
 	const holder: Holder = { pid: process.pid, at: Date.now(), tag }
 	try {
-		writeFileSync(
-			join(lockDir, "holder.json"),
-			JSON.stringify(holder, null, 2),
-		)
+		writeFileSync(join(lockDir, "holder.json"), JSON.stringify(holder, null, 2))
 	} catch {
 		// Ignore — the lock is held even without the holder stamp.
 	}
@@ -184,11 +181,7 @@ function releaseLock(lockDir: string): void {
  * intents is preserved; only writes to the same stage branch
  * serialize.
  */
-export function withStageLock<T>(
-	slug: string,
-	stage: string,
-	fn: () => T,
-): T {
+export function withStageLock<T>(slug: string, stage: string, fn: () => T): T {
 	const lock = acquireLock(`${slug}-${stage}`, `stage-merge:${slug}/${stage}`)
 	try {
 		return fn()

@@ -32,6 +32,16 @@
 // introduce a third runtime.
 
 export type {
+	Approval,
+	DiscoveryRecord,
+	Review,
+} from "./approval.js"
+export {
+	APPROVAL_SCHEMA,
+	DISCOVERY_RECORD_SCHEMA,
+	REVIEW_SCHEMA,
+} from "./approval.js"
+export type {
 	FeedbackFrontmatter,
 	FeedbackOrigin,
 	HaikuFeedbackInput,
@@ -217,16 +227,6 @@ export {
 	INTENT_MODES,
 	validateIntentFrontmatterSchema,
 } from "./intent.js"
-export type {
-	Approval,
-	DiscoveryRecord,
-	Review,
-} from "./approval.js"
-export {
-	APPROVAL_SCHEMA,
-	DISCOVERY_RECORD_SCHEMA,
-	REVIEW_SCHEMA,
-} from "./approval.js"
 export type { Iteration } from "./iteration.js"
 export { ITERATION_SCHEMA } from "./iteration.js"
 export type { ErrorOutput, OkOutput } from "./output-envelope.js"

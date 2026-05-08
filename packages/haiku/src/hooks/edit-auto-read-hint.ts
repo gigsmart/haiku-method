@@ -34,9 +34,7 @@ export default defineHook({
 		// hint can include it. Best-effort — fall back to a generic
 		// message if the path isn't recoverable from the input.
 		const inputAny = input as Record<string, unknown>
-		const toolInput = inputAny.tool_input as
-			| Record<string, unknown>
-			| undefined
+		const toolInput = inputAny.tool_input as Record<string, unknown> | undefined
 		const filePath =
 			(toolInput?.file_path as string | undefined) ?? "<the file>"
 
