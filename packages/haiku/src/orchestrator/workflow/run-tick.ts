@@ -92,17 +92,17 @@ export function runWorkflowTick(
 		// generation, not the build that last touched it.
 		const sourceMajor = Number(sourceVersion.split(".")[0] ?? "0") || 0
 		if (sourceMajor !== targetMajor) {
+			// Use the major's canonical schema anchor (e.g. "4.0.0"),
+			// not the running build version (e.g. "4.0.2"). The
+			// migration registry edges are keyed by schema generation
+			// (one edge per schema bump), not by build patch — CI
+			// auto-bumps the patch on every merge to main but those
+			// don't change the schema. Without this, users upgrading
+			// from v3 on any v4.0.x build > 4.0.0 hit "no migration
+			// path from 0 to 4.0.x" and the migration fails entirely.
+			// Reported 2026-05-08 by a user upgrading on v4.0.2.
+			const schemaTarget = `${targetMajor}.0.0`
 			try {
-				// Use the major's canonical schema anchor (e.g. "4.0.0"),
-				// not the running build version (e.g. "4.0.2"). The
-				// migration registry edges are keyed by schema generation
-				// (one edge per schema bump), not by build patch — CI
-				// auto-bumps the patch on every merge to main but those
-				// don't change the schema. Without this, users upgrading
-				// from v3 on any v4.0.x build > 4.0.0 hit "no migration
-				// path from 0 to 4.0.x" and the migration fails entirely.
-				// Reported 2026-05-08 by a user upgrading on v4.0.2.
-				const schemaTarget = `${targetMajor}.0.0`
 				const migrateResult = migrateIntent(
 					{ intentDir: iDir, repoRoot: root ?? "" },
 					sourceVersion,
@@ -121,7 +121,7 @@ export function runWorkflowTick(
 					const d = migrateResult.details
 					const lines: string[] = []
 					lines.push(
-						`Migrated intent '${slug}' from plugin_version='${sourceVersion}' to '${target}'.`,
+						`Migrated intent '${slug}' from plugin_version='${sourceVersion}' to '${schemaTarget}'.`,
 					)
 					lines.push("")
 					lines.push("**What changed on disk** (this is intentional):")
@@ -184,20 +184,20 @@ export function runWorkflowTick(
 					lines.push(
 						`If anything looks broken, run \`haiku_run_next { intent: "${slug}" }\` again — the cursor will pick up where v3 left off. The downgrade-or-redrive advice you might be tempted to give the user is wrong: the data is intact in the new shape.`,
 					)
-					return {
+					return broadcastTick(slug, {
 						position: { track: "intent", action: null },
 						action: {
 							action: "migrated",
 							intent: slug,
 							message: lines.join("\n"),
 						},
-					}
+					})
 				}
 			} catch (err) {
 				emitTelemetry("haiku.migrate.failed", {
 					intent: slug,
 					from: sourceVersion,
-					to: target,
+					to: schemaTarget,
 					error: String((err as Error)?.message ?? err),
 				})
 				return {
@@ -212,7 +212,7 @@ export function runWorkflowTick(
 					action: {
 						action: "error",
 						intent: slug,
-						message: `Migration from plugin_version='${sourceVersion}' to '${target}' failed: ${String((err as Error)?.message ?? err)}. Resolve manually before continuing.`,
+						message: `Migration from plugin_version='${sourceVersion}' to '${schemaTarget}' failed: ${String((err as Error)?.message ?? err)}. Resolve manually before continuing.`,
 					},
 				}
 			}
