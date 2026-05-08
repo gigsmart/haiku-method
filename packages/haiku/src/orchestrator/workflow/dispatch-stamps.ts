@@ -161,14 +161,22 @@ export function stashPendingIntentReview(slug: string, role: string): void {
  * Drain stashed dispatches: stamp reviews.<role> / approvals.<role>
  * on each unit listed in the pending entries, then clear the entries.
  *
- * Returns true if anything was stamped (caller should re-walk the
- * cursor in that case so it can advance past the now-signed slot).
+ * Returns true iff anything was stamped. The boolean is informational
+ * — `haiku_run_next` calls `dispatchOrchestratorAction(slug)` after
+ * this regardless, so the cursor always re-walks the fresh state.
  *
  * Skips units that have an open feedback file targeting them with
  * `targets.invalidates: [<role>]` filed AFTER the dispatch — those
  * are the units the review pass actually flagged, and they need to
  * stay un-stamped so the cursor reroutes through them once the FB
  * closes (which clears nothing because the stamp was never set).
+ *
+ * Pending entries are cleared in full at the end of each tick, even
+ * for units that were skipped — the cursor on the next tick re-emits
+ * `dispatch_review` / `dispatch_approval` for whichever units still
+ * lack the witness, which calls `stashPendingDispatch` again and
+ * restarts the loop. A future reader might see the unconditional
+ * clear and read it as a bug; it isn't, the re-emit covers it.
  *
  * The "open FB filed after dispatch" check is loose intentionally:
  * the FB filer (the review-subagent) writes the FB before terminating;
@@ -177,6 +185,13 @@ export function stashPendingIntentReview(slug: string, role: string): void {
  * fast-running fix loop), the close handler already cleared any
  * pre-existing stamp via applyFeedbackInvalidations and the unit
  * legitimately deserves the fresh stamp.
+ *
+ * FBs with missing or empty `created_at` are treated conservatively
+ * as "filed since dispatch" — they block stamping. In practice every
+ * FB the engine writes carries a `created_at`; this branch only
+ * matters for hand-edited or migrator-skipped FBs, where blocking
+ * the stamp is the safe default (the unit stays un-witnessed until
+ * the FB is properly resolved).
  */
 export function drainPendingDispatches(slug: string): boolean {
 	const intent = readIntentFm(slug)
@@ -288,6 +303,9 @@ export function drainPendingDispatches(slug: string): boolean {
 		if (intentChanged) {
 			setFrontmatterField(intent.path, "approvals", intentApprovals)
 		}
+		// Clear the field — same re-stash semantics as the per-stage
+		// dispatches above. Roles skipped due to open invalidating FBs
+		// get re-stashed by the next intent_review emit.
 		setFrontmatterField(intent.path, PENDING_INTENT_REVIEW_FIELD, {})
 	}
 	return stamped

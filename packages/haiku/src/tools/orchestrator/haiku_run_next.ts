@@ -627,47 +627,45 @@ export default defineTool({
 				// Refresh witnessed signed_at on the targeted unit when
 				// this is a drift FB — otherwise the drift sweep keeps
 				// finding the same commit past the original sign time.
-				if (fbFm.origin === "drift") {
-					const targets = (fbFm.targets as Record<string, unknown>) ?? {}
-					const targetUnit = targets.unit as string | undefined
-					if (targetUnit) {
-						const unitPath = join(
-							findHaikuRoot(),
-							"intents",
-							slug,
-							"stages",
-							stage,
-							"units",
-							`${targetUnit}.md`,
+				// `targets` and `targetUnit` are reused from the
+				// invalidations block above — same FB, same fields.
+				if (fbFm.origin === "drift" && targetUnit) {
+					const unitPath = join(
+						findHaikuRoot(),
+						"intents",
+						slug,
+						"stages",
+						stage,
+						"units",
+						`${targetUnit}.md`,
+					)
+					if (existsSync(unitPath)) {
+						const intentDirAbs = join(findHaikuRoot(), "intents", slug)
+						const { buildApprovalRecord, buildReviewRecord } = await import(
+							"../../orchestrator/workflow/sign-slot.js"
 						)
-						if (existsSync(unitPath)) {
-							const intentDirAbs = join(findHaikuRoot(), "intents", slug)
-							const { buildApprovalRecord, buildReviewRecord } = await import(
-								"../../orchestrator/workflow/sign-slot.js"
-							)
-							const raw = readFileSync(unitPath, "utf8")
-							const parsed = parseFrontmatter(raw)
-							const fm = parsed.data as Record<string, unknown>
-							const outputs = Array.isArray(fm.outputs)
-								? (fm.outputs as string[])
-								: []
-							const reviews =
-								fm.reviews && typeof fm.reviews === "object"
-									? { ...(fm.reviews as Record<string, unknown>) }
-									: {}
-							for (const role of Object.keys(reviews)) {
-								reviews[role] = buildReviewRecord(unitPath)
-							}
-							const approvals =
-								fm.approvals && typeof fm.approvals === "object"
-									? { ...(fm.approvals as Record<string, unknown>) }
-									: {}
-							for (const role of Object.keys(approvals)) {
-								approvals[role] = buildApprovalRecord(intentDirAbs, outputs)
-							}
-							setFrontmatterField(unitPath, "reviews", reviews)
-							setFrontmatterField(unitPath, "approvals", approvals)
+						const raw = readFileSync(unitPath, "utf8")
+						const parsed = parseFrontmatter(raw)
+						const fm = parsed.data as Record<string, unknown>
+						const outputs = Array.isArray(fm.outputs)
+							? (fm.outputs as string[])
+							: []
+						const reviews =
+							fm.reviews && typeof fm.reviews === "object"
+								? { ...(fm.reviews as Record<string, unknown>) }
+								: {}
+						for (const role of Object.keys(reviews)) {
+							reviews[role] = buildReviewRecord(unitPath)
 						}
+						const approvals =
+							fm.approvals && typeof fm.approvals === "object"
+								? { ...(fm.approvals as Record<string, unknown>) }
+								: {}
+						for (const role of Object.keys(approvals)) {
+							approvals[role] = buildApprovalRecord(intentDirAbs, outputs)
+						}
+						setFrontmatterField(unitPath, "reviews", reviews)
+						setFrontmatterField(unitPath, "approvals", approvals)
 					}
 				}
 				result = dispatchOrchestratorAction(slug)
