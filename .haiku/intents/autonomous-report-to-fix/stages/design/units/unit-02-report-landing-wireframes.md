@@ -29,6 +29,12 @@ outputs:
     .haiku/intents/autonomous-report-to-fix/stages/design/artifacts/report-landing/status.html
   - >-
     .haiku/intents/autonomous-report-to-fix/stages/design/artifacts/report-landing/error.html
+  - knowledge/DESIGN-SYSTEM-ANCHOR.md
+  - stages/design/artifacts/report-landing/auth-prompt.html
+  - stages/design/artifacts/report-landing/error.html
+  - stages/design/artifacts/report-landing/index.md
+  - stages/design/artifacts/report-landing/loading.html
+  - stages/design/artifacts/report-landing/status.html
 quality_gates:
   - name: index-exists
     command: >-
@@ -113,6 +119,10 @@ hat_started_at: '2026-05-08T17:53:50Z'
 iterations:
   - hat: designer-prep
     started_at: '2026-05-08T17:53:50Z'
+    completed_at: '2026-05-08T18:08:02Z'
+    result: advance
+  - hat: designer
+    started_at: '2026-05-08T18:08:02Z'
     completed_at: null
     result: null
 ---
