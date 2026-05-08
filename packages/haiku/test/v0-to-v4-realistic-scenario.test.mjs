@@ -289,7 +289,7 @@ test("realistic v3 → v4 — completed unit gets synthetic user approval, in-pr
 	}
 })
 
-test("realistic v3 → v4 — rejected unit's iterations[] are preserved, status field stripped", async () => {
+test("realistic v3 → v4 — rejected unit's iterations[] are preserved (with v4 normalization), status field stripped", async () => {
 	const { root, intentDir } = makeRichV3Fixture()
 	try {
 		const { __testOnly } = await import(
@@ -302,7 +302,12 @@ test("realistic v3 → v4 — rejected unit's iterations[] are preserved, status
 		)
 		assert.strictEqual(fm.status, undefined)
 		assert.strictEqual(fm.iterations.length, 2)
-		assert.strictEqual(fm.iterations[1].result, "rejected")
+		// v3 wrote past-tense `result: "rejected"` / `"advanced"`. v4's
+		// cursor only matches present-tense `"reject"` / `"advance"`.
+		// The migrator normalizes to v4 vocabulary so a migrated unit's
+		// iterations don't fall through both checks and sit forever as
+		// "in-flight on the current hat" (PR #323 review issue #2).
+		assert.strictEqual(fm.iterations[1].result, "reject")
 		assert.strictEqual(fm.iterations[1].reason, "Out of scope")
 	} finally {
 		rmSync(root, { recursive: true, force: true })

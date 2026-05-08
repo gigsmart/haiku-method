@@ -53,7 +53,7 @@ export default definePromptBuilder(({ slug, action }) => {
 		"2. Capture the user's answers verbatim. If they push back on a question, re-ask after they finish — every question must have an answer before you proceed.",
 	)
 	lines.push(
-		`3. Stamp the answers on \`intent.md\` via \`haiku_human_write\` under the field \`clarifications.${stage}\`. Shape: \`{ answers: [{ id, question, answer }, ...], at: "<ISO timestamp>" }\`.`,
+		`3. Stamp the answers on \`intent.md\` via \`haiku_intent_set { intent: "${slug}", field: "clarifications", value: { ${stage}: { answers: [{ id, question, answer }, ...], at: "<ISO timestamp>" }, ...prior_stages_answers } }\`. Read the existing \`clarifications\` value first (via \`haiku_intent_get\`) and merge the new stage entry in — \`haiku_intent_set\` overwrites the entire field.`,
 	)
 	lines.push(
 		`4. Call \`haiku_run_next { intent: "${slug}" }\`. The cursor sees the recorded clarifications and emits \`elaborate\` next.`,

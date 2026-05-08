@@ -79,7 +79,19 @@ export function runWorkflowTick(
 			typeof intentFm.plugin_version === "string"
 				? (intentFm.plugin_version as string)
 				: "0"
-		if (sourceVersion !== target) {
+		// Compare by major version only. The migrate registry has edges
+		// keyed by major (`"0" → "4.0.0"`), not full semver. CI auto-
+		// bumps the patch on every merge to main, so an exact compare
+		// (`sourceVersion !== target`) would fire `migrateIntent("4.0.0",
+		// "4.0.1")` after the first post-ship bump → `findChain` finds
+		// no edge → throws → every tick on every v4 intent returns
+		// `action: "error"`. Compare majors and skip migration when
+		// they match. This means a same-major intent stays on disk with
+		// `plugin_version: "4.0.0"` even when the running plugin is
+		// `4.0.1`; that's intentional — the FM stamp marks the schema
+		// generation, not the build that last touched it.
+		const sourceMajor = Number(sourceVersion.split(".")[0] ?? "0") || 0
+		if (sourceMajor !== targetMajor) {
 			try {
 				migrateIntent(
 					{ intentDir: iDir, repoRoot: root ?? "" },
@@ -96,8 +108,8 @@ export function runWorkflowTick(
 				})
 				return {
 					position: {
-						track: "drift",
-						action: { kind: "drift_detected", events: [] },
+						track: "intent",
+						action: { kind: "intent_review" },
 					},
 					action: {
 						action: "error",

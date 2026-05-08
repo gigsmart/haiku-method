@@ -279,7 +279,21 @@ export function runDriftSweep(args: {
 			const witnesses = pickWitnesses(record)
 			if (!witnesses) continue // legacy slot, no baseline yet
 			for (const [outRel, storedHash] of Object.entries(witnesses)) {
-				const outAbs = join(args.intentDir, outRel)
+				// Output paths come in two shapes:
+				//   - intent-relative: `stages/design/foo.md` — joined
+				//     against intentDir.
+				//   - repo-relative: `src/components/Button.tsx` — joined
+				//     against repoRoot.
+				// `join(intentDir, "src/components/Button.tsx")` resolves
+				// to `<intentDir>/src/components/Button.tsx`, which doesn't
+				// exist, so the file-not-found path was silently skipping
+				// drift detection for the most important artifact (real
+				// code). Distinguish by leading segment: anything starting
+				// with `stages/` is intent-relative; everything else is
+				// repo-relative.
+				const outAbs = outRel.startsWith("stages/")
+					? join(args.intentDir, outRel)
+					: join(repoRoot, outRel)
 				const cmp = outputMatchesAnyStrategy(outAbs, storedHash)
 				if (!cmp) continue // file deleted; not a drift signal here
 				if (!cmp.matches) {

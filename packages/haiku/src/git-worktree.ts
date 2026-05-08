@@ -729,13 +729,13 @@ export function reconcileMisroutedStageMerges(
 			out.push(result)
 			continue
 		}
+		// Check out intent main (transient) and FF to mainline.
+		// Skip when intent main is held by another worktree — we
+		// can't switch into it from here. The user will need to
+		// reconcile from that worktree.
+		const currentBranch = getCurrentBranch()
+		let restoreBranch = ""
 		try {
-			// Check out intent main (transient) and FF to mainline.
-			// Skip when intent main is held by another worktree — we
-			// can't switch into it from here. The user will need to
-			// reconcile from that worktree.
-			const currentBranch = getCurrentBranch()
-			let restoreBranch = ""
 			if (currentBranch !== intentMain) {
 				try {
 					execFileSync("git", ["checkout", intentMain], { stdio: "pipe" })
@@ -772,6 +772,15 @@ export function reconcileMisroutedStageMerges(
 					result.error = `Reconciled \`${intentMain}\` locally but push to origin failed: ${push.error}. The next agent on this branch needs to push manually.`
 				}
 			}
+		} catch (err) {
+			result.error = `Misrouted-merge reconciliation threw: ${err instanceof Error ? err.message : String(err)}`
+		} finally {
+			// Restore the original branch unconditionally. If a throw
+			// lands between checkout and the merge, restoring inside
+			// the try block (where it lived previously) gets skipped
+			// and the worktree is left on intentMain — every
+			// subsequent write from the agent then lands on the wrong
+			// branch. `finally` guarantees the restore runs.
 			if (restoreBranch) {
 				try {
 					execFileSync("git", ["checkout", restoreBranch], { stdio: "pipe" })
@@ -779,8 +788,6 @@ export function reconcileMisroutedStageMerges(
 					/* non-fatal — caller's branch enforcement will catch */
 				}
 			}
-		} catch (err) {
-			result.error = `Misrouted-merge reconciliation threw: ${err instanceof Error ? err.message : String(err)}`
 		}
 		out.push(result)
 	}

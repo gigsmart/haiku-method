@@ -86,6 +86,18 @@ export const INTENT_FRONTMATTER_SCHEMA = Type.Object(
 		// out-of-band), the link breaks gracefully — `follows` is
 		// informational, not load-bearing for cursor decisions.
 		follows: Type.Optional(Type.String()),
+		// Per-stage clarification answers, keyed by stage name.
+		// Populated by the agent in response to a `clarify_required`
+		// action — each stage's `clarify/*.md` directory drives the
+		// questions; the agent records the user's answers here so the
+		// cursor knows the gate is satisfied. Shape:
+		//   clarifications: { <stage>: { answers: [{id, question, answer}], at } }
+		// `Type.Unknown()` because the inner shape is open-ended (each
+		// stage may have a different question set) — the engine reads
+		// `clarifications[stage]` for a presence check, not validation.
+		clarifications: Type.Optional(
+			Type.Record(Type.String(), Type.Unknown()),
+		),
 	},
 	{
 		propertyNames: { not: { enum: [...FSM_DRIVEN_INTENT_FIELDS_LIST] } },

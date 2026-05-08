@@ -43,6 +43,7 @@ import {
 } from "../../git-worktree.js"
 import type { OrchestratorAction } from "../../orchestrator.js"
 import { resolveIntentStages } from "../../orchestrator.js"
+import { withIntentMainLock } from "../../locks.js"
 import { sealIntentState } from "../../state-integrity.js"
 import {
 	appendStageIteration,
@@ -126,7 +127,13 @@ export function workflowStartStage(slug: string, stage: string): void {
 		branchExists(prevStageBranch) &&
 		!isBranchMerged(prevStageBranch, `haiku/${slug}/main`)
 	) {
-		const mergeResult = mergeStageBranchIntoMain(slug, prevStage)
+		// Lock the stage→intent-main merge. Two concurrent ticks
+		// targeting the same intent (autopilot retry overlapping a
+		// manual run, or a parallel CI runner) would otherwise race on
+		// the merge commit.
+		const mergeResult = withIntentMainLock(slug, () =>
+			mergeStageBranchIntoMain(slug, prevStage),
+		)
 		if (!mergeResult.success) {
 			throw new Error(
 				`Merge of completed stage '${prevStage}' into main failed: ${mergeResult.message}. Resolve conflicts on 'haiku/${slug}/main' manually, then retry.`,
@@ -330,7 +337,9 @@ function workflowFinalizeStageIntoIntentMain(
 	const intentMain = `haiku/${slug}/main`
 
 	if (branchExists(stageBranch) && !isBranchMerged(stageBranch, intentMain)) {
-		const mergeResult = mergeStageBranchIntoMain(slug, stage)
+		const mergeResult = withIntentMainLock(slug, () =>
+			mergeStageBranchIntoMain(slug, stage),
+		)
 		if (!mergeResult.success) {
 			console.error(
 				`[workflowFinalizeStageIntoIntentMain] merge ${stageBranch}→${intentMain} failed: ${mergeResult.message}.\nIntent-completion review will still open; resolve the merge manually before approving the final gate.\nRecovery paths for the stage branch if the reap below loses it before you can merge:\n  - \`git reflog show ${stageBranch}\` — the branch's tip is still in reflog until gc runs (default 90 days).\n  - \`origin/${stageBranch}\` — if the branch was pushed, the remote tracking ref still has the tip.\n  - \`git fsck --lost-found\` — catches dangling commits even after the branch ref is deleted.`,

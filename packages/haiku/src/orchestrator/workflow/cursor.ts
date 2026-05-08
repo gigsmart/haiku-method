@@ -491,8 +491,14 @@ function walkFeedbackTrack(args: {
 	// before the current stage's open FBs come before intent-scope.
 	const stages = resolveStudioStages(studio)
 	const cutoff = stages.indexOf(currentStage)
-	const toWalk =
-		cutoff >= 0 ? stages.slice(0, cutoff + 1) : stages.slice()
+	// `cutoff === -1` means `currentStage` isn't in this studio's
+	// configured stage list (renamed stage, misconfigured studio).
+	// Falling back to `stages.slice()` (all stages) would surface FBs
+	// from future stages the agent isn't even working on yet — the
+	// opposite of what "walk up to current" means. Walk no stages
+	// when we can't locate the current one; the caller can still see
+	// intent-scope FBs below.
+	const toWalk = cutoff >= 0 ? stages.slice(0, cutoff + 1) : []
 
 	for (const stage of toWalk) {
 		const fbPaths = listFbPaths(join(intentDir, "stages", stage))
@@ -528,6 +534,12 @@ function nextActionForFeedback(
 		return null
 	}
 	const fbId = parseFbIdFromFilename(fbPath)
+	if (!fbId) {
+		// Filename doesn't follow the `NN(N)-slug.md` convention.
+		// Skip rather than emit an unresolvable dispatch ID — see
+		// parseFbIdFromFilename's docstring for why this matters.
+		return null
+	}
 	const fixHats = resolveStageFixHats(studio, stage)
 	if (fixHats.length === 0) {
 		// Stage doesn't define a fix loop. The FB is unresolvable
@@ -565,9 +577,23 @@ function nextActionForFeedback(
 	}
 }
 
-function parseFbIdFromFilename(fbPath: string): string {
+/**
+ * Extract the canonical wire-form FB id (`FB-NNN`) from an on-disk
+ * filename like `008-some-slug.md`. Returns null when the filename
+ * doesn't start with the expected `<digits>-` prefix — a non-numeric
+ * fallback (raw basename) would propagate into `start_feedback_hat`
+ * actions whose `feedback_id` then fails `findFeedbackFile`'s
+ * `^(?:FB-)?(\d+)$` regex, producing `feedback_not_found` errors
+ * every tick → cursor re-emits → infinite loop.
+ *
+ * Width-flexible: 2-digit (`08-…`) and 3-digit (`008-…`) names both
+ * resolve, since the regex is `\d+` not `\d{N}`. Padding to 3 digits
+ * is the v4 default (numeric-id refactor 2026-05-07).
+ */
+function parseFbIdFromFilename(fbPath: string): string | null {
 	const m = basename(fbPath).match(/^(\d+)-/)
-	return m ? `FB-${m[1].padStart(2, "0")}` : basename(fbPath, ".md")
+	if (!m) return null
+	return `FB-${m[1].padStart(3, "0")}`
 }
 
 // ── Track A: intent walk ─────────────────────────────────────────────

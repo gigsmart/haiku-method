@@ -58,8 +58,13 @@ function isAlive(pid: number): boolean {
 	try {
 		process.kill(pid, 0)
 		return true
-	} catch {
-		return false
+	} catch (err) {
+		// `ESRCH` = no such process (truly dead).
+		// `EPERM` = process exists but we lack permission to signal it
+		// (alive but cross-user / cross-session — e.g. on Windows or
+		// shared CI hosts). A bare `catch { return false }` would treat
+		// EPERM as dead and let `steal()` delete a live holder's lock.
+		return (err as NodeJS.ErrnoException).code === "EPERM"
 	}
 }
 

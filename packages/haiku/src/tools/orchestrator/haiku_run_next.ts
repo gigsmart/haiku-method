@@ -137,6 +137,7 @@ import { reportError } from "../../sentry.js"
 import { logSessionEvent } from "../../session-metadata.js"
 import { getSession, updateSession } from "../../sessions.js"
 import {
+	findFeedbackFile,
 	findHaikuRoot,
 	intentDir,
 	intentFromCurrentBranch,
@@ -470,29 +471,17 @@ export default defineTool({
 			try {
 				const stage = result.stage as string
 				const fbId = result.feedback_id as string
-				const fbDir = join(
-					findHaikuRoot(),
-					"intents",
-					slug,
-					"stages",
-					stage,
-					"feedback",
-				)
-				let fbFile = ""
-				let fbFm: Record<string, unknown> = {}
-				if (existsSync(fbDir)) {
-					for (const f of readdirSync(fbDir)) {
-						if (!f.endsWith(".md")) continue
-						if (!f.startsWith(`${fbId}-`) && !f.startsWith(`${fbId}.`)) continue
-						const path = join(fbDir, f)
-						const raw = readFileSync(path, "utf8")
-						const parsed = parseFrontmatter(raw)
-						fbFile = path
-						fbFm = parsed.data
-						break
-					}
-				}
-				if (!fbFile) break
+				// `fbId` is the canonical wire form (`FB-NNN`); files on
+				// disk are `NNN-slug.md`. A naive `f.startsWith(fbId+"-")`
+				// match never fires because `"01-foo.md".startsWith("FB-01-")`
+				// is false. `findFeedbackFile` already normalises both
+				// forms (FB-NN, FB-N, NN, N) to a numeric prefix and
+				// matches the file's leading-digit prefix — single source
+				// of truth for the lookup, no chance of drift.
+				const found = findFeedbackFile(slug, stage, fbId)
+				if (!found) break
+				const fbFile = found.path
+				const fbFm = found.data
 				const closedAt = new Date().toISOString()
 				setFrontmatterField(fbFile, "closed_at", closedAt)
 				// Refresh witnessed signed_at on the targeted unit when
@@ -625,7 +614,17 @@ export default defineTool({
 				const { mergeStageBranchIntoMain } = await import(
 					"../../git-worktree.js"
 				)
-				const mergeOutcome = mergeStageBranchIntoMain(slug, stageToMerge)
+				const { withIntentMainLock } = await import("../../locks.js")
+				// Serialize stage → intent-main merges. Two concurrent
+				// haiku_run_next ticks targeting the same intent (e.g. an
+				// autopilot retry overlapping a manual run) would otherwise
+				// race on the merge commit, producing `merge in progress`
+				// git errors or silently clobbering each other's writes.
+				// merge_stage.ts:28 already promises this lock to the
+				// agent — this call makes that promise true.
+				const mergeOutcome = withIntentMainLock(slug, () =>
+					mergeStageBranchIntoMain(slug, stageToMerge),
+				)
 				if (!mergeOutcome.success) {
 					if (mergeOutcome.isConflict) {
 						return {

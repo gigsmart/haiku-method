@@ -99,14 +99,33 @@ export function outputSha256(absolutePath: string): string {
 export function buildOutputWitnesses(
 	intentDir: string,
 	outputs: string[],
+	repoRoot?: string,
 ): Record<string, string> {
 	const map: Record<string, string> = {}
+	// Output paths come in two shapes (mirrors drift-sweep.ts):
+	//   - `stages/...` → intent-relative, joined against intentDir
+	//   - everything else → repo-relative, joined against repoRoot
+	// Falling back to intentDir for repo-relative paths produces a
+	// witness for `<intentDir>/src/components/Button.tsx` (which never
+	// exists). At drift-check time the file-not-found path silently
+	// skips, so the most important artifact (real code) loses its
+	// drift signal entirely.
+	const root = repoRoot ?? deriveRepoRootFromIntentDir(intentDir)
 	for (const out of outputs) {
-		const abs = join(intentDir, out)
+		const abs = out.startsWith("stages/")
+			? join(intentDir, out)
+			: join(root, out)
 		const sha = outputSha256(abs)
 		if (sha) map[out] = sha
 	}
 	return map
+}
+
+/** Derive repo root from a given intent dir path. The on-disk layout is
+ *  `<repoRoot>/.haiku/intents/<slug>/`, so peel off three segments. */
+function deriveRepoRootFromIntentDir(intentDir: string): string {
+	// `dirname` walks up: <slug> → intents → .haiku → <repoRoot>
+	return join(intentDir, "..", "..", "..")
 }
 
 /** Build a signed-review record: stamps the unit-body hash so any

@@ -239,12 +239,24 @@ function migrateUnitFile(path: string): void {
 	const oldCompletedAt =
 		typeof data.completed_at === "string" ? data.completed_at : null
 	const next = strip(data, DEPRECATED_UNIT_FIELDS)
-	// Initialize the new FSM fields if absent.
-	if (next.started_at == null) {
-		next.started_at = data.started_at ?? null
-	}
+	// `started_at` is preserved as-is by `strip()` — no re-application
+	// needed (it's not in DEPRECATED_UNIT_FIELDS). v4 keeps the same
+	// field name and shape.
 	if (typeof next.iterations !== "object" || !Array.isArray(next.iterations)) {
 		next.iterations = data.iterations ?? []
+	}
+	// Normalize v3 past-tense result values to the v4 present-tense
+	// vocabulary the cursor matches against. v3 wrote `result: "rejected"`
+	// / `"advanced"`; v4's `nextHatForUnit` only looks for `"reject"` /
+	// `"advance"`. A migrated unit with the past-tense form falls
+	// through both checks and is treated as in-flight on the current
+	// hat — the wave never progresses. This pass eliminates the drift
+	// at the source so cursor logic stays clean.
+	if (Array.isArray(next.iterations)) {
+		for (const iter of next.iterations as Array<Record<string, unknown>>) {
+			if (iter && iter.result === "rejected") iter.result = "reject"
+			if (iter && iter.result === "advanced") iter.result = "advance"
+		}
 	}
 	if (typeof next.discovery !== "object" || next.discovery === null) {
 		next.discovery = {}
@@ -350,6 +362,13 @@ function migrateFeedbackFile(path: string, intentDir: string): void {
 	const next = strip(data, DEPRECATED_FB_FIELDS)
 	if (typeof next.iterations !== "object" || !Array.isArray(next.iterations)) {
 		next.iterations = data.iterations ?? []
+	}
+	// Normalize v3 past-tense result values (matches the unit migrator).
+	if (Array.isArray(next.iterations)) {
+		for (const iter of next.iterations as Array<Record<string, unknown>>) {
+			if (iter && iter.result === "rejected") iter.result = "reject"
+			if (iter && iter.result === "advanced") iter.result = "advance"
+		}
 	}
 	if (typeof next.targets !== "object" || next.targets === null) {
 		next.targets = { unit: null, invalidates: [] as string[] }
