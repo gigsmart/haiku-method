@@ -87,7 +87,10 @@ function readIntentFm(slug: string): {
 	if (!existsSync(intentPath)) return null
 	const raw = readFileSync(intentPath, "utf8")
 	const parsed = parseFrontmatter(raw)
-	return { path: intentPath, fm: (parsed.data as Record<string, unknown>) || {} }
+	return {
+		path: intentPath,
+		fm: (parsed.data as Record<string, unknown>) || {},
+	}
 }
 
 function readPendingMap(
@@ -124,7 +127,8 @@ export function stashPendingDispatch(
 ): void {
 	const intent = readIntentFm(slug)
 	if (!intent) return
-	const field = kind === "review" ? PENDING_REVIEW_FIELD : PENDING_APPROVAL_FIELD
+	const field =
+		kind === "review" ? PENDING_REVIEW_FIELD : PENDING_APPROVAL_FIELD
 	const pending = { ...readPendingMap(intent.fm, field) }
 	const perStage = { ...(pending[stage] ?? {}) }
 	perStage[role] = {
@@ -182,7 +186,8 @@ export function drainPendingDispatches(slug: string): boolean {
 	let stamped = false
 
 	for (const kind of ["review", "approval"] as const) {
-		const field = kind === "review" ? PENDING_REVIEW_FIELD : PENDING_APPROVAL_FIELD
+		const field =
+			kind === "review" ? PENDING_REVIEW_FIELD : PENDING_APPROVAL_FIELD
 		const pending = readPendingMap(intent.fm, field)
 		if (Object.keys(pending).length === 0) continue
 

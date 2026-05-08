@@ -81,7 +81,9 @@ export function emptyMigrationDetails(): MigrationStepDetails {
 	}
 }
 
-export type Migrator = (ctx: MigrationContext) => MigrationStepDetails | void
+export type Migrator = (
+	ctx: MigrationContext,
+) => MigrationStepDetails | undefined
 
 type Edge = { to: string; migrator: Migrator }
 

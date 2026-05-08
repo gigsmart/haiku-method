@@ -35,7 +35,12 @@ const NOT_READ_PHRASES = [
 	"read it first before writing to it",
 ] as const
 
-function findNotReadError(toolResponse: unknown): boolean {
+/**
+ * True iff `toolResponse` represents a Claude Code "file has not been
+ * read yet" error from Edit/MultiEdit. Exported so tests can lock the
+ * predicate without spawning a subprocess.
+ */
+export function findNotReadError(toolResponse: unknown): boolean {
 	if (toolResponse === null || toolResponse === undefined) return false
 	if (typeof toolResponse === "string") {
 		const lower = toolResponse.toLowerCase()

@@ -61,10 +61,7 @@ import {
 } from "node:fs"
 import { dirname, join } from "node:path"
 import matter from "gray-matter"
-import {
-	readReviewAgentPaths,
-	readStageArtifactDefs,
-} from "../../studio-reader.js"
+import { readReviewAgentPaths } from "../../studio-reader.js"
 import {
 	emptyMigrationDetails,
 	type MigrationContext,
