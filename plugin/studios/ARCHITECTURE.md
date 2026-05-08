@@ -18,7 +18,9 @@ This is consistent with `CLAUDE.md` and `.claude/rules/architecture-prototype-sy
 
 ### 1.1 Frontmatter is workflow engine-only
 
-Frontmatter on workflow-managed files (`unit-NN-*.md`, `FB-NN-*.md`, `intent.md`, `state.json`, iteration files) is reserved for the workflow engine. Agents MAY write frontmatter when authoring a file (the elaborator drafts a unit with declared inputs/outputs); agents MUST NOT **interpret** frontmatter for any mechanical purpose.
+Frontmatter on workflow-managed files (`unit-NNN-*.md`, `NNN-*.md` feedback, `intent.md`) is reserved for the workflow engine. Agents MAY write frontmatter when authoring a file (the elaborator drafts a unit with declared inputs/outputs); agents MUST NOT **interpret** frontmatter for any mechanical purpose.
+
+The v4 cursor reads FM fields as the single source of truth for workflow position — there is no per-stage `state.json`. `iterations[]`, `started_at`, `approvals.<role>`, `reviews.<role>`, and `discovery.<agent>` on the unit FM, plus `closed_at`, `iterations[]`, and `targets` on FB FM, are the witness fields the cursor walks. The migrator deletes any pre-v4 `state.json` files on first read.
 
 - Reviewer hats do not grep `depends_on:` to detect DAG inversions. The workflow engine rejects bad DAG writes at the source.
 - Verifier hats do not validate frontmatter schema. The workflow engine validates schema at every write.
@@ -50,28 +52,33 @@ pending → active → completed
 
 There are no reverse transitions. No `unwind`, no `reset`, no `revisit_unit`. Once a unit is active or completed, the work it informed cannot be unwound.
 
-| Status | Mutable? | Notes |
-|---|---|---|
-| pending | yes — body, FM (via `_set`/`_write`), delete via `_delete` | Pre-execute review is the LAST chance to fix |
-| active | no — locked except for workflow-driven hat progression | Spec is frozen; hat outputs append via workflow engine-controlled flows |
-| completed | no — fully immutable | New work that addresses defects becomes NEW pending units in the next iteration |
+In v4, status is derived from on-disk FM fields, not stored as an enum:
+
+| Status | Derivation | Mutable? | Notes |
+|---|---|---|---|
+| pending | `started_at == null` | yes — body, FM (via `_set`/`_write`), delete via `_delete` | Pre-execute review is the LAST chance to fix |
+| active | `started_at != null` AND last `iterations[-1].result == null` | no — locked except for workflow-driven hat progression | Spec is frozen; hat outputs append via workflow engine-controlled flows |
+| completed | last `iterations[-1].result == "advance"` AND that iteration is on the terminal hat | no — fully immutable | New work that addresses defects becomes NEW pending units in the next iteration |
 
 **Stage revisit creates new pending units; it never modifies completed units.** If a closed FB diagnoses a defect in a completed unit, the next elaborate iteration creates a corrective unit (or a follow-up unit) — it does not edit the original. Front-loading review (verifier hats + pre-execute review) is therefore critical.
 
+**Stages are not sealed; only intents are.** Forward-only applies to existing units' bytes (immutable post-merge). A previously-merged stage that gains a new unit (e.g. because the feedback engine added corrective work via a stage revisit) becomes ahead-of-main and the cursor automatically rewinds to it via `firstUnmergedStage`. `merge_stage` is a recurring event, not a terminal one.
+
 ## 2. Stage anatomy
 
-### 2.1 Phases (workflow-driven)
+### 2.1 Phases (cursor-derived)
 
-Every stage has the same workflow engine lifecycle:
+Every stage moves through the same conceptual lifecycle. In v4 these aren't stored as a `phase:` field — they're **derived** by the cursor from the stage's on-disk shape (units present? hats progressed? reviews signed? approvals signed?). The same phases conceptually apply, but the cursor is the source of truth, not a written marker.
 
-| Phase | Purpose | Who acts |
+| Phase | When the cursor enters it | Who acts |
 |---|---|---|
-| **elaborate** | Authors the unit set for THIS stage | The elaborate-phase agent (one per stage; named per studio) |
-| **execute** | Each unit runs through the per-unit hat chain | Per-unit subagents, one hat at a time |
-| **review** | Adversarial reviewers inspect completed units | Stage-level review agents |
-| **gate** | Approval to advance | Human (`ask`) or external (`external`) or auto (`auto`) |
+| **elaborate** | Stage has 0 units (or stage was rewound by feedback) → cursor emits `elaborate` | The elaborate-phase agent (one per stage; named per studio) |
+| **execute** | Units exist, wave-ready or mid-hat → cursor emits `start_unit_hat` | Per-unit subagents, one hat at a time |
+| **review** | Every unit's hat sequence done, but review-role slots unsigned → cursor emits `dispatch_review` (per role) | Engine-built `spec` reviewer + studio-declared review agents |
+| **approve / gate** | Reviews signed, but approval-role slots unsigned → cursor emits `dispatch_approval`, `dispatch_quality_gates`, or `user_gate` | Engine-built quality_gates + configured agents + the human (mode-shaped) |
+| **merge** | Every approval signed → cursor emits `merge_stage` | Engine merges the stage branch into intent main |
 
-**Critical:** units are created **only** in the elaborate phase of THIS stage. Execution NEVER creates units. A different stage NEVER creates units for this stage.
+**Critical:** units are created **only** during the elaborate phase of THIS stage. Execution NEVER creates units. A different stage NEVER creates units for this stage.
 
 Each stage is responsible for its own unit set. `inception` does not pre-author units for `development`. `development`'s elaborate phase authors `development`'s units, drawing on `inception`'s knowledge artifacts as inputs.
 
@@ -227,107 +234,118 @@ A **tick** is one call to `haiku_run_next`. It is the agent's **only** forward-d
 The shape of every tick:
 
 1. The agent calls `haiku_run_next { intent: "<slug>" }`.
-2. The workflow engine reads on-disk state (intent.md frontmatter, stage state.json files, unit/feedback frontmatter) and derives the current cursor position.
-3. The engine runs **pre-advance checks** (see §5.3) that may force a sideline action.
-4. If no sideline fires, the engine emits the next mainline action.
-5. The agent receives the action, executes it, and at some point calls `haiku_run_next` again.
+2. The workflow engine reads on-disk state (intent.md frontmatter, every unit.md and feedback.md across every stage, studio config) and derives the current **cursor position** via `derivePosition`.
+3. The cursor returns one `CursorAction` describing the next concrete step (or null for mid-wave noop).
+4. `run-tick.ts` maps the cursor action to an `OrchestratorAction` and returns it to the agent.
+5. The agent executes the action and at some point calls `haiku_run_next` again.
 
 That's the entire loop. The agent never asks "what should I do?" — they call `haiku_run_next` and the engine answers.
 
-### 5.2 Why ticks matter
+### 5.2 The cursor model — three tracks
 
-The tick is the engine's **reconciliation point**. Three properties fall out of this:
+The v4 cursor is a **pure observation function**. `derivePosition(slug)` reads disk, walks three tracks in priority order, and returns one action:
 
-1. **State on disk is the truth.** The engine recomputes the cursor on every tick from authoritative state (frontmatter, state.json, feedback files). The agent does not hold workflow state in their context — anything they think they remember about "what wave we're on" or "which hat is next" is incidental. The next tick will tell them what's actually next.
+1. **Track C — drift.** Run a content-hash sweep over every signed witness on the active stage (unit reviews, output approvals, discovery records, intent-scope approvals). Any mismatch → `drift_detected`. Drift is dedup'd against open drift FBs by `source_ref` so a fired FB suppresses re-emission until it closes.
+2. **Track B — feedback.** Walk every stage from index 0 through the active stage, then intent-scope. Any open FB → emit the next fix-hat dispatch (`start_feedback_hat`) or close action (`close_feedback`) for it. Cross-stage routing is purely by file location: an FB sitting in `stages/inception/feedback/` rewinds the cursor to inception's fix loop, regardless of where it was filed.
+3. **Track A — intent.** On the active stage (first stage whose branch is not merged into intent main), walk the per-stage state machine: gate priority chain → wave logic → review track → approval track → `merge_stage`. The cursor's per-stage walk is described in §5.4 below.
+
+After all three tracks return null and every stage is merged, the cursor walks intent-scope approvals (`spec`, `continuity`, `user`) and emits `intent_review` per missing role, then `merge_intent`, then `sealed`.
+
+### 5.3 Why this model matters
+
+The cursor is the engine's **reconciliation point**. Four properties fall out:
+
+1. **State on disk is the truth.** No state.json, no in-memory tick state. Every cursor walk recomputes from FM. The agent does not hold workflow state in their context — anything they think they remember about "what wave we're on" or "which hat is next" is incidental. The next tick will tell them what's actually next.
 
 2. **Recovery is mechanical.** After any failure (subagent crash, partial write, agent confusion), calling `haiku_run_next` re-derives the right next step. There is no hidden state to corrupt and no manual recovery path required for most failures — the engine reconstructs everything from disk.
 
-3. **Composition is pure.** A tick is a pure function of `(intent_dir_state, studio_config) → next_action`. This means: every tick is testable in isolation; sideline checks compose without ordering bugs; the engine's behavior is deterministic given the same disk state.
+3. **Composition is pure.** `derivePosition` is a pure function of `(disk, studio config) → CursorAction | null`. Every cursor walk is testable in isolation; track ordering composes without subtle bugs; the engine's behavior is deterministic given the same disk state.
 
-The agent's contract is one sentence: **receive instruction, do what it says, call `haiku_run_next` unless this instruction told you not to (only terminal actions do).**
+4. **No LLM in the workflow-position decision.** The cursor is straight TypeScript. The LLM consumes the cursor's emitted action; it does not vote on "what comes next."
 
-### 5.3 Pre-advance checks (sidelines)
+The agent's contract is one sentence: **receive instruction, do what it says, call `haiku_run_next` unless this instruction is terminal.**
 
-Before emitting a mainline action, every tick runs a sequence of **pre-advance checks**. Each check inspects derived state for a condition that requires corrective action *before* mainline can continue. When a check fires, the tick returns a **sideline action** instead of the mainline next-step.
+### 5.4 Per-stage cursor walk (Track A)
 
-Sideline actions follow a uniform shape: **"Something happened, here's why, do this corrective action, then call `haiku_run_next` to get your next instruction."** The agent does the corrective work, calls `haiku_run_next`, and the engine re-evaluates — the sideline either clears (mainline resumes) or re-fires (agent didn't fully address it).
+When the active stage is set, `walkIntentTrack` evaluates these conditions in order and returns the first match:
 
-Two layers of checks fire before a mainline action is emitted:
-
-**Layer 1 — Pre-advance checks (run-tick.ts, fire on EVERY tick before any per-state handler):**
-
-| Check | Fires when | Sideline action | What the agent does |
+| Order | Condition | Cursor action | Notes |
 |---|---|---|---|
-| **Pre-tick consistency** | Cached `active_stage` is stale or state.json invariants are broken | (mutates state silently or returns `error`) | Usually invisible — auto-repairs |
-| **Feedback triage gate — untriaged** | ≥ 1 open FB with `triaged_at: null` on or before the active stage | `feedback_triage` | Classify each via `haiku_feedback_move` (confirm or relocate) or `haiku_feedback_reject` (dismiss) |
-| **Feedback triage gate — earlier-stage** | All FBs triaged, but ≥ 1 sits on a stage earlier than active | `revisited` (engine reroutes cursor) | Pick up at the rolled-back stage's elaborate phase |
-| **Feedback triage gate — current-stage human comments** | Human-authored open FBs on active stage with `null` or `question` resolution | `feedback_dispatch` | Triage inline (answer questions, request inline fixes, or request stage_revisit). The pre-tick gate keeps the review UI from re-popping while these are unaddressed. |
+| 1 | Stage declares `requires_design_direction: true` and intent.md has no recorded direction for this stage | `design_direction_required` | Two-phase gate: select then surface-once |
+| 1' | Direction recorded but not yet `surfaced_at` | `design_direction_complete` or `design_direction_uploaded` | One-shot surface so the agent reads annotations before elaborate |
+| 2 | Stage ships `clarify/*.md` and `clarifications[<stage>]` is missing on intent.md | `clarify_required` | Per-stage Q&A captured before discovery |
+| 3 | Studio declares `discovery/*.md` artifacts and any wave-ready unit lacks `discovery.<agent>` | `discovery_required` | One discovery agent per missing record per unit |
+| 4 | Stage has 0 units | `elaborate` | Author the stage's unit set |
+| 5 | One or more units are in-flight (started, last iteration result == null) | null (mid-wave noop) | Wait for in-flight subagents to terminate |
+| 6 | Wave-ready units (started_at == null and depends_on all terminal-advanced) | `start_unit_hat` (first hat) | Wave dispatch — N subagents in parallel |
+| 7 | Started units need their next hat | `start_unit_hat` (next hat per `nextHatForUnit`) | Hat advancement; reject rewinds one hat |
+| 8 | All hat sequences done; some review role unsigned | `dispatch_review` (per role) or `user_gate { gate_kind: "spec" }` for the `user` role | `spec` (engine-built) → studio review agents → `user`; mode-shaped (autopilot trims to `[spec]`) |
+| 9 | All reviews signed; some approval role unsigned | `dispatch_quality_gates`, `dispatch_approval` (per role), or `user_gate { gate_kind: "approval" }` | `spec` → `quality_gates` (engine-built) → studio agents → `user`; autopilot trims to `[spec, quality_gates]` |
+| 10 | Every approval signed | `merge_stage` | Engine merges stage branch into intent main |
 
-**Layer 2 — Handler-internal sidelines (per-state handlers, fire only when the active state is the matching handler):**
+The cursor is intentionally narrow: every condition is a derived predicate over FM. There are no hidden flags, no ambient state, no "phase" field. Position falls out of the data.
 
-| Check | Fires from | Action | Agent response |
-|---|---|---|---|
-| **Unresolved dependencies** | `elaborate.ts` | `unresolved_dependencies` | Fix the DAG, retick |
-| **DAG cycle** | `elaborate.ts` | `dag_cycle_detected` | Break the cycle, retick |
-| **Missing discovery artifacts** | `elaborate.ts` | `discovery_missing` | Produce the artifacts, retick |
-| **Elaboration insufficient** | `elaborate.ts` | `elaboration_insufficient` | Record more decisions or declare `no_decisions: true` |
-| **Design direction needed** | `elaborate.ts` | `design_direction_required` | Open `pick_design_direction` in **intake mode** (no archetypes). User either uploads finished designs (→ `design_direction_uploaded`, archetype generation skipped) or asks the agent to generate variants (→ `design_direction_complete` once a final pick lands) |
-| **Missing outputs** | `review.ts` | `outputs_missing` | Produce the artifacts, retick |
+### 5.5 The v4 action surface
 
-The distinction matters for plugin maintainers: adding a true pre-advance check goes in `run-tick.ts` / `feedback-triage-gate.ts`; adding a handler-internal check goes in the relevant handler file.
+The cursor emits exactly these `kind` values (mapped 1:1 to `OrchestratorAction.action` for the agent):
 
-Sidelines compose: a single tick can fire ANY pre-advance check OR any matching handler-internal check in priority order. The agent does the corrective work for whatever fired, calls `haiku_run_next`, and the engine re-checks the full list. The agent never tracks "which sideline am I on" — they just follow the instruction and retick.
-
-### 5.4 Mainline actions (the non-sideline path)
-
-When all pre-advance checks pass, the tick emits one mainline action describing the next concrete forward step:
-
-| Action | Meaning | What the agent does |
+| Kind | Source | When |
 |---|---|---|
-| `select_studio` | Studio not yet chosen on the intent | (engine-side blocking — `haiku_run_next` runs the SPA picker inline and re-ticks; agent sees the next real action) |
-| `select_mode` | Studio chosen, mode not yet chosen | (engine-side blocking — same shape; mode picker has cards-with-mini-timeline layout) |
-| `select_stage` | Mode is `quick` and the single stage isn't picked yet | (engine-side blocking — same shape; stage picker is a simple list) |
-| `gate_review` (intent_review) | Pre-stage approval of the minimal intent — fires after studio + mode + (if quick) stage are set, before stage 0 begins | (engine-side blocking — `haiku_run_next` prepares the session, awaits the user's decision via `haiku_await_gate.handle()` inline, and re-ticks for advance cases or returns the post-decision action for terminal cases) |
-| `start_stage` | First entry to a new stage | Acknowledge, retick |
-| `elaborate` | Stage is in elaborate phase | Collaborate with the user, draft units, record decisions |
-| `pre_review` | Pre-execute review of unit specs | Spawn review-agent subagents |
-| `start_units` | First wave of unit dispatch | Spawn N subagents in parallel |
-| `continue_units` | Mid-wave continuation (refill or new wave) | Spawn the dispatched subagents |
-| `spec_review` | Engine-owned spec-conformance gate (universal hard gate, runs before quality review on every stage) | Spawn the single built-in spec-conformance subagent (no per-studio mandate file, no opt-out); advance to gate for fix loop if findings filed. |
-| `review` | Quality adversarial review of stage outputs | Spawn quality review-agent subagents |
-| `review_fix` | Fix loop against open findings | Spawn fix-chain subagents (per-finding chains) |
-| `gate_review` | Stage gate (human or external approval) | (engine-side blocking — `haiku_run_next` opens the review SPA and awaits the decision inline; agent sees the post-decision action: `advance_phase` / `advance_stage` / `external_review_requested` / `changes_requested` / `intent_complete`) |
-| `advance_phase` | Phase boundary internal to a stage | Acknowledge, retick |
-| `advance_stage` | Stage boundary | Acknowledge, retick |
-| `intent_completion_review` | Studio-level review (intent-scope) | Spawn studio review agents |
-| `intent_completion_fix` | Studio-level fix loop | Spawn studio fix-chain subagents |
-| `intent_complete` | Terminal — intent done | Stop |
-| `escalate` | Terminal — needs human intervention | Stop and surface to user |
-| `error` | Terminal — engine cannot proceed | Stop and surface to user |
+| `select_studio` | `run-tick.ts` pre-cursor gate | `intent.studio` is unset; engine pops the picker, writes the value, re-ticks |
+| `select_mode` | `run-tick.ts` pre-cursor gate | `intent.mode` is unset; engine pops the picker, writes the value, re-ticks |
+| `select_stage` | `run-tick.ts` pre-cursor gate | Mode is `quick` and `intent.stages[]` is empty |
+| `drift_detected` | Cursor Track C | Any signed witness's content hash no longer matches |
+| `start_feedback_hat` | Cursor Track B | Open FB needs its next fix hat dispatched |
+| `close_feedback` | Cursor Track B | Terminal fix hat advanced; engine stamps `closed_at` and applies `targets.invalidates` |
+| `design_direction_required` / `_complete` / `_uploaded` | Cursor Track A pre-elaborate | Stage gates on a chosen direction; one of the three fires depending on phase |
+| `clarify_required` | Cursor Track A pre-elaborate | Stage ships `clarify/*.md`; answers not recorded |
+| `discovery_required` | Cursor Track A pre-elaborate | Wave-ready unit lacks a required discovery record |
+| `elaborate` | Cursor Track A | Stage has 0 units |
+| `start_unit_hat` | Cursor Track A | Wave-ready or mid-hat unit batch needs its next hat dispatched |
+| `dispatch_review` | Cursor Track A | A non-user review role hasn't signed `reviews.<role>` on one or more units |
+| `dispatch_quality_gates` | Cursor Track A | The engine-built `quality_gates` role hasn't signed approvals on one or more units |
+| `dispatch_approval` | Cursor Track A | A non-user approval role hasn't signed `approvals.<role>` on one or more units |
+| `user_gate` | Cursor Track A | The `user` role is the next unsigned review or approval slot; gate dispatches via review SPA (`ask`) or branch-merge poll (`external` / `await`) |
+| `merge_stage` | Cursor Track A | Every approval signed; merge stage branch into intent main |
+| `intent_review` | Cursor terminal walk | All stages merged; intent-scope approval `spec`/`continuity`/`user` unsigned |
+| `merge_intent` | Cursor terminal walk | Intent-scope approvals signed; ready to seal |
+| `sealed` | Cursor terminal walk | `intent.sealed_at` is set; nothing left to do |
 
-The pre-stage chain — `select_studio → select_mode → (quick? → select_stage) → intent_review (gate_review)` — is the only place orientation choices are made. The agent **never** writes `mode` or `stages` directly; both fields are FSM-driven (rejected by `haiku_intent_set` with `intent_field_engine_only`). `haiku_intent_create` does not accept `mode` or `stages` either — every orientation choice flows through real elicitation.
+The pre-stage chain — `select_studio → select_mode → (quick? → select_stage)` — is the only place orientation choices are made. The agent **never** writes `mode` or `stages` directly; both fields are FSM-driven (rejected by `haiku_intent_set` with `intent_field_engine_only`). `haiku_intent_create` does not accept `mode` or `stages` either — every orientation choice flows through real elicitation.
 
 The agent **never branches on action type for workflow-routing decisions**. They just follow the instruction the action's prompt builder rendered.
 
-### 5.5 Properties this gives us
+### 5.6 Properties this gives us
 
 - **The agent's mental model is two states**: "I have N subagents to spawn" or "I have a terminal — stop." Every tick reduces to one of these.
-- **There is no agent-side coordination logic.** Wave numbers, hat sequences, slot management, bolt counters — all engine-internal.
-- **Sidelines are forced, not optional.** The agent cannot bypass an open untriaged FB to advance the gate; the pre-tick check refuses.
-- **The engine is the single point of routing truth.** A bug in cursor derivation is the only way to break the workflow — and it's testable as a pure function.
+- **There is no agent-side coordination logic.** Wave numbers, hat sequences, slot management, bolt counters — all engine-internal, derived from FM at read time.
+- **Open feedback wins over forward motion.** Track B walks before Track A, so an open FB on stage 0 forces the cursor to dispatch a fix hat against it before any later stage can advance.
+- **The engine is the single point of routing truth.** A bug in cursor derivation is the only way to break the workflow — and it's testable as a pure function over fixture state.
 - **Recovery is "call `haiku_run_next` again."** No special "resume" tools, no manual state edits, no "undo last action." The engine reconciles from disk every tick.
 
-### 5.6 What changes a tick's outcome
+### 5.7 What changes a tick's outcome
 
 The same intent at the same disk state will produce the same tick result. Things that change a tick's outcome:
 
 - **An agent edits unit/feedback bodies via MCP write tools** (the only sanctioned channels).
-- **A subagent advances or rejects a hat** (state mutation via `*_advance_hat` / `*_reject_hat`).
-- **A user approves or rejects at a gate** (sets gate state).
+- **A subagent advances or rejects a hat** (FM mutation via `*_advance_hat` / `*_reject_hat`, which appends to `iterations[]`).
+- **A user approves or rejects at a gate** (signs `reviews.<role>` or `approvals.<role>` on one or more units).
 - **A user adds feedback via the review UI** (creates new FB files).
-- **An out-of-band file edit** (per the `out-of-band-human-file-modifications` intent — detection still in flight).
+- **An out-of-band file edit** (changes a body hash; Track C surfaces it as drift).
 
 The engine reads disk, derives cursor, emits action. There is no other path.
+
+### 5.8 Migration: v0 → v4
+
+The first time the v4 engine reads a pre-v4 intent (no `plugin_version` field, or major version below 4), the v0→v4 migrator runs once and rewrites it in place:
+
+- **intent.md**: strip deprecated fields (`active_stage`, `phase`, `status`, `completed_at`, `iteration`, `composite`, `intent_reviewed`, `gate_review_*`, `completion_review_*`, `autopilot`); stamp `plugin_version: "4.0.0"`; ensure `approvals: {}`, `started_at: null`, `sealed_at: null`.
+- **unit.md**: strip deprecated fields (`status`, `hat`, `bolt`, `hat_started_at`, `iteration`, `visit`, `scope_reject_attempts`); normalize past-tense iteration results (`"rejected"` → `"reject"`, `"advanced"` → `"advance"`); synthesize `approvals.user` for any unit that was previously `status: completed` so the cursor doesn't re-approve it.
+- **feedback.md**: strip deprecated fields (`status`, `bolt`, `triaged_at`, `closed_by`, `resolution`, `iteration`, `visit`, `integrator_attempts`, `upstream_stage`); preserve `replies[]` (the conversation thread); synthesize `closed_at` from terminal v3 statuses; default `targets: { unit: null, invalidates: [] }`. Files carrying `upstream_stage:` are physically relocated to that stage's `feedback/` dir with renumbering.
+- **stage state.json**: deleted unconditionally — v4 derives stage position from FM.
+- **Pre-v4 drift artifacts**: `baseline.json`, `drift-markers.json`, and the `baseline-content/` snapshot dir are deleted from every stage and from intent-scope. v4 uses body-sha256 in FM as the drift witness, so the legacy sidecars are noise.
+
+Migration is best-effort but never destructive of body content. Per-file YAML parse errors are logged and the file is left unmigrated rather than tearing down the whole intent.
 
 ## 6. Fix-loop pattern
 
@@ -341,17 +359,28 @@ When a fix-loop dispatches against an FB:
 - The same plan-do-verify pattern applies. The stage's `fix_hats:` list typically contains the implementer hat (per the `fix_hats must be implementer` repo convention) followed by `feedback-assessor` as the terminal verifier — minimum 2 entries today; longer chains are encouraged for stages where a planner step adds value before the implementer runs. The terminal hat validates the FB body and calls `haiku_feedback_advance_hat` to close the FB.
 - workflow engine lifecycle enforcement is identical: FBs go pending → active (in fix-loop) → completed.
 
-### 6.2 Closed FBs as input to the next iteration (target state)
+### 6.2 Closed FBs as input to the next iteration
 
-A "completed" FB under the FB-as-unit model means its diagnosis is well-formed and the work-of-record is the FB body. The architectural target is that the underlying defect is then patched through the next iteration of the upstream stage's elaborate phase, which consumes the closed FB diagnoses as input and authors new pending units that build on (never modify) completed units.
+A "completed" FB under the FB-as-unit model means its diagnosis is well-formed and the work-of-record is the FB body. The underlying defect is then patched through the next iteration of the upstream stage's elaborate phase, which consumes the FB body as historical diagnosis when authoring new pending units.
 
-**Current implementation status:** the FB-as-unit dispatch is wired (commits in this PR). Fixers diagnose into the FB body, the workflow engine auto-closes on advance_hat, and the closed FB persists with its diagnosis. The "elaborate-phase consumes closed FBs as input on next iteration" path is the natural follow-up but is not yet a single explicit code path — today, when a stage's gate revisits elaborate (via `elaborate_revisit`, `feedback_revisit`, or similar), the elaborate-phase prompt has access to the stage's `feedback/` directory contents and is instructed to draft new units that close pending feedback. Closed FBs serve as historical diagnosis the elaborator can inline. Wiring an explicit "consume closed FBs from prior iteration" injection into the elaborate dispatch is a tracked follow-up — see §8.
+In v4 there is no separate `elaborate_revisit` or `feedback_revisit` action. Instead:
 
-What's strictly enforced today regardless of the consumer path:
-- Existing completed units are never modified by the fix-loop (the hook blocks unit-file edits; fixer prompts forbid them).
+- **Closing a fix-hat FB** stamps `closed_at` AND applies `targets.invalidates` to the targeted unit's approvals (clearing them on disk). The cursor on the next tick walks Track A and routes through whichever approval roles got invalidated, re-running the work needed to re-sign them.
+- **Cross-stage FB routing** is purely by file location. A finding sitting in `stages/<earlier>/feedback/` rewinds the cursor to that earlier stage's fix loop on the next tick, regardless of where the FB was originally filed. Track B walks every stage from index 0 through the active stage.
+- **Stage rewinds** happen automatically when corrective work commits to an earlier stage's branch. That branch goes ahead of intent main and `firstUnmergedStage` returns it on the next tick, pinning the cursor there until it re-merges.
+
+What's strictly enforced:
+- Existing completed units are never modified by the fix-loop (the hook blocks unit-file edits; fixer prompts forbid them; the FM is engine-only).
 - New corrective work, when authored, becomes new pending units (per §1.3 forward-only).
+- The fixer hat's deliverable is the FB body — diagnosis, root cause, recommended action — written via `haiku_feedback_write`. The flagged unit is read-only context via `haiku_unit_read`.
 
-This is why front-loading matters either way. By the time a defect surfaces at the gate, the original units that contain it are permanent. Corrective work happens on top of them, never to them.
+This is why front-loading matters. By the time a defect surfaces at the gate, the original units that contain it are permanent. Corrective work happens on top of them, never to them.
+
+### 6.3 FB classification (haiku_feedback_set_targets)
+
+User-authored FBs land without targets (`target_unit: null`, `target_invalidates: []`). The first hat in the stage's `fix_hats:` chain is conventionally a classifier — it reads the FB body, decides which unit (if any) the finding targets and which approval roles to invalidate on closure, and calls `haiku_feedback_set_targets` to record the decision. Targets are immutable once set; subsequent calls return a stable named error.
+
+Pre-v4 used a separate `triaged_at:` field and a pre-tick triage gate. v4 collapses that into the classifier hat: the FB-as-unit hat chain runs immediately, and the classifier IS the first hat. Cross-stage routing via `haiku_feedback_move` still exists for cases where the FB was filed against the wrong stage entirely.
 
 ## 7. Hook boundary
 
@@ -361,41 +390,58 @@ Denied paths (Read/Write/Edit):
 - `.haiku/intents/*/stages/*/units/*.md`
 - `.haiku/intents/*/stages/*/feedback/*.md` and `.haiku/intents/*/feedback/*.md` (intent-scope)
 - `.haiku/intents/*/intent.md`
-- `.haiku/intents/*/stages/*/state.json`
+- `.haiku/intents/*/stages/*/state.json` (defensive — v4 doesn't write these, but the guard prevents an agent from re-creating one as a workaround for a perceived missing field)
+- V-11 baseline-corruption ack and thrash counter paths
 
-Denial message format: `"This file is workflow-managed. Use \`haiku_unit_read { intent: \"<slug>\", stage: \"<stage>\", unit: \"<unit>\" }\` instead."`
+Denial messages are tool-specific. For units the agent gets back something like:
+
+```
+BLOCKED: Cannot read unit file 'unit-001-foo.md' via generic Read. Unit files are
+workflow-managed — use the MCP tool instead:
+  haiku_unit_read { intent: "<slug>", stage: "<stage>", unit: "unit-001-foo" }
+Generic file access bypasses lifecycle enforcement (pending → active → completed),
+frontmatter validation (DAG, schema, cross-references), and integrity sealing.
+```
+
+Equivalent redirects exist for feedback (`haiku_feedback_read` / `haiku_feedback_write` / `haiku_feedback`), intent (`haiku_intent_get` / `haiku_run_next`), and settings (`haiku_settings_get` / `haiku_settings_set`).
 
 Bash commands referencing these paths are **soft-warned** (logged, not blocked). The threat model is "honest agent reaches for the wrong tool by habit," not "adversarial agent." Routine MCP usage is the path of least resistance; persistent Bash bypass is anomalous and shows up in audit telemetry.
 
+### 7.1 MCP input gates
+
+Every agent-callable MCP tool gates its input through a TypeBox schema compiled to AJV at module load. Each schema declares `additionalProperties: false`, so unknown fields are rejected at the wire. Failures return a stable named error code — `haiku_unit_write_input_invalid`, `haiku_feedback_advance_hat_input_invalid`, etc. — with an `errors[]` list of `{ path, keyword, message, params }` entries. Agents and tests match on the named code; the human-readable message is allowed to evolve.
+
+This matters for studio authors because it determines how an agent recovers from a typo'd tool call: the engine tells them precisely which field on which tool was wrong, in a format their harness can route. There is no "the handler will catch it" path. See `.claude/rules/schema-definitions.md` for the full schema-authoring contract.
+
 ## 8. Known structural issues — status
 
-Tracking the gap between this document and the implementation. Fix the implementation, not the document. Items marked ✅ have been reconciled in the current PR; ⏳ are still ahead.
+Tracking the gap between this document and the implementation. Fix the implementation, not the document. Items marked ✅ are reconciled; ⏳ are still ahead.
 
 1. ✅ **`FSM_CONTRACTS_ELABORATE_BLOCK` build-class assumptions.** Split into `FSM_CONTRACTS_ELABORATE_UNIVERSAL` (rules for every stage) and `FSM_CONTRACTS_ELABORATE_BUILD_ADDENDUM` (build-class-only rules, injected only when no per-stage `phases/ELABORATION.md` override exists). All 5 inception-class stages now skip the build-class addendum because they have their own ELABORATION.md.
-2. ⏳ **Inception-class stages structurally over-reach.** **Mostly mitigated:** the 5 inception-class stages now have research-stage ELABORATION.md guidance + body-only knowledge-artifact verifier hats, which steer NEW authoring toward knowledge topics. Cleanup of any pre-existing execution-spec drift in these stages' artifacts (in real intents that have already used them) still ahead — but new intents will use the corrected guidance.
+2. ⏳ **Inception-class stages structurally over-reach.** **Mostly mitigated:** the 5 inception-class stages now have research-stage ELABORATION.md guidance + body-only knowledge-artifact verifier hats, which steer NEW authoring toward knowledge topics. Cleanup of any pre-existing execution-spec drift in these stages' artifacts (in real intents that have already used them) still ahead — but new intents use the corrected guidance.
 3. ✅ **Hat name `elaborator` collides with phase name `elaborate`** — renamed to `distiller` (role-correct per §3.1) in all 5 inception-class stages: software/inception, hwdev/inception, hwdev/requirements, libdev/inception, gamedev/concept. Other studios' non-inception `elaborator` hats are correctly the do-hat of build chains and don't have the same collision (optional polish: rename them to stage-appropriate `builder`/`composer`/etc., but not architecturally required).
-4. ✅ **Build-class stages need their own ELABORATION.md.** `software/development/phases/ELABORATION.md` was already correct; the Phase 2 rollout (parallel agent) added per-stage ELABORATION.md to almost all stages across all 22 studios. Verified 109/120 stages now have a `phases/ELABORATION.md`.
+4. ✅ **Build-class stages need their own ELABORATION.md.** `software/development/phases/ELABORATION.md` was already correct; the Phase 2 rollout added per-stage ELABORATION.md to almost all stages across all 22 studios.
 5. ✅ **`haiku_unit_get` migration to workflow engine-internal.** Removed from agent-callable schema (`stateToolDefs`); handler retained for workflow engine-internal callers.
+6. ✅ **v3-era state.json + per-stage workflow tracking removed.** v4 derives stage position from FM. The v0→v4 migrator (see §5.8) deletes `state.json` and pre-v4 drift sidecars on first read of any pre-v4 intent.
+7. ✅ **`upstream_stage:` cross-stage hint removed.** v4 routes FBs by file location. The migrator strips the field and physically relocates any FB that pointed elsewhere into the target stage's `feedback/` directory (with renumbering).
+8. ✅ **`triaged_at:` pre-tick triage gate replaced.** Classification is now the first hat in the stage's `fix_hats:` chain, calling `haiku_feedback_set_targets`. Cross-stage moves still go through `haiku_feedback_move`.
+9. ⏳ **`review-agents/cross-stage-consistency.md` files reference FM-derived paths.** Per §1.1 this is FM-interpretation for a mechanical purpose and should be engine-enforced at `haiku_unit_advance_hat` time instead of agent-validated post-hoc. The strict fix: strip these references and add an engine-level output-existence check. The current behavior is defensive validation pending that engine enforcement and is left in place to avoid removing the only existing safety net.
 
-Phase 2 verifier rollout (parallel agent dispatch, commit `af417f69` and earlier):
-- 91/120 stages now have a `verifier` (or other verify-class) terminal hat in their `hats:` list.
+Phase 2 verifier rollout:
+- 91/120 stages have an explicit `verifier` (or other verify-class) terminal hat in their `hats:` list.
 - The 29 stages without explicit `verifier` already end in a verify-class hat (`reviewer`, `validator`, `assessor`, `auditor`, `qa`, etc.).
 
-Phase 3 adversarial-loop restructure (commit `b4d914cc`):
+Phase 3 adversarial-loop restructure:
 - ✅ All 3 previously-flagged adversarial-loop stages (software/security, security-assessment/exploitation, ideation/review) restructured to put plan-do-verify before adversarial hats per §3.5. Added 6 new hat mandate files for the new plan/do/verify roles inserted (security-engineer, attack-strategist, exploit-reviewer, review-planner, synthesizer, reviewer).
 
-6. ⏳ **24 `review-agents/cross-stage-consistency.md` files reference FM-derived paths** (e.g., "verify that stages' declared outputs exist at the paths their unit frontmatter promised"). Per §1.1 this is FM-interpretation for a mechanical purpose and should be workflow engine-enforced at `haiku_unit_advance_hat` time instead of agent-validated post-hoc. The strict fix: strip these references and add an workflow engine-level output-existence check. The current behavior is defensive validation pending that workflow engine enforcement and is left in place to avoid removing the only existing safety net.
-
-Implemented in this PR (✅):
-- Architecture document itself, with the boundary rules, lifecycle, hat patterns, FB-as-unit fix-loop semantic, and stage-role taxonomy.
+Reconciled in v4:
+- Architecture document itself, with the boundary rules, lifecycle, hat patterns, FB-as-unit fix-loop semantic, stage-role taxonomy, and the cursor model in §5.
 - Path-boundary hook (PreToolUse) denying generic Read/Write/Edit on workflow-managed paths, with redirect messages naming the right MCP tool.
-- New MCP tools: `haiku_unit_write` (with FM validators + DAG cycle detection + lifecycle), `haiku_unit_read` (body+title only), `haiku_unit_delete` (pending only); FB equivalents `haiku_feedback_write` and `haiku_feedback_read`; FB-as-unit progression tools `haiku_feedback_advance_hat` and `haiku_feedback_reject_hat` (mirrors of unit equivalents).
+- MCP tool surface for unit/FB CRUDL with TypeBox + AJV input gates and stable named error codes (see `.claude/rules/schema-definitions.md`).
 - Lifecycle enforcement on `haiku_unit_set` (active/completed → locked) and `haiku_feedback_update` (terminal-state-protected).
-- Elaborate dispatch routes unit authoring through `haiku_unit_write` (no more raw Write).
-- Both fix-loop dispatches (`review_fix` per-stage and `intent_completion_fix` studio-level) rewritten for FB-as-unit: fixers edit FB body via `haiku_feedback_write`, read flagged units read-only via `haiku_unit_read`, progress through fix_hats via `haiku_feedback_advance_hat`. Closure is workflow-driven via the last-hat advance.
+- Both fix-loop dispatches (`review_fix` per-stage and `intent_completion_fix` studio-level) implement FB-as-unit: fixers edit FB body via `haiku_feedback_write`, read flagged units read-only via `haiku_unit_read`, progress through fix_hats via `haiku_feedback_advance_hat`. Closure is engine-driven via the last-hat advance.
 - 5 canonical inception-class verifier hats (software/inception, hwdev/inception, hwdev/requirements, libdev/inception, gamedev/concept) — body-only knowledge-artifact validation.
-- 5 inception-class `phases/ELABORATION.md` files providing research-stage authoring guidance.
-- `CLAUDE.md` cites this document as the canonical structural source of truth and adds 6 concept-mapping rows for the new architecture surface.
+- `CLAUDE.md` cites this document as the canonical structural source of truth.
 
 ## 9. Studio-author checklist
 

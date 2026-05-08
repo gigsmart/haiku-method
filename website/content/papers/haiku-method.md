@@ -103,7 +103,7 @@ The four-phase lifecycle is universal, but *how* each phase manifests depends on
 
 ### Built-in Studios
 
-H·AI·K·U ships with fifteen studios organized into three categories — engineering, go-to-market, and general purpose — covering work from application development through sales cycles to content creation. The engineering category has four product-family studios (`appdev`, `libdev`, `gamedev`, `hwdev`) because the lifecycles differ at the stage level, not just the hat level: a library has no product or design phase, a game needs a prototype-validation gate and a dedicated polish stage, and hardware has requirements-driven compliance and a one-shot manufacturing gate.
+H·AI·K·U ships with two-dozen-plus studios organized into three categories — engineering, go-to-market, and general purpose — covering work from application development through sales cycles to content creation, plus operational and back-office studios (HR, finance, legal, project management, vendor management, etc.). The catalog grows over time; the framework is structurally agnostic to studio count. The engineering category has four product-family studios (`appdev`, `libdev`, `gamedev`, `hwdev`) because the lifecycles differ at the stage level, not just the hat level: a library has no product or design phase, a game needs a prototype-validation gate and a dedicated polish stage, and hardware has requirements-driven compliance and a one-shot manufacturing gate.
 
 Every studio has three kinds of identifier — a canonical `name` (shown in browse views), a short `slug` (for CLI input), and optional `aliases` (for backward compatibility after renames). The loader resolves any of them to the same studio.
 
@@ -233,7 +233,7 @@ Every studio has three kinds of identifier — a canonical `name` (shown in brow
 | Persistence | git |
 | Delivery | pull request |
 
-Each studio defines its own behavioral roles. The application-development studio's inception stage uses a researcher and elaborator; its development stage uses a planner, builder, and reviewer; its security stage uses a threat modeler, red team, blue team, and security reviewer. The library-development studio's inception folds in an api-architect because the API surface is the product. The game-development studio's prototype stage uses a prototype-engineer, game-designer, and playtester because prototype validation is gated on external player feedback. Despite these differences, all fifteen studios run on the same orchestration machinery.
+Each studio defines its own behavioral roles. The application-development studio's inception stage uses a researcher and distiller; its development stage uses a planner, builder, and reviewer; its security stage uses a threat modeler, red team, blue team, and security reviewer. The library-development studio's inception folds in an api-architect because the API surface is the product. The game-development studio's prototype stage uses a prototype-engineer, game-designer, and playtester because prototype validation is gated on external player feedback. Despite these differences, every shipped studio runs on the same orchestration machinery.
 
 ### Custom Studios
 
@@ -275,36 +275,37 @@ A stage declares five things:
 Before any stage runs, the framework drives a four-step elicitation chain that captures the orientation choices the agent must not be allowed to dictate:
 
 1. **Studio selection** — the human picks which studio's lifecycle the intent will follow. The framework presents available studios via a structured picker.
-2. **Mode selection** — the human picks the execution mode (continuous, discrete, autopilot, or quick). Mode is engine-managed: the agent never writes `mode` directly to intent metadata, and any attempt to do so is rejected.
+2. **Mode selection** — the human picks the execution mode (continuous, discrete, discrete-hybrid, autopilot, or quick). Mode is engine-managed: the agent never writes `mode` directly to intent metadata, and any attempt to do so is rejected.
 3. **Stage selection (quick mode only)** — for `quick` mode, the human picks the single stage the intent will run. Other modes inherit the studio's full stage list automatically.
 4. **Intent review gate** — once studio + mode + (for quick) stage are set, the framework opens an `ask`-type review gate showing the minimal intent for human approval before any stage begins. Approval clears the gate and lets the workflow enter stage 0; requesting changes returns the intent to the elicitation chain.
 
 This chain is structurally load-bearing. The failure mode it prevents: an agent inferring "the user said discrete inception" and dictating both `mode: discrete` + `stages: [inception]` on intent creation, which collapses the workflow into a single amputated stage with no recovery path. By making the orientation choices flow through engine elicitation, the framework guarantees the human picked them — not the agent.
 
-Mode transitions mid-flight (continuous ↔ discrete ↔ autopilot) are allowed through a dedicated mode-change command; transitions into or out of `quick` are forbidden once a stage has started, because `quick` is single-stage by definition and either direction would amputate or grow the workflow.
+Mode transitions mid-flight (continuous ↔ discrete ↔ discrete-hybrid ↔ autopilot) are allowed through a dedicated mode-change command; transitions into or out of `quick` are forbidden once a stage has started, because `quick` is single-stage by definition and either direction would amputate or grow the workflow.
 
 ### The Stage Loop
 
-Each stage executes through a fixed six-step loop:
+Each stage moves through five conceptual phases. In the framework's reference implementation these aren't stored as a `phase:` field — the workflow cursor derives the current position from on-disk state (units present, hats progressed, reviews and approvals signed) on every tick. The result is the same disciplined progression, but with no in-memory state to corrupt and no separate state file to drift from reality.
 
-1. **Elaborate** — Resolve inputs from prior stages, checking freshness metadata for staleness. If the stage has no units yet, decompose the work into discrete units with completion criteria and a dependency graph. If an upstream output has a small gap (e.g., a missing screen in a design brief), the agent can run a *stage-scoped refinement* — a targeted side-trip that adds a single unit to the upstream stage, executes it through that stage's hats, and persists the updated output, all without resetting the current stage's progress. Full stage-backs (resetting `active_stage` to a prior stage) are always human-initiated.
-2. **Pre-execution adversarial review** — Before any execute cycle burns resources, the stage's review agents audit the *unit specs themselves*. They look for missing inputs (unit claims a sweep but lists only a subset of target files), prose-only quality gates (strings where executable commands were expected), unfalsifiable criteria, and sibling-unit conflicts. Findings are logged as spec-level feedback; resolution happens via *spec edits to existing units*, not by drafting new ones. Only when no spec feedback is pending does the loop advance to execute. This front-loaded review catches plan bugs at the cost of a text review instead of the much larger cost of an execute → post-review → reject cycle.
-3. **Execute** — For each unit in dependency order, run the bolt loop: cycle through the hat sequence. Each hat runs in isolation, produces output for the next hat, and quality gates verify the result.
-4. **Adversarial review** — Run review against the *produced artifacts* in two ordered tiers. **Tier 1 (engine spec gate):** the engine's universal spec-conformance subagent runs first, alone, on every stage, to verify that the completed units collectively delivered exactly what the intent scoped — no scope creep, no missed criteria, no cross-unit drift. The prompt is engine-owned (no per-studio mandate file, no opt-out): every intent has a spec, every stage produces something the intent scoped, so every stage benefits. If spec findings are filed, the fix loop resolves them before quality review fires; this prevents burning token budget on quality concerns against an implementation that built the wrong thing. **Tier 2 (quality review):** once the spec gate is clear, every studio-declared review agent (correctness, security, performance, architecture, test-quality, etc.) runs in parallel. Agents from other stages included via `review-agents-include` also run in this tier. High-severity findings trigger targeted fixes before the stage can proceed.
-5. **Fix loop** — When review findings are open, the stage dispatches its `fix_hats` sequence directly against each finding. The feedback file *is* the scope; no new unit specification is synthesized. Every hat in the sequence reads the feedback body and the flagged artifact, acts within its mandate, and the terminal `feedback-assessor` hat independently verifies closure. Each finding gets up to three fix-loop bolts before the framework escalates. The model eliminates the prior "telephone game" of feedback → synthesized unit → execute by addressing findings directly on the artifacts that produced them.
-6. **Gate** — Evaluate the review gate and either advance, pause for approval, block for external review, or await an external event.
+1. **Elaborate** — Resolve inputs from prior stages, checking freshness metadata for staleness. If the stage has no units yet, decompose the work into discrete units with completion criteria and a dependency graph. If an upstream output has a small gap (e.g., a missing screen in a design brief), the agent can run a *stage-scoped refinement* — a targeted side-trip that adds a single unit to the upstream stage, executes it through that stage's hats, and persists the updated output, all without resetting the current stage's progress. Full stage-backs are always human-initiated.
+2. **Execute** — For each unit, the cursor walks the hat sequence one role at a time. Wave-ready units (no `started_at`, all `depends_on` satisfied) dispatch in parallel as one batch; in-flight units block forward motion until they terminate. Each hat runs in isolation, produces output for the next hat, and quality gates verify the result. The terminal hat advance triggers a per-unit merge into the stage branch.
+3. **Review** — Once every unit's hat sequence completes, the cursor walks the review-role list in declared order. The engine-built `spec` reviewer fires first on every stage to verify that the completed units collectively delivered exactly what the intent scoped — no scope creep, no missed criteria, no cross-unit drift. The prompt is engine-owned (no per-studio mandate file, no opt-out). After spec is signed, every studio-declared review agent (correctness, security, performance, architecture, test-quality, etc.) runs and signs `reviews.<role>` on each unit. Agents from other stages included via `review-agents-include` are equal members of this list. The `user` role caps the list when the gate type is `ask`. Findings filed by any reviewer trigger fixes before the loop can advance.
+4. **Approve** — Once reviews are signed, the cursor walks the approval-role list. The engine-built `quality_gates` role runs each unit's declared shell commands and signs `approvals.quality_gates` on success; failure auto-rejects to the producing hat for repair. After quality_gates, configured approval agents fire, and the human's `user` approval lands last for `ask`-style gates. The list is mode-shaped: autopilot trims to `[spec, quality_gates]`; continuous and discrete keep the full list.
+5. **Merge** — When every approval is signed, the engine merges the stage branch into intent main. In discrete mode this is the external review gate: the framework opens a pull request and waits for the merge-back as the approval signal. In continuous mode it's a fast-forward.
+
+**Fix loop.** When any reviewer files a feedback finding, the stage dispatches its `fix_hats` sequence directly against the finding. The feedback file *is* the scope; no new unit specification is synthesized. Every hat in the sequence reads the feedback body and the flagged artifact, acts within its mandate, and the terminal `feedback-assessor` hat independently verifies closure. Each finding gets a bounded retry budget before the framework escalates. The model eliminates the prior "telephone game" of feedback → synthesized unit → execute by addressing findings directly on the artifacts that produced them.
 
 Review agents can declare an `applies_to:` scope (a list of file globs). An agent whose declared scope matches no artifact the stage produces skips itself automatically — for example, a web accessibility agent does not run on a backend-only stage whose outputs are API specs and CLI docs. Agents without `applies_to:` always run (the backward-compatible default).
 
-A stage's retry budget is tight by design: agent-invoked rejection cycles are capped at two iterations. Beyond that, the framework escalates to the human rather than burn another execute wave — repeated rejections indicate a spec problem the adversarial reviewers should have caught up front, and the correct response is to fix the plan, not to keep building against a broken plan. Human-invoked revisits are uncapped.
+A stage's retry budget is tight by design: agent-invoked rejection cycles are capped at two iterations. Beyond that, the framework escalates to the human rather than burn another execute wave — repeated rejections indicate a spec problem the reviewers should have caught up front, and the correct response is to fix the plan, not to keep building against a broken plan. Human-invoked revisits are uncapped.
 
-**Scope routing.** A review agent in stage X can identify that a finding's root cause lives in stage Y — for example, a design reviewer noticing that an inception assumption was wrong. The reviewer just files the finding; classification is deferred. Before any subsequent tick advances, the pre-tick triage gate halts on any open feedback that has not yet been triaged and prompts the agent to confirm placement (no-op call to `haiku_feedback_move`) or relocate the finding to its correct stage. Once every open finding lives in the right stage's directory, the workflow engine routes by file location: a finding on an earlier stage triggers a revisit to that stage, a finding on the current stage flows into its fix loop. No `upstream_stage` field is needed — the directory IS the classification.
+**Scope routing.** A review agent in stage X can identify that a finding's root cause lives in stage Y — for example, a design reviewer noticing that an inception assumption was wrong. The reviewer files the finding; classification falls to the first hat in the receiving stage's `fix_hats:` chain (a classifier hat) which calls `haiku_feedback_set_targets` to record which unit (if any) the finding targets and which approval roles to invalidate on closure. If the finding actually belongs in a different stage's directory, the classifier (or the agent on a triage tick) calls `haiku_feedback_move` to relocate it. After relocation, routing flows by file location: a finding sitting in `stages/<earlier>/feedback/` automatically rewinds the cursor to that stage's fix loop, regardless of where it was filed. The directory IS the classification.
 
-**Intent-completion review.** Studios define `review-agents/` and `fix-hats/` at the studio level (not per-stage). These run once, after every stage's gate has passed, before the intent is marked complete. The studio-level reviewers audit the whole intent — cross-stage consistency, naming alignment, studio-wide standards — and their findings run through a studio-level fix loop using the same mechanics as the stage fix loop. This catches seams that per-stage reviewers miss by construction. Cross-stage findings at this layer are always surfaced to the human; the intent-completion layer explicitly forbids auto-revisiting stages. Enabled by default on every intent; opt out per intent with `intent_completion_review: false` (useful for tight delivery loops or legacy intents). The finding rate per intent is a measurement surface — a downward trend indicates upstream specs and stage-level reviews are getting sharper.
+**Intent-completion review.** Studios define `review-agents/` and `fix-hats/` at the studio level (not per-stage). After every stage merges into intent main, the cursor walks the intent-scope approval list — `spec`, `continuity`, optional studio-declared reviewers, then `user`. Studio-level reviewers audit the whole intent: cross-stage consistency, naming alignment, studio-wide standards. Findings run through a studio-level fix loop using the same FB-as-unit mechanics as the per-stage loop. This catches seams that per-stage reviewers miss by construction. Cross-stage findings at this layer are surfaced to the human; the intent-completion layer doesn't auto-rewind stages. Enabled by default on every intent; opt out per intent with `intent_completion_review: false`. The finding rate per intent is a measurement surface — a downward trend indicates upstream specs and stage-level reviews are getting sharper.
 
-Stages declare `fix_hats:` as an ordered list of hat names — typically the primary producer hat followed by a `feedback-assessor`. The producer fixes; the assessor independently verifies closure. Fix-mode hats may live outside the main `hats:` rotation (so a feedback-assessor hat can exist purely to validate fixes without interfering with the execute loop).
+Stages declare `fix_hats:` as an ordered list of hat names — typically the classifier producer followed by a `feedback-assessor`. The producer fixes; the assessor independently verifies closure. Fix-mode hats may live outside the main `hats:` rotation (so a feedback-assessor hat can exist purely to validate fixes without interfering with the execute loop).
 
-Persistence is not a separate step — artifacts are committed to git automatically as they are produced during elaboration and execution. Each MCP state transition (stage start, unit completion, etc.) auto-commits to the persistence layer.
+Persistence is not a separate step — artifacts are committed to git automatically as they are produced during elaboration and execution. The cursor's hat advances and stage merges all commit through the persistence layer.
 
 This loop is enforced by the framework harness. Agents operate within it but cannot alter it. The human's control is expressed through review gates and mode selection, not through micro-management of the loop itself.
 
@@ -382,22 +383,22 @@ Each hat in the sequence produces structured output that flows to the next. The 
 
 Bolts are the mechanism by which work converges on quality. Bolt 1 is the initial attempt. Bolt 2 incorporates review findings. Each subsequent bolt narrows the gap between current state and completion criteria. There is no hard limit on bolt count, but the escalation pattern ensures convergence or human intervention.
 
-### Pre-Tick Drift Detection
+### Drift Detection
 
 Work-in-progress surfaces are not always modified exclusively through the agent. A product owner may drop a revised requirements document into the stage's knowledge directory. A designer may replace a mockup file between bolts. Without explicit acknowledgment, the agent's next tick would silently assume those files are unchanged — producing an assessment based on stale inputs.
 
-The **pre-tick drift-detection gate** closes this gap. Before each agent tick, the framework computes SHA-256 digests of every file in the stage's tracked surface (stage outputs, knowledge artifacts, discovery documents) and compares them against a stored baseline. Any divergence produces a `manual_change_assessment` action dispatched to the agent before any other work proceeds.
+The **drift sweep** closes this gap. Every tick, before the cursor advances on its mainline track, the framework runs a content-hash sweep over every signed witness on the active stage:
 
-When an assessment is dispatched, the agent classifies each finding with one of four outcomes:
+- **Spec witnesses** — when a reviewer signs `reviews.<role>` on a unit, the engine records the body's SHA-256. The sweep recomputes and compares.
+- **Output witnesses** — when an approval signs `approvals.<role>`, the engine records a `witnesses: { <path>: <sha256> }` map covering each declared output. The sweep recomputes per file.
+- **Discovery witnesses** — when a discovery agent signs `discovery.<agent>`, the engine records hashes for both the discovery output and the studio's mandate file.
+- **Intent-scope witnesses** — `approvals` on intent.md carry the same body hash treatment.
 
-- **ignore** — the change is cosmetic or expected; baseline is updated silently.
-- **inline-fix** — the agent absorbs the change immediately (e.g. incorporating PO edits into the current plan).
-- **surface-as-feedback** — the change warrants a structured feedback item and a fix loop.
-- **trigger-revisit** — the change is significant enough to require revisiting an earlier stage.
+Any mismatch surfaces as a `drift_detected` action with one or more drift events listing the unit, role, file, and (in git mode) the commits that touched the path since signing. The agent files a feedback finding for each substantive event, which routes through the normal fix-loop. Once the FB is filed, the source ref is dedup'd so the same drift event doesn't re-emit on every tick until the FB closes.
 
-The baseline is a JSON file per stage (`stages/{stage}/baseline.json`) recording each tracked file's SHA-256, size, and authorship class. Authorship is inferred from the action log: files written via `haiku_human_write` carry `human-via-mcp`; unmarked changes carry `human-implicit`. The companion tool `haiku_human_write` lets the agent write files on behalf of a human with full authorship attribution — the preferred path when the agent is acting on explicit human instructions. Direct file drops (via the SPA upload panel or out-of-band edits) are picked up on the next tick rather than immediately.
+The sweep is hash-based, not state.json-based. Hashes live in the witness records on each unit's frontmatter — there is no separate baseline manifest. This collapses an entire class of "the baseline drifted from the truth" bugs: the witness IS the baseline, and signing IS the act of recording it. Body-only hashing for markdown decouples agent-authored prose from engine FM bookkeeping (advance_hat appends to `iterations[]` without tripping spec drift on its own previously-signed reviews).
 
-The gate can be disabled project-wide by setting `drift_detection: false` in `.haiku/settings.yml`. This is a kill-switch — the gate becomes a complete no-op, and no baseline I/O is performed. Disabling is appropriate for projects where all surface changes are always agent-initiated.
+The sweep can be disabled project-wide by setting `drift_detection: false` in `.haiku/settings.yml`. This is a kill-switch — the gate becomes a complete no-op. Disabling is appropriate for projects where all surface changes are always agent-initiated.
 
 ---
 
@@ -427,7 +428,7 @@ The persistence abstraction is what makes studios truly domain-independent. A st
 
 ## 7. Modes of Operation
 
-H·AI·K·U supports two execution modes, selected at intent creation.
+H·AI·K·U supports five execution modes, selected at intent creation. Mode is engine-managed: the framework rejects any attempt by an agent to write `mode` directly to intent metadata, so the human's choice always flows through real elicitation.
 
 ### Continuous Mode
 
@@ -437,13 +438,25 @@ This is the default. It suits initiatives where the human trusts the review gate
 
 ### Discrete Mode
 
-Discrete mode runs the same stage loop but always stops after each stage completes, regardless of the review gate setting. The human explicitly advances through stages by invoking the next run.
+Discrete mode runs the same stage loop but always stops after each stage completes, regardless of the review gate setting. The human explicitly advances through stages by invoking the next run. Each stage advancement is an external review gate — the framework opens a pull request, the merge-back is the approval signal — so each stage's outputs can be reviewed by the right stakeholder before the next begins.
 
 This suits larger initiatives, cross-team work, and situations where each stage needs explicit human review before the next begins — for example, when a product stage's outputs must be approved by a different stakeholder than the development stage's outputs.
 
+### Discrete-Hybrid Mode
+
+Discrete-hybrid groups consecutive stages into review buckets — stages with similar gate semantics consolidate into a single external review while still running independently. Useful when the studio has many small stages that don't each warrant a separate review cycle but the team still wants explicit checkpoints at boundaries that matter.
+
+### Autopilot Mode
+
+Autopilot trims the review and approval surface to the engine-built witnesses only — `spec` review on each unit, `quality_gates` on each unit's outputs, and intent-scope `spec` + `continuity` at the end. No studio-declared review agents fire, no human gate interrupts the loop, and `merge_stage` auto-fires once `quality_gates` is signed. Suited to well-bounded work where the engine's invariants are sufficient and the human is willing to delegate the entire run.
+
+### Quick Mode
+
+Quick mode is single-stage by definition — the human picks one stage from the studio's list at intent creation, the framework runs only that stage, and there is no `advance_stage` step. Once `quick` is set, the mode cannot transition into or out of it (doing so would amputate or grow the workflow). Quick is ideal for small targeted tasks that map onto exactly one stage's competence.
+
 ### Planning Levels
 
-Both modes share three planning levels:
+All modes share three planning levels:
 
 1. **Intent planning** — Always collaborative. Human and AI define what will be built and why.
 2. **Unit planning** — Always collaborative. Human and AI define success criteria per unit during the plan phase.
@@ -457,13 +470,19 @@ Collaboration is measured by **decisions**, not turns. Each collaborative stage 
 
 ## 8. The Reference Implementation
 
-The concepts described above are implemented as a Claude Code plugin with two user-facing commands and a hook system that enforces the methodology's structural constraints.
+The concepts described above are implemented as a Claude Code plugin with a small set of user-facing commands, a single workflow-driving MCP tool, and a hook system that enforces the methodology's structural constraints.
 
-### Two Commands
+### Commands and the Workflow Tool
 
-**`/haiku:start`** creates an intent — gathering a description, detecting the appropriate studio, selecting continuous or discrete mode, and setting up the workspace and persistence backend.
+User-facing commands are intentionally thin — they're entry points, not logic. The workflow-driving primitive is one MCP tool, `haiku_run_next`, which the agent calls every time it needs the next instruction.
 
-**`/haiku:pickup`** advances the intent through its next stage — resolving the current state, loading the stage definition, and executing the five-phase stage loop.
+- **`/haiku:start`** creates an intent — gathering a description, detecting the appropriate studio, eliciting the mode, and setting up the workspace and persistence backend.
+- **`/haiku:pickup`** resumes an active intent — calling `haiku_run_next` to derive the cursor position and surface the next action.
+- **`/haiku:autopilot`** runs an intent end-to-end on autopilot — same workflow, trimmed review/approval surface, no human gates.
+- **`/haiku:quick`** runs a single-stage intent for small targeted work.
+- **`/haiku:revisit`**, **`/haiku:change-mode`**, **`/haiku:reflect`**, and a handful of operational commands (dashboard, capacity, archive, etc.) round out the surface.
+
+The agent's contract is: receive an action from `haiku_run_next`, do what it says, call `haiku_run_next` again — unless the action is terminal. Forward motion has exactly one verb. The cursor model that drives those tick decisions is documented in `plugin/studios/ARCHITECTURE.md` §5.
 
 ### Enforcement Through Hooks
 
@@ -475,7 +494,7 @@ This principle — enforcement through hooks rather than instructions — applie
 - **Iteration enforcement** checks the unit DAG when a session ends: if work remains, the agent is redirected to continue; if all units are complete, the intent is reconciled.
 - **Context injection** reconstructs the full execution state on every session start — which intent is active, which stage is current, which hat should execute, what the unit status is — defeating context evaporation without relying on conversation history.
 - **Context budgeting** monitors token usage and warns at critical thresholds, preventing context exhaustion mid-task.
-- **Workflow guards** warn when code is edited outside the methodology's hat structure, catching accidental work outside the quality enforcement boundary.
+- **Workflow-managed file boundary** blocks generic Read/Write/Edit on units, feedback files, and intent metadata at the PreToolUse hook. Agents must use the corresponding MCP tools (`haiku_unit_read`, `haiku_unit_write`, `haiku_feedback_read`, `haiku_feedback_write`, etc.), which validate frontmatter, enforce the forward-only lifecycle, and run the schema gates on every input. This makes "the agent edited the wrong file by hand" a structurally impossible outcome rather than a behavioral request.
 
 ### Configuration
 
@@ -495,17 +514,17 @@ Configuration follows a three-level precedence: intent-level overrides take prio
 
 H·AI·K·U's universal core — the four-phase lifecycle, the stage loop, hat-based role separation, and quality enforcement — is domain-agnostic. Studios map this core to specific domains.
 
-### Fifteen Studios in Practice
+### Studios in Practice
 
-The plugin ships with fifteen studios across three categories that demonstrate the framework's range.
+The plugin ships studios across three broad categories that demonstrate the framework's range. The catalog is open-ended — new studios get added as new domains map onto the lifecycle.
 
-The **engineering studios** fall into two groups. The product-family studios (`appdev`, `libdev`, `gamedev`, `hwdev`) cover distinct product types where the lifecycle itself differs — application development has product and design phases, library development does not (inception folds in the API surface), game development has a prototype-validation gate and a dedicated polish stage, and hardware development has compliance-driven requirements and a one-shot manufacturing gate. The domain-engineering studios (`data-pipeline`, `migration`, `incident-response`, `compliance`, `security-assessment`) cover specialized engineering work. All use git persistence with pull-request delivery (except hardware, which delivers into manufacturing). Quality gates run test suites, linters, type checkers, and build commands where applicable.
+The **engineering studios** fall into two groups. The product-family studios (`appdev`, `libdev`, `gamedev`, `hwdev`) cover distinct product types where the lifecycle itself differs — application development has product and design phases, library development does not (inception folds in the API surface), game development has a prototype-validation gate and a dedicated polish stage, and hardware development has compliance-driven requirements and a one-shot manufacturing gate. The domain-engineering studios (`data-pipeline`, `migration`, `incident-response`, `compliance`, `security-assessment`, `quality-assurance`) cover specialized engineering work. All use git persistence with pull-request delivery (except hardware, which delivers into manufacturing). Quality gates run test suites, linters, type checkers, and build commands where applicable.
 
-The **go-to-market studios** (sales, marketing, customer-success, product-strategy) use filesystem persistence with local delivery. Their stages reflect business workflows — the sales studio moves from research through close; the customer-success studio moves from onboarding through renewal. Quality enforcement relies on adversarial review rather than machine-verifiable gates.
+The **go-to-market studios** (sales, marketing, customer-success, product-strategy, dev-evangelism) use filesystem persistence with local delivery. Their stages reflect business workflows — the sales studio moves from research through close; the customer-success studio moves from onboarding through renewal. Quality enforcement relies on adversarial review rather than machine-verifiable gates.
 
-The **general-purpose studios** (ideation, documentation) serve creative, analytical, and documentation work. The ideation studio uses filesystem persistence; the documentation studio uses git persistence with pull-request delivery.
+The **general-purpose and back-office studios** (ideation, documentation, training, hr, finance, legal, project-management, vendor-management, executive-strategy) serve creative, analytical, documentation, and operational work. Persistence and delivery follow the studio's natural collaboration pattern.
 
-All fifteen studios run on the same orchestration machinery. The same stage loop function drives inception in the application-development studio, concept in the game-development studio, triage in the incident-response studio, and research in the ideation studio. The same gate resolution function handles every domain. The same context injection hook loads context for any studio's hats.
+Every shipped studio runs on the same orchestration machinery. The same cursor walks every studio's stages; the same hat-dispatch function drives inception in the application-development studio, concept in the game-development studio, triage in the incident-response studio, and research in the ideation studio. The same gate resolution function handles every domain.
 
 ### What Changes Across Domains
 
@@ -519,7 +538,7 @@ All fifteen studios run on the same orchestration machinery. The same stage loop
 ### What Stays the Same
 
 - The four-phase cycle (elaboration → execution → operation → reflection).
-- The stage loop (elaborate → execute → adversarial review → gate).
+- The stage loop (elaborate → execute → review → approve → merge).
 - Hat-based role separation with fresh agent context per hat.
 - Completion criteria as the primary progress measure.
 - Input/output contracts between stages.
@@ -548,7 +567,7 @@ The universal layer provides: a four-phase lifecycle that maps to any initiative
 
 The domain-specific layer provides: studios that define stage sequences appropriate to the domain; hats that carry behavioral instructions tuned to specific roles; quality gates that run domain-appropriate verification; and output definitions that scope deliverables correctly.
 
-The plugin implementation demonstrates that this separation works in practice. The same orchestration machinery drives fifteen studios — from a six-stage application-development lifecycle with git persistence and pull-request delivery, to a four-stage library-development lifecycle that publishes to package registries, to a five-stage game-development lifecycle with a prototype-validation gate, to a six-stage hardware-development lifecycle with compliance-driven requirements and a one-shot manufacturing gate, to a five-stage sales cycle with filesystem persistence, to a five-stage security assessment with git-backed reporting. Adding a new domain requires defining stages and hats, not modifying orchestration code.
+The plugin implementation demonstrates that this separation works in practice. The same orchestration machinery drives every shipped studio — from a six-stage application-development lifecycle with git persistence and pull-request delivery, to a four-stage library-development lifecycle that publishes to package registries, to a five-stage game-development lifecycle with a prototype-validation gate, to a six-stage hardware-development lifecycle with compliance-driven requirements and a one-shot manufacturing gate, to a five-stage sales cycle with filesystem persistence, to a five-stage security assessment with git-backed reporting. Adding a new domain requires defining stages and hats, not modifying orchestration code.
 
 The framework is intentionally extensible through studios rather than through core modifications. The orchestration layer is stable; the studio layer is where domain expertise accumulates.
 
@@ -559,7 +578,8 @@ The framework is intentionally extensible through studios rather than through co
 | Term | Definition |
 |---|---|
 | **Backpressure** | Quality enforcement via hooks that block the agent from proceeding until standards are met, rather than relying on agent compliance. |
-| **Bolt** | One cycle through a stage's hat sequence for a unit. If completion criteria are not met, another bolt runs. Tracked as `iteration` in state. |
+| **Bolt** | One cycle through a stage's hat sequence for a unit. If completion criteria are not met, another bolt runs. Derived from the unit's `iterations[]` history on its frontmatter — the workflow cursor reads the last entry to decide which hat is next. |
+| **Workflow Cursor** | The pure-TypeScript decision function that drives every `haiku_run_next` call. Reads on-disk frontmatter (intent.md, every unit.md, every feedback.md) plus studio config and returns one next action — `start_unit_hat`, `dispatch_review`, `merge_stage`, etc. No LLM in the workflow-position decision; no in-memory state across ticks. Walks three tracks in priority order: drift sweep, open feedback, intent track. Implementation in `packages/haiku/src/orchestrator/workflow/cursor.ts`; semantics documented in `plugin/studios/ARCHITECTURE.md` §5. |
 | **Completion Criteria** | Verifiable conditions that define when a unit is done. Expressed as checkboxes in unit markdown. Quality gates enforce machine-verifiable criteria; adversarial review enforces the rest. |
 | **DAG** | Directed acyclic graph ordering units within a stage by their dependencies. |
 | **Feedback-Assessor** | A terminal fix-hat that independently verifies whether a prior fix resolves the named feedback. Cannot self-certify — the producer hat that made the fix is a different hat — which is the whole point of the isolation. Decides closure, keeps the finding open, or rejects as invalid. Defined as `hats/feedback-assessor.md` in any stage that opts into `fix_hats`. |
@@ -569,18 +589,18 @@ The framework is intentionally extensible through studios rather than through co
 | **Intent** | The top-level initiative being pursued. Contains units organized by stages. Stored at `.haiku/intents/{slug}/intent.md`. |
 | **Intent-Completion Review** | Studio-level adversarial review that runs once, after every stage's gate passes, before the intent is marked complete. Agents live at `plugin/studios/{studio}/review-agents/` (not per-stage). Findings log at intent scope and run through a studio-level fix loop via `plugin/studios/{studio}/fix-hats/`. Catches cross-stage inconsistencies that per-stage reviewers miss by construction. Cross-stage findings are always surfaced to the human; the layer explicitly forbids auto-revisiting stages. Enabled by default; opt out per intent with `intent_completion_review: false`. The finding rate per intent is the measurement surface: if it trends down over time, stage-level specs and reviews have gotten sharper upstream. |
 | **Persistence Adapter** | Backend that handles how work is stored and delivered. Implementations: git (branches, commits, pull requests) and filesystem (local directories). |
-| **Pre-Execution Review** | Adversarial review of unit *specs* (not artifacts) between elaborate and execute. Agents audit the plan for missing inputs, prose-only gates, unfalsifiable criteria, and sibling conflicts. Resolution path is spec edits to existing units, not new units. Shifts failures left at spec-text cost instead of execute-cycle cost. |
+| **Spec Review** | The engine-built `spec` reviewer that runs first in every stage's review track. Universal hard gate: every intent has a spec, every stage produces something the intent scoped, so the gate fires on every stage with no per-studio mandate file and no opt-out. It verifies that the completed units collectively delivered exactly what the intent scoped — no scope creep, no missed criteria, no cross-unit drift. Findings filed by spec routing through the fix loop unblock the rest of the review track (configured agents and the human gate). |
 | **Quality Gate** | A machine-verifiable check (test, lint, typecheck, build, grep) enforced at advance_hat time. Declared as an executable `{name, command, dir?}` entry in unit frontmatter; commands must scope to the full stage artifact directory, not only the unit's declared inputs. Blocks the hat from advancing until the gate returns exit 0. |
 | **Review Agent** | A specialized adversarial agent that evaluates stage output against a specific mandate (e.g., correctness, security, accessibility). Defined per-stage in `review-agents/{name}.md`. Agents can declare `applies_to:` (a list of file globs) to scope themselves to matching output kinds — e.g. a web accessibility agent only runs when the stage produces HTML/TSX/JSX. Stages can include review agents from other stages via `review-agents-include`. |
 | **Review Gate** | A checkpoint between stages that controls advancement. Types: `auto` (advance when quality gates pass — no human involved), `ask` (open local review UI for human approval — signal is the MCP response), `external` (block until an external review system like GitHub/GitLab approves — signal detected primarily by branch merge detection, with URL-based CLI probing as fallback), `await` (block until an external event outside the review process occurs — e.g., customer response, contract signature). Compound gates like `[external, ask]` let the human choose between paths. |
-| **Feedback Triage** | The pre-tick gate that classifies every open feedback finding before any handler dispatch. Feedback files carry a `triaged_at:` timestamp on their frontmatter. Agent-authored findings auto-triage on creation (the agent picks the stage in context). Human-authored findings stay untriaged until the agent confirms placement or relocates them via `haiku_feedback_move`. After triage, routing flows by file location: a finding on an earlier stage triggers a revisit to that stage; a finding on the current stage flows into its fix loop. The directory IS the classification — no `upstream_stage` hint needed. |
+| **Feedback Classification** | The first hat in a stage's `fix_hats:` chain reads each newly-filed FB body and calls `haiku_feedback_set_targets` to record which unit (if any) the finding targets and which approval roles to invalidate on closure. Targets are immutable once set. Cross-stage misfilings get relocated via `haiku_feedback_move` (which renumbers the FB and moves any sidecar attachment); after that, routing flows purely by file location — a finding sitting in `stages/<earlier>/feedback/` rewinds the cursor to that stage's fix loop on the next tick. The directory IS the classification — no `upstream_stage` hint needed. |
 | **Stage** | A lifecycle phase within a studio. Contains hat definitions, review gate, input/output contracts, and unit type constraints. |
 | **Studio** | A named lifecycle template mapping the four-phase model to domain-specific stages. Defines stage order, persistence type, and delivery mechanism. |
 | **Unit** | A discrete piece of work within an intent, scoped to a single stage. Has verifiable completion criteria and dependency relationships forming a DAG. |
-| **FB-as-Unit** | The fix-loop's structural rule: a feedback finding (FB) IS the unit-of-work for the fix-loop hats. Fixers populate the FB body with diagnosis (root cause, proposed action, references) via `haiku_feedback_write`; flagged units stay read-only via `haiku_unit_read`. The fix-loop hat chain progresses via `haiku_feedback_advance_hat` (mirror of the unit equivalent); the workflow engine auto-closes the FB when the last hat advances. Closed FBs become input to the next iteration of the upstream stage's elaborate phase, which authors corrective work — completed units are never modified. Implementation contract in `plugin/studios/ARCHITECTURE.md` §5. |
-| **Frontmatter-is-workflow engine-only** | Architectural rule: frontmatter on workflow-managed files (units, feedback, intent, state) is reserved for the workflow engine. Agents may write FM when authoring (the elaborator drafts a unit's `inputs:`) but MUST NOT *interpret* FM for any mechanical purpose. DAG validity, schema, cross-references, and lifecycle are workflow engine responsibilities, validated at write time inside the MCP tools. Reviewer hats and verifier hats validate body content only. The `haiku_unit_read` and `haiku_feedback_read` MCP tools enforce this by returning `{title, body}` only — no FM exposed. Implementation contract in `plugin/studios/ARCHITECTURE.md` §1.1. |
+| **FB-as-Unit** | The fix-loop's structural rule: a feedback finding (FB) IS the unit-of-work for the fix-loop hats. Fixers populate the FB body with diagnosis (root cause, proposed action, references) via `haiku_feedback_write`; flagged units stay read-only via `haiku_unit_read`. The fix-loop hat chain progresses via `haiku_feedback_advance_hat` (mirror of the unit equivalent); the workflow engine auto-closes the FB when the last hat advances and applies `targets.invalidates` to the targeted unit's approvals — the cursor's next tick re-runs whatever roles got invalidated. Implementation contract in `plugin/studios/ARCHITECTURE.md` §6. |
+| **Frontmatter-is-workflow-engine-only** | Architectural rule: frontmatter on workflow-managed files (units, feedback, intent) is reserved for the workflow engine. Agents may write FM when authoring (the elaborator drafts a unit's `inputs:`) but MUST NOT *interpret* FM for any mechanical purpose. DAG validity, schema, cross-references, lifecycle, and the workflow cursor's read-only signals (`iterations[]`, `started_at`, `approvals.*`, `reviews.*`, `discovery.*`) are workflow-engine responsibilities, validated at write time inside the MCP tools. Reviewer hats and verifier hats validate body content only. The `haiku_unit_read` and `haiku_feedback_read` MCP tools enforce this by returning `{title, body}` only — no FM exposed. Implementation contract in `plugin/studios/ARCHITECTURE.md` §1.1. |
 | **Forward-only Lifecycle** | Architectural rule: units (and FBs) move only `pending → active → completed`. There are no reverse transitions — no unwind, no reset. Once a unit is active or completed, downstream work has been informed by it; mutating it would silently invalidate that work. Stage revisits create new pending units that build on completed work; they never modify completed units. The MCP tools enforce this at write time (`haiku_unit_write` accepts only pending; `haiku_unit_set` blocks non-workflow engine field writes on active/completed; `haiku_unit_delete` is pending-only). Implementation contract in `plugin/studios/ARCHITECTURE.md` §1.3. |
-| **Plan-Do-Verify** | Hat-sequence pattern: every stage's `hats:` list MUST be at least three roles forming a plan → do → verify chain. Hat-to-hat handoff must be a meaningful baton (the rally-race test). Hat names MUST be distinct from phase names (`elaborate`, `execute`, `review`, `gate`). Adversarial loops (red-team / blue-team / etc.) MAY follow the triplet but never precede. Implementation contract in `plugin/studios/ARCHITECTURE.md` §3. |
+| **Plan-Do-Verify** | Hat-sequence pattern: every stage's `hats:` list MUST be at least three roles forming a plan → do → verify chain. Hat-to-hat handoff must be a meaningful baton (the rally-race test). Hat names MUST be distinct from the lifecycle's phase names (`elaborate`, `execute`, `review`, `gate`/`approve`, `merge`) so cursor traces and prompts stay unambiguous. Adversarial loops (red-team / blue-team / etc.) MAY follow the triplet but never precede. Implementation contract in `plugin/studios/ARCHITECTURE.md` §3. |
 
 ---
 
