@@ -11,6 +11,42 @@
     "stage": null,
     "tracking_class": "knowledge"
   },
+  "knowledge/DESIGN-BRIEF.md": {
+    "path": "knowledge/DESIGN-BRIEF.md",
+    "sha256": "9498efcb4215966d26169f5bab97316a10ac9bcef860014ef9cc5cdeca5e3ce9",
+    "bytes": 18002,
+    "mtime_ns": 1778258266786000000,
+    "is_binary": false,
+    "author_class": "agent",
+    "acknowledged_at": "2026-05-08T16:52:12.914Z",
+    "acknowledged_via": "baseline-init",
+    "stage": null,
+    "tracking_class": "knowledge"
+  },
+  "knowledge/DESIGN-SYSTEM-ANCHOR.md": {
+    "path": "knowledge/DESIGN-SYSTEM-ANCHOR.md",
+    "sha256": "403babc14ab45b9dfc0e1b9a67726b404726e046ba5a09389a814071598b818d",
+    "bytes": 28622,
+    "mtime_ns": 1778258266786000000,
+    "is_binary": false,
+    "author_class": "agent",
+    "acknowledged_at": "2026-05-08T16:52:12.914Z",
+    "acknowledged_via": "baseline-init",
+    "stage": null,
+    "tracking_class": "knowledge"
+  },
+  "knowledge/DESIGN-TOKENS.md": {
+    "path": "knowledge/DESIGN-TOKENS.md",
+    "sha256": "5f6ffe06f0430f7911a44a26026c3e11502b5ccdfe78818f44e7622abce95d48",
+    "bytes": 16056,
+    "mtime_ns": 1778258266786000000,
+    "is_binary": false,
+    "author_class": "agent",
+    "acknowledged_at": "2026-05-08T16:52:12.914Z",
+    "acknowledged_via": "baseline-init",
+    "stage": null,
+    "tracking_class": "knowledge"
+  },
   "knowledge/DISCOVERY.md": {
     "path": "knowledge/DISCOVERY.md",
     "sha256": "5e201deec682585f224d4e8f6255eba062a5d20c6195992178e6e6a4129a3aff",
