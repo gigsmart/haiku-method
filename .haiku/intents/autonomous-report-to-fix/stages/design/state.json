@@ -17,7 +17,7 @@
     }
   ],
   "upstream_reconciliation_fingerprint": "13aac16a642c5d1ed0a70678f1c3829d0b6fc090072c5976ef3fd881135e9b9b",
-  "elaboration_turns": 5,
+  "elaboration_turns": 8,
   "upstream_reconciliation_acknowledged": true,
   "upstream_reconciliation_acknowledged_at": "2026-05-08T16:53:17Z",
   "upstream_reconciliation_rationale": "All \"divergence\" findings are false positives from a regex bug in detectHttpStatusDivergence: the STATUS_CODE_RE includes a bare hyphen in the separator class, so Tailwind shade tokens (`stone-300`, `teal-500`, `green-400`, `stone-700`) parse as `code → status` mappings. The shade numbers are intentional design-system tokens spanning every design-stage artifact (DESIGN-SYSTEM-ANCHOR.md, DESIGN-BRIEF.md, DESIGN-TOKENS.md), not API endpoint statuses. The bug was excised by the v3→v4 cursor refactor on main (the entire upstream-reconciliation subsystem is gone), so this is a transient false positive in the older binary running this worktree. There is no actual contradiction to reconcile.",
@@ -33,6 +33,20 @@
       "rationale": "All \"divergence\" findings are false positives from a regex bug in detectHttpStatusDivergence: the STATUS_CODE_RE includes a bare hyphen in the separator class, so Tailwind shade tokens (`stone-300`, `teal-500`, `green-400`, `stone-700`) parse as `code → status` mappings. The shade numbers are intentional design-system tokens spanning every design-stage artifact (DESIGN-SYSTEM-ANCHOR.md, DESIGN-BRIEF.md, DESIGN-TOKENS.md), not API endpoint statuses. The bug was excised by the v3→v4 cursor refactor on main (the entire upstream-reconciliation subsystem is gone), so this is a transient false positive in the older binary running this worktree. There is no actual contradiction to reconcile.",
       "kind": "upstream_reconciliation",
       "recorded_at": "2026-05-08T16:53:17Z"
+    },
+    {
+      "decision": "Wireframe format for the design stage",
+      "options": [
+        "raw HTML wireframes committed under stages/design/artifacts/",
+        "Pencil MCP-managed .pen files",
+        "Figma MCP-managed designs"
+      ],
+      "choice": "raw HTML wireframes committed under stages/design/artifacts/",
+      "source": "autonomous-acknowledged",
+      "rationale": "DESIGN-BRIEF.md already specifies every surface in concrete Tailwind utility-class language and the website itself uses inline Tailwind v4 (no component library, no design provider integrated in the codebase). Raw HTML wireframes review cleanly against the existing site, downstream development can copy the markup directly, and there is no existing Pencil/Figma project for this repo to anchor against. Pencil MCP is technically available but introducing it for one intent adds a new file format and review surface for no concrete win. Veto invited if the project should be moving to Pencil/Figma now — none of the prior design stages I can see used either.",
+      "recorded_at": "2026-05-08T16:57:07Z"
     }
-  ]
+  ],
+  "pre_review_dispatched": true,
+  "pre_review_dispatched_at": "2026-05-08T17:01:18Z"
 }
