@@ -76,7 +76,16 @@ quality_gates:
       .haiku/intents/autonomous-report-to-fix/stages/design/artifacts/github-templates/issue-template.md
       && grep -qE 'haikumethod\.ai/report'
       .haiku/intents/autonomous-report-to-fix/stages/design/artifacts/github-templates/pr-template.md
-status: pending
+status: active
+bolt: 1
+hat: designer-prep
+started_at: '2026-05-08T17:53:22Z'
+hat_started_at: '2026-05-08T17:53:22Z'
+iterations:
+  - hat: designer-prep
+    started_at: '2026-05-08T17:53:22Z'
+    completed_at: null
+    result: null
 ---
 # GitHub Issue and PR Markdown Templates
 
