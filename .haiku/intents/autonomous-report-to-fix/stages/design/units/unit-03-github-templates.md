@@ -22,12 +22,7 @@ inputs:
   - >-
     .haiku/intents/autonomous-report-to-fix/stages/inception/artifacts/open-questions-with-defaults.md
 outputs:
-  - >-
-    .haiku/intents/autonomous-report-to-fix/stages/design/artifacts/github-templates/issue-template.md
-  - >-
-    .haiku/intents/autonomous-report-to-fix/stages/design/artifacts/github-templates/pr-template.md
-  - >-
-    .haiku/intents/autonomous-report-to-fix/stages/design/artifacts/github-templates/index.md
+  - knowledge/DESIGN-SYSTEM-ANCHOR.md
 quality_gates:
   - name: all-three-files-exist
     command: >-
