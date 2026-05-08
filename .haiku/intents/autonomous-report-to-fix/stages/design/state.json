@@ -15,5 +15,7 @@
       "trigger": "initial",
       "result": null
     }
-  ]
+  ],
+  "upstream_reconciliation_fingerprint": "13aac16a642c5d1ed0a70678f1c3829d0b6fc090072c5976ef3fd881135e9b9b",
+  "elaboration_turns": 2
 }

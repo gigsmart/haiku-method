@@ -1,0 +1,26 @@
+{
+  "knowledge/CONVERSATION-CONTEXT.md": {
+    "path": "knowledge/CONVERSATION-CONTEXT.md",
+    "sha256": "e6ecf9b6b6bbe3f3a053718ad6a74ce8459f2cbf22484090ac2780de47504ca2",
+    "bytes": 1333,
+    "mtime_ns": 1778024624780000000,
+    "is_binary": false,
+    "author_class": "agent",
+    "acknowledged_at": "2026-05-08T16:27:28.133Z",
+    "acknowledged_via": "baseline-init",
+    "stage": null,
+    "tracking_class": "knowledge"
+  },
+  "knowledge/DISCOVERY.md": {
+    "path": "knowledge/DISCOVERY.md",
+    "sha256": "5e201deec682585f224d4e8f6255eba062a5d20c6195992178e6e6a4129a3aff",
+    "bytes": 16203,
+    "mtime_ns": 1778024624780000000,
+    "is_binary": false,
+    "author_class": "agent",
+    "acknowledged_at": "2026-05-08T16:27:28.133Z",
+    "acknowledged_via": "baseline-init",
+    "stage": null,
+    "tracking_class": "knowledge"
+  }
+}
