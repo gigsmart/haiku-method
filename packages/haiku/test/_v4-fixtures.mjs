@@ -68,7 +68,6 @@ export function makeMergedUnit({
 		iterations,
 		reviews,
 		approvals,
-		discovery: {},
 	}
 
 	const unitPath = join(unitsDir, `${unit}.md`)

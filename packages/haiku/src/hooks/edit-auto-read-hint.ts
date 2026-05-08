@@ -12,28 +12,83 @@
 // allow tool-call injection via hooks (that would be the cleanest
 // fix — auto-Read + auto-retry in one tool call), so this is the
 // next-best contract layer: make the error noisy and actionable.
+//
+// 2026-05-08 — false-positive fix: the prior implementation
+// stringified the entire hook input and pattern-matched against the
+// blob, including `tool_input.old_string` / `new_string`. Edits to
+// files whose content happened to mention "read" / "before" / "edit"
+// (the haiku codebase itself, every blog post about workflow,
+// markdown docs about file edits) tripped a loose regex
+// `read.*before.*edit` and fired a spurious "Read first" error on
+// SUCCESSFUL edits. The fix scopes the inspection to
+// `tool_response` only, gates on `tool_response.isError`, and
+// tightens the pattern to two known Claude Code phrasings.
 
 import { defineHook } from "./define.js"
 
-const NOT_READ_PATTERN =
-	/file has not been read yet|read it first before writing|read.*before.*edit/i
+// Two literal phrasings Claude Code emits when an Edit hits an
+// unread file. Anchored on enough surrounding tokens that random
+// prose can't trigger them.
+const NOT_READ_PHRASES = [
+	"file has not been read yet",
+	"file has not been read in this session",
+	"read it first before writing to it",
+] as const
+
+function findNotReadError(toolResponse: unknown): boolean {
+	if (toolResponse === null || toolResponse === undefined) return false
+	if (typeof toolResponse === "string") {
+		const lower = toolResponse.toLowerCase()
+		return NOT_READ_PHRASES.some((phrase) => lower.includes(phrase))
+	}
+	if (typeof toolResponse !== "object") return false
+	const obj = toolResponse as Record<string, unknown>
+	// Gate on the explicit error flag — Claude Code sets `isError: true`
+	// on tool-call failures. Successful edits never carry it, so this
+	// short-circuits the false-positive path before we ever look at
+	// the content.
+	if (obj.isError !== true) return false
+	// The error text lives in `content[0].text` for Edit/MultiEdit.
+	// Inspect content entries for the exact phrasings.
+	if (Array.isArray(obj.content)) {
+		for (const entry of obj.content) {
+			if (entry && typeof entry === "object") {
+				const text = (entry as Record<string, unknown>).text
+				if (typeof text === "string") {
+					const lower = text.toLowerCase()
+					if (NOT_READ_PHRASES.some((phrase) => lower.includes(phrase))) {
+						return true
+					}
+				}
+			}
+		}
+	}
+	// Some harnesses surface the error on a top-level `error` /
+	// `message` field instead of structured content. Check both.
+	for (const field of ["error", "message"] as const) {
+		const value = obj[field]
+		if (typeof value === "string") {
+			const lower = value.toLowerCase()
+			if (NOT_READ_PHRASES.some((phrase) => lower.includes(phrase))) {
+				return true
+			}
+		}
+	}
+	return false
+}
 
 export default defineHook({
 	name: "edit-auto-read-hint",
 	description:
 		"PostToolUse: when Edit/MultiEdit fails with 'file not read yet', surface a Read-first hint so the agent recovers in one turn instead of retrying blindly.",
 	async handle(input, _ctx) {
-		// Tool-result hooks receive the tool response data. The shape
-		// varies by tool — for Edit, the failure text usually appears
-		// in `tool_response.content[0].text` or a stringifiable field
-		// that includes the canonical error. We check broadly to
-		// minimize false negatives.
-		const blob = JSON.stringify(input ?? {})
-		if (!NOT_READ_PATTERN.test(blob)) return
-		// Extract the file path the agent was trying to edit so the
-		// hint can include it. Best-effort — fall back to a generic
-		// message if the path isn't recoverable from the input.
-		const inputAny = input as Record<string, unknown>
+		const inputAny = (input ?? {}) as Record<string, unknown>
+		// Only inspect the tool_response — the tool_input contains
+		// agent-supplied strings (old_string / new_string) which
+		// might legitimately mention "read" / "before" / "edit" in
+		// prose or code comments and would trigger false positives.
+		if (!findNotReadError(inputAny.tool_response)) return
+
 		const toolInput = inputAny.tool_input as Record<string, unknown> | undefined
 		const filePath =
 			(toolInput?.file_path as string | undefined) ?? "<the file>"
