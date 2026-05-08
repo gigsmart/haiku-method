@@ -34,13 +34,20 @@ for (const file of testFiles) {
 		})
 		process.stdout.write(output)
 
-		// Parse pass/fail from output. Two output flavors are supported:
+		// Parse pass/fail from output. Three output flavors are supported:
 		//   - "X passed, Y failed" — bespoke runners in this repo
-		//   - "ℹ pass X" + "ℹ fail Y" — node:test runner (used by the
-		//     v0-to-v4 migrator tests)
+		//   - "ℹ pass X" + "ℹ fail Y" — node:test default reporter
+		//   - "# pass X" + "# fail Y" — node:test TAP reporter (default
+		//     under tsx in some CI environments; locally on macOS it
+		//     emits the `ℹ` glyph form, but Linux runners default to
+		//     TAP). Without this, ~30 test files would silently report
+		//     0/0 in CI and the silent-test-loss guard would fail the
+		//     run even though every test passed.
 		const match = output.match(/(\d+) passed, (\d+) failed/)
-		const nodeTestPass = output.match(/ℹ pass (\d+)/)
-		const nodeTestFail = output.match(/ℹ fail (\d+)/)
+		const nodeTestPass =
+			output.match(/ℹ pass (\d+)/) || output.match(/^# pass (\d+)/m)
+		const nodeTestFail =
+			output.match(/ℹ fail (\d+)/) || output.match(/^# fail (\d+)/m)
 		if (match) {
 			const p = Number.parseInt(match[1], 10)
 			const f = Number.parseInt(match[2], 10)
@@ -73,8 +80,12 @@ for (const file of testFiles) {
 
 		// Attempt to parse pass/fail counts from stdout even on non-zero exit
 		const crashMatch = e.stdout?.match(/(\d+) passed, (\d+) failed/)
-		const crashNodeTestPass = e.stdout?.match(/ℹ pass (\d+)/)
-		const crashNodeTestFail = e.stdout?.match(/ℹ fail (\d+)/)
+		const crashNodeTestPass =
+			e.stdout?.match(/ℹ pass (\d+)/) ||
+			e.stdout?.match(/^# pass (\d+)/m)
+		const crashNodeTestFail =
+			e.stdout?.match(/ℹ fail (\d+)/) ||
+			e.stdout?.match(/^# fail (\d+)/m)
 		if (crashMatch) {
 			const p = Number.parseInt(crashMatch[1], 10)
 			const f = Number.parseInt(crashMatch[2], 10)

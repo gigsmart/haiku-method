@@ -78,6 +78,10 @@ const ALLOWLIST = new Map([
 		"packages/haiku-ui/src/pages/review/stage/StageReview.tsx",
 		"Stage-review entry point + per-tab subcomponents (UnitsTab, ArtifactsTab, ArtifactDetailView, UnitDetailView). Could split per-tab when StageReview gets to 3000 LOC; under that, the UI cohesion of the review surface keeps it readable.",
 	],
+	[
+		"packages/haiku-api/src/schemas/session.ts",
+		"Single concern: SPA session/wire-payload schemas. Each shape gets a `Schema` const + an inferred `Type` export, which doubles the export count by design. The 30-or-so wire shapes are tightly coupled (review session ⇆ question session ⇆ design-direction session share the discriminated union on `session_type`); splitting them would force every consumer to import from three barrels for one wire shape. Revisit if a clear sub-protocol emerges (e.g. design-direction grows its own object graph).",
+	],
 ])
 
 // File-discovery patterns. We scan packages/{haiku,haiku-ui,haiku-api}/src

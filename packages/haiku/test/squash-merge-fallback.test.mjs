@@ -25,6 +25,7 @@ import assert from "node:assert"
 import { execFileSync } from "node:child_process"
 import {
 	chmodSync,
+	existsSync,
 	mkdtempSync,
 	rmSync,
 	writeFileSync,
@@ -155,6 +156,31 @@ function withStubbedPath(dir, fn) {
 	// Hide any real gh/glab on the system: prepend stub dir, then a
 	// minimal PATH that still has the basics needed by the engine
 	// (sh, git, which). /usr/bin and /bin cover macOS + Linux.
+	//
+	// CI hazard: GitHub Actions runners ship `gh` at `/usr/bin/gh`. The
+	// engine's `detectPrTool` runs `which gh` first and prefers it
+	// when present — so a real gh on PATH would override the test's
+	// "only glab" intent. Inject a stub `which` script alongside the
+	// other stubs that ONLY recognises tools the test deliberately
+	// stubbed. With this, `which gh` returns nothing unless the test
+	// explicitly stubbed gh, regardless of what's in /usr/bin.
+	if (!existsSync(join(dir, "which"))) {
+		writeFileSync(
+			join(dir, "which"),
+			[
+				"#!/bin/sh",
+				// Resolve only tools that exist in the test's stub dir.
+				// $0 is `which` itself; the queried tool name is $1.
+				`STUB_DIR="$(dirname "$0")"`,
+				`if [ -x "$STUB_DIR/$1" ] && [ "$1" != "which" ]; then`,
+				`  echo "$STUB_DIR/$1"`,
+				`  exit 0`,
+				`fi`,
+				`exit 1`,
+			].join("\n"),
+			{ mode: 0o755 },
+		)
+	}
 	process.env.PATH = `${dir}:/usr/bin:/bin`
 	try {
 		return fn()
@@ -245,10 +271,11 @@ test("provider fallback empty: gh reports no merged PR → returns false", () =>
 test("provider fallback success: glab reports merged MR → returns true", () => {
 	_resetIsGitRepoForTests()
 	const tmp = setupSquashRepo()
-	// Stub ONLY glab, not gh. The engine prefers gh when both exist; with
-	// only glab present, detectPrTool returns "glab" and the engine queries
-	// `glab mr list ...`. The expected match pattern is `^!(\d+)\b` on the
-	// stdout, so emit a glab-style line.
+	// Stub ONLY glab. The engine's detectPrTool prefers gh when both are
+	// present, but `withStubbedPath` injects a stub `which` script that
+	// only finds tools in the stub dir — so on CI where /usr/bin/gh
+	// exists, our `which gh` returns nothing and the engine falls
+	// through to glab as expected.
 	const stub = makeStubDir({
 		glab: "#!/bin/sh\necho '!42  Some merged MR  haiku/sq/foo  merged'\n",
 	})
