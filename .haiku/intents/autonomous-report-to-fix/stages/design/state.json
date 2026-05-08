@@ -1,7 +1,7 @@
 {
   "stage": "design",
   "status": "active",
-  "phase": "elaborate",
+  "phase": "execute",
   "started_at": "2026-05-05T23:21:14Z",
   "completed_at": null,
   "gate_entered_at": null,
@@ -17,7 +17,7 @@
     }
   ],
   "upstream_reconciliation_fingerprint": "13aac16a642c5d1ed0a70678f1c3829d0b6fc090072c5976ef3fd881135e9b9b",
-  "elaboration_turns": 8,
+  "elaboration_turns": 10,
   "upstream_reconciliation_acknowledged": true,
   "upstream_reconciliation_acknowledged_at": "2026-05-08T16:53:17Z",
   "upstream_reconciliation_rationale": "All \"divergence\" findings are false positives from a regex bug in detectHttpStatusDivergence: the STATUS_CODE_RE includes a bare hyphen in the separator class, so Tailwind shade tokens (`stone-300`, `teal-500`, `green-400`, `stone-700`) parse as `code → status` mappings. The shade numbers are intentional design-system tokens spanning every design-stage artifact (DESIGN-SYSTEM-ANCHOR.md, DESIGN-BRIEF.md, DESIGN-TOKENS.md), not API endpoint statuses. The bug was excised by the v3→v4 cursor refactor on main (the entire upstream-reconciliation subsystem is gone), so this is a transient false positive in the older binary running this worktree. There is no actual contradiction to reconcile.",
@@ -48,5 +48,7 @@
     }
   ],
   "pre_review_dispatched": true,
-  "pre_review_dispatched_at": "2026-05-08T17:01:18Z"
+  "pre_review_dispatched_at": "2026-05-08T17:01:18Z",
+  "pre_review_reviewers_acknowledged": true,
+  "pre_review_reviewers_acknowledged_at": "2026-05-08T17:10:31Z"
 }
