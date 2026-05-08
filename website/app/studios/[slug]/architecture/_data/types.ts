@@ -108,7 +108,7 @@ export type ModalKind =
 	| { kind: "unit"; stageName: string; unitId: string; model: string }
 	| { kind: "artifact"; artifactKey: string }
 	| { kind: "intentCreation" }
-	| { kind: "preTickTriage" }
+	| { kind: "cursorTracks" }
 	| { kind: "tickSemantics" }
 
 export interface PayloadModalData {

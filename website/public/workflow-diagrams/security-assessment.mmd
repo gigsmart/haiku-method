@@ -36,7 +36,8 @@ stateDiagram-v2
     state reconnaissance_review_fix {
       [*] --> reconnaissance_review_fix_bolt_1
       state reconnaissance_review_fix_bolt_1 {
-        [*] --> reconnaissance_review_fix_bolt_1_osint_analyst
+        [*] --> reconnaissance_review_fix_bolt_1_classifier
+        reconnaissance_review_fix_bolt_1_classifier --> reconnaissance_review_fix_bolt_1_osint_analyst : fix.advance
         reconnaissance_review_fix_bolt_1_osint_analyst --> reconnaissance_review_fix_bolt_1_feedback_assessor : fix.advance
         reconnaissance_review_fix_bolt_1_feedback_assessor --> reconnaissance_review_fix_bolt_1_validated : fix.advance
         reconnaissance_review_fix_bolt_1_validated --> [*]
@@ -44,7 +45,8 @@ stateDiagram-v2
       reconnaissance_review_fix_bolt_1 --> reconnaissance_review_fix_done : feedback.closed
       reconnaissance_review_fix_bolt_1 --> reconnaissance_review_fix_bolt_2 : feedback.open
       state reconnaissance_review_fix_bolt_2 {
-        [*] --> reconnaissance_review_fix_bolt_2_osint_analyst
+        [*] --> reconnaissance_review_fix_bolt_2_classifier
+        reconnaissance_review_fix_bolt_2_classifier --> reconnaissance_review_fix_bolt_2_osint_analyst : fix.advance
         reconnaissance_review_fix_bolt_2_osint_analyst --> reconnaissance_review_fix_bolt_2_feedback_assessor : fix.advance
         reconnaissance_review_fix_bolt_2_feedback_assessor --> reconnaissance_review_fix_bolt_2_validated : fix.advance
         reconnaissance_review_fix_bolt_2_validated --> [*]
@@ -52,7 +54,8 @@ stateDiagram-v2
       reconnaissance_review_fix_bolt_2 --> reconnaissance_review_fix_done : feedback.closed
       reconnaissance_review_fix_bolt_2 --> reconnaissance_review_fix_bolt_3 : feedback.open
       state reconnaissance_review_fix_bolt_3 {
-        [*] --> reconnaissance_review_fix_bolt_3_osint_analyst
+        [*] --> reconnaissance_review_fix_bolt_3_classifier
+        reconnaissance_review_fix_bolt_3_classifier --> reconnaissance_review_fix_bolt_3_osint_analyst : fix.advance
         reconnaissance_review_fix_bolt_3_osint_analyst --> reconnaissance_review_fix_bolt_3_feedback_assessor : fix.advance
         reconnaissance_review_fix_bolt_3_feedback_assessor --> reconnaissance_review_fix_bolt_3_validated : fix.advance
         reconnaissance_review_fix_bolt_3_validated --> [*]
@@ -86,7 +89,8 @@ stateDiagram-v2
     state enumeration_review_fix {
       [*] --> enumeration_review_fix_bolt_1
       state enumeration_review_fix_bolt_1 {
-        [*] --> enumeration_review_fix_bolt_1_enumerator
+        [*] --> enumeration_review_fix_bolt_1_classifier
+        enumeration_review_fix_bolt_1_classifier --> enumeration_review_fix_bolt_1_enumerator : fix.advance
         enumeration_review_fix_bolt_1_enumerator --> enumeration_review_fix_bolt_1_feedback_assessor : fix.advance
         enumeration_review_fix_bolt_1_feedback_assessor --> enumeration_review_fix_bolt_1_validated : fix.advance
         enumeration_review_fix_bolt_1_validated --> [*]
@@ -94,7 +98,8 @@ stateDiagram-v2
       enumeration_review_fix_bolt_1 --> enumeration_review_fix_done : feedback.closed
       enumeration_review_fix_bolt_1 --> enumeration_review_fix_bolt_2 : feedback.open
       state enumeration_review_fix_bolt_2 {
-        [*] --> enumeration_review_fix_bolt_2_enumerator
+        [*] --> enumeration_review_fix_bolt_2_classifier
+        enumeration_review_fix_bolt_2_classifier --> enumeration_review_fix_bolt_2_enumerator : fix.advance
         enumeration_review_fix_bolt_2_enumerator --> enumeration_review_fix_bolt_2_feedback_assessor : fix.advance
         enumeration_review_fix_bolt_2_feedback_assessor --> enumeration_review_fix_bolt_2_validated : fix.advance
         enumeration_review_fix_bolt_2_validated --> [*]
@@ -102,7 +107,8 @@ stateDiagram-v2
       enumeration_review_fix_bolt_2 --> enumeration_review_fix_done : feedback.closed
       enumeration_review_fix_bolt_2 --> enumeration_review_fix_bolt_3 : feedback.open
       state enumeration_review_fix_bolt_3 {
-        [*] --> enumeration_review_fix_bolt_3_enumerator
+        [*] --> enumeration_review_fix_bolt_3_classifier
+        enumeration_review_fix_bolt_3_classifier --> enumeration_review_fix_bolt_3_enumerator : fix.advance
         enumeration_review_fix_bolt_3_enumerator --> enumeration_review_fix_bolt_3_feedback_assessor : fix.advance
         enumeration_review_fix_bolt_3_feedback_assessor --> enumeration_review_fix_bolt_3_validated : fix.advance
         enumeration_review_fix_bolt_3_validated --> [*]
@@ -140,7 +146,8 @@ stateDiagram-v2
     state exploitation_review_fix {
       [*] --> exploitation_review_fix_bolt_1
       state exploitation_review_fix_bolt_1 {
-        [*] --> exploitation_review_fix_bolt_1_exploit_developer
+        [*] --> exploitation_review_fix_bolt_1_classifier
+        exploitation_review_fix_bolt_1_classifier --> exploitation_review_fix_bolt_1_exploit_developer : fix.advance
         exploitation_review_fix_bolt_1_exploit_developer --> exploitation_review_fix_bolt_1_feedback_assessor : fix.advance
         exploitation_review_fix_bolt_1_feedback_assessor --> exploitation_review_fix_bolt_1_validated : fix.advance
         exploitation_review_fix_bolt_1_validated --> [*]
@@ -148,7 +155,8 @@ stateDiagram-v2
       exploitation_review_fix_bolt_1 --> exploitation_review_fix_done : feedback.closed
       exploitation_review_fix_bolt_1 --> exploitation_review_fix_bolt_2 : feedback.open
       state exploitation_review_fix_bolt_2 {
-        [*] --> exploitation_review_fix_bolt_2_exploit_developer
+        [*] --> exploitation_review_fix_bolt_2_classifier
+        exploitation_review_fix_bolt_2_classifier --> exploitation_review_fix_bolt_2_exploit_developer : fix.advance
         exploitation_review_fix_bolt_2_exploit_developer --> exploitation_review_fix_bolt_2_feedback_assessor : fix.advance
         exploitation_review_fix_bolt_2_feedback_assessor --> exploitation_review_fix_bolt_2_validated : fix.advance
         exploitation_review_fix_bolt_2_validated --> [*]
@@ -156,7 +164,8 @@ stateDiagram-v2
       exploitation_review_fix_bolt_2 --> exploitation_review_fix_done : feedback.closed
       exploitation_review_fix_bolt_2 --> exploitation_review_fix_bolt_3 : feedback.open
       state exploitation_review_fix_bolt_3 {
-        [*] --> exploitation_review_fix_bolt_3_exploit_developer
+        [*] --> exploitation_review_fix_bolt_3_classifier
+        exploitation_review_fix_bolt_3_classifier --> exploitation_review_fix_bolt_3_exploit_developer : fix.advance
         exploitation_review_fix_bolt_3_exploit_developer --> exploitation_review_fix_bolt_3_feedback_assessor : fix.advance
         exploitation_review_fix_bolt_3_feedback_assessor --> exploitation_review_fix_bolt_3_validated : fix.advance
         exploitation_review_fix_bolt_3_validated --> [*]
@@ -188,7 +197,8 @@ stateDiagram-v2
     state post_exploitation_review_fix {
       [*] --> post_exploitation_review_fix_bolt_1
       state post_exploitation_review_fix_bolt_1 {
-        [*] --> post_exploitation_review_fix_bolt_1_post_exploit_analyst
+        [*] --> post_exploitation_review_fix_bolt_1_classifier
+        post_exploitation_review_fix_bolt_1_classifier --> post_exploitation_review_fix_bolt_1_post_exploit_analyst : fix.advance
         post_exploitation_review_fix_bolt_1_post_exploit_analyst --> post_exploitation_review_fix_bolt_1_feedback_assessor : fix.advance
         post_exploitation_review_fix_bolt_1_feedback_assessor --> post_exploitation_review_fix_bolt_1_validated : fix.advance
         post_exploitation_review_fix_bolt_1_validated --> [*]
@@ -196,7 +206,8 @@ stateDiagram-v2
       post_exploitation_review_fix_bolt_1 --> post_exploitation_review_fix_done : feedback.closed
       post_exploitation_review_fix_bolt_1 --> post_exploitation_review_fix_bolt_2 : feedback.open
       state post_exploitation_review_fix_bolt_2 {
-        [*] --> post_exploitation_review_fix_bolt_2_post_exploit_analyst
+        [*] --> post_exploitation_review_fix_bolt_2_classifier
+        post_exploitation_review_fix_bolt_2_classifier --> post_exploitation_review_fix_bolt_2_post_exploit_analyst : fix.advance
         post_exploitation_review_fix_bolt_2_post_exploit_analyst --> post_exploitation_review_fix_bolt_2_feedback_assessor : fix.advance
         post_exploitation_review_fix_bolt_2_feedback_assessor --> post_exploitation_review_fix_bolt_2_validated : fix.advance
         post_exploitation_review_fix_bolt_2_validated --> [*]
@@ -204,7 +215,8 @@ stateDiagram-v2
       post_exploitation_review_fix_bolt_2 --> post_exploitation_review_fix_done : feedback.closed
       post_exploitation_review_fix_bolt_2 --> post_exploitation_review_fix_bolt_3 : feedback.open
       state post_exploitation_review_fix_bolt_3 {
-        [*] --> post_exploitation_review_fix_bolt_3_post_exploit_analyst
+        [*] --> post_exploitation_review_fix_bolt_3_classifier
+        post_exploitation_review_fix_bolt_3_classifier --> post_exploitation_review_fix_bolt_3_post_exploit_analyst : fix.advance
         post_exploitation_review_fix_bolt_3_post_exploit_analyst --> post_exploitation_review_fix_bolt_3_feedback_assessor : fix.advance
         post_exploitation_review_fix_bolt_3_feedback_assessor --> post_exploitation_review_fix_bolt_3_validated : fix.advance
         post_exploitation_review_fix_bolt_3_validated --> [*]
@@ -238,7 +250,8 @@ stateDiagram-v2
     state reporting_review_fix {
       [*] --> reporting_review_fix_bolt_1
       state reporting_review_fix_bolt_1 {
-        [*] --> reporting_review_fix_bolt_1_report_writer
+        [*] --> reporting_review_fix_bolt_1_classifier
+        reporting_review_fix_bolt_1_classifier --> reporting_review_fix_bolt_1_report_writer : fix.advance
         reporting_review_fix_bolt_1_report_writer --> reporting_review_fix_bolt_1_feedback_assessor : fix.advance
         reporting_review_fix_bolt_1_feedback_assessor --> reporting_review_fix_bolt_1_validated : fix.advance
         reporting_review_fix_bolt_1_validated --> [*]
@@ -246,7 +259,8 @@ stateDiagram-v2
       reporting_review_fix_bolt_1 --> reporting_review_fix_done : feedback.closed
       reporting_review_fix_bolt_1 --> reporting_review_fix_bolt_2 : feedback.open
       state reporting_review_fix_bolt_2 {
-        [*] --> reporting_review_fix_bolt_2_report_writer
+        [*] --> reporting_review_fix_bolt_2_classifier
+        reporting_review_fix_bolt_2_classifier --> reporting_review_fix_bolt_2_report_writer : fix.advance
         reporting_review_fix_bolt_2_report_writer --> reporting_review_fix_bolt_2_feedback_assessor : fix.advance
         reporting_review_fix_bolt_2_feedback_assessor --> reporting_review_fix_bolt_2_validated : fix.advance
         reporting_review_fix_bolt_2_validated --> [*]
@@ -254,7 +268,8 @@ stateDiagram-v2
       reporting_review_fix_bolt_2 --> reporting_review_fix_done : feedback.closed
       reporting_review_fix_bolt_2 --> reporting_review_fix_bolt_3 : feedback.open
       state reporting_review_fix_bolt_3 {
-        [*] --> reporting_review_fix_bolt_3_report_writer
+        [*] --> reporting_review_fix_bolt_3_classifier
+        reporting_review_fix_bolt_3_classifier --> reporting_review_fix_bolt_3_report_writer : fix.advance
         reporting_review_fix_bolt_3_report_writer --> reporting_review_fix_bolt_3_feedback_assessor : fix.advance
         reporting_review_fix_bolt_3_feedback_assessor --> reporting_review_fix_bolt_3_validated : fix.advance
         reporting_review_fix_bolt_3_validated --> [*]

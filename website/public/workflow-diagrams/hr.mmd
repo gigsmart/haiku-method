@@ -36,7 +36,8 @@ stateDiagram-v2
     state requisition_review_fix {
       [*] --> requisition_review_fix_bolt_1
       state requisition_review_fix_bolt_1 {
-        [*] --> requisition_review_fix_bolt_1_hiring_manager
+        [*] --> requisition_review_fix_bolt_1_classifier
+        requisition_review_fix_bolt_1_classifier --> requisition_review_fix_bolt_1_hiring_manager : fix.advance
         requisition_review_fix_bolt_1_hiring_manager --> requisition_review_fix_bolt_1_feedback_assessor : fix.advance
         requisition_review_fix_bolt_1_feedback_assessor --> requisition_review_fix_bolt_1_validated : fix.advance
         requisition_review_fix_bolt_1_validated --> [*]
@@ -44,7 +45,8 @@ stateDiagram-v2
       requisition_review_fix_bolt_1 --> requisition_review_fix_done : feedback.closed
       requisition_review_fix_bolt_1 --> requisition_review_fix_bolt_2 : feedback.open
       state requisition_review_fix_bolt_2 {
-        [*] --> requisition_review_fix_bolt_2_hiring_manager
+        [*] --> requisition_review_fix_bolt_2_classifier
+        requisition_review_fix_bolt_2_classifier --> requisition_review_fix_bolt_2_hiring_manager : fix.advance
         requisition_review_fix_bolt_2_hiring_manager --> requisition_review_fix_bolt_2_feedback_assessor : fix.advance
         requisition_review_fix_bolt_2_feedback_assessor --> requisition_review_fix_bolt_2_validated : fix.advance
         requisition_review_fix_bolt_2_validated --> [*]
@@ -52,7 +54,8 @@ stateDiagram-v2
       requisition_review_fix_bolt_2 --> requisition_review_fix_done : feedback.closed
       requisition_review_fix_bolt_2 --> requisition_review_fix_bolt_3 : feedback.open
       state requisition_review_fix_bolt_3 {
-        [*] --> requisition_review_fix_bolt_3_hiring_manager
+        [*] --> requisition_review_fix_bolt_3_classifier
+        requisition_review_fix_bolt_3_classifier --> requisition_review_fix_bolt_3_hiring_manager : fix.advance
         requisition_review_fix_bolt_3_hiring_manager --> requisition_review_fix_bolt_3_feedback_assessor : fix.advance
         requisition_review_fix_bolt_3_feedback_assessor --> requisition_review_fix_bolt_3_validated : fix.advance
         requisition_review_fix_bolt_3_validated --> [*]
@@ -86,7 +89,8 @@ stateDiagram-v2
     state sourcing_review_fix {
       [*] --> sourcing_review_fix_bolt_1
       state sourcing_review_fix_bolt_1 {
-        [*] --> sourcing_review_fix_bolt_1_sourcer
+        [*] --> sourcing_review_fix_bolt_1_classifier
+        sourcing_review_fix_bolt_1_classifier --> sourcing_review_fix_bolt_1_sourcer : fix.advance
         sourcing_review_fix_bolt_1_sourcer --> sourcing_review_fix_bolt_1_feedback_assessor : fix.advance
         sourcing_review_fix_bolt_1_feedback_assessor --> sourcing_review_fix_bolt_1_validated : fix.advance
         sourcing_review_fix_bolt_1_validated --> [*]
@@ -94,7 +98,8 @@ stateDiagram-v2
       sourcing_review_fix_bolt_1 --> sourcing_review_fix_done : feedback.closed
       sourcing_review_fix_bolt_1 --> sourcing_review_fix_bolt_2 : feedback.open
       state sourcing_review_fix_bolt_2 {
-        [*] --> sourcing_review_fix_bolt_2_sourcer
+        [*] --> sourcing_review_fix_bolt_2_classifier
+        sourcing_review_fix_bolt_2_classifier --> sourcing_review_fix_bolt_2_sourcer : fix.advance
         sourcing_review_fix_bolt_2_sourcer --> sourcing_review_fix_bolt_2_feedback_assessor : fix.advance
         sourcing_review_fix_bolt_2_feedback_assessor --> sourcing_review_fix_bolt_2_validated : fix.advance
         sourcing_review_fix_bolt_2_validated --> [*]
@@ -102,7 +107,8 @@ stateDiagram-v2
       sourcing_review_fix_bolt_2 --> sourcing_review_fix_done : feedback.closed
       sourcing_review_fix_bolt_2 --> sourcing_review_fix_bolt_3 : feedback.open
       state sourcing_review_fix_bolt_3 {
-        [*] --> sourcing_review_fix_bolt_3_sourcer
+        [*] --> sourcing_review_fix_bolt_3_classifier
+        sourcing_review_fix_bolt_3_classifier --> sourcing_review_fix_bolt_3_sourcer : fix.advance
         sourcing_review_fix_bolt_3_sourcer --> sourcing_review_fix_bolt_3_feedback_assessor : fix.advance
         sourcing_review_fix_bolt_3_feedback_assessor --> sourcing_review_fix_bolt_3_validated : fix.advance
         sourcing_review_fix_bolt_3_validated --> [*]
@@ -134,7 +140,8 @@ stateDiagram-v2
     state screening_review_fix {
       [*] --> screening_review_fix_bolt_1
       state screening_review_fix_bolt_1 {
-        [*] --> screening_review_fix_bolt_1_screener
+        [*] --> screening_review_fix_bolt_1_classifier
+        screening_review_fix_bolt_1_classifier --> screening_review_fix_bolt_1_screener : fix.advance
         screening_review_fix_bolt_1_screener --> screening_review_fix_bolt_1_feedback_assessor : fix.advance
         screening_review_fix_bolt_1_feedback_assessor --> screening_review_fix_bolt_1_validated : fix.advance
         screening_review_fix_bolt_1_validated --> [*]
@@ -142,7 +149,8 @@ stateDiagram-v2
       screening_review_fix_bolt_1 --> screening_review_fix_done : feedback.closed
       screening_review_fix_bolt_1 --> screening_review_fix_bolt_2 : feedback.open
       state screening_review_fix_bolt_2 {
-        [*] --> screening_review_fix_bolt_2_screener
+        [*] --> screening_review_fix_bolt_2_classifier
+        screening_review_fix_bolt_2_classifier --> screening_review_fix_bolt_2_screener : fix.advance
         screening_review_fix_bolt_2_screener --> screening_review_fix_bolt_2_feedback_assessor : fix.advance
         screening_review_fix_bolt_2_feedback_assessor --> screening_review_fix_bolt_2_validated : fix.advance
         screening_review_fix_bolt_2_validated --> [*]
@@ -150,7 +158,8 @@ stateDiagram-v2
       screening_review_fix_bolt_2 --> screening_review_fix_done : feedback.closed
       screening_review_fix_bolt_2 --> screening_review_fix_bolt_3 : feedback.open
       state screening_review_fix_bolt_3 {
-        [*] --> screening_review_fix_bolt_3_screener
+        [*] --> screening_review_fix_bolt_3_classifier
+        screening_review_fix_bolt_3_classifier --> screening_review_fix_bolt_3_screener : fix.advance
         screening_review_fix_bolt_3_screener --> screening_review_fix_bolt_3_feedback_assessor : fix.advance
         screening_review_fix_bolt_3_feedback_assessor --> screening_review_fix_bolt_3_validated : fix.advance
         screening_review_fix_bolt_3_validated --> [*]
@@ -184,7 +193,8 @@ stateDiagram-v2
     state interview_review_fix {
       [*] --> interview_review_fix_bolt_1
       state interview_review_fix_bolt_1 {
-        [*] --> interview_review_fix_bolt_1_interviewer
+        [*] --> interview_review_fix_bolt_1_classifier
+        interview_review_fix_bolt_1_classifier --> interview_review_fix_bolt_1_interviewer : fix.advance
         interview_review_fix_bolt_1_interviewer --> interview_review_fix_bolt_1_feedback_assessor : fix.advance
         interview_review_fix_bolt_1_feedback_assessor --> interview_review_fix_bolt_1_validated : fix.advance
         interview_review_fix_bolt_1_validated --> [*]
@@ -192,7 +202,8 @@ stateDiagram-v2
       interview_review_fix_bolt_1 --> interview_review_fix_done : feedback.closed
       interview_review_fix_bolt_1 --> interview_review_fix_bolt_2 : feedback.open
       state interview_review_fix_bolt_2 {
-        [*] --> interview_review_fix_bolt_2_interviewer
+        [*] --> interview_review_fix_bolt_2_classifier
+        interview_review_fix_bolt_2_classifier --> interview_review_fix_bolt_2_interviewer : fix.advance
         interview_review_fix_bolt_2_interviewer --> interview_review_fix_bolt_2_feedback_assessor : fix.advance
         interview_review_fix_bolt_2_feedback_assessor --> interview_review_fix_bolt_2_validated : fix.advance
         interview_review_fix_bolt_2_validated --> [*]
@@ -200,7 +211,8 @@ stateDiagram-v2
       interview_review_fix_bolt_2 --> interview_review_fix_done : feedback.closed
       interview_review_fix_bolt_2 --> interview_review_fix_bolt_3 : feedback.open
       state interview_review_fix_bolt_3 {
-        [*] --> interview_review_fix_bolt_3_interviewer
+        [*] --> interview_review_fix_bolt_3_classifier
+        interview_review_fix_bolt_3_classifier --> interview_review_fix_bolt_3_interviewer : fix.advance
         interview_review_fix_bolt_3_interviewer --> interview_review_fix_bolt_3_feedback_assessor : fix.advance
         interview_review_fix_bolt_3_feedback_assessor --> interview_review_fix_bolt_3_validated : fix.advance
         interview_review_fix_bolt_3_validated --> [*]
@@ -234,7 +246,8 @@ stateDiagram-v2
     state offer_review_fix {
       [*] --> offer_review_fix_bolt_1
       state offer_review_fix_bolt_1 {
-        [*] --> offer_review_fix_bolt_1_compensator
+        [*] --> offer_review_fix_bolt_1_classifier
+        offer_review_fix_bolt_1_classifier --> offer_review_fix_bolt_1_compensator : fix.advance
         offer_review_fix_bolt_1_compensator --> offer_review_fix_bolt_1_feedback_assessor : fix.advance
         offer_review_fix_bolt_1_feedback_assessor --> offer_review_fix_bolt_1_validated : fix.advance
         offer_review_fix_bolt_1_validated --> [*]
@@ -242,7 +255,8 @@ stateDiagram-v2
       offer_review_fix_bolt_1 --> offer_review_fix_done : feedback.closed
       offer_review_fix_bolt_1 --> offer_review_fix_bolt_2 : feedback.open
       state offer_review_fix_bolt_2 {
-        [*] --> offer_review_fix_bolt_2_compensator
+        [*] --> offer_review_fix_bolt_2_classifier
+        offer_review_fix_bolt_2_classifier --> offer_review_fix_bolt_2_compensator : fix.advance
         offer_review_fix_bolt_2_compensator --> offer_review_fix_bolt_2_feedback_assessor : fix.advance
         offer_review_fix_bolt_2_feedback_assessor --> offer_review_fix_bolt_2_validated : fix.advance
         offer_review_fix_bolt_2_validated --> [*]
@@ -250,7 +264,8 @@ stateDiagram-v2
       offer_review_fix_bolt_2 --> offer_review_fix_done : feedback.closed
       offer_review_fix_bolt_2 --> offer_review_fix_bolt_3 : feedback.open
       state offer_review_fix_bolt_3 {
-        [*] --> offer_review_fix_bolt_3_compensator
+        [*] --> offer_review_fix_bolt_3_classifier
+        offer_review_fix_bolt_3_classifier --> offer_review_fix_bolt_3_compensator : fix.advance
         offer_review_fix_bolt_3_compensator --> offer_review_fix_bolt_3_feedback_assessor : fix.advance
         offer_review_fix_bolt_3_feedback_assessor --> offer_review_fix_bolt_3_validated : fix.advance
         offer_review_fix_bolt_3_validated --> [*]

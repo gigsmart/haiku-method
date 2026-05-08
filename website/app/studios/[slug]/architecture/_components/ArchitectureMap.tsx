@@ -355,7 +355,7 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 
 					<button
 						type="button"
-						onClick={() => setModal({ kind: "preTickTriage" })}
+						onClick={() => setModal({ kind: "cursorTracks" })}
 						style={{
 							all: "unset",
 							display: "flex",
@@ -375,9 +375,9 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 							cursor: "pointer",
 							boxSizing: "border-box",
 						}}
-						title="Click for the pre-tick triage gate flow"
+						title="Click for the cursor's three-track walk (drift → feedback → intent)"
 					>
-						<span>⛓ pre-tick triage gate</span>
+						<span>⛓ cursor track walk</span>
 						<span
 							style={{
 								color: "#94a3b8",
@@ -386,7 +386,7 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 								letterSpacing: 0,
 							}}
 						>
-							run-tick.ts · runs BEFORE every handler tick
+							cursor.ts · Track C drift → Track B feedback → Track A intent
 						</span>
 						<span
 							style={{ marginLeft: "auto", color: "#94a3b8", fontWeight: 500 }}
@@ -610,13 +610,13 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 									>
 										<div className="ng-head">
 											<span className="ng-caption" style={{ color: "#0f766e" }}>
-												↳ inside this call · returns <code>pre_review</code>{" "}
-												action
+												↳ cursor walks reviewRoles → returns{" "}
+												<code>dispatch_review</code> per role
 											</span>
 											<span className="ig-type" style={{ color: "#0f766e" }}>
-												dispatch reviewers
+												spec-review track
 											</span>
-											<span className="ig-ctx">runs in ALL modes</span>
+											<span className="ig-ctx">spec → studio agents → user</span>
 										</div>
 										<div
 											style={{
@@ -626,12 +626,14 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 												lineHeight: 1.45,
 											}}
 										>
-											Conditional review agents audit every{" "}
-											<code>unit-NN-*.md</code> file — artifacts don't exist
-											yet, so reviewers audit the <em>plan</em>. Findings block
-											advance; resolution is a spec edit.{" "}
-											<strong>Auto mode does not skip this</strong> — only the
-											human spec gate is gated by autopilot.
+											The cursor walks reviewRoles serially: <code>spec</code>{" "}
+											(engine-built) first, then each studio review-agent in
+											declared order, then <code>user</code>. Reviewers audit
+											the <em>plan</em> (unit specs); artifacts don't exist yet.
+											Findings file via <code>haiku_feedback</code> and route
+											through Track B on the next tick.{" "}
+											<strong>Autopilot trims to <code>[spec]</code> only</strong>
+											— no studio agents, no user role.
 										</div>
 									</div>
 								</>
@@ -766,10 +768,10 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 											</div>
 											<div className="ng-branch-row">
 												<span className="ng-branch reject-branch">
-													↑ reject → <strong>feedback_dispatch</strong>
+													↑ reject → <strong>start_feedback_hat</strong> (Track B)
 												</span>
 												<span className="ng-branch approve-branch">
-													↓ approve → execute
+													↓ approve → start_unit_hat (wave 1)
 												</span>
 											</div>
 										</div>
@@ -1012,10 +1014,10 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 										</div>
 										<div className="ng-branch-row">
 											<span className="ng-branch reject-branch">
-												↑ fail → fix in place, retry
+												↑ fail → fix in place, retry (no rollback)
 											</span>
 											<span className="ng-branch approve-branch">
-												↓ pass → review agents
+												↓ pass → dispatch_approval (next role)
 											</span>
 										</div>
 									</div>
@@ -1099,10 +1101,10 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 										<strong>
 											No <code>fix_hats:</code> declared on STAGE.md
 										</strong>{" "}
-										— the gate falls back to the legacy{" "}
-										<code>feedback_revisit</code> action, which rolls the entire
-										stage back to elaborate (vs. running an in-place fix chain
-										per-finding).
+										— Track B has no fix-hat sequence to dispatch against open
+										FBs on this stage. Findings remain unresolvable without
+										manual intervention; the cursor surfaces them via{" "}
+										<code>user_gate</code> instead.
 									</div>
 								)
 							}
@@ -1160,11 +1162,14 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 								marginTop: 8,
 							}}
 						>
-							Dispatched directly against the FB file via{" "}
-							<code>review_fix</code>. <strong>FB-as-unit:</strong> fixers edit
-							the FB body; the flagged unit stays read-only. The chain
-							progresses via <code>haiku_feedback_advance_hat</code>; the
-							workflow engine auto-closes the FB on the last hat's advance.
+							Track B's <code>start_feedback_hat</code> dispatches directly
+							against the FB file. <strong>FB-as-unit:</strong> fixers edit the
+							FB body via <code>haiku_feedback_write</code>; the flagged unit
+							stays read-only via <code>haiku_unit_read</code>. The chain
+							progresses via <code>haiku_feedback_advance_hat</code>; the engine
+							emits <code>close_feedback</code> when the terminal hat advances,
+							then stamps <code>closed_at</code> and applies{" "}
+							<code>targets.invalidates</code> to the targeted unit's approvals.
 						</div>
 						<div
 							style={{
@@ -1201,11 +1206,13 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 									color: "#1e3a8a",
 								}}
 							>
-								<strong>↗ integrate_fix_chains</strong> · when a fix-chain
-								worktree's merge back into the stage branch hits conflicts, the
-								gate dispatches an <strong>integrator</strong> subagent per
-								chain (max <code>MAX_INTEGRATOR_ATTEMPTS = 3</code>; exhaustion
-								escalates).
+								<strong>↗ classifier hat</strong> · the first hat in{" "}
+								<code>fix_hats:</code> is conventionally a classifier — reads
+								the FB body, calls{" "}
+								<code>haiku_feedback_set_targets</code> to record{" "}
+								<code>target_unit</code> + <code>target_invalidates[]</code>.
+								Targets are immutable once set. v3's pre-tick triage gate is
+								gone; classification IS the first hat now.
 							</div>
 						</div>
 					</div>
@@ -1486,13 +1493,13 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 								>
 									<div className="ng-head">
 										<span className="ng-caption" style={{ color: "#92400e" }}>
-											↳ pre-stage elicitation chain (engine-managed) → opens{" "}
-											<code>intent_review</code> gate (blocking)
+											↳ pre-cursor selection chain (run-tick.ts gates) → first
+											stage's <code>elaborate</code>
 										</span>
 										<span className="ig-type" style={{ color: "#92400e" }}>
-											ask
+											blocking
 										</span>
-										<span className="ig-ctx">first-tick gate</span>
+										<span className="ig-ctx">orientation gate</span>
 									</div>
 									<div
 										style={{
@@ -1506,14 +1513,14 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 									>
 										<code>select_studio</code> → <code>select_mode</code> →{" "}
 										<code>(quick? select_stage)</code> →{" "}
-										<code>intent_review</code>
+										<code>elaborate</code>
 									</div>
 									<div className="ng-branch-row" style={{ marginTop: 6 }}>
 										<span className="ng-branch reject-branch">
-											↑ request changes → loop creation
+											↑ picker dismiss → re-pop on next tick
 										</span>
 										<span className="ng-branch approve-branch">
-											↓ approve → start_stage
+											↓ pick → write FM, re-tick → elaborate
 										</span>
 									</div>
 									<div
@@ -1524,14 +1531,16 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 											lineHeight: 1.45,
 										}}
 									>
-										Each elicitation step calls a discrete MCP tool (
-										<code>haiku_select_studio</code>,{" "}
-										<code>haiku_select_mode</code>,{" "}
-										<code>haiku_select_stage</code>) so the user picks studio +
-										mode + (for quick) stage. Mode and stages are engine-managed
-										— the agent never writes them via{" "}
+										The pre-cursor gates in <code>run-tick.ts</code> emit one{" "}
+										<code>select_*</code> action at a time when the matching{" "}
+										<code>intent.md</code> field is missing.{" "}
+										<code>haiku_run_next</code> intercepts each, blocks on the
+										SPA picker inline, writes the chosen value, and re-ticks.{" "}
+										<code>mode</code> and <code>stages</code> are FSM-driven —
+										the agent cannot write them via{" "}
 										<code>haiku_intent_create</code> or{" "}
-										<code>haiku_intent_set</code>.
+										<code>haiku_intent_set</code> (rejected with{" "}
+										<code>intent_field_engine_only</code>).
 									</div>
 								</div>
 							</>
@@ -1567,23 +1576,27 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 									textTransform: "none",
 								}}
 							>
-								· studio-level · default ON
+								· cursor terminal walk · mode-shaped
 							</span>
 						</h2>
 						<span className="subtitle-line">
-							all stages approved → studio review-agents audit the whole intent
-							→ optional fix loop → final gate
+							all stages merged → cursor walks intent-scope approvals
+							(<code>spec</code>, <code>continuity</code>, <code>user</code>) →{" "}
+							<code>intent_review</code> per missing role →{" "}
+							<code>merge_intent</code> → <code>sealed</code>
 						</span>
 					</header>
 					<div className="post-steps">
 						<div className="post-step">
-							<div className="step-title">📋 dispatch review-agents</div>
+							<div className="step-title">📋 intent_review per role</div>
 							<div className="step-desc">
-								workflow runs{" "}
+								Cursor emits <code>intent_review {"{ role }"}</code> for each
+								missing intent-scope approval. <code>spec</code> and{" "}
+								<code>continuity</code> are engine-built (subagent dispatch);
+								studio review-agents in{" "}
 								<code>plugin/studios/{"{studio}"}/review-agents/*.md</code>{" "}
-								against the whole intent. Skipped when no studio review-agents
-								are configured —<code> completion_review_skipped: true</code> is
-								set on the intent and the gate falls through immediately.
+								add to the role list (non-autopilot only); <code>user</code>{" "}
+								opens the SPA review.
 							</div>
 						</div>
 						<div className="step-arrow">→</div>
@@ -1592,15 +1605,19 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 							<div className="step-desc">
 								if findings exist, dispatch{" "}
 								<code>plugin/studios/{"{studio}"}/fix-hats/*.md</code> against
-								intent-scope FBs. Caps mirror the per-stage chain (3 bolts;{" "}
-								<code>integrate_fix_chains</code> on merge conflicts).
+								intent-scope FBs via Track B (file location:{" "}
+								<code>.haiku/intents/{"{slug}"}/feedback/</code>). Per-finding
+								cap <code>MAX_FIX_LOOP_BOLTS = 3</code>.
 							</div>
 						</div>
 						<div className="step-arrow">→</div>
 						<div className="post-step">
-							<div className="step-title">✅ ready for final gate</div>
+							<div className="step-title">✅ merge_intent → sealed</div>
 							<div className="step-desc">
-								zero open intent-scope findings → falls through to delivery.
+								every intent-scope approval signed → cursor emits{" "}
+								<code>merge_intent</code>; engine performs final rebase under{" "}
+								<code>withIntentMainLock</code>, stamps <code>sealed_at</code>;
+								next tick emits <code>sealed</code>.
 							</div>
 						</div>
 					</div>
@@ -1616,10 +1633,12 @@ export function ArchitectureMap({ initialStudioDir }: ArchitectureMapProps) {
 							color: "#581c87",
 						}}
 					>
-						<strong>Opt out per intent:</strong> set{" "}
-						<code>intent_completion_review: false</code> on intent.md
-						frontmatter to skip this entire layer — the final stage's gate
-						becomes terminal.
+						<strong>Mode shaping:</strong> autopilot trims intent-scope
+						approvals to <code>[spec, continuity]</code> — no studio agents,
+						no user role. Discrete and continuous keep the full list. The
+						cursor never emits <code>intent_review</code> for a role autopilot
+						trimmed out, so the seal happens automatically once the
+						engine-built approvals sign.
 					</div>
 				</section>
 				<section className="post-intent" id="delivery">

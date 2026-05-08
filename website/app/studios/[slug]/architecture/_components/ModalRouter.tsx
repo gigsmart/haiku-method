@@ -244,7 +244,7 @@ export function ModalRouter({
 				<Modal
 					open
 					title={`↗ ${modal.hatName} runs in a subagent`}
-					subtitle={`${modal.stageKey} · subagent-context`}
+					subtitle={`${modal.stageKey} · v4 hat dispatch`}
 					onClose={onClose}
 				>
 					<div className="modal-section">
@@ -252,7 +252,7 @@ export function ModalRouter({
 						<HtmlBlock
 							className="prose"
 							html={renderInline(
-								`Every hat — including \`${modal.hatName}\` — runs inside its own Claude Code subagent. The orchestrator's pattern at execute time is "one subagent per unit per hat."`,
+								`Every hat — including \`${modal.hatName}\` — runs inside its own Claude Code subagent. The cursor groups wave-ready / mid-hat units by hat-index and emits one \`start_unit_hat { stage, hat, units: [...], terminal }\` per tick; the parent dispatches one subagent per listed unit, in parallel.`,
 							)}
 						/>
 					</div>
@@ -260,18 +260,29 @@ export function ModalRouter({
 						<h3>tools the subagent uses</h3>
 						<ul>
 							<li>
-								<code>haiku_unit_start</code>
+								<code>haiku_unit_start</code> — stamps `started_at` on first entry
 							</li>
 							<li>
-								<code>haiku_unit_advance_hat</code>
+								<code>haiku_unit_read</code> — read the unit spec body
 							</li>
 							<li>
-								<code>haiku_unit_reject_hat</code>
+								<code>haiku_unit_advance_hat</code> — terminal advance, appends to{" "}
+								<code>iterations[]</code>
 							</li>
 							<li>
-								<code>haiku_unit_increment_bolt</code>
+								<code>haiku_unit_reject_hat</code> — reject, rewinds one hat on the
+								next tick (or re-dispatches hat[0] if reject was on hat[0])
 							</li>
 						</ul>
+					</div>
+					<div className="modal-section">
+						<h3>model routing</h3>
+						<HtmlBlock
+							className="prose"
+							html={renderInline(
+								"Per-unit > hat > stage > studio cascade. The dispatch block carries the resolved tier so each subagent picks up its `default_model:` from the right level — escalations (e.g. unit rejected and bumped haiku→sonnet→opus) are visible at the unit level and override the default.",
+							)}
+						/>
 					</div>
 				</Modal>
 			)
@@ -296,13 +307,13 @@ export function ModalRouter({
 				<Modal
 					open
 					title={`✓ ${modal.validationKey}`}
-					subtitle="elaborate-phase validation gate"
+					subtitle="elaborate-phase validation"
 					onClose={onClose}
 				>
 					<HtmlBlock
 						className="prose"
 						html={renderInline(
-							`Validation check enforced by \`packages/haiku/src/orchestrator/workflow/handlers/elaborate.ts\` and \`validators.ts\`. See repo for the full rule set.`,
+							`Validation enforced at \`haiku_unit_write\` time in \`packages/haiku/src/state-tools.ts\` (TypeBox + AJV input gate at the wire, then unit-frontmatter validators for DAG cycle detection, depends_on cross-references, and naming convention). The \`elaborate\` cursor action surfaces the user-facing collaboration; the validators are the engine-side enforcement.`,
 						)}
 					/>
 				</Modal>
@@ -346,15 +357,15 @@ export function ModalRouter({
 				<Modal
 					open
 					title={modal.detailKey}
-					subtitle="nested gate inside haiku_run_next"
+					subtitle="cursor action emitted by haiku_run_next"
 					onClose={onClose}
 				>
 					<HtmlBlock
 						className="prose"
 						html={renderInline(
 							modal.detailKey === "specs_gate_review"
-								? "The post-elaboration review gate. Runs **inside the same** `haiku_run_next` call. After 2026-04-27, reject does not re-pop the UI: open feedback routes through `feedback_dispatch` (human, no resolution) or `review_fix` (inline-fix) until every FB closes."
-								: "Hard quality gates — tests, lint, typecheck — run inside the same `haiku_run_next` call that transitions execute → review. Loop iterates within review; never goes back to execute.",
+								? "The user spec gate. The cursor's reviewRoles loop reaches the `user` role and emits `user_gate { gate_kind: \"spec\" }`. `haiku_run_next` opens the SPA review session inline (via `haiku_review_open`) and blocks on `haiku_await_gate` — single tool call, no URL+await two-step. **Reject does not re-pop the UI** — Track B walks before Track A on every tick, so any open feedback routes through `start_feedback_hat` until it closes."
+								: "Quality gates run inline as part of the cursor's approval track. The cursor returns `dispatch_quality_gates { stage, units }` when `approvals.quality_gates` is missing on at least one unit. The agent runs `runQualityGates()` (configured tests / lint / typecheck); on success the engine signs `approvals.quality_gates` on every listed unit. Failures don't roll the workflow back — the agent fixes in place and re-runs until the gates pass.",
 						)}
 					/>
 				</Modal>
@@ -463,7 +474,7 @@ export function ModalRouter({
 					<HtmlBlock
 						className="prose"
 						html={renderInline(
-							"User and agent exchange Q&A until the agent has enough to draft `intent.md`. The agent calls `haiku_select_studio` (default inferred from prompt), then `haiku_intent_create`, then `haiku_run_next` to enter the first stage's elaborate phase.",
+							"User and agent exchange Q&A until the agent has enough to call `haiku_intent_create` (which writes `intent.md` with the title, body, and slug — but **not** `studio`, `mode`, or `stages`, which are FSM-driven). On the first `haiku_run_next` tick the pre-cursor selection chain fires: `select_studio` → `select_mode` → (if mode=quick) `select_stage`. `haiku_run_next` blocks on the SPA picker inline for each step and writes the chosen value, then walks Track A — initially `elaborate { stage: <first> }` since the stage has no units.",
 						)}
 					/>
 				</Modal>
@@ -472,7 +483,7 @@ export function ModalRouter({
 			return (
 				<Modal
 					open
-					title="⏱ workflow tick semantics"
+					title="⏱ workflow tick semantics (v4)"
 					subtitle="haiku_run_next is the agent's only forward-driving verb"
 					onClose={onClose}
 				>
@@ -481,7 +492,7 @@ export function ModalRouter({
 						<HtmlBlock
 							className="prose"
 							html={renderInline(
-								"A **tick** is one call to `haiku_run_next`. It is the agent's only forward-driving verb. There is no other tool the agent can call to advance the workflow — every advance, every wave, every stage transition, every escalation, every revisit is the result of a tick. The agent's contract is one sentence: **receive instruction, do what it says, call `haiku_run_next` unless this instruction told you not to (only terminal actions do).**",
+								"A **tick** is one call to `haiku_run_next`. It is the agent's only forward-driving verb. There is no other tool the agent can call to advance the workflow — every advance, every wave, every stage transition, every escalation, every revisit is the result of a tick. The agent's contract is one sentence: **receive instruction, do what it says, call `haiku_run_next` unless this instruction is terminal.**",
 							)}
 						/>
 					</div>
@@ -500,7 +511,7 @@ export function ModalRouter({
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										"Engine reads on-disk state (intent.md frontmatter, stage state.json, unit/feedback frontmatter) and derives the current cursor.",
+										"Engine reads on-disk state (intent.md frontmatter, every unit.md and feedback.md across every stage, studio config) and derives the current **cursor position** via `derivePosition`.",
 									)}
 								/>
 							</li>
@@ -508,7 +519,7 @@ export function ModalRouter({
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										'**Pre-advance checks** run in priority order. If any fires → tick returns a **sideline action** ("something happened, do this corrective work, call run_next").',
+										"The cursor returns one `CursorAction` (or null for mid-wave noop). `run-tick.ts` maps it to an `OrchestratorAction` and returns it to the agent.",
 									)}
 								/>
 							</li>
@@ -516,28 +527,20 @@ export function ModalRouter({
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										"If no sideline fires → engine emits the next **mainline action**.",
-									)}
-								/>
-							</li>
-							<li>
-								<HtmlBlock
-									className="prose"
-									html={renderInline(
-										"Agent receives, executes, eventually calls `haiku_run_next` again. Loop.",
+										"Agent executes the action and at some point calls `haiku_run_next` again. Loop.",
 									)}
 								/>
 							</li>
 						</ol>
 					</div>
 					<div className="modal-section">
-						<h3>layer 1 — pre-advance checks (run-tick.ts, every tick)</h3>
+						<h3>cursor track priority</h3>
 						<ul className="writes-list">
 							<li>
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										"**pre-tick consistency** — repairs cached `active_stage` drift, state.json invariants. Usually invisible.",
+										"**Track C — drift sweep.** Re-hashes signed witnesses (unit body, declared outputs, discovery records) on the active stage. Mismatch → `drift_detected`. Dedup'd against open drift FBs by `source_ref`.",
 									)}
 								/>
 							</li>
@@ -545,7 +548,7 @@ export function ModalRouter({
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										"**feedback triage gate — untriaged** — any open FB with `triaged_at: null` → emits `feedback_triage`. Agent classifies via `haiku_feedback_move` or `haiku_feedback_reject`.",
+										"**Track B — feedback.** Walks every stage from index 0 through the active stage, then intent-scope. Open FB → `start_feedback_hat` (next fix-hat dispatch) or `close_feedback` (terminal advance landed). Cross-stage routing is purely by file location.",
 									)}
 								/>
 							</li>
@@ -553,7 +556,7 @@ export function ModalRouter({
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										"**feedback triage gate — earlier-stage** — all triaged but ≥ 1 sits before active → emits `revisited` (engine reroutes cursor).",
+										"**Track A — intent.** On the active stage, walk: `design_direction_required` → `clarify_required` → `discovery_required` → `elaborate` → `start_unit_hat` → `dispatch_review` / `user_gate { spec }` → `dispatch_quality_gates` / `dispatch_approval` / `user_gate { approval }` → `merge_stage`.",
 									)}
 								/>
 							</li>
@@ -561,63 +564,38 @@ export function ModalRouter({
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										"**feedback triage gate — current-stage human comments** — human-authored open FBs with `null` or `question` resolution on the active stage → emits `feedback_dispatch`. Agent triages inline (answers questions, requests inline fixes, or requests stage_revisit). The pre-tick gate keeps the review UI from re-popping while these are unaddressed.",
+										"**Terminal walk.** All stages merged → intent-scope approvals (`spec`, `continuity`, `user`) → `intent_review` per missing role → `merge_intent` → `sealed`.",
 									)}
 								/>
 							</li>
 						</ul>
 					</div>
 					<div className="modal-section">
-						<h3>layer 2 — handler-internal sidelines (per-state handlers)</h3>
-						<ul className="writes-list">
-							<li>
-								<HtmlBlock
-									className="prose"
-									html={renderInline(
-										"**unresolved deps / DAG cycle** (from `elaborate.ts`) → `unresolved_dependencies` or `dag_cycle_detected`. Agent fixes the DAG and reticks.",
-									)}
-								/>
-							</li>
-							<li>
-								<HtmlBlock
-									className="prose"
-									html={renderInline(
-										"**missing discovery / outputs** (`discovery_missing` from `elaborate.ts`, `outputs_missing` from `review.ts`) → agent produces the artifacts and reticks.",
-									)}
-								/>
-							</li>
-							<li>
-								<HtmlBlock
-									className="prose"
-									html={renderInline(
-										"**elaboration insufficient** (from `elaborate.ts`) → too few decisions recorded. Agent collaborates more or declares `no_decisions: true`.",
-									)}
-								/>
-							</li>
-							<li>
-								<HtmlBlock
-									className="prose"
-									html={renderInline(
-										"**design direction needed** (from `elaborate.ts`) → `design_direction_required`. Agent opens `pick_design_direction` in intake mode (no archetypes); user uploads finished designs (→ `design_direction_uploaded`, no generation) or asks the agent to generate variants (→ `design_direction_complete` after a final pick).",
-									)}
-								/>
-							</li>
-						</ul>
+						<h3>pre-cursor selection gates</h3>
 						<HtmlBlock
 							className="prose"
 							html={renderInline(
-								'Sidelines compose. Agent never tracks "which sideline am I on" — they follow the instruction and retick. The engine re-evaluates pre-advance checks on every tick; handler-internal checks fire only when the active state is the matching handler.',
+								"Before the cursor walks, `run-tick.ts` checks orientation: missing `intent.studio` → `select_studio`; missing `intent.mode` → `select_mode`; mode `quick` with empty `intent.stages[]` → `select_stage`. `haiku_run_next` blocks on the SPA picker inline; the agent never sees `select_*` in chat unless a non-haiku_run_next caller bypassed the gate. The agent **never writes `mode` or `stages` directly** — both fields are FSM-driven.",
 							)}
 						/>
 					</div>
 					<div className="modal-section">
-						<h3>why tick semantics matter</h3>
+						<h3>v4 action surface</h3>
+						<HtmlBlock
+							className="prose"
+							html={renderInline(
+								"The cursor emits exactly these `kind` values: `select_studio`, `select_mode`, `select_stage`, `drift_detected`, `start_feedback_hat`, `close_feedback`, `design_direction_required` / `_complete` / `_uploaded`, `clarify_required`, `discovery_required`, `elaborate`, `start_unit_hat`, `dispatch_review`, `dispatch_quality_gates`, `dispatch_approval`, `user_gate { spec | approval }`, `merge_stage`, `intent_review`, `merge_intent`, `sealed`.",
+							)}
+						/>
+					</div>
+					<div className="modal-section">
+						<h3>why this matters</h3>
 						<ul className="writes-list">
 							<li>
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										"**State on disk is the truth.** Engine recomputes cursor on every tick from authoritative state. Agent holds no workflow state.",
+										"**State on disk is the truth.** No state.json, no in-memory tick state. Every cursor walk recomputes from FM. Agent holds no workflow state.",
 									)}
 								/>
 							</li>
@@ -633,7 +611,7 @@ export function ModalRouter({
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										"**Composition is pure.** Tick = pure function of `(intent_dir_state, studio_config) → next_action`. Deterministic given the same disk state.",
+										"**Composition is pure.** `derivePosition` is a pure function of `(disk, studio config) → CursorAction | null`. Deterministic given the same disk state. No LLM in the workflow-position decision.",
 									)}
 								/>
 							</li>
@@ -641,7 +619,7 @@ export function ModalRouter({
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										"**Sidelines are forced, not optional.** Agent cannot bypass an open untriaged FB to advance the gate.",
+										"**Open feedback wins over forward motion.** Track B walks before Track A — an open FB on stage 0 forces the cursor to dispatch a fix hat against it before any later stage advances.",
 									)}
 								/>
 							</li>
@@ -652,18 +630,18 @@ export function ModalRouter({
 						<HtmlBlock
 							className="prose"
 							html={renderInline(
-								'`plugin/studios/ARCHITECTURE.md` §5 — "Workflow tick semantics." That document is canonical when this prototype and the architecture doc disagree on tick contracts.',
+								'`plugin/studios/ARCHITECTURE.md` §5 — "Workflow tick semantics." Authoritative when this prototype and the architecture doc disagree on tick contracts. The cursor source lives in `packages/haiku/src/orchestrator/workflow/cursor.ts`; the tick wrapper in `run-tick.ts`.',
 							)}
 						/>
 					</div>
 				</Modal>
 			)
-		case "preTickTriage":
+		case "cursorTracks":
 			return (
 				<Modal
 					open
-					title="⛓ pre-tick triage gate"
-					subtitle="run-tick.ts · interceptor · runs BEFORE every per-state handler"
+					title="⛓ cursor track walk (v4)"
+					subtitle="cursor.ts · derivePosition walks Track C → Track B → Track A on every tick"
 					onClose={onClose}
 				>
 					<div className="modal-section">
@@ -671,18 +649,18 @@ export function ModalRouter({
 						<HtmlBlock
 							className="prose"
 							html={renderInline(
-								"Implemented in `packages/haiku/src/orchestrator/workflow/run-tick.ts` (`preTickFeedbackGate`). On every `haiku_run_next` tick — after structural repair (`preTickConsistency`) and tamper detection (`verifyIntentState`) but BEFORE the per-state handler — the gate walks stages 0..current plus intent-scope for open (non-terminal) feedback. The point: misplaced or untriaged feedback can't be force-fixed by the wrong stage's hats, and a stage handler can't re-pop the review UI while feedback is still unaddressed.",
+								"Implemented in `packages/haiku/src/orchestrator/workflow/cursor.ts` (`derivePosition`). On every `haiku_run_next` tick — after the v0→v4 migrator (idempotent, one-time per intent) and the pre-cursor selection gates (`select_studio` / `select_mode` / `select_stage`) — the cursor reads disk and walks three tracks in priority order. Pure observation: no side effects, same disk → same answer.",
 							)}
 						/>
 					</div>
 					<div className="modal-section">
-						<h3>three priority outcomes</h3>
+						<h3>three tracks (priority order)</h3>
 						<ul className="writes-list">
 							<li>
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										"**1. Untriaged FB found** — any open FB lacking `triaged_at:` → emit `feedback_triage`. Agent calls `haiku_feedback_move` (same-stage no-op confirms in place; cross-stage relocates the file to the correct stage's `feedback/` dir).",
+										"**Track C — drift sweep.** `runDriftSweep` re-hashes each unit's body / declared outputs and compares against the FM witness (`reviews.<role>.body_sha256`, `approvals.<role>.witnesses[]`). Any mismatch → `drift_detected`. Pre-v4 baseline artifacts (`baseline.json`, `drift-markers.json`, `baseline-content/`) are deleted by the v0→v4 migrator — v4 stores the witness directly on FM. Kill-switch: `drift_detection: false` in settings.yml.",
 									)}
 								/>
 							</li>
@@ -690,7 +668,7 @@ export function ModalRouter({
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										"**2. Triaged but on an earlier stage** — every open FB has `triaged_at:` but ≥ 1 sits on a stage earlier than `active_stage` → emit `revisited` targeting the earliest such stage. The existing revisit machinery handles branch state, downstream invalidation, and re-entry.",
+										"**Track B — feedback.** Walks stages 0..active in order, then intent-scope. Open FB → emit the next fix-hat dispatch (`start_feedback_hat`) or `close_feedback` for it. **Cross-stage routing is purely by file location** — an FB sitting in `stages/<earlier>/feedback/` rewinds the cursor to that earlier stage's fix loop, regardless of where it was filed. There is no `upstream_stage:` field; the v0→v4 migrator strips it and physically relocates files.",
 									)}
 								/>
 							</li>
@@ -698,27 +676,36 @@ export function ModalRouter({
 								<HtmlBlock
 									className="prose"
 									html={renderInline(
-										"**3. Triaged and in-scope (or no open FB)** — fall through to the per-state handler. The stage gate then routes pending feedback through `feedback_dispatch` (human comments without resolution) or the worktree-based `review_fix` chain (inline-fix items).",
+										"**Track A — intent.** On the active stage (first stage whose branch is not merged into intent main, derived via `firstUnmergedStage`), walk the per-stage state machine in §5.4 order: design_direction → clarify → discovery → elaborate → wave logic → review track → approval track → `merge_stage`.",
 									)}
 								/>
 							</li>
 						</ul>
 					</div>
 					<div className="modal-section">
-						<h3>why it exists</h3>
+						<h3>FB classification (no pre-tick triage gate)</h3>
 						<HtmlBlock
 							className="prose"
 							html={renderInline(
-								"Before this gate, the per-stage handler could see open feedback on a downstream stage and dispatch it to its own `fix_hats` — wrong stage, wrong hats, wrong fix. It could also re-emit `gate_review` even when the user had left feedback that was never addressed (the loop fixed on 2026-04-27). Centralizing the triage check ensures every tick passes through the same chokepoint.",
+								"v3 used a `triaged_at:` frontmatter field and a separate pre-tick triage gate. v4 collapses that into the FB-as-unit hat chain: the **first hat in the stage's `fix_hats:` chain is conventionally a classifier**. It reads the FB body, decides which unit (if any) the finding targets and which approval roles to invalidate on closure, and calls `haiku_feedback_set_targets` to record the decision. Targets are immutable once set. Cross-stage moves still go through `haiku_feedback_move` (which physically relocates the file to the target stage's `feedback/` dir).",
 							)}
 						/>
 					</div>
 					<div className="modal-section">
-						<h3>frontmatter convention</h3>
+						<h3>recurring merge_stage</h3>
 						<HtmlBlock
 							className="prose"
 							html={renderInline(
-								"Agent-authored FBs (`origin: agent`, `adversarial-review`, `studio-review`, etc.) auto-stamp `triaged_at:` at creation time — they're filed in-context. Human origins (`user-chat`, `user-visual`, `user-question`) leave `triaged_at: null`, which is what triggers outcome 1 above.",
+								"Stages are NEVER sealed — only intents are. A previously-merged stage that gains a new unit (because the fix-loop authored corrective work) becomes ahead-of-main and `firstUnmergedStage` rewinds the cursor to it on the next tick. `merge_stage` is a recurring event, not a terminal one. Forward-only applies to existing units' bytes (immutable post-merge), not to whether a stage is \"done.\"",
+							)}
+						/>
+					</div>
+					<div className="modal-section">
+						<h3>canonical reference</h3>
+						<HtmlBlock
+							className="prose"
+							html={renderInline(
+								'`plugin/studios/ARCHITECTURE.md` §5.2–§5.4 (cursor model, properties, per-stage walk). Source: `packages/haiku/src/orchestrator/workflow/cursor.ts`.',
 							)}
 						/>
 					</div>

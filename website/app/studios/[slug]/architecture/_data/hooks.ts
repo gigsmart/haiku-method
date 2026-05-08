@@ -1,4 +1,7 @@
-// Hook registry — taken from packages/haiku/src/hooks/*.ts.
+// Hook registry — derived from `plugin/hooks/hooks.json` and the
+// implementations in `packages/haiku/src/hooks/*.ts`. v4 keeps a small,
+// honest set: every load-bearing rule has an MCP-tool equivalent so the
+// system works the same on harnesses without hooks.
 
 export interface HookDef {
 	group: string
@@ -11,87 +14,59 @@ export interface HookDef {
 export const HOOKS: HookDef[] = [
 	{
 		group: "guardrails",
-		name: "prompt-guard",
-		desc: "Rejects bad prompts before they reach the agent. Validates structure, scope, no-op detection.",
-		fires: ["call-chip"],
-		file: "packages/haiku/src/hooks/prompt-guard.ts",
-	},
-	{
-		group: "guardrails",
-		name: "workflow-guard",
-		desc: "Blocks `Edit` / `Write` outside the active unit's worktree. The agent literally cannot edit files belonging to a different unit/stage.",
-		fires: ["cylinder", "phase[execute]"],
-		file: "packages/haiku/src/hooks/workflow-guard.ts",
-	},
-	{
-		group: "guardrails",
-		name: "guard-workflow-fields",
-		desc: "Blocks direct Read/Write/Edit/MultiEdit on workflow-managed paths: `units/*.md`, `feedback/*.md`, `intent.md`, `stages/*/state.json`, and `.haiku/settings.yml`. The redirect message names the corresponding MCP tool (`haiku_unit_*`, `haiku_feedback_*`, `haiku_intent_set` / `haiku_intent_get`, `haiku_settings_set` / `haiku_settings_get`). Only the orchestrator may write these directly.",
-		fires: ["unit", "phase[elaborate]"],
-		file: "packages/haiku/src/hooks/guard-workflow-fields.ts",
-	},
-	{
-		group: "guardrails",
 		name: "redirect-plan-mode",
-		desc: "When the agent enters Claude Code's plan mode, this hook redirects the planning result back through the haiku workflow engine rather than letting the agent free-plan.",
-		fires: ["phase[elaborate]"],
+		desc: "PreToolUse on `EnterPlanMode` (Claude Code only). Denies the call and redirects the user to `/haiku:start` so the workflow engine — not the harness's plan mode — owns intent creation.",
+		fires: ["call-chip"],
 		file: "packages/haiku/src/hooks/redirect-plan-mode.ts",
 	},
 	{
 		group: "guardrails",
-		name: "ensure-deps",
-		desc: "Verifies that every unit's `depends_on` are complete before letting the agent enter or progress within a unit.",
-		fires: ["wave", "phase[execute]"],
-		file: "packages/haiku/src/hooks/ensure-deps.ts (validate-unit-type companion)",
+		name: "guard-workflow-fields",
+		desc: "PreToolUse on `Read` / `Write` / `Edit` / `MultiEdit`. Denies generic file access on workflow-managed paths: `units/*.md`, `feedback/*.md`, `intent.md`, and (defensively) `stages/*/state.json`. The denial message names the right MCP tool — `haiku_unit_*`, `haiku_feedback_*`, `haiku_intent_*`, `haiku_run_next`. Honest agents get redirected; bash bypass is soft-warned via audit telemetry.",
+		fires: ["unit", "call-chip"],
+		file: "packages/haiku/src/hooks/guard-workflow-fields.ts",
 	},
 	{
-		group: "context injection",
-		name: "inject-context",
-		desc: "Prepends the relevant workflow engine state to every agent prompt so the agent doesn't have to ask. Stage, phase, current unit, current hat, what's done, what's next.",
+		group: "guardrails",
+		name: "workflow-guard",
+		desc: "PreToolUse on `Write` / `Edit`. Advisory warning when the agent edits a file outside `.haiku/` while an intent is active — nudges the agent to confirm the edit is in the right hat scope. Non-blocking.",
 		fires: ["call-chip"],
-		file: "packages/haiku/src/hooks/inject-context.ts",
+		file: "packages/haiku/src/hooks/workflow-guard.ts",
+	},
+	{
+		group: "guardrails",
+		name: "prompt-guard",
+		desc: "PreToolUse on `Write` / `Edit` against `.haiku/` paths. Scans for prompt-injection patterns (`ignore previous`, `<system>`, etc.) in spec writes and surfaces an advisory warning. Non-blocking.",
+		fires: ["call-chip"],
+		file: "packages/haiku/src/hooks/prompt-guard.ts",
 	},
 	{
 		group: "context injection",
 		name: "inject-state-file",
-		desc: "Companion to inject-context: writes a transient `.haiku/_inject.md` snapshot of state.json so the agent can read structured context.",
+		desc: "PreToolUse on `mcp__*__haiku_*` tool calls. Injects `state_file` (session metadata persistence path) and `_session_context` (CLAUDE_SESSION_ID, harness, model, etc.) into every haiku MCP call so the orchestrator sees env it can't read directly from a separate process.",
 		fires: ["call-chip"],
 		file: "packages/haiku/src/hooks/inject-state-file.ts",
 	},
 	{
 		group: "context injection",
-		name: "track-outputs",
-		desc: "After every agent edit/write, records the file path under the active unit's `outputs:` frontmatter. This is how downstream stages know what's available.",
-		fires: ["cylinder", "hat", "artifacts.out"],
-		file: "packages/haiku/src/hooks/track-outputs.ts",
-	},
-	{
-		group: "context injection",
-		name: "subagent-context",
-		desc: "When a hat spawns a Claude Code subagent, this hook scopes the subagent's context to the parent unit's worktree only — preventing context bleed. For subagents spawned via `<subagent>` blocks from `haiku_run_next`, the hook provides ADDITIONAL context (workflow rules, bootstrap, cwd scoping) but the core behavioral context (hat instructions, unit spec, stage scope, output requirements) is already embedded in the `<subagent>` prompt block constructed by the MCP. Also injects STAGE.md body content alongside the hat instructions for stage-level behavioral context.",
-		fires: ["hat", "phase[execute]"],
-		file: "packages/haiku/src/hooks/subagent-context.ts",
-	},
-	{
-		group: "context injection",
-		name: "subagent-hook",
-		desc: "Runtime hook running inside spawned subagents. Plays the same role as inject-context for the subagent's tool calls.",
-		fires: ["hat"],
-		file: "packages/haiku/src/hooks/subagent-hook.ts",
-	},
-	{
-		group: "context injection",
 		name: "context-monitor",
-		desc: "Watches the agent's token budget. Triggers a `/clear`-friendly state save if approaching context limits — relying on the workflow engine to resume from disk.",
+		desc: "PostToolUse on every tool call. Watches the agent's token budget; injects warnings at 35% and 25% remaining. Debounced once per threshold per session so the agent gets the heads-up to wrap up cleanly before /clear becomes mandatory.",
 		fires: ["call-chip"],
 		file: "packages/haiku/src/hooks/context-monitor.ts",
 	},
 	{
-		group: "quality",
-		name: "quality-gate",
-		desc: "Wrapper around `runQualityGates()` — runs configured tests/lint/typecheck and reports back to the orchestrator. Hard backpressure.",
-		fires: ["review-fail", "phase[review]"],
-		file: "packages/haiku/src/hooks/quality-gate.ts",
+		group: "drift",
+		name: "stamp-agent-write",
+		desc: "PostToolUse on `Write` / `Edit` / `MultiEdit`. When the agent writes a file inside an intent's tracked drift surface via the generic write tools, stamps an `entry_type: \"agent_write\"` action-log entry so the next drift sweep attributes the change to the agent rather than emitting a `drift_detected` event for the agent's own edit.",
+		fires: ["call-chip"],
+		file: "packages/haiku/src/hooks/stamp-agent-write.ts",
+	},
+	{
+		group: "ergonomics",
+		name: "edit-auto-read-hint",
+		desc: "PostToolUse on `Edit` / `MultiEdit`. When Claude Code refuses an edit with \"file has not been read yet,\" surfaces a clear \"Read first, then retry\" hint so the agent recovers in one turn instead of looping with the same args.",
+		fires: ["call-chip"],
+		file: "packages/haiku/src/hooks/edit-auto-read-hint.ts",
 	},
 ]
 

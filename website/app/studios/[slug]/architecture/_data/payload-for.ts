@@ -1,6 +1,24 @@
-// haiku_run_next payload registry — what the orchestrator returns at each
-// transition point in a stage's lifecycle. Distilled from
-// packages/haiku/src/orchestrator/workflow/.
+// haiku_run_next payload registry — what the cursor returns at each
+// visual transition point in a stage's lifecycle. Distilled from
+// `packages/haiku/src/orchestrator/workflow/cursor.ts` and
+// `run-tick.ts`.
+//
+// v4 model: the cursor (`derivePosition`) walks Track C (drift) → Track B
+// (feedback) → Track A (intent) on every `haiku_run_next` tick. Each
+// entry below describes a visual position in the map and what the
+// cursor would emit at that point — one of the v4 CursorAction kinds:
+// `select_studio` / `select_mode` / `select_stage` / `drift_detected` /
+// `clarify_required` / `discovery_required` /
+// `design_direction_required` / `design_direction_complete` /
+// `design_direction_uploaded` / `elaborate` / `start_unit_hat` /
+// `start_feedback_hat` / `close_feedback` / `dispatch_review` /
+// `dispatch_quality_gates` / `dispatch_approval` / `user_gate` /
+// `merge_stage` / `intent_review` / `merge_intent` / `sealed`.
+//
+// The TransitionKey enum is the map's visual vocabulary; it does NOT
+// match cursor `kind` values 1:1. Each visual position chooses the
+// most-likely cursor action it represents. See architecture §5.5 for
+// the full action surface and §5.4 for the per-stage walk order.
 
 import type { DerivedStage, ExecutionMode, PayloadModalData } from "./types.js"
 
@@ -18,9 +36,7 @@ export type TransitionKey =
 	| "review-to-gate"
 	| "gate-to-next-stage"
 	| "feedback-dispatch"
-	| "manual-change-assessment"
-	| "coverage-review-required"
-	| "output-liveness-review-required"
+	| "drift-detected"
 
 export interface TransitionOpts {
 	from?: string
@@ -42,12 +58,7 @@ export function payloadFor(
 ): PayloadResult | null {
 	const stageLower = stage.name.toLowerCase()
 	const isFirst = idx === 0
-	const baseGate =
-		mStage === "auto"
-			? "auto"
-			: mStage === "discrete"
-				? "external"
-				: stage.gate.type
+	const isAutopilot = mStage === "auto"
 
 	const map: Partial<Record<TransitionKey, PayloadResult>> = {
 		"preelab-to-stage1": {
@@ -55,437 +66,452 @@ export function payloadFor(
 				{
 					hook: "MCP tool result",
 					target: "agent's `tool_use_result` content",
-					what: "the payload below — agent now knows which stage to start and which phase",
-				},
-				{
-					hook: "inject-context",
-					target: "next agent prompt prepend",
-					what: "intent.md frontmatter (slug, title, studio, mode), `active_stage`, `phase=elaborate`",
+					what: "the pre-cursor selection chain emits one action at a time — `select_studio` → `select_mode` → (mode='quick' ? `select_stage`) — until every orientation field is set on `intent.md`. `haiku_run_next` blocks on the SPA picker inline; the agent never sees `select_*` in chat unless a non-haiku_run_next caller bypassed the gate.",
 				},
 				{
 					hook: "inject-state-file",
-					target: "`.haiku/_inject.md` (transient)",
-					what: "structured snapshot of state.json the agent can read with the Read tool",
+					target: "MCP `_session_context` arg",
+					what: "PreToolUse hook injects `state_file` (session metadata persistence path) and `_session_context` (CLAUDE_SESSION_ID, harness, model, etc.) so the orchestrator sees env it can't read directly.",
 				},
 				{
-					hook: "readStudio()",
-					target: "agent prompt prepend",
-					what: "**Studio context injection** — `readStudio(studio).body` is injected as studio-level context when a new stage starts, providing the studio's high-level goals, principles, and behavioral framing from `STUDIO.md`.",
+					hook: "v0→v4 migrator",
+					target: "intent.md, every unit.md, every feedback.md (one-time)",
+					what: "`run-tick.ts` runs the migrator on first read of any pre-v4 intent: strips deprecated fields (`active_stage`, `phase`, `status`, `triaged_at`, `upstream_stage`, etc.), deletes `state.json`, deletes pre-v4 drift sidecars, stamps `plugin_version: \"4.0.0\"`, synthesizes `approvals.user` for previously-completed units. Idempotent.",
 				},
 				{
-					hook: "readStageDef()",
-					target: "agent prompt",
-					what: "**Stage definition** — STAGE.md body is injected as the stage's behavioral definition and criteria guidance.",
+					hook: "readStudio() / readStageDef()",
+					target: "`start_stage` prompt body",
+					what: "once orientation is complete and the cursor walks Track A on the first stage, `start_stage` inlines the studio body + STAGE.md body so the agent has the full mandate up front.",
 				},
 			],
-			action: "start_stage",
-			summary: `kick off the first stage (${stage.name}) — sets phase=elaborate`,
+			action: "select_studio → select_mode → (quick? select_stage) → elaborate",
+			summary: `pre-cursor selection chain → first stage (${stage.name}) elaborate`,
 			payload: {
-				action: "start_stage",
+				action: "select_studio",
 				intent: "{slug}",
-				stage: stageLower,
-				next_phase: "elaborate",
+				message: "Intent has no studio. Engine pops the SPA picker.",
+				next_actions_after_orientation: [
+					"select_mode (continuous | discrete | discrete-hybrid | autopilot | quick)",
+					"select_stage (only when mode='quick' and intent.stages[] is empty)",
+					"elaborate { stage: '" + stageLower + "' }",
+				],
 			},
 			validations: [
-				"`intent.md` exists with valid frontmatter",
-				"`intent_reviewed=true` (user approved the `intent_review` gate)",
-				"studio resolved",
+				"`intent.md` exists with valid frontmatter (created by `haiku_intent_create`)",
+				"`intent.studio` is the trigger for `select_studio` (unset → emit)",
+				"`intent.mode` is the trigger for `select_mode` (unset → emit; engine-only field, agents cannot write directly)",
+				"For `mode: quick` only: `intent.stages[]` empty → `select_stage`",
+				"`plugin_version` major < 4 → migrator runs once before the cursor walks",
 			],
 			writes: [
 				{
 					path: ".haiku/intents/{slug}/intent.md",
 					change:
-						'frontmatter: `active_stage: "inception"`, `status: "in_progress"`',
-				},
-				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`,
-					change:
-						'`{ phase: "elaborate", elaboration_turns: 0 }` (creates the file)',
+						"frontmatter: `studio`, `mode`, optionally `stages[]` written by engine after each picker resolves; `plugin_version: \"4.0.0\"` stamped by the migrator on first v4 read.",
 				},
 			],
-			instructions: `Orchestrator advances the workflow engine into \`${stage.name}.elaborate\`. The agent should now don the first hat and begin elaboration with the user.`,
+			instructions: `The pre-cursor gates in \`run-tick.ts\` emit one \`select_*\` action at a time when the corresponding \`intent.md\` field is missing. \`haiku_run_next\` intercepts each, blocks on the SPA picker, writes the chosen value, and re-ticks. Once orientation is complete, the cursor walks Track A on the first stage (\`${stage.name}\`) — initially the stage has no units, so the cursor returns \`elaborate { stage: "${stageLower}" }\` and the agent begins collaborative drafting.`,
 		},
 		"elab-to-prereview": {
 			injection: [
 				{
 					hook: "MCP tool result",
 					target: "agent's `tool_use_result`",
-					what: "`action: pre_review` — workflow engine dispatches conditional review agents against unit SPECS (not artifacts — they don't exist yet)",
-				},
-				{
-					hook: "filterReviewAgentsByScope()",
-					target: "agent dispatch list",
-					what: "**Conditional review agents** — agents whose `applies_to:` globs don't match any stage artifact are skipped.",
+					what: "`action: dispatch_review` — once the stage has units and every hat sequence has terminal-advanced, the cursor walks the spec-review track. One action per missing role per tick — engine-built `spec` first, then each studio-declared review-agent in sequence.",
 				},
 				{
 					hook: "readReviewAgentPaths()",
 					target: "subagent prompt",
-					what: "each review agent's mandate is inlined into a self-contained `<subagent>` block targeting the unit .md files",
+					what: "the dispatched review agent's mandate (`plugin/studios/<studio>/stages/<stage>/review-agents/<role>.md`) is inlined into the dispatch block.",
 				},
 			],
-			action: "pre_review",
-			summary: "dispatch pre-execute adversarial review of unit specs",
+			action: "dispatch_review",
+			summary:
+				"unit hats done — cursor walks the spec-review track per role (one tick = one role)",
 			payload: {
-				action: "pre_review",
+				action: "dispatch_review",
 				intent: "{slug}",
 				stage: stageLower,
-				units_dir: `.haiku/intents/{slug}/stages/${stageLower}/units/`,
+				role: "<next-missing-review-role>",
+				units: ["<units-where-reviews.<role>-is-missing>"],
 			},
 			validations: [
-				"Every unit declared in `elaborate` has a valid `.md` file",
-				"`stageState.pre_review_dispatched` is `false` (first-pass only)",
-				"At least one review agent applies to this stage's output kinds (otherwise skip pre-review entirely)",
+				"Every unit's hat sequence has terminal-advanced (last `iterations[].result === 'advance'` on the last configured hat)",
+				"Some unit has `reviews.<role>` missing for the next role in the cursor's reviewRoles list",
+				"reviewRoles order: `spec` (engine-built) → studio review-agents → `user`",
+				`Mode shaping: ${isAutopilot ? "autopilot trims to `[spec]` only — no studio agents, no user role" : "full role list applies"}`,
 			],
 			writes: [
 				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`,
+					path: ".haiku/intents/{slug}/stages/{stage}/units/<unit>.md",
 					change:
-						"`pre_review_dispatched: true`, `pre_review_dispatched_at: <timestamp>`",
+						"after the review-agent subagent terminates clean, the engine signs `reviews.<role>: { at, body_sha256, ... }` on each reviewed unit (the witness for Track C drift). Findings flow through `haiku_feedback` (origin: `adversarial-review`).",
 				},
 			],
 			instructions:
-				"Agent spawns conditional review agents in parallel against every unit .md file. Reviewers audit the PLAN — not artifacts. Findings are logged via `haiku_feedback`. After all subagents complete, agent calls `haiku_run_next`. Zero findings → advance to specs gate. Pending findings → workflow engine emits `pre_review_revisit` with spec-edit instructions (modify existing units, don't draft new ones).",
+				"Cursor's spec-review track. Each tick returns `dispatch_review { role, units }` for the next missing role. Agent dispatches the review-agent subagent with a tool whitelist of `haiku_unit_read` + `haiku_feedback`. The subagent files findings (which Track B picks up on the next tick via `start_feedback_hat`); when the subagent terminates clean, the engine stamps `reviews.<role>` on each listed unit. Once every non-user role is signed, the cursor advances to `user_gate { gate_kind: \"spec\" }` (skipped under autopilot).",
 		},
 		"prereview-to-gate": {
 			injection: [
 				{
-					hook: "readFeedbackFiles()",
-					target: "orchestrator decision",
-					what: "if any pending feedback exists, workflow engine returns `pre_review_revisit` with a spec-edit mandate; otherwise falls through to the specs gate",
+					hook: "MCP tool result",
+					target: "agent's `tool_use_result`",
+					what: isAutopilot
+						? "autopilot mode: spec gate is auto. Reviews collapse to `[spec]`; once `spec` is signed the cursor advances directly to `start_unit_hat` for the first wave."
+						: "non-autopilot: `dispatch_review` for the next missing role until every studio agent signs, then the cursor emits `user_gate { gate_kind: \"spec\" }` and the engine opens the SPA review session inline.",
 				},
 			],
-			action: "advance_phase",
-			summary: `pre-review clear — open ${isFirst ? "intent_review" : "elaborate_to_execute"} specs gate`,
-			payload: {
-				action: "advance_phase",
-				gate_context: isFirst ? "intent_review" : "elaborate_to_execute",
-				next_phase: "execute",
-				pending_pre_review_feedback: 0,
-			},
+			action: isAutopilot ? "start_unit_hat" : "user_gate",
+			summary: isAutopilot
+				? "spec reviews collapsed to `[spec]` — auto-advance to first wave"
+				: `spec reviews complete — open user_gate { gate_kind: "spec" }`,
+			payload: isAutopilot
+				? {
+						action: "start_unit_hat",
+						intent: "{slug}",
+						stage: stageLower,
+						hat: "<first-hat>",
+						units: ["<wave-1-units>"],
+						terminal: false,
+					}
+				: {
+						action: "user_gate",
+						intent: "{slug}",
+						stage: stageLower,
+						gate_kind: "spec",
+						units: ["<units-where-reviews.user-is-missing>"],
+					},
 			validations: [
-				"`stageState.pre_review_dispatched` is `true` (review already ran)",
-				"Zero pending feedback on the stage (all spec findings resolved — closed or rejected)",
+				"Every unit's hat sequence has terminal-advanced",
+				isAutopilot
+					? "autopilot trimmed reviewRoles to `[spec]`; once `spec` is signed, no further review track work"
+					: "Every studio-declared review agent has signed `reviews.<role>` on every listed unit",
 			],
 			writes: [
 				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`,
-					change: "no write — falls through to auto/ask gate decision",
+					path: ".haiku/intents/{slug}/stages/{stage}/units/<unit>.md",
+					change: isAutopilot
+						? "no write at this transition — the wave dispatch is the next mainline action"
+						: "after the user approves via the SPA, the engine signs `reviews.user` on every listed unit and the cursor advances to the approval track. On request_changes, the engine writes the user's annotations as feedback files; the cursor walks Track B on the next tick.",
 				},
 			],
-			instructions:
-				"Pre-review audit has completed and all spec-level findings are resolved. The workflow engine advances to the normal specs gate (auto-advance or opens the review UI, depending on the stage's `review:` type).",
+			instructions: isAutopilot
+				? "Autopilot mode: the cursor's reviewRoles list is `[spec]`, so once the spec subagent signs there's no more spec-review work. The next tick returns `start_unit_hat` for the first wave-ready batch."
+				: "The cursor returns `user_gate { gate_kind: \"spec\" }` and `haiku_run_next` opens the review SPA session inline (via `haiku_review_open`), then blocks on `haiku_await_gate`. On approve, the engine stamps `reviews.user` on every unit; on request_changes, the engine writes the annotations as feedback files and Track B walks them on the next tick.",
 		},
 		"elab-to-gate": {
 			injection: [
 				{
 					hook: "MCP tool result",
 					target: "agent's `tool_use_result`",
-					what: "the `gate_review` action with `review_url` + `session_id` (no longer blocking — the agent posts the URL to the user, then calls `haiku_await_gate` separately)",
+					what: "`user_gate { gate_kind: \"spec\" }` — the cursor's reviewRoles loop reached the `user` role. `haiku_run_next` calls `haiku_review_open` inline (creates or reuses a session) and blocks on `haiku_await_gate`.",
 				},
 				{
-					hook: "_prepareGateReview",
+					hook: "haiku_review_open / _prepareGateReview",
 					target: "Review web UI session record",
-					what: "creates (or REUSES, when a live SPA tab exists for this intent) the review session; refreshes parsed units + gate_meta on every prepare; returns `{session_id, review_url, reused, browser_attached}`",
+					what: "creates (or REUSES, when a live SPA tab exists for this intent) the review session; refreshes the unit set + gate metadata on every prepare; returns `{session_id, review_url, reused, browser_attached}`.",
 				},
 				{
-					hook: "intent-broadcaster (gate_prepared)",
+					hook: "intent-broadcaster",
 					target: "every WS subscriber on this intent",
-					what: "fires a `gate_prepared` event so the SPA tab refreshes into the gate view without polling",
+					what: "fires a `gate_prepared` event so the SPA tab refreshes into the gate view without polling.",
 				},
 				{
-					hook: "haiku_await_gate (paired tool, separate MCP call)",
-					target: "agent's `tool_use_result`",
-					what: "drains `pending_decision` on entry; otherwise blocks on `waitForSession` (up to 30 min). Forwards MCP abort signal so cancel unwinds promptly. Session lives across awaits — WS, tunnel, and pointers persist.",
-				},
-				{
-					hook: "inject-context",
-					target: "next agent prompt prepend (after click)",
-					what: "if approved: `phase=execute`, first wave's units. if rejected: revision instructions + previous attempt's content",
+					hook: "haiku_await_gate (engine-internal in v4)",
+					target: "agent's `tool_use_result` (post-decision)",
+					what: "drains `pending_decision` on entry; otherwise blocks on `waitForSession` (up to 30 min). Forwards the MCP abort signal so cancel unwinds promptly. Session lives across awaits — WS, tunnel, and pointers persist.",
 				},
 			],
-			action: "gate_review",
-			summary: `elaboration complete — prepare ${isFirst ? "intent_review" : "elaborate_to_execute"} gate (non-blocking)`,
+			action: "user_gate",
+			summary: "spec reviews signed by every agent → user_gate { gate_kind: \"spec\" } (engine-side blocking)",
 			payload: {
-				action: "gate_review",
-				gate_context: isFirst ? "intent_review" : "elaborate_to_execute",
-				next_phase: "execute",
-				units_count: stage.units.length,
-				wave_count: stage.waves.length,
+				action: "user_gate",
+				intent: "{slug}",
+				stage: stageLower,
+				gate_kind: "spec",
+				units: ["<units-where-reviews.user-is-missing>"],
 				review_url: "https://...",
 				session_id: "<session-id>",
 				reused: false,
 				browser_attached: false,
 			},
 			validations: [
-				"DAG is acyclic (`computeUnitWaves` topological sort succeeds)",
-				"Every unit's `depends_on` references existing units",
-				"Unit naming follows convention (`unit-NN-slug.md`)",
-				"All declared `inputs:` from prior stages exist on disk",
-				mStage === "auto" ? null : "`elaboration_turns >= 3` (collaborative)",
-			].filter((v): v is string => Boolean(v)),
+				"DAG is acyclic and every unit's `depends_on` references existing units (validated at `haiku_unit_write` time)",
+				"Unit naming follows `unit-NN-slug.md`",
+				"Every unit's hat sequence has terminal-advanced",
+				"Every non-user review role has signed `reviews.<role>` on every unit",
+			],
 			writes: [
 				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`,
-					change: `\`gate_context: "${isFirst ? "intent_review" : "elaborate_to_execute"}"\`, \`gate_outcome: "pending"\`, \`gate_review_session_id\`, \`gate_review_url\`, \`gate_review_context\`, \`gate_review_next_stage\`, \`gate_review_next_phase\` (consumed by haiku_await_gate)`,
-				},
-				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/units/unit-NN-*.md`,
+					path: ".haiku/intents/{slug}/stages/{stage}/units/<unit>.md",
 					change:
-						"frontmatter validated; nothing mutated unless validation auto-fixes naming",
+						"on approve: `reviews.user: { at, body_sha256, ... }` stamped on every listed unit (the witness Track C will sweep against). On request_changes: engine writes user's annotations as `feedback/<NN>-*.md` files; cursor walks Track B on the next tick.",
 				},
 			],
-			instructions: `Calls \`_prepareGateReview()\` to mint (or reuse) a review session and return the URL — the call does **NOT** block. The agent posts the URL to the user (or skips when \`browser_attached=true\`) and then calls \`haiku_await_gate { intent }\` to block on the decision. \`haiku_await_gate\` drains \`pending_decision\` on entry — supporting decisions submitted before any await opens — and otherwise waits up to 30 min. On approve → \`phase\` advances to \`execute\`. On reject → ${isFirst ? "`phase` resets to `pending`" : "`phase` stays at `elaborate`"} and any user comments left in the UI become \`feedback/FB-NN.md\` files on the stage. **The review UI does NOT re-open while those FBs are pending** — the workflow engine routes through \`feedback_dispatch\` (for human comments) or \`review_fix\` (for inline-fix items) until each finding is closed or escalated.`,
+			instructions: `The cursor reached the user's spec review. \`haiku_run_next\` opens the review session inline and blocks on \`haiku_await_gate\` — single tool call, no URL+await two-step. On approve → engine stamps \`reviews.user\` on every listed unit; the next tick returns \`start_unit_hat\` for the first wave. On request_changes → engine writes feedback files and Track B walks them on the next tick. **The review UI does NOT re-open while open feedback is pending** — Track B walks before Track A on every tick, so the cursor dispatches fix-hats against the FB until it closes.`,
 		},
 		"hat-to-hat": {
 			injection: [
 				{
 					hook: "MCP tool result",
 					target: "subagent's `tool_use_result`",
-					what: `next hat name (\`${opts.to ?? "?"}\`), \`hats/${opts.to ?? "?"}.md\` content, bolt counter`,
+					what: `next hat name (\`${opts.to ?? "?"}\`), \`hats/${opts.to ?? "?"}.md\` content. The cursor groups units by hat-index; the parent dispatches one subagent per unit per hat in parallel batches.`,
 				},
 				{
-					hook: "subagent-context",
-					target: "the subagent itself",
-					what: "stays scoped to the parent unit's worktree throughout the hat rotation — same subagent transitions between hats, doesn't respawn.",
-				},
-				{
-					hook: "track-outputs",
-					target: "unit frontmatter",
-					what: `records files \`${opts.from ?? "?"}\` wrote into the unit's \`outputs:\` so the next hat sees them`,
+					hook: "stamp-agent-write (PostToolUse)",
+					target: "intent action log",
+					what: "agent edits inside tracked drift surfaces stamp `entry_type: \"agent_write\"` so the next drift sweep attributes the change to the agent rather than firing `drift_detected` against the agent's own work.",
 				},
 			],
 			action: "haiku_unit_advance_hat",
 			summary: `subagent calls advance_hat → ${opts.from ?? "?"} done, next: ${opts.to ?? "?"}`,
 			payload: {
 				tool_called_by_subagent: "haiku_unit_advance_hat",
-				input: { intent: "{slug}", unit: opts.unit ?? "?" },
-				output: {
-					action: "next_hat",
-					next_hat: opts.to,
-					hat_definition: `hats/${opts.to ?? "?"}.md content`,
+				input: {
+					intent: "{slug}",
+					stage: stageLower,
+					unit: opts.unit ?? "?",
+					hat: opts.from ?? "?",
 				},
+				output_for_next_tick: "the cursor walks `nextHatForUnit` on the next `haiku_run_next` tick and either returns `start_unit_hat` for the next hat or moves on to the spec-review track when every hat sequence has terminal-advanced.",
 			},
 			validations: [
-				`Current hat (\`${opts.from ?? "?"}\`) declared its outputs (recorded by \`track-outputs\` hook)`,
-				"No `Edit`/`Write` outside the active unit's worktree (enforced by `workflow-guard`)",
+				`Current hat (\`${opts.from ?? "?"}\`) iterations[-1].result === null at advance time (in-flight, can advance)`,
+				"The advancing subagent owns the unit's worktree (the agent's tool whitelist enforces scope)",
 			],
 			writes: [
 				{
 					path: `.haiku/intents/{slug}/stages/${stageLower}/units/${opts.unit ?? "?"}.md`,
-					change: `frontmatter: \`hat: "${opts.to ?? "?"}"\`, \`bolt: bolt+1\` (status stays \`in_progress\`)`,
+					change: `frontmatter: append \`{ hat: "${opts.from ?? "?"}", started_at, completed_at, result: "advance" }\` to \`iterations[]\`. The cursor's \`nextHatForUnit\` reads this on the next tick to derive the next hat.`,
 				},
 			],
-			instructions: `**Not a \`haiku_run_next\` tick.** The subagent calls \`haiku_unit_advance_hat\` when it finishes the current hat. The orchestrator internally progresses the workflow engine and returns the next hat — the subagent doffs \`${opts.from ?? "?"}\` and dons \`${opts.to ?? "?"}\` without involving the parent agent. On failure the subagent calls \`haiku_unit_reject_hat\` instead — that's the red back-arc.`,
+			instructions: `**Not a \`haiku_run_next\` tick.** The subagent calls \`haiku_unit_advance_hat\` when it finishes the current hat. The orchestrator records the iteration; the cursor on the next \`haiku_run_next\` tick reads \`iterations[]\` and either returns \`start_unit_hat\` for hat \`${opts.to ?? "?"}\` (if any hats remain) or moves on. On failure the subagent calls \`haiku_unit_reject_hat\` instead — the next \`nextHatForUnit\` walk rewinds one hat (or re-dispatches the first hat if reject was on hat[0]).`,
 		},
 		"wave-to-wave": {
 			injection: [
 				{
 					hook: "MCP tool result",
 					target: "agent's `tool_use_result`",
-					what: `newly-eligible unit list (${(opts.units ?? []).join(", ")}), each with worktree path + first hat`,
+					what: `\`start_unit_hat { stage, hat, units: [...], terminal }\` — newly-eligible unit batch (${(opts.units ?? []).join(", ")}). The parent dispatches ONE subagent per unit, in parallel.`,
 				},
 				{
-					hook: "inject-context",
-					target: "next agent prompt prepend (per spawned unit context)",
-					what: 'each unit gets a self-contained `<subagent tool="Agent">` block with frontmatter, depends_on outputs, first hat\'s instructions — all embedded inside the block',
+					hook: "start_unit_hat prompt builder",
+					target: "next agent prompt",
+					what: "each unit gets a self-contained `<subagent>` block with the hat instructions, unit spec, model tier (resolved via per-unit > hat > stage > studio cascade), and tool whitelist embedded inside the block.",
 				},
 			],
-			action:
-				opts.units && opts.units.length > 1 ? "start_units" : "start_unit",
+			action: "start_unit_hat",
 			summary: `wave ${opts.from ?? "?"} complete → start wave ${opts.to ?? "?"} (${(opts.units ?? []).join(", ")})`,
 			payload: {
-				action:
-					opts.units && opts.units.length > 1 ? "start_units" : "start_unit",
+				action: "start_unit_hat",
+				intent: "{slug}",
+				stage: stageLower,
+				hat: "<first-hat-of-wave>",
 				units: opts.units,
-				completed_wave: opts.from,
-				next_wave: opts.to,
+				terminal: false,
 			},
 			validations: [
-				`All units in wave ${opts.from ?? "?"} have \`status=complete\``,
-				"Outputs declared by completed units exist on disk",
-				"Each unit's `depends_on` are all complete (DAG eligibility check)",
+				"Cursor's wave-ready predicate: `started_at == null` AND every entry in `depends_on` has terminal-advanced (`iterations[-1].result === 'advance'` on the last configured hat)",
+				"No in-flight units in the previous wave (cursor returns null = mid-wave noop while any unit's iterations[-1].result is null)",
 			],
 			writes: [
 				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/units/{prev-wave-unit}.md`,
-					change:
-						'frontmatter: `status: "complete"`, final `outputs:` recorded',
+					path: `.haiku/intents/{slug}/stages/${stageLower}/units/<unit>.md`,
+					change: 'frontmatter: `started_at` stamped on each newly-dispatched unit by `haiku_unit_start` (called by the subagent on entry).',
 				},
 				{
-					path: `.haiku/worktrees/{new-wave-unit}/`,
-					change: "git worktree created for each newly-eligible unit",
+					path: `.haiku/worktrees/<unit>/`,
+					change: "git worktree created for each newly-eligible unit by the engine.",
 				},
 			],
 			instructions:
-				"There's no 'wave' tool — `haiku_run_next` simply returns `start_unit(s)` for whichever units have just become eligible. `computeUnitWaves` is a pure scheduling function; the workflow engine has no explicit wave concept beyond which units are currently eligible.",
+				"There is no 'wave' tool — `haiku_run_next` returns `start_unit_hat` for whichever units satisfy the wave-ready predicate at this tick. The cursor groups by hat-index; the parent dispatches the whole batch in one response. Wave numbers, hat sequences, and slot management are all engine-internal — derived from FM, not tracked by the agent.",
 		},
 		"execute-to-review": {
 			injection: [
 				{
 					hook: "MCP tool result",
 					target: "agent's `tool_use_result`",
-					what: "phase=review confirmation, then quality-gate process is spawned in this same call",
+					what: "`dispatch_quality_gates { stage, units }` — every unit's hat sequence has terminal-advanced AND `reviews.<role>` is signed for every spec-review role. The cursor advances to the approval track; the engine-built `quality_gates` role is first.",
 				},
 				{
-					hook: "quality-gate",
-					target: "child process exit codes captured",
-					what: "stdout/stderr from tests/lint/typecheck — parsed into structured findings if they fail",
+					hook: "dispatch_quality_gates prompt builder",
+					target: "agent prompt",
+					what: "instructs the agent to run `runQualityGates()` (configured tests / lint / typecheck per studio settings); on success the engine signs `approvals.quality_gates` on every listed unit, on failure the agent fixes in place and re-runs.",
 				},
 			],
-			action: "advance_phase + run_quality_gates",
+			action: "dispatch_quality_gates",
 			summary:
-				"all units complete — enter review and run quality gates atomically",
+				"all unit hat sequences done + every spec review signed → dispatch_quality_gates",
 			payload: {
-				action: "advance_phase",
-				from: "execute",
-				to: "review",
-				units_complete: stage.units.length,
-				followed_by:
-					"this same call runs `runQualityGates()` immediately after the phase flip",
+				action: "dispatch_quality_gates",
+				intent: "{slug}",
+				stage: stageLower,
+				units: ["<units-where-approvals.quality_gates-is-missing>"],
 			},
 			validations: [
-				"All units have `status=complete` across every wave",
-				"Every declared `output` artifact exists on disk",
-				"`track-outputs` hook recorded all writes",
+				"Every unit's hat sequence terminal-advanced",
+				"Every reviewRole has signed `reviews.<role>` on every unit",
+				"`approvals.quality_gates` is missing on at least one unit",
+				"approvalRoles order: `spec` → `quality_gates` (engine-built) → studio agents → `user`",
 			],
 			writes: [
 				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`,
+					path: ".haiku/intents/{slug}/stages/{stage}/units/<unit>.md",
 					change:
-						'`phase: "review"`, then `quality_gates_run_at: <ts>` after gates run',
+						"on `runQualityGates()` success the engine signs `approvals.quality_gates: { at, body_sha256, witnesses: [...output paths...] }` on each unit. The witnesses become the drift surface Track C will sweep on every subsequent tick.",
 				},
 			],
 			instructions:
-				'`haiku_run_next` flips `phase` to `review` and **runs the quality gates as part of the same call** — tests, lint, typecheck. On failure, the next call returns `fix_quality_gates` with the failure list and stays in `review`. On success, the next call returns `action: "review"` to dispatch the parallel review agents.',
+				"The cursor walks the approval track per role. `spec` (engine-built) and `quality_gates` (engine-run) come before any studio agent. On quality-gate failure the agent fixes the code in place and re-runs — failures don't roll the workflow back, they stay on the approval track until the gates pass. After `quality_gates` is signed, the cursor returns `dispatch_approval { role: <next> }` for each studio approval agent in turn, then `user_gate { gate_kind: \"approval\" }` (skipped under autopilot).",
 		},
 		"review-spec-to-agents": {
 			injection: [
 				{
 					hook: "MCP tool result",
 					target: "agent's `tool_use_result`",
-					what: "engine spec-conformance subagent dispatch — universal hard gate that always fires on every stage, before quality review. The prompt is engine-owned (no per-studio mandate file, no opt-out).",
+					what: "`dispatch_review { role: \"spec\" }` — every stage's spec-review track always starts with the engine-built `spec` role (cross-unit acceptance criteria coverage, scope creep, cross-unit drift). One subagent, runs first.",
 				},
 			],
-			action: "spec_review",
+			action: "dispatch_review",
 			summary:
-				"dispatch the engine spec-conformance subagent (Phase 1) — verify the stage delivered exactly what the intent spec scoped, before quality review fires",
+				"spec-conformance is the first role in every stage's review track (engine-built, no per-studio mandate)",
 			payload: {
-				action: "spec_review",
+				action: "dispatch_review",
+				intent: "{slug}",
 				stage: stageLower,
-				agent: "spec-conformance (engine built-in, single subagent)",
+				role: "spec",
+				units: ["<units-where-reviews.spec-is-missing>"],
 			},
 			validations: [
-				"`stage_state.spec_review_dispatched !== true` (first time only — fires once per stage)",
+				"`reviews.spec` is missing on at least one unit",
+				"reviewRoles list (from cursor) puts `spec` first; even autopilot mode keeps `spec` (autopilot trims OUT the studio agents and user, not spec)",
 			],
 			writes: [
 				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`,
+					path: ".haiku/intents/{slug}/stages/{stage}/units/<unit>.md",
 					change:
-						'`spec_review_dispatched: true`, then `phase: "gate"` (so the fix loop can handle any spec findings before quality review fires)',
+						"after the spec-conformance subagent terminates clean, the engine signs `reviews.spec: { at, body_sha256, ... }` on each listed unit. Findings flow through `haiku_feedback` (origin: `adversarial-review`).",
 				},
 			],
 			instructions:
-				"A perfect implementation of the wrong thing is still wrong — the engine's spec-conformance subagent checks **cross-unit spec delivery** (acceptance criteria coverage, scope creep, cross-unit drift). It runs **alone, first**. Findings flow through the normal `review_fix` loop. Once spec is clear, gate.ts resets the phase back to `review` so quality reviewers fire next.",
+				"A perfect implementation of the wrong thing is still wrong — the engine's spec-conformance subagent runs first on every stage. There's no per-studio mandate file, no opt-out. Findings flow through Track B (next tick → `start_feedback_hat`); a clean run signs `reviews.spec` on every listed unit and the cursor advances to the next review role.",
 		},
 		"gate-spec-reset-to-review": {
 			injection: [
 				{
 					hook: "MCP tool result",
 					target: "agent's `tool_use_result`",
-					what: "advance_phase reset — gate handler detected spec_review_dispatched=true and quality_review_dispatched still unset, so it flips phase back to `review` for the quality dispatch",
+					what: "v4 has no spec-vs-quality phase split — the cursor walks reviewRoles serially. After `reviews.spec` is signed the next tick returns `dispatch_review` for the next missing studio review-agent role.",
 				},
 			],
-			action: "advance_phase",
+			action: "dispatch_review",
 			summary:
-				"spec gate cleared — reset to review phase so the quality review layer (Phase 2) can dispatch on the next tick",
+				"v4: no separate spec→quality reset. The cursor advances to the next reviewRole (`spec` → studio agents → `user`).",
 			payload: {
-				action: "advance_phase",
+				action: "dispatch_review",
+				intent: "{slug}",
 				stage: stageLower,
-				to_phase: "review",
+				role: "<next-studio-review-agent>",
+				units: ["<units-where-reviews.<role>-is-missing>"],
 			},
 			validations: [
-				"`spec_review_dispatched === true`",
-				"`quality_review_dispatched !== true`",
-				"All spec findings closed (open spec FBs would have been routed through `review_fix` first)",
+				"`reviews.spec === { at, ... }` on every unit",
+				"At least one unit is missing `reviews.<next-role>`",
+				"reviewRoles list is the cursor's source of role order",
 			],
 			writes: [
 				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`,
-					change: '`phase: "review"` (reset)',
+					path: ".haiku/intents/{slug}/stages/{stage}/units/<unit>.md",
+					change:
+						"after each review-agent terminates clean, `reviews.<role>` is signed by the engine. Findings file via `haiku_feedback` and route through Track B on the next tick.",
 				},
 			],
 			instructions:
-				"This is the bridge between Phase 1 (engine spec gate) and Phase 2 (studio quality review). The next `haiku_run_next` tick lands back in the review handler, which now sees `spec_review_dispatched=true` and falls through to the quality review path — dispatching every studio-declared review agent in parallel.",
+				"v3's spec-vs-quality two-phase model is gone. v4's cursor walks one reviewRole per tick — `spec` (engine-built) first, then each studio review-agent in declared order, then `user`. Mode-shaped: autopilot trims to `[spec]` only. After every non-user role signs, the cursor returns `user_gate { gate_kind: \"spec\" }` (skipped under autopilot).",
 		},
 		"review-quality-to-agents": {
 			injection: [
 				{
 					hook: "MCP tool result",
 					target: "agent's `tool_use_result`",
-					what: "quality review fan-out — every studio-declared review agent dispatches in parallel as subagents",
+					what: "`dispatch_approval { role }` — quality_gates is signed; the cursor walks approvalRoles for each remaining studio approval agent. One role per tick.",
 				},
 				{
 					hook: "readReviewAgentPaths()",
-					target: "agent prompt",
-					what: "every `review-agents/*.md` declared by the studio for this stage — the quality roster",
+					target: "subagent prompt",
+					what: "each studio approval agent's mandate (from `plugin/studios/<studio>/stages/<stage>/review-agents/<role>.md`) is inlined into the dispatch block.",
 				},
 			],
-			action: "review",
+			action: "dispatch_approval",
 			summary:
-				"dispatch quality review agents (Phase 2) — runs after spec gate clears, in parallel against built artifacts",
+				"quality_gates signed → cursor walks the approval track per studio role (one tick per role)",
 			payload: {
-				action: "review",
+				action: "dispatch_approval",
+				intent: "{slug}",
 				stage: stageLower,
-				agents: "all studio-declared review-agents/",
+				role: "<next-studio-approval-agent>",
+				units: ["<units-where-approvals.<role>-is-missing>"],
 			},
 			validations: [
-				"Spec gate clear: `spec_review_dispatched === true` with all spec findings closed",
-				"`quality_review_dispatched !== true` (first time only — set during this dispatch)",
-				"Quality gates passed (tests/lint/typecheck — see `execute-to-review`)",
-				"Per-stage output liveness clear (orphan check; acknowledgments via `coverage-decisions.json`)",
+				"`approvals.spec` and `approvals.quality_gates` are signed on every unit",
+				"Some unit has `approvals.<role>` missing for the next role in approvalRoles",
+				`Mode shaping: ${isAutopilot ? "autopilot trims approvalRoles to `[spec, quality_gates]` — no studio agents, no user role" : "full role list applies"}`,
 			],
 			writes: [
 				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`,
-					change: '`quality_review_dispatched: true`, then `phase: "gate"`',
+					path: ".haiku/intents/{slug}/stages/{stage}/units/<unit>.md",
+					change:
+						"after the approval agent terminates clean, the engine signs `approvals.<role>: { at, body_sha256, witnesses: [<output paths>] }`. Witnesses are the drift surface Track C sweeps every subsequent tick.",
 				},
 			],
 			instructions:
-				"Quality reviewers focus on code quality (architecture, performance, security, test coverage) — explicitly NOT spec conformance, which the engine spec_review phase already handled. Each agent files findings via `haiku_feedback`; findings flow through the normal fix-hat loop.",
+				"Approval agents focus on built artifacts (architecture, performance, security, test coverage). Each role gets its own tick. After every studio approval signs, the cursor returns `user_gate { gate_kind: \"approval\" }` (skipped under autopilot, where `merge_stage` auto-fires once `quality_gates` is signed).",
 		},
 		"review-to-gate": {
 			injection: [
 				{
 					hook: "MCP tool result",
 					target: "agent's `tool_use_result`",
-					what: "phase=gate confirmation; gate type from STAGE.md frontmatter",
+					what: isAutopilot
+						? "autopilot: approvalRoles trimmed to `[spec, quality_gates]`. Once both are signed the cursor returns `merge_stage` directly — no user gate, no studio agents."
+						: "every studio approval agent has signed → `user_gate { gate_kind: \"approval\" }`. `haiku_run_next` opens the review SPA inline and blocks on `haiku_await_gate`.",
 				},
 			],
-			action: "advance_phase",
-			summary: "soft review complete — enter gate phase",
-			payload: {
-				action: "advance_phase",
-				from: "review",
-				to: "gate",
-				review_outcome: "all_clear",
-			},
+			action: isAutopilot ? "merge_stage" : "user_gate",
+			summary: isAutopilot
+				? "autopilot: every required approval signed → merge_stage"
+				: "every studio approval signed → user_gate { gate_kind: \"approval\" }",
+			payload: isAutopilot
+				? {
+						action: "merge_stage",
+						intent: "{slug}",
+						stage: stageLower,
+					}
+				: {
+						action: "user_gate",
+						intent: "{slug}",
+						stage: stageLower,
+						gate_kind: "approval",
+						units: ["<units-where-approvals.user-is-missing>"],
+					},
 			validations: [
-				"Every review-agent returned approval (no findings)",
-				"If any agent returned findings → `fix_quality_gates` loops back",
+				"`approvals.<role>` signed on every unit for every approvalRole except the next one",
+				isAutopilot
+					? "autopilot: `quality_gates` signed → no further approval work; cursor returns `merge_stage`"
+					: "non-autopilot: every studio approval agent has signed; cursor returns `user_gate { gate_kind: \"approval\" }`",
 			],
 			writes: [
 				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`,
-					change: '`phase: "gate"`, `review_findings: []`',
+					path: ".haiku/intents/{slug}/stages/{stage}/units/<unit>.md",
+					change: isAutopilot
+						? "no write at this transition — `merge_stage` is the next mainline action"
+						: "on approve: engine signs `approvals.user` on every listed unit; on request_changes: engine writes annotations as feedback files and Track B walks them on the next tick.",
 				},
 			],
-			instructions: `Open the \`${baseGate}\` gate. ${
-				baseGate === "auto"
-					? "Auto-advance with no human interaction."
-					: baseGate === "external"
-						? "Submit PR on per-stage branch and wait for merge."
-						: "Prepare review session via `_prepareGateReview()` (non-blocking) and return the URL; the agent posts it then calls `haiku_await_gate` to block on the user's decision (or drains a queued `pending_decision` if the user already clicked while no await was open)."
-			}`,
+			instructions: isAutopilot
+				? "Autopilot: cursor returns `merge_stage` directly. The engine merges the stage branch into intent main under `withIntentMainLock`."
+				: "Cursor returns `user_gate { gate_kind: \"approval\" }`. `haiku_run_next` opens the SPA review session inline and blocks on `haiku_await_gate`. On approve, the cursor advances to `merge_stage`. On request_changes, engine writes feedback and Track B walks the fix loop. **In `discrete` mode, the user gate dispatches differently — the engine opens a real PR/MR for the stage branch and the merge into intent main IS the approval signal.**",
 		},
 		"gate-to-next-stage": {
 			injection: [
@@ -493,270 +519,144 @@ export function payloadFor(
 					hook: "MCP tool result",
 					target: "agent's `tool_use_result`",
 					what: opts.isLast
-						? "`intent_complete` — terminal"
-						: mStage === "discrete"
-							? "`stage_complete_discrete` — agent stops; user must run /haiku:pickup"
-							: "next stage name and `phase: pending`",
+						? "every stage merged → cursor walks intent-scope approvals (`spec`, `continuity`, `user`) and emits `intent_review { role }` per missing role, then `merge_intent`, then `sealed`."
+						: "stage merged into intent main; cursor's next tick walks the next stage (the new `firstUnmergedStage`).",
+				},
+				{
+					hook: "withIntentMainLock",
+					target: "merge serialization",
+					what: "every stage→main merge runs under the lock so concurrent stages can't race the merge into intent main.",
 				},
 			],
-			action: opts.isLast
-				? "intent_complete"
-				: mStage === "discrete"
-					? "stage_complete_discrete"
-					: "advance_stage",
+			action: opts.isLast ? "merge_intent" : "merge_stage",
 			summary: opts.isLast
-				? "final stage approved — intent_complete"
-				: mStage === "discrete"
-					? "stage complete — intent paused, awaiting /haiku:pickup"
-					: `advance to next stage (${opts.nextStageName ?? "?"})`,
-			payload: {
-				action: opts.isLast
-					? "intent_complete"
-					: mStage === "discrete"
-						? "stage_complete_discrete"
-						: "advance_stage",
-				from_stage: stageLower,
-				to_stage: opts.isLast
-					? null
-					: (opts.nextStageName ?? "").toLowerCase() || null,
-				mode: mStage,
-			},
+				? "final stage merged → walk intent-scope approvals → merge_intent → sealed"
+				: `merge stage \`${stageLower}\` into intent main → next stage (${opts.nextStageName ?? "?"})`,
+			payload: opts.isLast
+				? {
+						action: "merge_intent",
+						intent: "{slug}",
+					}
+				: {
+						action: "merge_stage",
+						intent: "{slug}",
+						stage: stageLower,
+					},
 			validations: [
-				"`gate_outcome === 'approved'` (or `auto`)",
+				"Every approval signed for every unit on the stage (mode-shaped)",
 				opts.isLast
-					? "`isLastStage=true`"
-					: "Next stage's `inputs:` satisfied by accumulated pool",
+					? "every stage's branch is merged into intent main (`firstUnmergedStage` returns null)"
+					: "stage's branch is ahead of intent main and ready to merge",
 			],
 			writes: opts.isLast
 				? [
 						{
-							path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`,
-							change: '`status: "complete"`, `gate_outcome: "approved"`',
-						},
-						{
 							path: ".haiku/intents/{slug}/intent.md",
 							change:
-								'frontmatter: `status: "completed"`, `active_stage: null`',
+								"after intent-scope approvals all sign and `merge_intent` runs, the engine stamps `sealed_at`. The next tick returns `sealed` (terminal).",
 						},
 					]
 				: [
 						{
-							path: `.haiku/intents/{slug}/stages/${stageLower}/state.json`,
-							change: '`status: "complete"`, `gate_outcome: "approved"`',
+							path: "git refs",
+							change:
+								"`haiku/{slug}/{stage}` merged into `haiku/{slug}/main` under `withIntentMainLock`. Stages are NEVER sealed — only intents are; corrective work on a previously-merged stage rewinds the cursor automatically (`firstUnmergedStage` returns it on the next tick).",
 						},
 					],
 			instructions: opts.isLast
-				? "`workflowIntentComplete()` fires; `intent.md` `status` flips to `completed`."
-				: mStage === "discrete"
-					? "Stage complete; intent paused. The user must run `/haiku:pickup` to resume."
-					: "`workflowAdvanceStage()` moves the workflow engine into the next stage's `pending` phase.",
-		},
-		"manual-change-assessment": {
-			injection: [
-				{
-					hook: "MCP tool result",
-					target: "agent's `tool_use_result`",
-					what: "`action: manual_change_assessment` — pre-tick drift-detection gate found tracked-surface files whose on-disk SHA differs from the baseline. Agent must classify every finding before per-state dispatch resumes.",
-				},
-				{
-					hook: "runDriftDetectionGate()",
-					target: "pre-tick gate chain",
-					what: "Gate walks `artifacts/`, `outputs/` (alias), `knowledge/`, `discovery/`, and intent-scope `knowledge/`. Computes SHA-256 per file, diffs against `stages/{stage}/baseline.json`. Pending-assessment markers suppress already-in-flight findings (double-edit detection clears stale markers). Kill-switch: `drift_detection: false` in settings.yml makes the gate a complete no-op.",
-				},
-				{
-					hook: "buildManualChangeAssessmentAction()",
-					target: "agent prompt",
-					what: "Assigns stable per-dispatch `DRF-NN` IDs. Builds `legal_outcomes` map: `file-removed` excludes `inline-fix`; current-stage findings exclude `trigger-revisit` (AC-CO1). Builds `tick_id` carrying `(intent_slug, tickCounter, ISO timestamp)` — stale tick IDs are rejected by `haiku_classify_drift`. Includes agent-facing instructions naming `haiku_classify_drift` and all four outcomes.",
-				},
-			],
-			action: "manual_change_assessment",
-			summary:
-				"drift detected — agent classifies each out-of-band human file change before stage handler runs",
-			payload: {
-				action: "manual_change_assessment",
-				intent_slug: "{slug}",
-				stage: stageLower,
-				tick_id: "tick-{slug}-{counter}-{iso}",
-				findings: [
-					{
-						path: "stages/{stage}/artifacts/example.html",
-						change_kind: "modified | new-file-detected | file-removed",
-						is_binary: false,
-						diff_unified: "@@ -1 +1 @@\n-old\n+new",
-						before_sha256: "{hex64}",
-						after_sha256: "{hex64}",
-						before_bytes: 4821,
-						after_bytes: 5104,
-						tracking_class: "stage-output | knowledge | unit-output",
-						stage: "{stage-owner}",
-						context_unit: null,
-						finding_id: "DRF-01",
-					},
-				],
-				mode: "interactive | autopilot | pickup | hybrid",
-				legal_outcomes: {
-					"stages/{stage}/artifacts/example.html": [
-						"ignore",
-						"inline-fix",
-						"surface-as-feedback",
-						"trigger-revisit",
-					],
-				},
-				instructions:
-					"Call `haiku_classify_drift` with tick_id, agent_rationale, and one Classification per finding. For non-ignore outcomes rationale_excerpt is required.",
-			},
-			validations: [
-				"Kill-switch (`drift_detection: false`) is OFF",
-				"Stage is active (non-empty currentStage)",
-				"`baseline.json` exists and is valid (corrupt → error action; absent → establish-mode, no findings emitted)",
-				"At least one tracked-surface file has a SHA mismatch or is new/removed",
-				"No open pending-assessment marker suppressing the finding",
-			],
-			writes: [
-				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/baseline.json`,
-					change:
-						"Updated on classify: terminal outcomes (`ignore`, `inline-fix`) update immediately; non-terminal (`surface-as-feedback`, `trigger-revisit`) defer to marker clearance",
-				},
-				{
-					path: ".haiku/intents/{slug}/drift-markers.json",
-					change:
-						"New `PendingMarker` written for `surface-as-feedback` / `trigger-revisit` outcomes; cleared when linked FB reaches terminal state or revisit completes",
-				},
-				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/drift-assessments/DA-NN.json`,
-					change:
-						"Assessment record written once per dispatch (append-only). Contains findings, classifications, agent_rationale, mode.",
-				},
-			],
-			instructions:
-				"**Pre-tick drift-detection gate (unit-05, 2026-04-30).** Runs after feedback-triage and before per-state dispatch on every `haiku_run_next` tick. The gate positions in the chain: tamper-detection → feedback-triage → **drift-detection** → per-state dispatch. When findings are emitted, `manual_change_assessment` short-circuits the normal handler and the agent classifies all findings atomically via `haiku_classify_drift`. Terminal outcomes update the baseline immediately; non-terminal outcomes write a pending-assessment marker that suppresses re-detection until the downstream action (FB closed/rejected or revisit completed) clears the marker and updates the baseline.",
-		},
-		"coverage-review-required": {
-			injection: [
-				{
-					hook: "MCP tool result",
-					target: "agent's `tool_use_result`",
-					what: "`action: coverage_review_required` — pre-elaborate continuity gate found prior-stage outputs not referenced by any current-stage unit's `inputs:`. Agent must resolve each file before elaboration can advance.",
-				},
-				{
-					hook: "validateCumulativeInputCoverage()",
-					target: "pre-elaborate handler",
-					what: "Walks every prior stage's `units/*.md` declared outputs + files under `artifacts/`, `outputs/`, `knowledge/`, `discovery/`. Excludes paths already in `stages/{stage}/coverage-decisions.json`. Emits one blocking action listing all unreferenced files.",
-				},
-			],
-			action: "coverage_review_required",
-			summary:
-				"coverage gap — agent adds file to unit inputs or acknowledges as out-of-scope before elaborate can advance",
-			payload: {
-				action: "coverage_review_required",
-				intent: "{slug}",
-				stage: stageLower,
-				unreferenced: [
-					{
-						path: "stages/{prior-stage}/artifacts/example.md",
-						from_stage: "{prior-stage}",
-					},
-				],
-				message:
-					"Cannot advance past elaborate: N prior-stage output(s) are not referenced by any unit's `inputs:` in stage '{stage}' AND have no entry in `coverage-decisions.json`...",
-			},
-			validations: [
-				"At least one prior stage has outputs",
-				"Current stage is in `elaborate` phase",
-				"`coverage-decisions.json` does not already acknowledge every unreferenced path",
-			],
-			writes: [
-				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/coverage-decisions.json`,
-					change:
-						"written by `haiku_coverage_acknowledge` — per-path `out-of-scope` or `covered-by-unit` decision with rationale",
-				},
-			],
-			instructions:
-				'Agent walks the `unreferenced` list. For each file: either (a) call `haiku_unit_set { field: "inputs", value: [...] }` to add it to a unit\'s inputs (canonical path); or (b) call `haiku_coverage_acknowledge { path, decision: "out-of-scope", rationale }` to record an explicit dismissal. After resolving all, call `haiku_run_next` to re-run the validator. If files remain unresolved, the validator re-emits `coverage_review_required` with the remaining list.',
-		},
-		"output-liveness-review-required": {
-			injection: [
-				{
-					hook: "MCP tool result",
-					target: "agent's `tool_use_result`",
-					what: "`action: output_liveness_review_required` — per-stage review handler OR intent-completion handler found code outputs with NO referencers anywhere in the repo. Agent must wire each orphan or explicitly acknowledge it before the gate (or studio-level review) can proceed.",
-				},
-				{
-					hook: "validateOutputLiveness()",
-					target:
-						"per-stage review handler (after quality gates pass, before workflowAdvancePhase to gate) AND intent-completion handler (before studio review dispatch)",
-					what: "For each `.ts`/`.tsx`/`.js`/`.jsx` output declared by any stage's units, runs `git grep -lw <stem>` in the repo root. Excludes test files and workflow-meta paths. Aggregates `haiku_coverage_acknowledge` acknowledgments from every stage's `coverage-decisions.json`. Orphan = zero git-grep hits and not acknowledged. Per-stage scope passes `[currentStage]`; intent-completion scope passes the full ordered stage list.",
-				},
-			],
-			action: "output_liveness_review_required",
-			summary:
-				"orphan code output — agent wires the component or acknowledges before studio review proceeds",
-			payload: {
-				action: "output_liveness_review_required",
-				intent: "{slug}",
-				orphans: [
-					{
-						path: "packages/app/src/components/Example.tsx",
-						from_stage: "{stage}",
-						from_unit: "unit-NN-{slug}",
-					},
-				],
-				message:
-					"Cannot advance to intent-completion review: N code-output(s) shipped by units have NO referencers anywhere in the repo...",
-			},
-			validations: [
-				"At least one unit across any stage declares a `.ts`/`.tsx`/`.js`/`.jsx` output",
-				"Git repo is available (`isGitRepo()` guard passes)",
-				"No acknowledgment in any stage's `coverage-decisions.json` for the orphan path",
-			],
-			writes: [
-				{
-					path: ".haiku/intents/{slug}/stages/{stage}/coverage-decisions.json",
-					change:
-						'written by `haiku_coverage_acknowledge { stage: "<producing-stage>", path, decision: "out-of-scope" }` — checked across ALL stages\' decision files',
-				},
-			],
-			instructions:
-				'Agent walks the `orphans` list. For each file: either (a) author or extend a unit that imports/renders the output in a reachable code path and commits the integration; or (b) call `haiku_coverage_acknowledge { stage: "<producing-stage>", path, decision: "out-of-scope", rationale }`. After resolving all, call `haiku_run_next` — the validator re-runs. Gate is best-effort: if `isGitRepo()` is false or git is unavailable, the gate is skipped.',
+				? "Final stage's branch is merged. The cursor now walks intent-scope approvals from `intent.md.approvals`: `spec` and `continuity` (engine-built) and `user` (gated through SPA). Mode-shaped: autopilot trims to `[spec, continuity]` only. Each missing role → `intent_review { role }` (one tick per role). Once every intent-scope approval signs → `merge_intent` (engine performs final rebase + stamps `sealed_at`) → `sealed`."
+				: `Cursor returns \`merge_stage { stage: "${stageLower}" }\`. The next \`haiku_run_next\` tick performs the merge under \`withIntentMainLock\` and returns the next instruction — most commonly the next stage's first action (e.g. \`elaborate\` or \`design_direction_required\`).`,
 		},
 		"feedback-dispatch": {
 			injection: [
 				{
 					hook: "MCP tool result",
 					target: "agent's `tool_use_result`",
-					what: "`action: feedback_dispatch` — per-FB instructions to triage (set resolution) and reply to questions inline. The review UI is NOT re-opened while these FBs are pending.",
+					what: "`start_feedback_hat { stage, hat, feedback_ids, terminal }` — Track B walks open FBs in stage order (0..active) plus intent-scope, returns the next fix-hat dispatch. `close_feedback` lands when the terminal hat advances.",
 				},
 				{
-					hook: "buildFeedbackDispatchAction()",
-					target: "agent prompt",
-					what: "Each open human-authored FB with `resolution: null` is listed under `### Triage` (set resolution via `haiku_feedback_update`); items with `resolution: question` get reply instructions (POST `/api/feedback/.../<id>/replies` with `close_as_answered: true`).",
+					hook: "start_feedback_hat prompt builder",
+					target: "subagent prompt",
+					what: "the fix-hat's mandate (`hats/<hat>.md`), the FB body, and a tool whitelist (`haiku_feedback_read`, `haiku_feedback_write`, `haiku_unit_read` for context, `haiku_feedback_advance_hat` / `_reject_hat`, optionally `haiku_feedback_set_targets` for the classifier hat).",
 				},
 			],
-			action: "feedback_dispatch",
+			action: "start_feedback_hat",
 			summary:
-				"open human feedback — agent triages, replies, and resolves before any review UI re-opens",
+				"Track B: open FB → cursor returns `start_feedback_hat` for the next fix-hat in the stage's `fix_hats:` chain (or `close_feedback` on terminal advance)",
 			payload: {
-				action: "feedback_dispatch",
+				action: "start_feedback_hat",
+				intent: "{slug}",
 				stage: stageLower,
-				counts: { needs_triage: 0, questions: 0, inline_fixes: 0 },
-				message:
-					"Resolve pending feedback on this stage WITHOUT rolling the stage back. After dispatching all items, call `haiku_run_next` — the router re-classifies and dispatches.",
+				hat: "<next-fix-hat>",
+				feedback_ids: ["FB-001"],
+				terminal: false,
 			},
 			validations: [
-				"Pre-tick triage gate already stamped `triaged_at:` on every open FB",
-				"At least one FB has `author_type === 'human'` AND (`resolution: null` OR `resolution: question`)",
+				"Stage declares `fix_hats:` (typically `[<implementer>, feedback-assessor]` minimum)",
+				"FB has `closed_at == null` (open)",
+				"Cursor walks Track B BEFORE Track A on every tick — open FB blocks forward motion",
+				"Cross-stage routing: FBs in `stages/<earlier>/feedback/` rewind the cursor to that stage's fix loop on the next tick (purely by file location, no `upstream_stage:` field in v4)",
 			],
 			writes: [
 				{
-					path: `.haiku/intents/{slug}/stages/${stageLower}/feedback/FB-NN.md`,
+					path: ".haiku/intents/{slug}/stages/{stage}/feedback/<NN>-*.md",
 					change:
-						'agent calls `haiku_feedback_update { resolution: "<choice>" }` (set route) or POSTs reply (`close_as_answered: true` flips status to `addressed`)',
+						"fixer hats edit the FB BODY via `haiku_feedback_write`; the flagged unit is read-only context (`haiku_unit_read`). Hat progression via `haiku_feedback_advance_hat` / `_reject_hat`. The terminal hat's advance triggers `close_feedback` on the next tick — engine stamps `closed_at` and applies `targets.invalidates` (clearing approvals on the targeted unit, which routes the cursor back through those approval roles).",
 				},
 			],
 			instructions:
-				'**New (2026-04-27) — replaces the buggy gate_review re-pop.** When the user left feedback at the gate with `resolution: null` ("Let agent decide") or filed a question, the workflow engine hands the items back to the agent for inline handling instead of re-popping the review UI. The agent walks each item: needs_triage → set resolution; question → reply + close_as_answered; once cleared the gate re-evaluates per the (now-set) resolutions and dispatches inline_fixes through the worktree-based fix-chain. The screen never re-opens until every open FB is closed/addressed/rejected.',
+				"FB-as-unit fix loop. The first hat in `fix_hats:` is conventionally a classifier — it reads the FB body, decides which unit (if any) the finding targets and which approval roles to invalidate on closure, and calls `haiku_feedback_set_targets`. Subsequent hats execute the fix; the terminal hat (typically `feedback-assessor`) validates and calls `haiku_feedback_advance_hat`. Engine auto-stamps `closed_at` and applies invalidations on the next tick. Closed FBs become input to the next iteration of the upstream stage's elaborate phase — completed units are never modified (forward-only).",
+		},
+		"drift-detected": {
+			injection: [
+				{
+					hook: "MCP tool result",
+					target: "agent's `tool_use_result`",
+					what: "`drift_detected { events }` — Track C ran a content-hash sweep over every signed witness on the active stage and at least one mismatched. Dedup'd against open drift FBs by `source_ref` so a fired FB suppresses re-emission until it closes.",
+				},
+				{
+					hook: "runDriftSweep()",
+					target: "Track C of the cursor",
+					what: "for each signed `reviews.<role>` / `approvals.<role>` on every unit on the active stage, re-hashes the unit body / declared outputs and compares against `body_sha256` + `witnesses[]`. v4 dropped `baseline.json` / `baseline-content/` / `drift-markers.json`; the witness lives directly on FM. Pre-v4 sidecars are deleted by the v0→v4 migrator.",
+				},
+				{
+					hook: "stamp-agent-write (PostToolUse)",
+					target: "intent action log",
+					what: "agent edits get an `entry_type: \"agent_write\"` stamp so the next sweep attributes the change to the agent and does NOT emit drift. The `drift_detected` action only fires for genuinely out-of-band edits.",
+				},
+			],
+			action: "drift_detected",
+			summary:
+				"Track C content-hash sweep found out-of-band edits to a witnessed artifact",
+			payload: {
+				action: "drift_detected",
+				intent: "{slug}",
+				events: [
+					{
+						unit: "<unit>",
+						role: "<reviews|approvals.<role>>",
+						kind: "body | output",
+						file: "<path>",
+						since: "<witness ISO timestamp>",
+						commits: ["<sha1>", "<sha2>"],
+					},
+				],
+			},
+			validations: [
+				"Drift sweep kill-switch (`drift_detection: false`) is OFF",
+				"Active stage exists (sweep is gated on `firstUnmergedStage`)",
+				"At least one signed witness's content hash no longer matches",
+				"No open drift FB with the same `source_ref` (dedup)",
+			],
+			writes: [
+				{
+					path: ".haiku/intents/{slug}/stages/{stage}/feedback/<NN>-drift-*.md",
+					change:
+						"the agent files one FB per drift event via `haiku_feedback` with `origin: \"drift\"`, `source_ref: \"drift:<kind>:<file>\"`, `target_unit: <named unit>`, `target_invalidates: []`. The classifier hat decides whether the drift is material; closure with empty invalidates means \"cosmetic, no action,\" a non-empty list re-routes the cursor through the named approval roles.",
+				},
+			],
+			instructions:
+				"Track C is the engine's reconciliation against forward-only. Completed work is not edited in place — out-of-band edits surface as drift FBs, the fix loop assesses materiality, and corrective work (when needed) becomes new pending units in a future iteration of the upstream stage's elaborate phase. The drift FB itself follows the FB-as-unit pattern: fixers edit the FB body to record diagnosis and root cause; the terminal hat decides invalidations.",
 		},
 	}
 	return map[key] ?? null
