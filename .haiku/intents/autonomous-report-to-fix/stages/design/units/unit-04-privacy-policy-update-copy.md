@@ -61,7 +61,16 @@ quality_gates:
       awk '/^## CI gate/{found=1; next} found && /^## /{exit} found'
       .haiku/intents/autonomous-report-to-fix/stages/design/artifacts/privacy-policy-delta.md
       | grep -qE 'grep|None of that data is sent'
-status: pending
+status: active
+bolt: 1
+hat: designer-prep
+started_at: '2026-05-08T17:53:29Z'
+hat_started_at: '2026-05-08T17:53:29Z'
+iterations:
+  - hat: designer-prep
+    started_at: '2026-05-08T17:53:29Z'
+    completed_at: null
+    result: null
 ---
 # Privacy Policy Update Copy + CI Gate Spec
 
