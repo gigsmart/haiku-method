@@ -187,46 +187,34 @@ function mergeStageBranch(repoRoot, slug, stage) {
 	const stageBranch = `haiku/${slug}/${stage}`
 	const mainBranch = `haiku/${slug}/main`
 
-	// Make sure we're on main first, with the latest state staged + committed.
-	// If there are uncommitted FM changes, get them on main so the stage
-	// branch we create from main inherits them.
-	git(repoRoot, "checkout", mainBranch)
+	// Under the disk-state cursor model, runTickWithBranchAlignment
+	// puts the working tree on the stage branch BEFORE the cursor
+	// walk, so all per-stage writes (units, reviews, approvals)
+	// landed there. Commit them on the stage branch first.
 	try {
 		git(repoRoot, "add", "-A")
-		git(repoRoot, "commit", "-m", `pre-stage ${stage} on main`)
+		git(repoRoot, "commit", "-m", `stage ${stage} content`)
 	} catch {
-		// nothing to commit
+		/* nothing to commit */
 	}
 
-	// Create the stage branch from main (or check it out if it exists)
-	try {
-		git(repoRoot, "checkout", "-b", stageBranch)
-	} catch {
-		git(repoRoot, "checkout", stageBranch)
-		try {
-			git(repoRoot, "merge", "--ff-only", mainBranch)
-		} catch {
-			/* already up to date */
-		}
-	}
-
-	// Stage branch must contain at least one commit so its tip is a
-	// real ref. Make an empty commit if nothing else.
-	try {
-		git(repoRoot, "commit", "--allow-empty", "-m", `stage ${stage} merge marker`)
-	} catch {
-		/* ignore */
-	}
-
-	// Merge stage branch into main with --no-ff so a merge commit is
-	// created. The cursor's isStageBranchMerged check requires main to
-	// be STRICTLY ahead of the stage branch (a fast-forward where main
-	// points at the stage tip is treated as "uninitialized").
+	// Switch to intent main and merge the stage branch with --no-ff
+	// so a merge commit lands. The cursor's "stage merged" signal is
+	// the presence of stage content on intent main, so the merge
+	// brings the units across.
 	git(repoRoot, "checkout", mainBranch)
-	git(repoRoot, "merge", "--no-ff", "--no-edit", "-m", `merge ${stage}`, stageBranch)
+	git(
+		repoRoot,
+		"merge",
+		"--no-ff",
+		"--no-edit",
+		"-m",
+		`haiku: merge stage ${stage} into main`,
+		stageBranch,
+	)
 }
 
-test("multi-tick: 3-stage continuous intent walks from elaborate to sealed", async (t) => {
+test("multi-tick: 3-stage continuous intent walks from elaborate to sealed", { timeout: 30_000 }, async (t) => {
 	if (!HAS_GIT) return
 
 	await withTmpRepo("multi-tick-pipeline", async ({ repoRoot, intentDir, slug }) => {
@@ -434,6 +422,8 @@ test("multi-tick: 3-stage continuous intent walks from elaborate to sealed", asy
 
 		// Post-conditions: every stage's single unit should have all
 		// reviews + approvals signed.
+		// Switch to intent main to read the merged-state of every stage.
+		git(repoRoot, "checkout", `haiku/${slug}/main`)
 		for (const stage of ["a", "b", "c"]) {
 			const unitName = `unit-01-${stage}`
 			const { parsed } = readUnitFm(intentDir, stage, unitName)

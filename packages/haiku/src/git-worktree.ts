@@ -1843,6 +1843,16 @@ export function ensureOnStageBranch(
 
 	const intentMain = `haiku/${slug}/main`
 	const stageBranch = stage ? `haiku/${slug}/${stage}` : ""
+	// When a stage is named but its branch doesn't exist, fork it from
+	// intent main so stage-scoped writes have somewhere to land. The
+	// disk-state cursor model expects every active stage to have its
+	// own branch — without this auto-fork, writes would float onto
+	// intent main and `firstUnmergedStage` (which reads intent main's
+	// tree) would interpret the in-flight content as "stage merged"
+	// and walk past.
+	if (stage && stageBranch && !branchExists(stageBranch)) {
+		ensureStageBranch(slug, stage)
+	}
 	const targetBranch =
 		stage && branchExists(stageBranch) ? stageBranch : intentMain
 	const current = getCurrentBranch()
@@ -1934,6 +1944,28 @@ export function ensureOnStageBranch(
 			branch: targetBranch,
 			message: "already on target",
 			switched: false,
+		}
+	}
+
+	// Auto-commit any dirty tree on the source branch before
+	// switching. New (untracked or modified) files that don't conflict
+	// with the target branch's tree would otherwise float along to the
+	// target uncommitted — the cursor's `firstUnmergedStage` then
+	// sees stage content on intent main when it should still be
+	// branch-isolated. Per the architectural rule "stage-scoped writes
+	// belong on the stage branch," we commit them on the source first.
+	const dirtyStatus = tryRun(["git", "status", "--porcelain"])
+	if (dirtyStatus) {
+		const committed = autoCommitDirtyTree(current)
+		if (!committed.ok) {
+			return {
+				ok: false,
+				branch: current,
+				message: `Pre-checkout auto-commit on '${current}' failed: ${committed.message}. Resolve the working tree manually before retrying.`,
+				switched: false,
+				block: "dirty_tree",
+				target_branch: targetBranch,
+			}
 		}
 	}
 
