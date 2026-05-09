@@ -62,7 +62,6 @@ export type MigrationStepDetails = {
 	feedback_relocated: number
 	state_json_deleted: number
 	drift_artifacts_deleted: number
-	stages_merged_stamped: number
 }
 
 export function emptyMigrationDetails(): MigrationStepDetails {
@@ -77,7 +76,6 @@ export function emptyMigrationDetails(): MigrationStepDetails {
 		feedback_relocated: 0,
 		state_json_deleted: 0,
 		drift_artifacts_deleted: 0,
-		stages_merged_stamped: 0,
 	}
 }
 
@@ -195,7 +193,6 @@ export function migrateIntent(
 			aggregate.feedback_relocated += stepDetails.feedback_relocated
 			aggregate.state_json_deleted += stepDetails.state_json_deleted
 			aggregate.drift_artifacts_deleted += stepDetails.drift_artifacts_deleted
-			aggregate.stages_merged_stamped += stepDetails.stages_merged_stamped
 		}
 	}
 	return {

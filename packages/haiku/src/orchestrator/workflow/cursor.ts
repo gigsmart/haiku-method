@@ -372,6 +372,14 @@ function isStageFullySigned(
 	if (unitFiles.length === 0) return false
 
 	const hats = resolveStageHats(studio, stage)
+	// No hats configured = stage definition broken or unloaded.
+	// Conservative answer: not fully signed (don't walk past). Without
+	// this guard, `lastHat` is `undefined` and `last.hat !== undefined`
+	// is always true — every unit fails the iteration check, the
+	// function always returns false, and the cursor pins to the stage
+	// forever. Same gap exists in walkUnitApprovalTrack's terminal-hat
+	// check (~line 617) and is fixed there too.
+	if (hats.length === 0) return false
 	const lastHat = hats[hats.length - 1]
 	const reviewAgentPaths = readReviewAgentPaths(studio, stage)
 	const reviewAgents = Object.keys(reviewAgentPaths).sort()
@@ -778,6 +786,7 @@ function walkIntentTrack(args: {
 	const completedNames = new Set(
 		units
 			.filter((u) => {
+				if (hats.length === 0) return false
 				const its = pickIterations(u.fm)
 				if (its.length === 0) return false
 				const last = its[its.length - 1]

@@ -530,14 +530,12 @@ function v0ToV4(ctx: MigrationContext): MigrationStepDetails {
 		}
 	}
 
-	// Track which stages v3 had marked complete. The cursor's
-	// `firstUnmergedStage` consults `stages_merged` on intent.md as a
-	// definitive override — without this, v3-merged-and-deleted stage
-	// branches would re-emit `merge_stage` forever (the branch ref is
-	// gone, the cursor can't tell it was already done).
-	const stagesMerged: string[] = []
-
-	// 3. Per-stage walks
+	// 3. Per-stage walks. The v4 cursor reads disk state directly:
+	// git mode looks at unit files on intent main; fs mode walks
+	// per-unit signature state. There's no `stages_merged` field
+	// to stamp — neither cursor mode reads it. We just delete v3
+	// state.json files (no longer load-bearing) and clean up legacy
+	// drift artifacts.
 	const stagesDir = join(intentDir, "stages")
 	if (existsSync(stagesDir)) {
 		for (const entry of readdirSync(stagesDir, { withFileTypes: true })) {
@@ -551,24 +549,12 @@ function v0ToV4(ctx: MigrationContext): MigrationStepDetails {
 			// 2b. Stage-scope feedback
 			migrateFeedbackInDir(join(stageDir, "feedback"), intentDir, details)
 
-			// 2c. Stage state.json — read v3 status BEFORE deleting so
-			// completed stages get added to `stages_merged`. Then delete.
-			// Reading first preserves the only signal v3 had for "this
-			// stage is done"; the v4 file shape doesn't carry status.
+			// 2c. Stage state.json — delete unconditionally. v3 used
+			// `status` here; v4 derives the same answer from disk
+			// (unit files on intent main / per-unit signatures), so
+			// the file is strict noise after migration.
 			const stateJson = join(stageDir, "state.json")
 			if (existsSync(stateJson)) {
-				try {
-					const v3State = JSON.parse(readFileSync(stateJson, "utf8")) as {
-						status?: string
-					}
-					if (v3State.status === "completed") {
-						stagesMerged.push(stage)
-					}
-				} catch {
-					/* malformed v3 state.json — skip the merge stamp; cursor
-					   will fall back to git topology. Better than failing
-					   migration on a single junk file. */
-				}
 				rmSync(stateJson, { force: true })
 				details.state_json_deleted++
 			}
@@ -607,28 +593,6 @@ function v0ToV4(ctx: MigrationContext): MigrationStepDetails {
 		if (existsSync(stalePath)) {
 			rmSync(stalePath, { recursive: true, force: true })
 			details.drift_artifacts_deleted++
-		}
-	}
-
-	// 5. Stamp `stages_merged` on intent.md from v3 state.json statuses
-	// collected above. Only runs if we actually saw completed stages —
-	// avoids stamping an empty list on intents that were mid-flight at
-	// migration time. Existing entries on intent.md (from a partial
-	// previous migration run) are preserved and merged.
-	if (stagesMerged.length > 0 && existsSync(intentMdPath)) {
-		try {
-			const { data, body } = readMatter(intentMdPath)
-			const existing = Array.isArray(data.stages_merged)
-				? (data.stages_merged as string[])
-				: []
-			const next = Array.from(new Set([...existing, ...stagesMerged]))
-			data.stages_merged = next
-			writeMatter(intentMdPath, data, body)
-			details.stages_merged_stamped = stagesMerged.length
-		} catch {
-			/* writing intent.md back failed for some reason — log but
-			   don't fail migration. Cursor will fall back to git topology
-			   for these stages. */
 		}
 	}
 

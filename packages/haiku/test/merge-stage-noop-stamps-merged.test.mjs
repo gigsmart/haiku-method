@@ -25,7 +25,6 @@ import {
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
-	readFileSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs"
@@ -146,7 +145,7 @@ test("missing-source-branch merge returns noop=true (caller signal)", () => {
 	}
 })
 
-test("after caller stamps stages_merged, firstUnmergedStage advances past the noop'd stage", () => {
+test("after the noop'd stage's unit files land on intent main, firstUnmergedStage advances past it", () => {
 	_resetIsGitRepoForTests()
 	const slug = "spin-after-stamp"
 	const { tmp, intentDir } = setupSpinTrap(slug)

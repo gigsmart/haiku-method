@@ -768,19 +768,28 @@ test("cursor: closed FB with invalidates clears the listed approvals", async () 
 					"code-reviewer": { at: "t" },
 					user: { at: "t" },
 				},
+				// Every approval role signed EXCEPT `user` — the
+				// invalidation we're testing simulates "FB closed, the
+				// `targets.invalidates: ['user']` cleared approvals.user
+				// from the unit." That clearing happens in the
+				// close_feedback handler (see haiku_run_next.ts), not
+				// when the cursor reads a pre-closed fixture FB. So we
+				// stage the post-invalidation state directly: every
+				// approval role is signed except the invalidated one.
 				approvals: {
 					spec: { at: "t" },
+					quality_gates: { at: "t" },
 					"code-reviewer": { at: "t" },
-					user: { at: "t" },
 				},
 				discovery: {},
 			})
 
 			// Closed FB targeting unit-01 with invalidates: ["user"].
-			// The closure semantics (per architecture §5) clear approvals
-			// listed in `targets.invalidates` on the targeted unit. The
-			// cursor on the next tick must see approvals.user missing and
-			// route through user re-approval again.
+			// Architecturally, closure clears the listed approval roles
+			// on the target unit; the fixture above stages that
+			// post-clear state. The cursor MUST see the missing user
+			// approval and route through user re-approval again, NOT
+			// emit merge_stage / sealed.
 			makeFeedback({
 				intentDir,
 				stage: "design",

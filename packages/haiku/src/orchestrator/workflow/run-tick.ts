@@ -178,12 +178,7 @@ export function runWorkflowTick(
 					}
 					if (d.state_json_deleted > 0) {
 						lines.push(
-							`- ${d.state_json_deleted} stage \`state.json\` file(s) deleted — v4 derives stage position from git via \`firstUnmergedStage\`, not from state.json`,
-						)
-					}
-					if (d.stages_merged_stamped > 0) {
-						lines.push(
-							`- ${d.stages_merged_stamped} stage(s) marked as merged on intent.md (\`stages_merged:\`) — preserves the v3 \`status: completed\` signal so the cursor doesn't re-emit \`merge_stage\` for stages whose branches were merged-and-deleted in 3.x`,
+							`- ${d.state_json_deleted} stage \`state.json\` file(s) deleted — v4 derives stage position from disk (unit files on intent main in git mode, per-unit signature state in fs mode), not from state.json`,
 						)
 					}
 					if (d.drift_artifacts_deleted > 0) {
@@ -205,7 +200,7 @@ export function runWorkflowTick(
 					lines.push("")
 					lines.push("**What v4 derives instead of stores**:")
 					lines.push(
-						"- Active stage: walked from git branch state (`firstUnmergedStage`)",
+						"- Active stage: derived from the current branch name on a stage branch, or by walking intent main's filesystem (`activeStageFromBranchOrFilesystem` → `firstUnmergedStage`)",
 					)
 					lines.push("- Current phase: decided per-tick by the cursor walk")
 					lines.push(

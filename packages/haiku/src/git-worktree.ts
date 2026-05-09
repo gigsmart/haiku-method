@@ -1943,6 +1943,38 @@ export function ensureOnStageBranch(
 		}
 	}
 
+	// Detect an in-progress merge/rebase/cherry-pick BEFORE the
+	// auto-commit below. git's error messages are cryptic; surface the
+	// state clearly so the agent knows to finish the in-progress
+	// operation first.
+	//
+	// **Order matters.** The dirty-tree auto-commit calls
+	// `git add -A && git commit`. During a `MERGE_HEAD` state, that
+	// completes the pending merge as a two-parent commit instead of
+	// creating a WIP commit — silently consuming the merge state and
+	// hiding it from the operator. Returning `merge_in_progress`
+	// before auto-commit prevents that footgun.
+	const gitDir = tryRun(["git", "rev-parse", "--git-dir"])
+	if (gitDir) {
+		for (const marker of [
+			"MERGE_HEAD",
+			"REBASE_HEAD",
+			"CHERRY_PICK_HEAD",
+			"REVERT_HEAD",
+		]) {
+			if (existsSync(join(gitDir, marker))) {
+				return {
+					ok: false,
+					branch: current,
+					message: `A git operation is in progress (${marker} present). Finish or abort it before stage-branch enforcement can realign the checkout.`,
+					switched: false,
+					block: "merge_in_progress",
+					target_branch: targetBranch,
+				}
+			}
+		}
+	}
+
 	// Auto-commit any dirty tree on the source branch before
 	// switching. New (untracked or modified) files that don't conflict
 	// with the target branch's tree would otherwise float along to the
@@ -1961,30 +1993,6 @@ export function ensureOnStageBranch(
 				switched: false,
 				block: "dirty_tree",
 				target_branch: targetBranch,
-			}
-		}
-	}
-
-	// Detect an in-progress merge/rebase/cherry-pick before attempting
-	// checkout. git's error messages are cryptic; surface the state clearly
-	// so the agent knows to finish the in-progress operation first.
-	const gitDir = tryRun(["git", "rev-parse", "--git-dir"])
-	if (gitDir) {
-		for (const marker of [
-			"MERGE_HEAD",
-			"REBASE_HEAD",
-			"CHERRY_PICK_HEAD",
-			"REVERT_HEAD",
-		]) {
-			if (existsSync(join(gitDir, marker))) {
-				return {
-					ok: false,
-					branch: current,
-					message: `A git operation is in progress (${marker} present). Finish or abort it before stage-branch enforcement can realign the checkout.`,
-					switched: false,
-					block: "merge_in_progress",
-					target_branch: targetBranch,
-				}
 			}
 		}
 	}

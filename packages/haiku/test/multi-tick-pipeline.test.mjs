@@ -177,11 +177,11 @@ function stampApprovalRole(intentDir, stage, units, role) {
 /**
  * Materialise a merged stage branch.
  *
- * Cursor's `firstUnmergedStage` checks `isBranchMerged(haiku/<slug>/<stage>,
- * haiku/<slug>/main)` via `git merge-base --is-ancestor`. Easiest way to
- * make that true: commit current state on the stage branch, then
- * fast-forward main to it. `git checkout <stage>` (creating fresh from
- * main if needed), commit, then `git checkout main && git merge --ff-only <stage>`.
+ * Cursor's `firstUnmergedStage` walks intent main's filesystem and
+ * returns the first stage whose `stages/<name>/units/` is empty.
+ * Merging the stage branch into intent main with `--no-ff` brings
+ * the unit files onto intent main's tree — that's the merged signal
+ * the cursor reads.
  */
 function mergeStageBranch(repoRoot, slug, stage) {
 	const stageBranch = `haiku/${slug}/${stage}`

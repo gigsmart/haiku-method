@@ -79,21 +79,32 @@ export function onStageBranch(repoRoot, slug, stage, fn) {
 	if (orig !== stageBranch) {
 		git(repoRoot, "checkout", stageBranch)
 	}
-	const result = fn()
 	try {
-		git(repoRoot, "add", "-A")
-	} catch {
-		/* nothing staged — fine */
+		const result = fn()
+		try {
+			git(repoRoot, "add", "-A")
+		} catch {
+			/* nothing staged — fine */
+		}
+		try {
+			git(repoRoot, "commit", "-m", `test: stage ${stage} fixture`)
+		} catch {
+			/* nothing to commit — fine */
+		}
+		return result
+	} finally {
+		// Restore the original branch even if `fn()` throws or the
+		// add/commit fails. Without this, a fixture-setup throw leaves
+		// the worktree on the stage branch and subsequent test code
+		// runs against the wrong tree.
+		if (orig && orig !== getCurrentBranch(repoRoot)) {
+			try {
+				git(repoRoot, "checkout", orig)
+			} catch {
+				/* best-effort — caller's branch enforcement will catch */
+			}
+		}
 	}
-	try {
-		git(repoRoot, "commit", "-m", `test: stage ${stage} fixture`)
-	} catch {
-		/* nothing to commit — fine */
-	}
-	if (orig && orig !== stageBranch) {
-		git(repoRoot, "checkout", orig)
-	}
-	return result
 }
 
 /**
