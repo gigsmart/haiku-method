@@ -973,6 +973,145 @@ export function reconcileMisroutedStageMerges(
 	return out
 }
 
+/** Result of `reconcileIntentBranches`: per-tick branch-alignment outcome. */
+export interface IntentBranchReconciliation {
+	/** True when intent main was fast-forwarded from the repo default. */
+	intentMainFastForwarded: boolean
+	/** True when the current stage branch was brought up to intent main
+	 *  (only fires when the worktree is on a stage branch). */
+	stageBranchFastForwarded: boolean
+	/** Set when a divergence prevented a fast-forward; the tick still
+	 *  continues, but the agent should be told about it. */
+	error?: string
+}
+
+/**
+ * Pre-tick branch alignment. Run BEFORE the cursor walk so both
+ * canonical refs reflect the latest committed state:
+ *
+ *   1. `git fetch origin` — refresh remote refs.
+ *   2. Fast-forward `haiku/<slug>/main` from `origin/<default>`.
+ *      The user can merge a stage PR onto the repo default instead
+ *      of intent main; this step propagates that merge to intent
+ *      main. When the worktree is on a stage branch, the FF goes
+ *      through `git fetch . origin/<default>:haiku/<slug>/main` —
+ *      a refspec write that updates the local ref without touching
+ *      HEAD or the working tree. When the worktree is already on
+ *      intent main, `git merge --ff-only` does the same job.
+ *   3. Bring the current stage branch up to intent main (only when
+ *      the worktree IS on a stage branch). Architecture invariant:
+ *      stage branches must be ahead of main, never behind. If
+ *      intent main moved forward in step 2, the stage needs to
+ *      pick those commits up before any per-stage walk.
+ *
+ * Best-effort: divergence cases set `error` but the function never
+ * throws and never blocks the tick. Non-FF cases leave the refs
+ * where they were so the agent can reconcile manually.
+ *
+ * No-op outside git mode.
+ */
+export function reconcileIntentBranches(
+	slug: string,
+): IntentBranchReconciliation {
+	const result: IntentBranchReconciliation = {
+		intentMainFastForwarded: false,
+		stageBranchFastForwarded: false,
+	}
+	if (!isGitRepo()) return result
+	fetchOrigin()
+
+	const intentMain = `haiku/${slug}/main`
+	const mainline = getMainlineBranch()
+	if (!branchExists(intentMain) || !mainline) return result
+	const currentBranch = getCurrentBranch()
+
+	// Step 2: FF intent main from origin/<default>.
+	const intentMainRef = tryRun(["git", "rev-parse", "--verify", intentMain])
+	const originDefaultRef =
+		tryRun(["git", "rev-parse", "--verify", `origin/${mainline}`]) ||
+		tryRun(["git", "rev-parse", "--verify", mainline])
+	if (
+		intentMainRef &&
+		originDefaultRef &&
+		intentMainRef !== originDefaultRef
+	) {
+		if (isAncestor(intentMainRef, originDefaultRef)) {
+			if (currentBranch === intentMain) {
+				try {
+					execFileSync("git", ["merge", "--ff-only", `origin/${mainline}`], {
+						stdio: "pipe",
+					})
+					result.intentMainFastForwarded = true
+				} catch (err) {
+					result.error = `Failed to FF ${intentMain} from origin/${mainline}: ${err instanceof Error ? err.message : String(err)}`
+				}
+			} else {
+				try {
+					execFileSync(
+						"git",
+						["fetch", ".", `origin/${mainline}:${intentMain}`],
+						{ stdio: "pipe" },
+					)
+					result.intentMainFastForwarded = true
+				} catch (err) {
+					result.error = `Failed to FF ${intentMain} from origin/${mainline} via refspec: ${err instanceof Error ? err.message : String(err)}`
+				}
+			}
+		} else if (!isAncestor(originDefaultRef, intentMainRef)) {
+			result.error = `${intentMain} has diverged from origin/${mainline} — fast-forward isn't safe. Resolve manually.`
+		}
+		// Else (origin default is ancestor of intent main): intent main is
+		// already ahead, nothing to FF.
+	}
+
+	// Step 3: bring the current stage branch up to intent main (only
+	// when we're on it — other stage branches don't matter for this
+	// tick, and we can't merge into a branch we're not on).
+	const stagePrefix = `haiku/${slug}/`
+	const isOnStageBranchOfThisIntent =
+		currentBranch.startsWith(stagePrefix) && currentBranch !== intentMain
+	if (isOnStageBranchOfThisIntent) {
+		const updatedIntentMainRef =
+			tryRun(["git", "rev-parse", "--verify", intentMain]) || intentMainRef
+		const stageRef = tryRun(["git", "rev-parse", "--verify", currentBranch])
+		if (
+			stageRef &&
+			updatedIntentMainRef &&
+			stageRef !== updatedIntentMainRef &&
+			isAncestor(stageRef, updatedIntentMainRef)
+		) {
+			// Stage is strictly behind main; pick up main's new commits.
+			try {
+				execFileSync("git", ["merge", "--ff-only", intentMain], {
+					stdio: "pipe",
+				})
+				result.stageBranchFastForwarded = true
+			} catch {
+				try {
+					execFileSync(
+						"git",
+						[
+							"merge",
+							intentMain,
+							"--no-ff",
+							"--no-edit",
+							"-m",
+							`haiku: merge intent main → ${currentBranch.slice(stagePrefix.length)} (pre-tick reconcile)`,
+						],
+						{ stdio: "pipe" },
+					)
+					result.stageBranchFastForwarded = true
+				} catch (mergeErr) {
+					const existing = result.error ? `${result.error}\n` : ""
+					result.error = `${existing}Failed to merge ${intentMain} into ${currentBranch}: ${mergeErr instanceof Error ? mergeErr.message : String(mergeErr)}`
+				}
+			}
+		}
+	}
+
+	return result
+}
+
 /** Helpers used by reconcileMisroutedStageMerges. Internal — not exported. */
 function isAncestor(maybeAncestor: string, descendant: string): boolean {
 	if (!maybeAncestor || !descendant) return false

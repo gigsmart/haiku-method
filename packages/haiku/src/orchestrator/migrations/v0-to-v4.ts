@@ -68,7 +68,6 @@ import {
 	type MigrationStepDetails,
 	registerMigrator,
 } from "../migrate-registry.js"
-import { inferStagesMergedFromGit } from "../workflow/infer-stages-merged.js"
 
 const TARGET_VERSION = "4.0.0"
 
@@ -616,50 +615,16 @@ function v0ToV4(ctx: MigrationContext): MigrationStepDetails {
 	// avoids stamping an empty list on intents that were mid-flight at
 	// migration time. Existing entries on intent.md (from a partial
 	// previous migration run) are preserved and merged.
-	// Augment the state.json-derived list with a git-history sweep —
-	// commit messages like `haiku: complete stage <X>` and
-	// `haiku: merge stage <X> into main` are stable v3 signals that
-	// state.json sometimes lost (e.g., a later "create FB" commit
-	// rewrote status from "completed" back to "active", clobbering
-	// the only signal the primary check could see). Without this,
-	// the cursor rewinds completed stages on the first v4 tick. See
-	// orchestrator/workflow/infer-stages-merged.ts for the full
-	// rationale and the commit-message patterns.
-	let gitInferred: string[] = []
-	if (existsSync(intentMdPath)) {
-		try {
-			const { data: probeData } = readMatter(intentMdPath)
-			const configuredStages = Array.isArray(probeData.stages)
-				? (probeData.stages as string[])
-				: []
-			if (configuredStages.length > 0) {
-				const slug = intentDir.split("/").pop() ?? ""
-				if (slug) {
-					gitInferred = inferStagesMergedFromGit(slug, configuredStages)
-				}
-			}
-		} catch {
-			/* probing intent.md failed — leave gitInferred empty */
-		}
-	}
-
-	// `intentMdPath` was confirmed via the outer existsSync at the top
-	// of the augment block; no need to re-check.
-	const allMerged = Array.from(new Set([...stagesMerged, ...gitInferred]))
-	if (allMerged.length > 0) {
+	if (stagesMerged.length > 0 && existsSync(intentMdPath)) {
 		try {
 			const { data, body } = readMatter(intentMdPath)
 			const existing = Array.isArray(data.stages_merged)
 				? (data.stages_merged as string[])
 				: []
-			const next = Array.from(new Set([...existing, ...allMerged]))
+			const next = Array.from(new Set([...existing, ...stagesMerged]))
 			data.stages_merged = next
 			writeMatter(intentMdPath, data, body)
-			// Counts the union of state.json-derived + git-inferred stages
-			// the migrator contributed (not just the state.json subset).
-			// Pre-existing intent.md entries are preserved in `next` but
-			// excluded here so the metric reads as "what migration added."
-			details.stages_merged_stamped = allMerged.length
+			details.stages_merged_stamped = stagesMerged.length
 		} catch {
 			/* writing intent.md back failed for some reason — log but
 			   don't fail migration. Cursor will fall back to git topology

@@ -48,12 +48,10 @@
 //                 gate, no agent gates, merge_stage auto-fires once
 //                 quality_gates is signed
 
-import { execFileSync } from "node:child_process"
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { basename, join } from "node:path"
 import matter from "gray-matter"
-import { isBranchMerged } from "../../git-worktree.js"
-import { isGitRepo, primaryRepoRoot } from "../../state-tools.js"
+import { primaryRepoRoot } from "../../state-tools.js"
 import {
 	readReviewAgentPaths,
 	readStageArtifactDefs,
@@ -64,7 +62,6 @@ import {
 	resolveStudioStages,
 } from "../studio.js"
 import { type DriftEvent, runDriftSweep } from "./drift-sweep.js"
-import { tryRun } from "./git-utils.js"
 
 // ── CursorAction discriminated union ─────────────────────────────────
 
@@ -303,8 +300,34 @@ export function pendingApprovalSlots(
 }
 
 /**
- * First stage whose branch is not yet merged into intent main.
- * Single source of truth: git history. Stage branches lazy-create.
+ * First stage whose work hasn't landed on intent main yet — the stage
+ * the cursor is currently positioned in.
+ *
+ * **The signal is intent main's own filesystem.** A stage's work
+ * lives in `stages/<stage>/units/*.md`; when the stage merges into
+ * intent main, those files come with it. So:
+ *
+ *   - first stage whose `units/` is missing or empty on intent main
+ *     = the stage that hasn't been finished yet.
+ *
+ * That's the entire derivation. No `git log`, no `merge-base`, no
+ * `stages_merged` stamp, no commit-message grep. The disk state of
+ * intent main IS the truth of which stages are done.
+ *
+ * **Caller contract**: the working tree must be checked out on
+ * `haiku/<slug>/main`. `haiku_run_next` enforces this before calling
+ * the cursor — that's the whole point of the two-step branch dance:
+ *   1. on intent main, walk filesystem → name the active stage
+ *   2. switch to that stage's branch → walk the per-stage cascade
+ *      against the in-flight unit work that lives there
+ *
+ * Reading from any other branch lies: a stage branch carries
+ * in-flight unit work that hasn't been merged yet, so it would name
+ * the wrong "current" stage. The caller-on-intent-main invariant is
+ * load-bearing.
+ *
+ * Same logic applies in filesystem-only (non-git) mode — the
+ * "intent main filesystem" just IS the working tree.
  */
 export function firstUnmergedStage(
 	slug: string,
@@ -312,128 +335,14 @@ export function firstUnmergedStage(
 ): string | null {
 	const stages = resolveStudioStages(studio)
 	if (stages.length === 0) return null
-
-	// `stages_merged` on intent.md is the canonical signal in filesystem
-	// mode and a definitive override in git mode. The migrator populates
-	// it for v3 stages whose branches were merged-and-deleted before
-	// migration (the branch identifier is gone, but the work is on intent
-	// main). Without this list, git-mode would see "branch missing" and
-	// re-emit `merge_stage` forever for every v3-completed stage.
-	const intentMd = join(
-		primaryRepoRoot(),
-		".haiku",
-		"intents",
-		slug,
-		"intent.md",
-	)
-	const result = readFm(intentMd)
-	const stampedMerged: string[] = Array.isArray(result?.data?.stages_merged)
-		? (result.data.stages_merged as string[])
-		: []
-
-	// Filesystem mode (no git repo): the stamp is the only signal.
-	if (!isGitRepo()) {
-		for (const stage of stages) {
-			if (!stampedMerged.includes(stage)) return stage
-		}
-		return null
-	}
-
+	const intentDir = join(primaryRepoRoot(), ".haiku", "intents", slug)
 	for (const stage of stages) {
-		// Definitive override: if the migrator (or `merge_stage` handler)
-		// stamped this stage as merged on intent.md, trust it even if
-		// the branch ref isn't present. This is what unblocks v3→v4
-		// migration on stages whose branches were merged-and-deleted
-		// in v3.
-		if (stampedMerged.includes(stage)) continue
-		const stageBranch = `haiku/${slug}/${stage}`
-		const intentMain = `haiku/${slug}/main`
-		// A stage is "merged" iff:
-		//   1. Its branch is an ancestor of main, AND
-		//   2. Main is strictly ahead of the branch (i.e., main has at
-		//      least one commit the branch doesn't — which is what a
-		//      `--no-ff` merge commit guarantees).
-		//
-		// We can't conflate (a) "stage branch was merged into main"
-		// with (b) "stage branch was just created at main and points at
-		// the same commit." Case (b) happens whenever a side-effecting
-		// helper like `createDiscoveryWorktree` calls
-		// `ensureStageBranch` before any per-stage work — the branch
-		// exists but has no divergent commits. The architecture
-		// invariant says stage branches that exist must be **ahead of
-		// main, never behind**, so an existing-but-equal branch is
-		// uninitialized work, not merged work. Treat it as unmerged so
-		// the cursor pins to it.
-		if (!isStageBranchMerged(stageBranch, intentMain)) {
-			return stage
-		}
+		const unitsDir = join(intentDir, "stages", stage, "units")
+		if (!existsSync(unitsDir)) return stage
+		const mdFiles = readdirSync(unitsDir).filter((f) => f.endsWith(".md"))
+		if (mdFiles.length === 0) return stage
 	}
 	return null
-}
-
-/**
- * Stage-aware merge check. Returns true ONLY when the stage's work
- * actually landed on main: branch is an ancestor of main AND main has
- * at least one commit ahead of the branch tip. A branch that exists
- * but points at the same commit as main is NOT merged — it's
- * uninitialized.
- *
- * Falls back to `isBranchMerged` (which handles squash-merge detection
- * via the VCS provider) when the topology check is inconclusive.
- */
-function isStageBranchMerged(branch: string, mainline: string): boolean {
-	if (!isGitRepo()) return false
-	const branchRef =
-		tryRun(["git", "rev-parse", "--verify", branch]) ||
-		tryRun(["git", "rev-parse", "--verify", `origin/${branch}`])
-	if (!branchRef) return false
-
-	const targets = [mainline, `origin/${mainline}`]
-	for (const target of targets) {
-		const targetRef = tryRun(["git", "rev-parse", "--verify", target])
-		if (!targetRef) continue
-		// branch is ancestor of main?
-		let isAncestor = false
-		try {
-			execFileSync(
-				"git",
-				["merge-base", "--is-ancestor", branchRef, targetRef],
-				{ stdio: "ignore" },
-			)
-			isAncestor = true
-		} catch {
-			isAncestor = false
-		}
-		if (!isAncestor) continue
-		// Main strictly ahead of branch? Count commits in main but not
-		// in branch. Zero means branch == main (uninitialized).
-		const aheadCount = tryRun([
-			"git",
-			"rev-list",
-			"--count",
-			`${branchRef}..${targetRef}`,
-		])
-		if (Number.parseInt(aheadCount, 10) > 0) return true
-	}
-
-	// Topology says branch is at-or-behind main but not strictly
-	// behind. Could still be a squash-merge (history rewritten);
-	// delegate to isBranchMerged's VCS-platform fallback for that
-	// case. isBranchMerged returns true for branch==main too, but the
-	// squash-merge path requires an actual merged PR/MR to exist.
-	const fallback = isBranchMerged(branch, mainline)
-	// If topology says branch == main (no aheadCount), only trust the
-	// fallback if it specifically detected a merged PR. Otherwise treat
-	// as unmerged (uninitialized).
-	if (!fallback) return false
-	// Re-check: was the fallback a topology yes (branch==main) or a
-	// VCS yes? `isBranchMerged` returns topology-yes for branch==main,
-	// which we want to reject. Only trust `fallback` here when the
-	// topology-yes path didn't apply — i.e., when there's a divergent
-	// branch the squash flattened. We already know branch is ancestor
-	// of main (the ancestor check above passed), so only the
-	// branch==main case slips through. Reject it.
-	return false
 }
 
 // ── Track B: feedback walk ───────────────────────────────────────────
