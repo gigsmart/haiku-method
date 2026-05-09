@@ -121,11 +121,14 @@ function setupMigratedRepo(slug) {
 		"precondition: haiku/<slug>/inception should not exist",
 	)
 
-	// Write intent.md with `stages_merged` stamped — this is what the
-	// migrator does on v3→v4 conversion when it detects v3 state.json
-	// `status: "completed"` for those stages. The cursor's
-	// firstUnmergedStage uses this list to skip stages whose branches
-	// are gone.
+	// Write intent.md + simulate "merged" stages by writing per-stage
+	// unit files into the intent dir on intent main. Under the new
+	// disk-state cursor model, intent main's filesystem IS the
+	// "merged stages" signal — `firstUnmergedStage` walks
+	// `stages/<X>/units/` and returns the first stage with no units.
+	// Inception and design get unit files (they're merged); product
+	// stays empty (the cursor should pin there).
+	git(tmp, "checkout", `haiku/${slug}/main`)
 	const intentDir = join(tmp, ".haiku", "intents", slug)
 	mkdirSync(intentDir, { recursive: true })
 	writeFileSync(
@@ -135,9 +138,21 @@ function setupMigratedRepo(slug) {
 			studio: "software",
 			mode: "continuous",
 			plugin_version: "4.0.0",
-			stages_merged: ["inception", "design"],
 		}),
 	)
+	for (const stage of ["inception", "design"]) {
+		const unitsDir = join(intentDir, "stages", stage, "units")
+		mkdirSync(unitsDir, { recursive: true })
+		writeFileSync(
+			join(unitsDir, "unit-01-merged.md"),
+			matter.stringify("# merged unit\n", {
+				title: "merged",
+				started_at: new Date().toISOString(),
+			}),
+		)
+	}
+	git(tmp, "add", "-A")
+	git(tmp, "commit", "-m", "v3 migrated: inception+design content on intent main")
 
 	return tmp
 }

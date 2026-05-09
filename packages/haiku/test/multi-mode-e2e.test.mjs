@@ -312,13 +312,9 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 }
 
 async function runTick(slug) {
-	const { dispatchOrchestratorAction } = await import(
-		`${SRC}/orchestrator/workflow/run-tick.ts`
-	)
+	const { runTickWithBranchAlignment } = await import("./_v4-fixtures.mjs")
 	const { buildRunInstructions } = await import(`${SRC}/orchestrator.ts`)
-	const { clearStudioCache } = await import(`${SRC}/studio-reader.ts`)
-	clearStudioCache()
-	const action = dispatchOrchestratorAction(slug, "")
+	const action = await runTickWithBranchAlignment(slug)
 	try {
 		buildRunInstructions(slug, "multi3", action, "")
 	} catch {

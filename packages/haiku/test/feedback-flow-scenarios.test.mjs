@@ -13,7 +13,13 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { test } from "node:test"
 import matter from "gray-matter"
-import { initTestRepo, makeFeedback, makeIntent, makeStudio } from "./_v4-fixtures.mjs"
+import {
+	initTestRepo,
+	makeFeedback,
+	makeIntent,
+	makeStudio,
+	onStageBranch,
+} from "./_v4-fixtures.mjs"
 
 const HAS_GIT = (() => {
 	try {
@@ -42,12 +48,8 @@ async function withRepo(slug, fn) {
 }
 
 async function runTick(slug) {
-	const { dispatchOrchestratorAction } = await import(
-		"../src/orchestrator/workflow/run-tick.js"
-	)
-	const { clearStudioCache } = await import("../src/studio-reader.js")
-	clearStudioCache()
-	return dispatchOrchestratorAction(slug, "")
+	const { runTickWithBranchAlignment } = await import("./_v4-fixtures.mjs")
+	return runTickWithBranchAlignment(slug)
 }
 
 function readFm(path) {
@@ -55,12 +57,13 @@ function readFm(path) {
 }
 
 function writeUnit(intentDir, stage, name, fm) {
-	const unitsDir = join(intentDir, "stages", stage, "units")
-	mkdirSync(unitsDir, { recursive: true })
-	writeFileSync(
-		join(unitsDir, `${name}.md`),
-		matter.stringify(`# ${name}\n`, fm),
-	)
+	const slug = intentDir.split("/").pop() ?? ""
+	const repoRoot = intentDir.split("/").slice(0, -3).join("/")
+	const path = join(intentDir, "stages", stage, "units", `${name}.md`)
+	onStageBranch(repoRoot, slug, stage, () => {
+		mkdirSync(join(intentDir, "stages", stage, "units"), { recursive: true })
+		writeFileSync(path, matter.stringify(`# ${name}\n`, fm))
+	})
 }
 
 // ── Per-stage independence ───────────────────────────────────────────

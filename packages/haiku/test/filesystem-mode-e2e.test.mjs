@@ -288,12 +288,8 @@ function applyResponse(intentDir, action) {
 }
 
 async function runTick(slug) {
-	const { dispatchOrchestratorAction } = await import(
-		`${SRC}/orchestrator/workflow/run-tick.ts`
-	)
-	const { clearStudioCache } = await import(`${SRC}/studio-reader.ts`)
-	clearStudioCache()
-	return dispatchOrchestratorAction(slug, "")
+	const { runTickWithBranchAlignment } = await import("./_v4-fixtures.mjs")
+	return runTickWithBranchAlignment(slug)
 }
 
 async function driveToSealed(slug, intentDir, maxTicks = 100) {

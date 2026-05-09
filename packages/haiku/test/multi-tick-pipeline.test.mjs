@@ -78,18 +78,8 @@ async function withTmpRepo(slug, fn) {
 }
 
 async function runTick(repoRoot, slug) {
-	const origCwd = process.cwd()
-	process.chdir(repoRoot)
-	try {
-		const { dispatchOrchestratorAction } = await import(
-			"../src/orchestrator/workflow/run-tick.js"
-		)
-		const { clearStudioCache } = await import("../src/studio-reader.js")
-		clearStudioCache()
-		return dispatchOrchestratorAction(slug, "")
-	} finally {
-		process.chdir(origCwd)
-	}
+	const { runTickWithBranchAlignment } = await import("./_v4-fixtures.mjs")
+	return runTickWithBranchAlignment(repoRoot, slug)
 }
 
 function unitsDirOf(intentDir, stage) {

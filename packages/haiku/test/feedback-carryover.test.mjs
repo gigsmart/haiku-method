@@ -81,12 +81,8 @@ async function withRepo(slug, fn) {
 }
 
 async function runTick(slug) {
-	const { dispatchOrchestratorAction } = await import(
-		"../src/orchestrator/workflow/run-tick.js"
-	)
-	const { clearStudioCache } = await import("../src/studio-reader.js")
-	clearStudioCache()
-	return dispatchOrchestratorAction(slug, "")
+	const { runTickWithBranchAlignment } = await import("./_v4-fixtures.mjs")
+	return runTickWithBranchAlignment(slug)
 }
 
 /**
