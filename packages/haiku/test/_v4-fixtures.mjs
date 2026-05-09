@@ -291,17 +291,23 @@ export function makeFeedback({
 	const nnn = num.toString().padStart(3, "0")
 	const fileSlug = title.replace(/[^a-z0-9]/gi, "-").toLowerCase()
 	const path = join(fbDir, `${nnn}-${fileSlug}.md`)
-	const writeIt = () => {
-		mkdirSync(fbDir, { recursive: true })
-		writeFileSync(path, matter.stringify(body, fm))
-	}
-	if (stage) {
-		// Per-stage feedback: lives on the stage branch.
-		const { repoRoot, slug: intentSlug } = repoContextFromIntentDir(intentDir)
-		onStageBranch(repoRoot, intentSlug, stage, writeIt)
-	} else {
-		// Intent-scope feedback: lives on intent main alongside intent.md.
-		writeIt()
+	mkdirSync(fbDir, { recursive: true })
+	writeFileSync(path, matter.stringify(body, fm))
+	// FB lifecycle (mirrors production): the FB file lands on whatever
+	// branch is checked out at creation time. The path
+	// (`stages/<X>/feedback/<NNN>.md`) classifies which stage it
+	// targets — the branch is incidental. In production, the agent
+	// calls `haiku_feedback` while the engine has them on a stage
+	// branch, so the FB lands there; the cursor on that same branch
+	// reads it.
+	const { repoRoot } = repoContextFromIntentDir(intentDir)
+	if (existsSync(join(repoRoot, ".git"))) {
+		try {
+			git(repoRoot, "add", path)
+			git(repoRoot, "commit", "-m", `test: feedback FB-${nnn}`)
+		} catch {
+			/* nothing to commit (e.g., already committed) */
+		}
 	}
 	return { path, frontmatter: fm, num }
 }

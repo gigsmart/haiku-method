@@ -123,10 +123,20 @@ function buildThreeStageStudio(repoRoot) {
  */
 function setCursorOnStageC(repoRoot, slug) {
 	const main = `haiku/${slug}/main`
+	const intentDir = join(repoRoot, ".haiku", "intents", slug)
+	// For each prior stage: branch off main, write per-stage unit
+	// content (the new "merged" disk signal under the disk-state cursor
+	// model — intent main's `stages/<X>/units/` carries merged content),
+	// merge --no-ff back into main. Stage c stays diverged.
 	for (const stage of ["a", "b"]) {
 		const branch = `haiku/${slug}/${stage}`
 		git(repoRoot, "checkout", "-b", branch)
-		writeFileSync(join(repoRoot, `${stage}.txt`), `${stage} work\n`)
+		const unitsDir = join(intentDir, "stages", stage, "units")
+		mkdirSync(unitsDir, { recursive: true })
+		writeFileSync(
+			join(unitsDir, "unit-01-work.md"),
+			matter.stringify(`# ${stage} unit\n`, { title: `${stage}-work` }),
+		)
 		git(repoRoot, "add", "-A")
 		git(repoRoot, "commit", "-m", `${stage} work`)
 		git(repoRoot, "checkout", main)
@@ -134,7 +144,7 @@ function setCursorOnStageC(repoRoot, slug) {
 	}
 	const cBranch = `haiku/${slug}/c`
 	git(repoRoot, "checkout", "-b", cBranch)
-	const marker = join(repoRoot, ".haiku", "intents", slug, "stages", "c")
+	const marker = join(intentDir, "stages", "c")
 	mkdirSync(marker, { recursive: true })
 	writeFileSync(join(marker, ".c-marker"), "active stage divergence\n")
 	git(repoRoot, "add", "-A")
