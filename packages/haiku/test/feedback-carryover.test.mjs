@@ -44,7 +44,12 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { test } from "node:test"
 import matter from "gray-matter"
-import { initTestRepo, makeFeedback, makeIntent, makeStudio } from "./_v4-fixtures.mjs"
+import {
+	initTestRepo,
+	makeFeedback,
+	makeIntent,
+	makeStudio,
+} from "./_v4-fixtures.mjs"
 
 const HAS_GIT = (() => {
 	try {
@@ -140,7 +145,15 @@ function setCursorOnStageC(repoRoot, slug) {
 		git(repoRoot, "add", "-A")
 		git(repoRoot, "commit", "-m", `${stage} work`)
 		git(repoRoot, "checkout", main)
-		git(repoRoot, "merge", "--no-ff", "--no-edit", "-m", `merge ${stage}`, branch)
+		git(
+			repoRoot,
+			"merge",
+			"--no-ff",
+			"--no-edit",
+			"-m",
+			`merge ${stage}`,
+			branch,
+		)
 	}
 	const cBranch = `haiku/${slug}/c`
 	git(repoRoot, "checkout", "-b", cBranch)
@@ -161,7 +174,12 @@ test("FB on stage A carries over: cursor on C surfaces stage-A action", async ()
 	if (!HAS_GIT) return
 	await withRepo("fb-carry-basic", async ({ repoRoot, intentDir, slug }) => {
 		buildThreeStageStudio(repoRoot)
-		makeIntent({ intentDir, slug, studio: "fb3", extraFm: { stages: ["a", "b", "c"] } })
+		makeIntent({
+			intentDir,
+			slug,
+			studio: "fb3",
+			extraFm: { stages: ["a", "b", "c"] },
+		})
 		setCursorOnStageC(repoRoot, slug)
 
 		makeFeedback({
@@ -185,7 +203,8 @@ test("FB on stage A carries over: cursor on C surfaces stage-A action", async ()
 			`expected revisit to stage A; got stage='${action.stage}'`,
 		)
 		assert.ok(
-			Array.isArray(action.feedback_ids) && action.feedback_ids.includes("FB-001"),
+			Array.isArray(action.feedback_ids) &&
+				action.feedback_ids.includes("FB-001"),
 			`expected FB-001 in feedback_ids; got ${JSON.stringify(action.feedback_ids)}`,
 		)
 	})
@@ -197,11 +216,30 @@ test("multiple earlier-stage FBs: cursor picks A (earliest), not B", async () =>
 	if (!HAS_GIT) return
 	await withRepo("fb-carry-earliest", async ({ repoRoot, intentDir, slug }) => {
 		buildThreeStageStudio(repoRoot)
-		makeIntent({ intentDir, slug, studio: "fb3", extraFm: { stages: ["a", "b", "c"] } })
+		makeIntent({
+			intentDir,
+			slug,
+			studio: "fb3",
+			extraFm: { stages: ["a", "b", "c"] },
+		})
 		setCursorOnStageC(repoRoot, slug)
 
-		makeFeedback({ intentDir, stage: "a", id: "01", title: "a fb", body: "a", closed: false })
-		makeFeedback({ intentDir, stage: "b", id: "01", title: "b fb", body: "b", closed: false })
+		makeFeedback({
+			intentDir,
+			stage: "a",
+			id: "01",
+			title: "a fb",
+			body: "a",
+			closed: false,
+		})
+		makeFeedback({
+			intentDir,
+			stage: "b",
+			id: "01",
+			title: "b fb",
+			body: "b",
+			closed: false,
+		})
 
 		const action = await runTick(slug)
 		assert.strictEqual(action.action, "start_feedback_hat")
@@ -219,7 +257,12 @@ test("closed FB on earlier stage is skipped; cursor walks Track A on active stag
 	if (!HAS_GIT) return
 	await withRepo("fb-carry-closed", async ({ repoRoot, intentDir, slug }) => {
 		buildThreeStageStudio(repoRoot)
-		makeIntent({ intentDir, slug, studio: "fb3", extraFm: { stages: ["a", "b", "c"] } })
+		makeIntent({
+			intentDir,
+			slug,
+			studio: "fb3",
+			extraFm: { stages: ["a", "b", "c"] },
+		})
 		setCursorOnStageC(repoRoot, slug)
 
 		makeFeedback({
@@ -254,7 +297,12 @@ test("dispatchOrchestratorAction does not switch branches on revisit (pure curso
 	if (!HAS_GIT) return
 	await withRepo("fb-carry-branch", async ({ repoRoot, intentDir, slug }) => {
 		buildThreeStageStudio(repoRoot)
-		makeIntent({ intentDir, slug, studio: "fb3", extraFm: { stages: ["a", "b", "c"] } })
+		makeIntent({
+			intentDir,
+			slug,
+			studio: "fb3",
+			extraFm: { stages: ["a", "b", "c"] },
+		})
 		setCursorOnStageC(repoRoot, slug)
 
 		makeFeedback({
@@ -268,7 +316,11 @@ test("dispatchOrchestratorAction does not switch branches on revisit (pure curso
 
 		// Pre-tick: we're on haiku/<slug>/c (set by setCursorOnStageC).
 		const before = currentBranch(repoRoot)
-		assert.strictEqual(before, `haiku/${slug}/c`, "precondition: on stage C branch")
+		assert.strictEqual(
+			before,
+			`haiku/${slug}/c`,
+			"precondition: on stage C branch",
+		)
 
 		const action = await runTick(slug)
 		assert.strictEqual(action.action, "start_feedback_hat")
@@ -292,67 +344,83 @@ test("dispatchOrchestratorAction does not switch branches on revisit (pure curso
 
 test("intent-scope FB surfaces on current stage, not as a rewind", async () => {
 	if (!HAS_GIT) return
-	await withRepo("fb-carry-intent-scope", async ({ repoRoot, intentDir, slug }) => {
-		buildThreeStageStudio(repoRoot)
-		makeIntent({ intentDir, slug, studio: "fb3", extraFm: { stages: ["a", "b", "c"] } })
-		setCursorOnStageC(repoRoot, slug)
+	await withRepo(
+		"fb-carry-intent-scope",
+		async ({ repoRoot, intentDir, slug }) => {
+			buildThreeStageStudio(repoRoot)
+			makeIntent({
+				intentDir,
+				slug,
+				studio: "fb3",
+				extraFm: { stages: ["a", "b", "c"] },
+			})
+			setCursorOnStageC(repoRoot, slug)
 
-		// No stage-scope FBs. Just an intent-scope one.
-		makeFeedback({
-			intentDir,
-			stage: "", // intent-scope
-			id: "01",
-			title: "intent-wide concern",
-			body: "intent scope",
-			origin: "studio-review",
-			closed: false,
-		})
+			// No stage-scope FBs. Just an intent-scope one.
+			makeFeedback({
+				intentDir,
+				stage: "", // intent-scope
+				id: "01",
+				title: "intent-wide concern",
+				body: "intent scope",
+				origin: "studio-review",
+				closed: false,
+			})
 
-		const action = await runTick(slug)
-		// Track B walks intent-scope FBs after stage-scope ones, and
-		// dispatches them with `currentStage` (= active stage = C).
-		assert.strictEqual(action.action, "start_feedback_hat")
-		assert.strictEqual(
-			action.stage,
-			"c",
-			`intent-scope FB must dispatch on current stage, not rewind to A; got '${action.stage}'`,
-		)
-		assert.notStrictEqual(
-			action.stage,
-			"a",
-			"intent-scope FB must not rewind to stage A",
-		)
-	})
+			const action = await runTick(slug)
+			// Track B walks intent-scope FBs after stage-scope ones, and
+			// dispatches them with `currentStage` (= active stage = C).
+			assert.strictEqual(action.action, "start_feedback_hat")
+			assert.strictEqual(
+				action.stage,
+				"c",
+				`intent-scope FB must dispatch on current stage, not rewind to A; got '${action.stage}'`,
+			)
+			assert.notStrictEqual(
+				action.stage,
+				"a",
+				"intent-scope FB must not rewind to stage A",
+			)
+		},
+	)
 })
 
 // ── Sanity: intent-scope FB FILE LOCATION proves it's not a rewind ───
 
 test("intent-scope FB lives at <intentDir>/feedback/, not under any stage", async () => {
 	if (!HAS_GIT) return
-	await withRepo("fb-carry-fb-location", async ({ repoRoot, intentDir, slug }) => {
-		buildThreeStageStudio(repoRoot)
-		makeIntent({ intentDir, slug, studio: "fb3", extraFm: { stages: ["a", "b", "c"] } })
-		setCursorOnStageC(repoRoot, slug)
+	await withRepo(
+		"fb-carry-fb-location",
+		async ({ repoRoot, intentDir, slug }) => {
+			buildThreeStageStudio(repoRoot)
+			makeIntent({
+				intentDir,
+				slug,
+				studio: "fb3",
+				extraFm: { stages: ["a", "b", "c"] },
+			})
+			setCursorOnStageC(repoRoot, slug)
 
-		const result = makeFeedback({
-			intentDir,
-			stage: "",
-			id: "01",
-			title: "intent fb",
-			body: "x",
-			origin: "studio-review",
-			closed: false,
-		})
+			const result = makeFeedback({
+				intentDir,
+				stage: "",
+				id: "01",
+				title: "intent fb",
+				body: "x",
+				origin: "studio-review",
+				closed: false,
+			})
 
-		// Path must be under <intentDir>/feedback/, not <intentDir>/stages/*/feedback/.
-		assert.ok(
-			result.path.startsWith(join(intentDir, "feedback")),
-			`expected intent-scope FB under <intent>/feedback; got ${result.path}`,
-		)
-		// FM body integrity round-trip — we'll need this same shape if a
-		// future test exercises FB-content-survives-merge.
-		const parsed = matter(readFileSync(result.path, "utf8"))
-		assert.strictEqual(parsed.data.origin, "studio-review")
-		assert.strictEqual(parsed.data.closed_at, null)
-	})
+			// Path must be under <intentDir>/feedback/, not <intentDir>/stages/*/feedback/.
+			assert.ok(
+				result.path.startsWith(join(intentDir, "feedback")),
+				`expected intent-scope FB under <intent>/feedback; got ${result.path}`,
+			)
+			// FM body integrity round-trip — we'll need this same shape if a
+			// future test exercises FB-content-survives-merge.
+			const parsed = matter(readFileSync(result.path, "utf8"))
+			assert.strictEqual(parsed.data.origin, "studio-review")
+			assert.strictEqual(parsed.data.closed_at, null)
+		},
+	)
 })

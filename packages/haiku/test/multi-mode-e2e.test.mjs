@@ -17,7 +17,6 @@
 //     mid-flight. Subsequent ticks must observe the new mode and
 //     stop emitting user_gate / agent gates.
 
-import { test } from "node:test"
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
 import {
@@ -31,6 +30,7 @@ import {
 } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
+import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import matter from "gray-matter"
 import { initTestRepo, makeIntent, makeStudio } from "./_v4-fixtures.mjs"
@@ -448,11 +448,7 @@ test("mode change: continuous → autopilot mid-flight; subsequent ticks honor n
 
 			// Flip when stage a's first user_gate fires — that's after
 			// reviews are done in continuous mode, well before merge_stage.
-			if (
-				!flipped &&
-				action.action === "user_gate" &&
-				action.stage === "a"
-			) {
+			if (!flipped && action.action === "user_gate" && action.stage === "a") {
 				const intentMd = join(intentDir, "intent.md")
 				const fm = readFm(intentMd)
 				writeFm(intentMd, { ...fm, mode: "autopilot" })
@@ -470,7 +466,10 @@ test("mode change: continuous → autopilot mid-flight; subsequent ticks honor n
 			}
 		}
 
-		assert.ok(flipped, "test never flipped mode — continuous never reached user_gate")
+		assert.ok(
+			flipped,
+			"test never flipped mode — continuous never reached user_gate",
+		)
 		// After the flip, no user_gate ticks should fire.
 		const postFlipUserGates = seenAfter.filter((t) =>
 			t.startsWith("user_gate/"),

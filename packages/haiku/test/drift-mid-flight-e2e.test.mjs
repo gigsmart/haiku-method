@@ -7,7 +7,6 @@
 // into a feedback file, which routes through the fix loop, which
 // closes, which lets the pipeline reach sealed.
 
-import { test } from "node:test"
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
 import {
@@ -21,6 +20,7 @@ import {
 } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
+import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import matter from "gray-matter"
 import {
@@ -37,7 +37,7 @@ const { buildApprovalRecord, buildReviewRecord } = await import(
 )
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const SRC = join(HERE, "..", "src")
+const _SRC = join(HERE, "..", "src")
 
 const HAS_GIT = (() => {
 	try {
@@ -97,26 +97,29 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 			const events = action.events || []
 			for (let i = 0; i < events.length; i++) {
 				const e = events[i]
-				const stageOfDrift =
-					e.file && e.file.includes("/stages/")
-						? e.file.split("/stages/")[1].split("/")[0]
-						: "a"
+				const stageOfDrift = e.file?.includes("/stages/")
+					? e.file.split("/stages/")[1].split("/")[0]
+					: "a"
 				const num = i + 1
 				const fbDir = join(intentDir, "stages", stageOfDrift, "feedback")
 				mkdirSync(fbDir, { recursive: true })
 				const fbPath = join(fbDir, `${String(num).padStart(3, "0")}-drift.md`)
 				const sourceRef = `drift:${e.kind}:${e.file}`
-				writeFm(fbPath, {
-					title: `drift on ${e.unit}/${e.role}`,
-					origin: "drift",
-					author: "drift-sweep",
-					author_type: "agent",
-					created_at: at,
-					source_ref: sourceRef,
-					targets: { unit: e.unit, invalidates: [] },
-					iterations: [],
-					closed_at: null,
-				}, `Out-of-band edit on ${e.file} since ${e.since}`)
+				writeFm(
+					fbPath,
+					{
+						title: `drift on ${e.unit}/${e.role}`,
+						origin: "drift",
+						author: "drift-sweep",
+						author_type: "agent",
+						created_at: at,
+						source_ref: sourceRef,
+						targets: { unit: e.unit, invalidates: [] },
+						iterations: [],
+						closed_at: null,
+					},
+					`Out-of-band edit on ${e.file} since ${e.since}`,
+				)
 			}
 			// Commit the FB write so the next drift sweep doesn't re-flag
 			// the same drift forever (the sweep walks `git log --since=<at>`).
@@ -171,7 +174,11 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 		}
 		case "start_feedback_hat": {
 			for (const fbId of action.feedback_ids || []) {
-				const files = readdirSync(fbDir).filter((f) => { const n = Number.parseInt(String(fbId).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; })
+				const files = readdirSync(fbDir).filter((f) => {
+					const n = Number.parseInt(String(fbId).replace(/^FB-/i, ""), 10)
+					const m = f.match(/^(\d+)-/)
+					return m && Number.parseInt(m[1], 10) === n
+				})
 				for (const f of files) {
 					const path = join(fbDir, f)
 					const fm = readFm(path)
@@ -188,9 +195,14 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 			break
 		}
 		case "close_feedback": {
-			const files = readdirSync(fbDir).filter((f) =>
-				{ const n = Number.parseInt(String(action.feedback_id).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; },
-			)
+			const files = readdirSync(fbDir).filter((f) => {
+				const n = Number.parseInt(
+					String(action.feedback_id).replace(/^FB-/i, ""),
+					10,
+				)
+				const m = f.match(/^(\d+)-/)
+				return m && Number.parseInt(m[1], 10) === n
+			})
 			for (const f of files) {
 				const path = join(fbDir, f)
 				const fm = readFm(path)
@@ -205,8 +217,7 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 						if (existsSync(unitPath)) {
 							const ufm = readFm(unitPath)
 							const reviews = ufm.reviews ? { ...ufm.reviews } : {}
-							for (const role of Object.keys(reviews))
-								reviews[role] = { at }
+							for (const role of Object.keys(reviews)) reviews[role] = { at }
 							const approvals = ufm.approvals ? { ...ufm.approvals } : {}
 							for (const role of Object.keys(approvals))
 								approvals[role] = { at }
@@ -258,9 +269,7 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 			for (const f of unitFiles) {
 				const path = join(unitsDir, f)
 				const fm = readFm(path)
-				const outputs = Array.isArray(fm.outputs)
-					? fm.outputs
-					: []
+				const outputs = Array.isArray(fm.outputs) ? fm.outputs : []
 				const approvals =
 					fm.approvals && typeof fm.approvals === "object" ? fm.approvals : {}
 				approvals[action.role] = buildApprovalRecord(intentDir, outputs)
@@ -275,9 +284,7 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 			for (const f of unitFiles) {
 				const path = join(unitsDir, f)
 				const fm = readFm(path)
-				const outputs = Array.isArray(fm.outputs)
-					? fm.outputs
-					: []
+				const outputs = Array.isArray(fm.outputs) ? fm.outputs : []
 				const reviews =
 					fm.reviews && typeof fm.reviews === "object" ? fm.reviews : {}
 				const approvals =
@@ -296,9 +303,7 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 			for (const f of unitFiles) {
 				const path = join(unitsDir, f)
 				const fm = readFm(path)
-				const outputs = Array.isArray(fm.outputs)
-					? fm.outputs
-					: []
+				const outputs = Array.isArray(fm.outputs) ? fm.outputs : []
 				const approvals =
 					fm.approvals && typeof fm.approvals === "object" ? fm.approvals : {}
 				approvals.quality_gates = buildApprovalRecord(intentDir, outputs)
@@ -398,7 +403,7 @@ test("e2e: drift introduced after stage A signed → FB → fix loop → seal", 
 		let driftSurfaced = false
 		let fbFiled = false
 		let fbClosed = false
-		let driftSilenced = false
+		const _driftSilenced = false
 		const MAX_TICKS = 200
 
 		for (let i = 0; i < MAX_TICKS; i++) {
@@ -427,15 +432,12 @@ test("e2e: drift introduced after stage A signed → FB → fix loop → seal", 
 				// is strictly after the signing.
 				await new Promise((r) => setTimeout(r, 1100))
 				// Out-of-band edit + commit. This is the drift.
-				const unitPath = join(
-					intentDir,
-					"stages",
-					"a",
-					"units",
-					"unit-01.md",
-				)
+				const unitPath = join(intentDir, "stages", "a", "units", "unit-01.md")
 				const raw = readFileSync(unitPath, "utf8")
-				writeFileSync(unitPath, `${raw}\n\nOut-of-band note (drift simulation).\n`)
+				writeFileSync(
+					unitPath,
+					`${raw}\n\nOut-of-band note (drift simulation).\n`,
+				)
 				git(repoRoot, "add", "-A")
 				git(repoRoot, "commit", "-m", "drift: edit unit-01 after signing")
 				driftInjected = true
@@ -459,7 +461,10 @@ test("e2e: drift introduced after stage A signed → FB → fix loop → seal", 
 			}
 		}
 
-		assert.ok(driftInjected, `drift never injected (test setup bug). recent: ${seen.slice(-20).join(" → ")}`)
+		assert.ok(
+			driftInjected,
+			`drift never injected (test setup bug). recent: ${seen.slice(-20).join(" → ")}`,
+		)
 		assert.ok(
 			driftSurfaced,
 			`drift_detected never fired despite drift commit. recent: ${seen.slice(-15).join(" → ")}`,

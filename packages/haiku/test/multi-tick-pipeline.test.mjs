@@ -214,238 +214,271 @@ function mergeStageBranch(repoRoot, slug, stage) {
 	)
 }
 
-test("multi-tick: 3-stage continuous intent walks from elaborate to sealed", { timeout: 30_000 }, async (t) => {
+test("multi-tick: 3-stage continuous intent walks from elaborate to sealed", {
+	timeout: 30_000,
+}, async (t) => {
 	if (!HAS_GIT) return
 
-	await withTmpRepo("multi-tick-pipeline", async ({ repoRoot, intentDir, slug }) => {
-		// 3 stages, each with planner→builder→verifier hats and one
-		// configured review agent (code-reviewer). No design-direction,
-		// no clarify, no discovery — those are tested separately.
-		makeStudio({
-			repoRoot,
-			studio: "multi3",
-			stages: [
-				{
-					name: "a",
-					hats: ["planner", "builder", "verifier"],
-					fix_hats: ["builder", "feedback-assessor"],
-					review: "ask",
-					review_agents: ["code-reviewer"],
-				},
-				{
-					name: "b",
-					hats: ["planner", "builder", "verifier"],
-					fix_hats: ["builder", "feedback-assessor"],
-					review: "ask",
-					review_agents: ["code-reviewer"],
-				},
-				{
-					name: "c",
-					hats: ["planner", "builder", "verifier"],
-					fix_hats: ["builder", "feedback-assessor"],
-					review: "ask",
-					review_agents: ["code-reviewer"],
-				},
-			],
-		})
-		makeIntent({
-			intentDir,
-			slug,
-			studio: "multi3",
-			mode: "continuous",
-			extraFm: { stages: ["a", "b", "c"] },
-		})
+	await withTmpRepo(
+		"multi-tick-pipeline",
+		async ({ repoRoot, intentDir, slug }) => {
+			// 3 stages, each with planner→builder→verifier hats and one
+			// configured review agent (code-reviewer). No design-direction,
+			// no clarify, no discovery — those are tested separately.
+			makeStudio({
+				repoRoot,
+				studio: "multi3",
+				stages: [
+					{
+						name: "a",
+						hats: ["planner", "builder", "verifier"],
+						fix_hats: ["builder", "feedback-assessor"],
+						review: "ask",
+						review_agents: ["code-reviewer"],
+					},
+					{
+						name: "b",
+						hats: ["planner", "builder", "verifier"],
+						fix_hats: ["builder", "feedback-assessor"],
+						review: "ask",
+						review_agents: ["code-reviewer"],
+					},
+					{
+						name: "c",
+						hats: ["planner", "builder", "verifier"],
+						fix_hats: ["builder", "feedback-assessor"],
+						review: "ask",
+						review_agents: ["code-reviewer"],
+					},
+				],
+			})
+			makeIntent({
+				intentDir,
+				slug,
+				studio: "multi3",
+				mode: "continuous",
+				extraFm: { stages: ["a", "b", "c"] },
+			})
 
-		// Plant exactly one unit per stage so each elaborate dispatch has
-		// a concrete unit to seed. We don't seed them up front — the
-		// cursor returns `elaborate` per stage and the test reacts.
+			// Plant exactly one unit per stage so each elaborate dispatch has
+			// a concrete unit to seed. We don't seed them up front — the
+			// cursor returns `elaborate` per stage and the test reacts.
 
-		const seenActions = []
-		let noopStreak = 0
-		let finalAction = null
+			const seenActions = []
+			let noopStreak = 0
+			let finalAction = null
 
-		for (let tick = 0; tick < 100; tick++) {
-			const action = await runTick(repoRoot, slug)
-			seenActions.push({ tick, action: action.action, stage: action.stage, hat: action.hat, role: action.role, gate_kind: action.gate_kind })
+			for (let tick = 0; tick < 100; tick++) {
+				const action = await runTick(repoRoot, slug)
+				seenActions.push({
+					tick,
+					action: action.action,
+					stage: action.stage,
+					hat: action.hat,
+					role: action.role,
+					gate_kind: action.gate_kind,
+				})
 
-			// Bail-out: 3 consecutive noops with no progress = stuck.
-			if (action.action === "noop") {
-				noopStreak++
-				if (noopStreak >= 3) {
-					console.error("Action sequence:", JSON.stringify(seenActions, null, 2))
-					assert.fail(
-						`Cursor stuck in noop for 3 consecutive ticks (tick ${tick})`,
-					)
-				}
-				continue
-			}
-			noopStreak = 0
-
-			if (action.action === "sealed") {
-				finalAction = action
-				break
-			}
-
-			// React to the action. Each branch mutates disk so the next
-			// tick sees fresh state.
-			switch (action.action) {
-				case "elaborate": {
-					// Conversation gate (2026-05-08). Write a verified
-					// elaboration artifact to flip both the record + seal
-					// halves at once. Real agents go through the verifier
-					// subagent; tests don't need that fidelity.
-					const stageDir = join(intentDir, "stages", action.stage)
-					mkdirSync(stageDir, { recursive: true })
-					const at = new Date().toISOString()
-					const fm = {
-						recorded_at: at,
-						intent: action.intent ?? slug,
-						stage: action.stage,
-						verified_at: at,
-						verified_notes: "test fixture — gate simulated",
+				// Bail-out: 3 consecutive noops with no progress = stuck.
+				if (action.action === "noop") {
+					noopStreak++
+					if (noopStreak >= 3) {
+						console.error(
+							"Action sequence:",
+							JSON.stringify(seenActions, null, 2),
+						)
+						assert.fail(
+							`Cursor stuck in noop for 3 consecutive ticks (tick ${tick})`,
+						)
 					}
-					writeFileSync(
-						join(stageDir, "elaboration.md"),
-						matter.stringify("Test elaboration body.", fm),
-					)
+					continue
+				}
+				noopStreak = 0
+
+				if (action.action === "sealed") {
+					finalAction = action
 					break
 				}
-				case "elaborate_review": {
-					// Already verified above — but if we land here (artifact
-					// present, no verified_at), seal it now.
-					const elabPath = join(
-						intentDir,
-						"stages",
-						action.stage,
-						"elaboration.md",
-					)
-					const raw = readFileSync(elabPath, "utf8")
-					const parsed = matter(raw)
-					const fm = {
-						...parsed.data,
-						verified_at: new Date().toISOString(),
+
+				// React to the action. Each branch mutates disk so the next
+				// tick sees fresh state.
+				switch (action.action) {
+					case "elaborate": {
+						// Conversation gate (2026-05-08). Write a verified
+						// elaboration artifact to flip both the record + seal
+						// halves at once. Real agents go through the verifier
+						// subagent; tests don't need that fidelity.
+						const stageDir = join(intentDir, "stages", action.stage)
+						mkdirSync(stageDir, { recursive: true })
+						const at = new Date().toISOString()
+						const fm = {
+							recorded_at: at,
+							intent: action.intent ?? slug,
+							stage: action.stage,
+							verified_at: at,
+							verified_notes: "test fixture — gate simulated",
+						}
+						writeFileSync(
+							join(stageDir, "elaboration.md"),
+							matter.stringify("Test elaboration body.", fm),
+						)
+						break
 					}
-					writeFileSync(elabPath, matter.stringify(parsed.content, fm))
-					break
-				}
-				case "decompose": {
-					// Write one unit for this stage. Was the per-stage
-					// elaborate action's job pre-2026-05-08.
-					const unitName = `unit-01-${action.stage}`
-					createWaveReadyUnit(intentDir, action.stage, unitName)
-					break
-				}
-				case "start_unit_hat": {
-					// Append `result: advance` for each unit on this hat.
-					stampHatAdvance(intentDir, action.stage, action.units, action.hat)
-					break
-				}
-				case "dispatch_review": {
-					stampReviewRole(intentDir, action.stage, action.units, action.role)
-					break
-				}
-				case "user_gate": {
-					// gate_kind = "spec" → reviews.user.at
-					// gate_kind = "approval" → approvals.user.at
-					if (action.gate_kind === "spec") {
-						stampReviewRole(intentDir, action.stage, action.units, "user")
-					} else {
-						stampApprovalRole(intentDir, action.stage, action.units, "user")
+					case "elaborate_review": {
+						// Already verified above — but if we land here (artifact
+						// present, no verified_at), seal it now.
+						const elabPath = join(
+							intentDir,
+							"stages",
+							action.stage,
+							"elaboration.md",
+						)
+						const raw = readFileSync(elabPath, "utf8")
+						const parsed = matter(raw)
+						const fm = {
+							...parsed.data,
+							verified_at: new Date().toISOString(),
+						}
+						writeFileSync(elabPath, matter.stringify(parsed.content, fm))
+						break
 					}
-					break
-				}
-				case "dispatch_approval": {
-					stampApprovalRole(intentDir, action.stage, action.units, action.role)
-					break
-				}
-				case "dispatch_quality_gates": {
-					stampApprovalRole(
-						intentDir,
-						action.stage,
-						action.units,
-						"quality_gates",
-					)
-					break
-				}
-				case "merge_stage": {
-					mergeStageBranch(repoRoot, slug, action.stage)
-					break
-				}
-				case "intent_review": {
-					// Stamp intent-level approval for the named role.
-					const { path, parsed } = readIntentFm(intentDir)
-					const fm = { ...parsed.data }
-					const approvals = { ...(fm.approvals || {}) }
-					approvals[action.role] = { at: new Date().toISOString() }
-					fm.approvals = approvals
-					writeIntentFm(path, fm, parsed.content)
-					break
-				}
-				case "merge_intent": {
-					// Engine response: stamp sealed_at on intent.md.
-					const { path, parsed } = readIntentFm(intentDir)
-					const fm = { ...parsed.data }
-					fm.sealed_at = new Date().toISOString()
-					writeIntentFm(path, fm, parsed.content)
-					break
-				}
-				case "drift_detected":
-				case "discovery_required":
-				case "design_direction_required":
-				case "clarify_required":
-				case "start_feedback_hat":
-				case "close_feedback":
-				case "select_studio":
-				case "error": {
-					console.error("Unexpected action:", action)
-					console.error("Action sequence:", JSON.stringify(seenActions, null, 2))
-					assert.fail(
-						`Unexpected action '${action.action}' at tick ${tick}: ${action.message}`,
-					)
-				}
-				default: {
-					console.error("Unknown action:", action)
-					console.error("Action sequence:", JSON.stringify(seenActions, null, 2))
-					assert.fail(
-						`Unknown action '${action.action}' at tick ${tick}`,
-					)
+					case "decompose": {
+						// Write one unit for this stage. Was the per-stage
+						// elaborate action's job pre-2026-05-08.
+						const unitName = `unit-01-${action.stage}`
+						createWaveReadyUnit(intentDir, action.stage, unitName)
+						break
+					}
+					case "start_unit_hat": {
+						// Append `result: advance` for each unit on this hat.
+						stampHatAdvance(intentDir, action.stage, action.units, action.hat)
+						break
+					}
+					case "dispatch_review": {
+						stampReviewRole(intentDir, action.stage, action.units, action.role)
+						break
+					}
+					case "user_gate": {
+						// gate_kind = "spec" → reviews.user.at
+						// gate_kind = "approval" → approvals.user.at
+						if (action.gate_kind === "spec") {
+							stampReviewRole(intentDir, action.stage, action.units, "user")
+						} else {
+							stampApprovalRole(intentDir, action.stage, action.units, "user")
+						}
+						break
+					}
+					case "dispatch_approval": {
+						stampApprovalRole(
+							intentDir,
+							action.stage,
+							action.units,
+							action.role,
+						)
+						break
+					}
+					case "dispatch_quality_gates": {
+						stampApprovalRole(
+							intentDir,
+							action.stage,
+							action.units,
+							"quality_gates",
+						)
+						break
+					}
+					case "merge_stage": {
+						mergeStageBranch(repoRoot, slug, action.stage)
+						break
+					}
+					case "intent_review": {
+						// Stamp intent-level approval for the named role.
+						const { path, parsed } = readIntentFm(intentDir)
+						const fm = { ...parsed.data }
+						const approvals = { ...(fm.approvals || {}) }
+						approvals[action.role] = { at: new Date().toISOString() }
+						fm.approvals = approvals
+						writeIntentFm(path, fm, parsed.content)
+						break
+					}
+					case "merge_intent": {
+						// Engine response: stamp sealed_at on intent.md.
+						const { path, parsed } = readIntentFm(intentDir)
+						const fm = { ...parsed.data }
+						fm.sealed_at = new Date().toISOString()
+						writeIntentFm(path, fm, parsed.content)
+						break
+					}
+					case "drift_detected":
+					case "discovery_required":
+					case "design_direction_required":
+					case "clarify_required":
+					case "start_feedback_hat":
+					case "close_feedback":
+					case "select_studio":
+					case "error": {
+						console.error("Unexpected action:", action)
+						console.error(
+							"Action sequence:",
+							JSON.stringify(seenActions, null, 2),
+						)
+						assert.fail(
+							`Unexpected action '${action.action}' at tick ${tick}: ${action.message}`,
+						)
+					}
+					default: {
+						console.error("Unknown action:", action)
+						console.error(
+							"Action sequence:",
+							JSON.stringify(seenActions, null, 2),
+						)
+						assert.fail(`Unknown action '${action.action}' at tick ${tick}`)
+					}
 				}
 			}
-		}
 
-		if (!finalAction || finalAction.action !== "sealed") {
-			console.error("Action sequence:", JSON.stringify(seenActions, null, 2))
-			assert.fail(
-				`Pipeline did not reach 'sealed' within 100 ticks. Final: ${JSON.stringify(finalAction)}`,
+			if (!finalAction || finalAction.action !== "sealed") {
+				console.error("Action sequence:", JSON.stringify(seenActions, null, 2))
+				assert.fail(
+					`Pipeline did not reach 'sealed' within 100 ticks. Final: ${JSON.stringify(finalAction)}`,
+				)
+			}
+
+			// Post-conditions: every stage's single unit should have all
+			// reviews + approvals signed.
+			// Switch to intent main to read the merged-state of every stage.
+			git(repoRoot, "checkout", `haiku/${slug}/main`)
+			for (const stage of ["a", "b", "c"]) {
+				const unitName = `unit-01-${stage}`
+				const { parsed } = readUnitFm(intentDir, stage, unitName)
+				const fm = parsed.data
+				assert.ok(fm.reviews?.spec?.at, `${stage}: spec review`)
+				assert.ok(
+					fm.reviews?.["code-reviewer"]?.at,
+					`${stage}: code-reviewer review`,
+				)
+				assert.ok(fm.reviews?.user?.at, `${stage}: user review`)
+				assert.ok(fm.approvals?.spec?.at, `${stage}: spec approval`)
+				assert.ok(
+					fm.approvals?.quality_gates?.at,
+					`${stage}: quality_gates approval`,
+				)
+				assert.ok(
+					fm.approvals?.["code-reviewer"]?.at,
+					`${stage}: code-reviewer approval`,
+				)
+				assert.ok(fm.approvals?.user?.at, `${stage}: user approval`)
+			}
+
+			// Useful for debugging when the test passes too — pipe the action
+			// sequence on success so the canonical multi-tick path is logged.
+			t.diagnostic(
+				`Pipeline sealed in ${seenActions.length} ticks. Action sequence: ${seenActions
+					.map(
+						(s) =>
+							`${s.action}${s.stage ? `(${s.stage}${s.hat ? `/${s.hat}` : ""}${s.role ? `/${s.role}` : ""})` : ""}`,
+					)
+					.join(" → ")}`,
 			)
-		}
-
-		// Post-conditions: every stage's single unit should have all
-		// reviews + approvals signed.
-		// Switch to intent main to read the merged-state of every stage.
-		git(repoRoot, "checkout", `haiku/${slug}/main`)
-		for (const stage of ["a", "b", "c"]) {
-			const unitName = `unit-01-${stage}`
-			const { parsed } = readUnitFm(intentDir, stage, unitName)
-			const fm = parsed.data
-			assert.ok(fm.reviews?.spec?.at, `${stage}: spec review`)
-			assert.ok(fm.reviews?.["code-reviewer"]?.at, `${stage}: code-reviewer review`)
-			assert.ok(fm.reviews?.user?.at, `${stage}: user review`)
-			assert.ok(fm.approvals?.spec?.at, `${stage}: spec approval`)
-			assert.ok(
-				fm.approvals?.quality_gates?.at,
-				`${stage}: quality_gates approval`,
-			)
-			assert.ok(fm.approvals?.["code-reviewer"]?.at, `${stage}: code-reviewer approval`)
-			assert.ok(fm.approvals?.user?.at, `${stage}: user approval`)
-		}
-
-		// Useful for debugging when the test passes too — pipe the action
-		// sequence on success so the canonical multi-tick path is logged.
-		t.diagnostic(
-			`Pipeline sealed in ${seenActions.length} ticks. Action sequence: ${seenActions
-				.map((s) => `${s.action}${s.stage ? `(${s.stage}${s.hat ? `/${s.hat}` : ""}${s.role ? `/${s.role}` : ""})` : ""}`)
-				.join(" → ")}`,
-		)
-	})
+		},
+	)
 })

@@ -348,6 +348,30 @@ function currentBranchName(): string {
 }
 
 /**
+ * Filesystem-mode `stages_merged` reader. In fs mode there are no
+ * branches, so the cursor can't read "stage's content on intent main"
+ * as the merged signal — the entire intent lives in one tree, and
+ * stages content for an in-flight stage looks identical to merged
+ * content. The `merge_stage` handler in `haiku_run_next` stamps
+ * `stages_merged: [<stage>]` on intent.md as the explicit merged
+ * signal in fs mode; this function reads that stamp.
+ */
+function fsmodeStagesMerged(slug: string): string[] {
+	const intentMdPath = join(
+		primaryRepoRoot(),
+		".haiku",
+		"intents",
+		slug,
+		"intent.md",
+	)
+	const fm = readFm(intentMdPath)?.data
+	if (!fm || !Array.isArray(fm.stages_merged)) return []
+	return (fm.stages_merged as unknown[]).filter(
+		(s): s is string => typeof s === "string",
+	)
+}
+
+/**
  * First stage whose work hasn't landed on intent main yet — the stage
  * the cursor is currently positioned in.
  *
@@ -383,7 +407,33 @@ export function firstUnmergedStage(
 ): string | null {
 	const stages = resolveStudioStages(studio)
 	if (stages.length === 0) return null
-	const intentDir = join(primaryRepoRoot(), ".haiku", "intents", slug)
+
+	// Filesystem mode: no branches, so disk presence doesn't
+	// distinguish "merged" from "in-flight." The `merge_stage`
+	// handler in `haiku_run_next` stamps `stages_merged` as the
+	// explicit signal in this mode.
+	const root = primaryRepoRoot()
+	const isGit = (() => {
+		try {
+			return existsSync(join(root, ".git"))
+		} catch {
+			return false
+		}
+	})()
+	if (!isGit) {
+		const stamped = new Set(fsmodeStagesMerged(slug))
+		for (const stage of stages) {
+			if (!stamped.has(stage)) return stage
+		}
+		return null
+	}
+
+	// Git mode: walk intent main's filesystem. The caller's branch
+	// dance has put us on intent main (or on a stage branch, in
+	// which case this function isn't the active-stage source —
+	// `activeStageFromBranchOrFilesystem` short-circuits before
+	// calling here).
+	const intentDir = join(root, ".haiku", "intents", slug)
 	for (const stage of stages) {
 		const unitsDir = join(intentDir, "stages", stage, "units")
 		if (!existsSync(unitsDir)) return stage

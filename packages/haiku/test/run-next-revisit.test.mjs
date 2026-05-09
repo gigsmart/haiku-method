@@ -17,6 +17,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import matter from "gray-matter"
 import {
 	initTestRepo,
 	makeFeedback,
@@ -96,7 +97,22 @@ function landStage(repoRoot, slug, stage) {
 	const stageBranch = `haiku/${slug}/${stage}`
 	const mainBranch = `haiku/${slug}/main`
 	git(repoRoot, "checkout", "-q", "-b", stageBranch)
-	writeFileSync(join(repoRoot, `${stage}.txt`), `work for ${stage}\n`)
+	// Write per-stage unit content under the intent dir — that's the
+	// new "merged" disk signal the cursor reads from intent main.
+	const unitsDir = join(
+		repoRoot,
+		".haiku",
+		"intents",
+		slug,
+		"stages",
+		stage,
+		"units",
+	)
+	mkdirSync(unitsDir, { recursive: true })
+	writeFileSync(
+		join(unitsDir, "unit-01-work.md"),
+		matter.stringify(`# ${stage} unit\n`, { title: `${stage}-work` }),
+	)
 	git(repoRoot, "add", "-A")
 	git(repoRoot, "commit", "-q", "-m", `${stage} work`)
 	git(repoRoot, "checkout", "-q", mainBranch)

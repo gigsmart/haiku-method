@@ -16,7 +16,6 @@
 // commits), the cursor returns "1" until 1 re-merges. Then "2" until
 // 2's state validates, and so on.
 
-import { test } from "node:test"
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
 import {
@@ -30,6 +29,7 @@ import {
 } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
+import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import matter from "gray-matter"
 import {
@@ -40,7 +40,7 @@ import {
 } from "./_v4-fixtures.mjs"
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const SRC = join(HERE, "..", "src")
+const _SRC = join(HERE, "..", "src")
 
 const HAS_GIT = (() => {
 	try {
@@ -141,7 +141,11 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 		}
 		case "start_feedback_hat": {
 			for (const fbId of action.feedback_ids || []) {
-				const files = readdirSync(fbDir).filter((f) => { const n = Number.parseInt(String(fbId).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; })
+				const files = readdirSync(fbDir).filter((f) => {
+					const n = Number.parseInt(String(fbId).replace(/^FB-/i, ""), 10)
+					const m = f.match(/^(\d+)-/)
+					return m && Number.parseInt(m[1], 10) === n
+				})
 				for (const f of files) {
 					const path = join(fbDir, f)
 					const fm = readFm(path)
@@ -158,9 +162,14 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 			break
 		}
 		case "close_feedback": {
-			const files = readdirSync(fbDir).filter((f) =>
-				{ const n = Number.parseInt(String(action.feedback_id).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; },
-			)
+			const files = readdirSync(fbDir).filter((f) => {
+				const n = Number.parseInt(
+					String(action.feedback_id).replace(/^FB-/i, ""),
+					10,
+				)
+				const m = f.match(/^(\d+)-/)
+				return m && Number.parseInt(m[1], 10) === n
+			})
 			for (const f of files) {
 				const path = join(fbDir, f)
 				const fm = readFm(path)
@@ -374,10 +383,7 @@ test("e2e (interpretation A): FB on s1 lands while s4 is in flight → cursor wa
 			}
 
 			if (injectedFb) {
-				if (
-					action.action === "start_feedback_hat" &&
-					action.stage === "s1"
-				) {
+				if (action.action === "start_feedback_hat" && action.stage === "s1") {
 					postInjectS1FixHats++
 				}
 				if (action.action === "close_feedback") fbClosedSeen = true
@@ -475,10 +481,7 @@ test("e2e (interpretation B): FB on s1 lands AFTER s4 merged → cursor walks Tr
 			}
 
 			if (injectedFb) {
-				if (
-					action.action === "start_feedback_hat" &&
-					action.stage === "s1"
-				) {
+				if (action.action === "start_feedback_hat" && action.stage === "s1") {
 					postInjectS1FixHats++
 				}
 				if (action.action === "close_feedback") fbClosedSeen = true

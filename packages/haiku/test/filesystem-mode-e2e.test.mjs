@@ -16,7 +16,6 @@
 // executes its merge_stage handler). The cursor's firstUnmergedStage
 // returns the first stage NOT in that list.
 
-import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
 	existsSync,
@@ -29,6 +28,7 @@ import {
 } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
+import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import matter from "gray-matter"
 import { makeFeedback, makeIntent, makeStudio } from "./_v4-fixtures.mjs"
@@ -177,7 +177,11 @@ function applyResponse(intentDir, action) {
 		}
 		case "start_feedback_hat": {
 			for (const fbId of action.feedback_ids || []) {
-				const files = readdirSync(fbDir).filter((f) => { const n = Number.parseInt(String(fbId).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; })
+				const files = readdirSync(fbDir).filter((f) => {
+					const n = Number.parseInt(String(fbId).replace(/^FB-/i, ""), 10)
+					const m = f.match(/^(\d+)-/)
+					return m && Number.parseInt(m[1], 10) === n
+				})
 				for (const f of files) {
 					const path = join(fbDir, f)
 					const fm = readFm(path)
@@ -194,9 +198,14 @@ function applyResponse(intentDir, action) {
 			break
 		}
 		case "close_feedback": {
-			const files = readdirSync(fbDir).filter((f) =>
-				{ const n = Number.parseInt(String(action.feedback_id).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; },
-			)
+			const files = readdirSync(fbDir).filter((f) => {
+				const n = Number.parseInt(
+					String(action.feedback_id).replace(/^FB-/i, ""),
+					10,
+				)
+				const m = f.match(/^(\d+)-/)
+				return m && Number.parseInt(m[1], 10) === n
+			})
 			for (const f of files) {
 				const path = join(fbDir, f)
 				const fm = readFm(path)
@@ -382,11 +391,7 @@ test("fs-mode change: continuous → autopilot mid-flight; pipeline seals", asyn
 			const action = await runTick(slug)
 			const tuple = `${action.action}/${action.stage ?? ""}/${action.hat ?? action.role ?? action.agent ?? ""}`
 			if (flipped) seenAfter.push(tuple)
-			if (
-				!flipped &&
-				action.action === "user_gate" &&
-				action.stage === "a"
-			) {
+			if (!flipped && action.action === "user_gate" && action.stage === "a") {
 				const intentMd = join(intentDir, "intent.md")
 				const fm = readFm(intentMd)
 				writeFm(intentMd, { ...fm, mode: "autopilot" })

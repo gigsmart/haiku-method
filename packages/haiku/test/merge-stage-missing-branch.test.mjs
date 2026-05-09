@@ -152,7 +152,12 @@ function setupMigratedRepo(slug) {
 		)
 	}
 	git(tmp, "add", "-A")
-	git(tmp, "commit", "-m", "v3 migrated: inception+design content on intent main")
+	git(
+		tmp,
+		"commit",
+		"-m",
+		"v3 migrated: inception+design content on intent main",
+	)
 
 	return tmp
 }

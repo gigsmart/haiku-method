@@ -134,64 +134,72 @@ function writeDiscoveryArtifact(repoRoot, slug, locationTemplate) {
 
 test("discovery: 2+ required agents on one stage — cursor walks each, none skipped", async () => {
 	if (!HAS_GIT) return
-	await withTmpRepo("disc-multi-agent", async ({ repoRoot, intentDir, slug }) => {
-		makeStudio({ repoRoot, studio: "test" })
-		makeIntent({ intentDir, slug, studio: "test" })
-		const locA = writeDiscoveryTemplate(
-			repoRoot,
-			"test",
-			"design",
-			"research-agent",
-		)
-		const locB = writeDiscoveryTemplate(repoRoot, "test", "design", "risk-agent")
-		const locByAgent = { "research-agent": locA, "risk-agent": locB }
+	await withTmpRepo(
+		"disc-multi-agent",
+		async ({ repoRoot, intentDir, slug }) => {
+			makeStudio({ repoRoot, studio: "test" })
+			makeIntent({ intentDir, slug, studio: "test" })
+			const locA = writeDiscoveryTemplate(
+				repoRoot,
+				"test",
+				"design",
+				"research-agent",
+			)
+			const locB = writeDiscoveryTemplate(
+				repoRoot,
+				"test",
+				"design",
+				"risk-agent",
+			)
+			const locByAgent = { "research-agent": locA, "risk-agent": locB }
 
-		writeUnit(intentDir, "design", "unit-01", {
-			title: "u1",
-			depends_on: [],
-		})
+			writeUnit(intentDir, "design", "unit-01", {
+				title: "u1",
+				depends_on: [],
+			})
 
-		// Tick 1 — cursor emits discovery_required for the FIRST missing
-		// agent. We don't pin which agent comes first (readdir order on
-		// the discovery dir is filesystem-dependent), but it MUST be one
-		// of the two declared agents.
-		const a1 = await runTick(repoRoot, slug)
-		assert.strictEqual(
-			a1.action,
-			"discovery_required",
-			`tick 1: expected discovery_required, got ${a1.action} — ${a1.message}`,
-		)
-		assert.ok(
-			a1.agent === "research-agent" || a1.agent === "risk-agent",
-			`tick 1: agent must be one of the two declared, got '${a1.agent}'`,
-		)
-		assert.deepStrictEqual(a1.units, ["unit-01"])
+			// Tick 1 — cursor emits discovery_required for the FIRST missing
+			// agent. We don't pin which agent comes first (readdir order on
+			// the discovery dir is filesystem-dependent), but it MUST be one
+			// of the two declared agents.
+			const a1 = await runTick(repoRoot, slug)
+			assert.strictEqual(
+				a1.action,
+				"discovery_required",
+				`tick 1: expected discovery_required, got ${a1.action} — ${a1.message}`,
+			)
+			assert.ok(
+				a1.agent === "research-agent" || a1.agent === "risk-agent",
+				`tick 1: agent must be one of the two declared, got '${a1.agent}'`,
+			)
+			assert.deepStrictEqual(a1.units, ["unit-01"])
 
-		// Write the first artifact. Cursor must NOT skip — tick 2 emits
-		// discovery_required for the OTHER agent.
-		writeDiscoveryArtifact(repoRoot, slug, locByAgent[a1.agent])
-		const a2 = await runTick(repoRoot, slug)
-		assert.strictEqual(
-			a2.action,
-			"discovery_required",
-			`tick 2: expected discovery_required for second agent, got ${a2.action} — ${a2.message}`,
-		)
-		assert.notStrictEqual(
-			a2.agent,
-			a1.agent,
-			`tick 2: cursor must walk to the second agent, not re-emit '${a1.agent}'`,
-		)
+			// Write the first artifact. Cursor must NOT skip — tick 2 emits
+			// discovery_required for the OTHER agent.
+			writeDiscoveryArtifact(repoRoot, slug, locByAgent[a1.agent])
+			const a2 = await runTick(repoRoot, slug)
+			assert.strictEqual(
+				a2.action,
+				"discovery_required",
+				`tick 2: expected discovery_required for second agent, got ${a2.action} — ${a2.message}`,
+			)
+			assert.notStrictEqual(
+				a2.agent,
+				a1.agent,
+				`tick 2: cursor must walk to the second agent, not re-emit '${a1.agent}'`,
+			)
 
-		// Write the second artifact. Both files present — cursor moves on
-		// (start_unit_hat / elaborate / similar), NOT discovery_required.
-		writeDiscoveryArtifact(repoRoot, slug, locByAgent[a2.agent])
-		const a3 = await runTick(repoRoot, slug)
-		assert.notStrictEqual(
-			a3.action,
-			"discovery_required",
-			`tick 3: with both artifacts on disk, cursor must advance, got: ${a3.action}`,
-		)
-	})
+			// Write the second artifact. Both files present — cursor moves on
+			// (start_unit_hat / elaborate / similar), NOT discovery_required.
+			writeDiscoveryArtifact(repoRoot, slug, locByAgent[a2.agent])
+			const a3 = await runTick(repoRoot, slug)
+			assert.notStrictEqual(
+				a3.action,
+				"discovery_required",
+				`tick 3: with both artifacts on disk, cursor must advance, got: ${a3.action}`,
+			)
+		},
+	)
 })
 
 test("discovery: partial state — only the missing agent triggers discovery_required", async () => {
@@ -291,45 +299,48 @@ test("discovery: optional + required mix — cursor blocks on required, ignores 
 
 test("discovery: multi-unit stage — one artifact write satisfies the gate for every unit", async () => {
 	if (!HAS_GIT) return
-	await withTmpRepo("disc-multi-unit", async ({ repoRoot, intentDir, slug }) => {
-		makeStudio({ repoRoot, studio: "test" })
-		makeIntent({ intentDir, slug, studio: "test" })
-		const loc = writeDiscoveryTemplate(
-			repoRoot,
-			"test",
-			"design",
-			"research-agent",
-		)
+	await withTmpRepo(
+		"disc-multi-unit",
+		async ({ repoRoot, intentDir, slug }) => {
+			makeStudio({ repoRoot, studio: "test" })
+			makeIntent({ intentDir, slug, studio: "test" })
+			const loc = writeDiscoveryTemplate(
+				repoRoot,
+				"test",
+				"design",
+				"research-agent",
+			)
 
-		// Two wave-ready units. Discovery is intent-scoped — one file
-		// serves both.
-		writeUnit(intentDir, "design", "unit-01", { title: "u1", depends_on: [] })
-		writeUnit(intentDir, "design", "unit-02", { title: "u2", depends_on: [] })
+			// Two wave-ready units. Discovery is intent-scoped — one file
+			// serves both.
+			writeUnit(intentDir, "design", "unit-01", { title: "u1", depends_on: [] })
+			writeUnit(intentDir, "design", "unit-02", { title: "u2", depends_on: [] })
 
-		// Tick 1 — artifact missing, cursor blocks. The action carries a
-		// representative unit (alphabetically first) — units[0] is for
-		// prompt context, not per-unit isolation.
-		const a1 = await runTick(repoRoot, slug)
-		assert.strictEqual(
-			a1.action,
-			"discovery_required",
-			`tick 1: expected discovery_required, got ${a1.action} — ${a1.message}`,
-		)
-		assert.strictEqual(a1.agent, "research-agent")
-		assert.deepStrictEqual(
-			a1.units,
-			["unit-01"],
-			`representative unit should be alphabetically first, got ${JSON.stringify(a1.units)}`,
-		)
+			// Tick 1 — artifact missing, cursor blocks. The action carries a
+			// representative unit (alphabetically first) — units[0] is for
+			// prompt context, not per-unit isolation.
+			const a1 = await runTick(repoRoot, slug)
+			assert.strictEqual(
+				a1.action,
+				"discovery_required",
+				`tick 1: expected discovery_required, got ${a1.action} — ${a1.message}`,
+			)
+			assert.strictEqual(a1.agent, "research-agent")
+			assert.deepStrictEqual(
+				a1.units,
+				["unit-01"],
+				`representative unit should be alphabetically first, got ${JSON.stringify(a1.units)}`,
+			)
 
-		// Write the artifact. Single file write satisfies both units;
-		// cursor advances past discovery to the next gate.
-		writeDiscoveryArtifact(repoRoot, slug, loc)
-		const a2 = await runTick(repoRoot, slug)
-		assert.notStrictEqual(
-			a2.action,
-			"discovery_required",
-			`tick 2: with the artifact on disk, cursor must advance for every wave-ready unit, got ${a2.action}`,
-		)
-	})
+			// Write the artifact. Single file write satisfies both units;
+			// cursor advances past discovery to the next gate.
+			writeDiscoveryArtifact(repoRoot, slug, loc)
+			const a2 = await runTick(repoRoot, slug)
+			assert.notStrictEqual(
+				a2.action,
+				"discovery_required",
+				`tick 2: with the artifact on disk, cursor must advance for every wave-ready unit, got ${a2.action}`,
+			)
+		},
+	)
 })

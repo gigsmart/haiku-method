@@ -10,7 +10,6 @@
 // This is the load-bearing FB lifecycle covered by feedback-flow
 // scenarios in pieces — but never end-to-end as a single seal.
 
-import { test } from "node:test"
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
 import {
@@ -24,6 +23,7 @@ import {
 } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
+import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import matter from "gray-matter"
 import {
@@ -34,7 +34,7 @@ import {
 } from "./_v4-fixtures.mjs"
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const SRC = join(HERE, "..", "src")
+const _SRC = join(HERE, "..", "src")
 
 const HAS_GIT = (() => {
 	try {
@@ -162,7 +162,11 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 			// this stage is [builder, feedback-assessor]; each tick
 			// stamps one. Stamping just the named hat for the FB id.
 			for (const fbId of action.feedback_ids || []) {
-				const files = readdirSync(fbDir).filter((f) => { const n = Number.parseInt(String(fbId).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; })
+				const files = readdirSync(fbDir).filter((f) => {
+					const n = Number.parseInt(String(fbId).replace(/^FB-/i, ""), 10)
+					const m = f.match(/^(\d+)-/)
+					return m && Number.parseInt(m[1], 10) === n
+				})
 				for (const f of files) {
 					const path = join(fbDir, f)
 					const fm = readFm(path)
@@ -179,9 +183,14 @@ function applyResponse(intentDir, action, repoRoot, slug) {
 			break
 		}
 		case "close_feedback": {
-			const files = readdirSync(fbDir).filter((f) =>
-				{ const n = Number.parseInt(String(action.feedback_id).replace(/^FB-/i, ""), 10); const m = f.match(/^(\d+)-/); return m && Number.parseInt(m[1], 10) === n; },
-			)
+			const files = readdirSync(fbDir).filter((f) => {
+				const n = Number.parseInt(
+					String(action.feedback_id).replace(/^FB-/i, ""),
+					10,
+				)
+				const m = f.match(/^(\d+)-/)
+				return m && Number.parseInt(m[1], 10) === n
+			})
 			for (const f of files) {
 				const path = join(fbDir, f)
 				const fm = readFm(path)
@@ -381,12 +390,14 @@ test("e2e: FB opens after stage A merged, fix loop runs, FB closes, pipeline sea
 
 		// Hard assertions:
 		assert.ok(injectedFb, "FB never injected (test setup bug)")
-		assert.equal(seen[seen.length - 1], "sealed//", `pipeline did not seal: ${seen.slice(-5).join(" → ")}`)
+		assert.equal(
+			seen[seen.length - 1],
+			"sealed//",
+			`pipeline did not seal: ${seen.slice(-5).join(" → ")}`,
+		)
 
 		// FB-track ticks fired against stage a after the inject.
-		const fbTicks = seen.filter((t) =>
-			t.startsWith("start_feedback_hat/a/"),
-		)
+		const fbTicks = seen.filter((t) => t.startsWith("start_feedback_hat/a/"))
 		assert.ok(
 			fbTicks.length >= 2,
 			`expected ≥2 fix-hat ticks on stage a (builder + feedback-assessor); got ${fbTicks.length}: ${fbTicks.join(", ")}`,

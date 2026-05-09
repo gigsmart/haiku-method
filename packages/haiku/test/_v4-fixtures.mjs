@@ -323,7 +323,11 @@ export function makeFeedback({
  * Tests that ARE testing the elaborate gate itself should not call
  * this — they want the gate to fire naturally.
  */
-export function seedVerifiedElaboration({ intentDir, stage, body = "Verified test elaboration." }) {
+export function seedVerifiedElaboration({
+	intentDir,
+	stage,
+	body = "Verified test elaboration.",
+}) {
 	const { repoRoot, slug } = repoContextFromIntentDir(intentDir)
 	const at = new Date().toISOString()
 	const fm = {
@@ -443,7 +447,10 @@ export function makeStudio({
 		for (const agent of stage.review_agents ?? []) {
 			writeFileSync(
 				join(stageRoot, "review-agents", `${agent}.md`),
-				matter.stringify(`# ${agent}\n\nReview-agent mandate for ${agent}.\n`, {}),
+				matter.stringify(
+					`# ${agent}\n\nReview-agent mandate for ${agent}.\n`,
+					{},
+				),
 			)
 		}
 	}

@@ -163,15 +163,22 @@ test("after caller stamps stages_merged, firstUnmergedStage advances past the no
 			`pre-stamp the cursor must pin to inception (the spin trap), got: ${before}`,
 		)
 
-		// Simulate haiku_run_next's noop-handling: stamp inception onto
-		// stages_merged.
-		const intentMd = join(intentDir, "intent.md")
-		const raw = readFileSync(intentMd, "utf8")
-		const parsed = matter(raw)
-		parsed.data.stages_merged = ["inception"]
-		writeFileSync(intentMd, matter.stringify(parsed.content, parsed.data))
+		// Simulate haiku_run_next's noop-handling under the new
+		// disk-state cursor model: instead of stamping `stages_merged`
+		// (deprecated), write the inception stage's content onto
+		// intent main. The disk presence of the stage's units IS the
+		// "merged" signal.
+		const inceptionUnits = join(intentDir, "stages", "inception", "units")
+		mkdirSync(inceptionUnits, { recursive: true })
+		writeFileSync(
+			join(inceptionUnits, "unit-01-merged.md"),
+			matter.stringify("# merged\n", {
+				title: "merged",
+				started_at: new Date().toISOString(),
+			}),
+		)
 
-		// Post-stamp: cursor must advance to the next unmerged stage.
+		// Post-write: cursor must advance to the next unmerged stage.
 		const after = firstUnmergedStage(slug, "software")
 		assert.notStrictEqual(
 			after,

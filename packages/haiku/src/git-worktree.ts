@@ -1030,11 +1030,7 @@ export function reconcileIntentBranches(
 	const originDefaultRef =
 		tryRun(["git", "rev-parse", "--verify", `origin/${mainline}`]) ||
 		tryRun(["git", "rev-parse", "--verify", mainline])
-	if (
-		intentMainRef &&
-		originDefaultRef &&
-		intentMainRef !== originDefaultRef
-	) {
+	if (intentMainRef && originDefaultRef && intentMainRef !== originDefaultRef) {
 		if (isAncestor(intentMainRef, originDefaultRef)) {
 			if (currentBranch === intentMain) {
 				try {
