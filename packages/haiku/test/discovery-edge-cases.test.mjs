@@ -32,7 +32,13 @@ import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import matter from "gray-matter"
-import { initTestRepo, makeIntent, makeStudio } from "./_v4-fixtures.mjs"
+import {
+	initTestRepo,
+	makeIntent,
+	makeStudio,
+	onStageBranch,
+	runTickWithBranchAlignment,
+} from "./_v4-fixtures.mjs"
 
 const HAS_GIT = (() => {
 	try {
@@ -63,18 +69,7 @@ async function withTmpRepo(slug, fn) {
 }
 
 async function runTick(repoRoot, slug) {
-	const origCwd = process.cwd()
-	process.chdir(repoRoot)
-	try {
-		const { dispatchOrchestratorAction } = await import(
-			"../src/orchestrator/workflow/run-tick.js"
-		)
-		const { clearStudioCache } = await import("../src/studio-reader.js")
-		clearStudioCache()
-		return dispatchOrchestratorAction(slug, "")
-	} finally {
-		process.chdir(origCwd)
-	}
+	return runTickWithBranchAlignment(repoRoot, slug)
 }
 
 /**
@@ -113,10 +108,13 @@ function writeDiscoveryTemplate(repoRoot, studio, stage, agent, opts = {}) {
 }
 
 function writeUnit(intentDir, stage, name, fm, body = "") {
-	const unitsDir = join(intentDir, "stages", stage, "units")
-	mkdirSync(unitsDir, { recursive: true })
-	const path = join(unitsDir, `${name}.md`)
-	writeFileSync(path, matter.stringify(body || `# ${name}\n`, fm))
+	const slug = intentDir.split("/").pop() ?? ""
+	const repoRoot = intentDir.split("/").slice(0, -3).join("/")
+	const path = join(intentDir, "stages", stage, "units", `${name}.md`)
+	onStageBranch(repoRoot, slug, stage, () => {
+		mkdirSync(join(intentDir, "stages", stage, "units"), { recursive: true })
+		writeFileSync(path, matter.stringify(body || `# ${name}\n`, fm))
+	})
 	return path
 }
 

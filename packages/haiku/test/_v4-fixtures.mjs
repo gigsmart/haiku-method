@@ -473,7 +473,11 @@ export function makeStudio({
  * dance the production engine performs, so fixture state written via
  * `onStageBranch` is correctly read by the cursor.
  */
-export async function runTickWithBranchAlignment(repoRoot, slug) {
+export async function runTickWithBranchAlignment(repoRootOrSlug, maybeSlug) {
+	// Two call shapes: (repoRoot, slug) or (slug) — when slug-only the
+	// caller has already chdir'd to repoRoot.
+	const slug = maybeSlug ?? repoRootOrSlug
+	const repoRoot = maybeSlug ? repoRootOrSlug : process.cwd()
 	const origCwd = process.cwd()
 	process.chdir(repoRoot)
 	try {
