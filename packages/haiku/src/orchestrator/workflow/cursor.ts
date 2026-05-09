@@ -348,27 +348,60 @@ function currentBranchName(): string {
 }
 
 /**
- * Filesystem-mode `stages_merged` reader. In fs mode there are no
- * branches, so the cursor can't read "stage's content on intent main"
- * as the merged signal — the entire intent lives in one tree, and
- * stages content for an in-flight stage looks identical to merged
- * content. The `merge_stage` handler in `haiku_run_next` stamps
- * `stages_merged: [<stage>]` on intent.md as the explicit merged
- * signal in fs mode; this function reads that stamp.
+ * Is every unit in this stage fully signed-off? "Fully signed" =
+ * every unit has its last iteration as a terminal advance on the
+ * last hat AND every required role on `approvals.<role>.at` carries
+ * a timestamp.
+ *
+ * In git mode this is a redundant signal — intent main only carries
+ * stages whose branches were merged, and merging only happens after
+ * every gate signs. But in fs mode (no branches) it's the only way
+ * to distinguish "merged-state" from "in-flight" without falling
+ * back to a stamp: the cursor's per-stage cascade itself wouldn't
+ * fire if `firstUnmergedStage` walked past unsigned stages.
  */
-function fsmodeStagesMerged(slug: string): string[] {
-	const intentMdPath = join(
-		primaryRepoRoot(),
-		".haiku",
-		"intents",
-		slug,
-		"intent.md",
-	)
-	const fm = readFm(intentMdPath)?.data
-	if (!fm || !Array.isArray(fm.stages_merged)) return []
-	return (fm.stages_merged as unknown[]).filter(
-		(s): s is string => typeof s === "string",
-	)
+function isStageFullySigned(
+	intentDir: string,
+	studio: string,
+	stage: string,
+	mode: string,
+): boolean {
+	const unitsDir = join(intentDir, "stages", stage, "units")
+	if (!existsSync(unitsDir)) return false
+	const unitFiles = readdirSync(unitsDir).filter((f) => f.endsWith(".md"))
+	if (unitFiles.length === 0) return false
+
+	const hats = resolveStageHats(studio, stage)
+	const lastHat = hats[hats.length - 1]
+	const reviewAgentPaths = readReviewAgentPaths(studio, stage)
+	const reviewAgents = Object.keys(reviewAgentPaths).sort()
+	const isAutopilot = mode === "autopilot"
+	const approvalRoles: string[] = isAutopilot
+		? ["spec", "quality_gates"]
+		: ["spec", "quality_gates", ...reviewAgents, "user"]
+
+	for (const file of unitFiles) {
+		const fm = readFm(join(unitsDir, file))?.data
+		if (!fm) return false
+		// Last hat advanced?
+		const its = pickIterations(fm)
+		if (its.length === 0) return false
+		const last = its[its.length - 1]
+		if (last.result !== "advance" || last.hat !== lastHat) return false
+		// Every approval role signed?
+		const approvals = pickApprovals(fm)
+		for (const role of approvalRoles) {
+			const record = approvals[role]
+			if (
+				!record ||
+				typeof record !== "object" ||
+				typeof (record as { at?: unknown }).at !== "string"
+			) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 /**
@@ -407,12 +440,8 @@ export function firstUnmergedStage(
 ): string | null {
 	const stages = resolveStudioStages(studio)
 	if (stages.length === 0) return null
-
-	// Filesystem mode: no branches, so disk presence doesn't
-	// distinguish "merged" from "in-flight." The `merge_stage`
-	// handler in `haiku_run_next` stamps `stages_merged` as the
-	// explicit signal in this mode.
 	const root = primaryRepoRoot()
+	const intentDir = join(root, ".haiku", "intents", slug)
 	const isGit = (() => {
 		try {
 			return existsSync(join(root, ".git"))
@@ -420,10 +449,23 @@ export function firstUnmergedStage(
 			return false
 		}
 	})()
+
 	if (!isGit) {
-		const stamped = new Set(fsmodeStagesMerged(slug))
+		// Fs mode: no branches, so "stage X has units on disk" doesn't
+		// distinguish merged from in-flight — they live in the same
+		// tree throughout the stage's lifecycle. Derive the merged
+		// signal from per-unit signature state instead: a stage is
+		// "merged-state" iff every unit's last iteration is terminal
+		// advance on the last hat AND every required approval role is
+		// signed. Pure disk read on existing FM, no stamp needed.
+		const intentMdPath = join(intentDir, "intent.md")
+		const intentFm = readFm(intentMdPath)?.data
+		const mode =
+			typeof intentFm?.mode === "string" && intentFm.mode.length > 0
+				? (intentFm.mode as string)
+				: "continuous"
 		for (const stage of stages) {
-			if (!stamped.has(stage)) return stage
+			if (!isStageFullySigned(intentDir, studio, stage, mode)) return stage
 		}
 		return null
 	}
@@ -433,7 +475,6 @@ export function firstUnmergedStage(
 	// which case this function isn't the active-stage source —
 	// `activeStageFromBranchOrFilesystem` short-circuits before
 	// calling here).
-	const intentDir = join(root, ".haiku", "intents", slug)
 	for (const stage of stages) {
 		const unitsDir = join(intentDir, "stages", stage, "units")
 		if (!existsSync(unitsDir)) return stage

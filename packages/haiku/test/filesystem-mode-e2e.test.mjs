@@ -339,11 +339,26 @@ test("fs-mode continuous: 3-stage pipeline reaches sealed without git", async ()
 
 		const { seen } = await driveToSealed(slug, intentDir)
 		assert.equal(seen[seen.length - 1], "sealed//")
-		// Three merge_stage ticks (one per stage).
-		const merges = seen.filter((t) => t.startsWith("merge_stage/"))
+		// Pipeline traversed every configured stage and reached
+		// intent-level review. Under the new disk-state cursor model,
+		// fs mode walks naturally past fully-signed stages — there's
+		// no physical merge to perform, so no `merge_stage` action is
+		// emitted. The cursor's progression IS visible by the
+		// per-stage actions plus the intent-level finale.
+		const stagesSeen = new Set(
+			seen
+				.map((t) => t.split("/")[1])
+				.filter((s) => s === "a" || s === "b" || s === "c"),
+		)
+		assert.deepStrictEqual(
+			[...stagesSeen].sort(),
+			["a", "b", "c"],
+			`pipeline must touch every stage; saw: ${[...stagesSeen].sort().join(", ")}`,
+		)
+		const intentReviews = seen.filter((t) => t.startsWith("intent_review/"))
 		assert.ok(
-			merges.length >= 3,
-			`expected ≥3 merge_stage ticks; got ${merges.length}: ${merges.join(", ")}`,
+			intentReviews.length >= 1,
+			`pipeline must reach intent-level review; got: ${seen.slice(-5).join(" → ")}`,
 		)
 	})
 })
@@ -436,9 +451,14 @@ test("fs-mode FB mid-flight: opens after stage A merge, fix loop runs, pipeline 
 			seen.push(
 				`${action.action}/${action.stage ?? ""}/${action.hat ?? action.role ?? action.agent ?? ""}`,
 			)
+			// Inject the FB once stage A reaches its final approval gate
+			// (dispatch_quality_gates for stage A). Under the new
+			// disk-state model, fs mode doesn't emit a separate
+			// `merge_stage` action — it walks past fully-signed stages
+			// naturally — so we hook the last per-stage action instead.
 			if (
 				!injectedFb &&
-				action.action === "merge_stage" &&
+				action.action === "dispatch_quality_gates" &&
 				action.stage === "a"
 			) {
 				applyResponse(intentDir, action)
