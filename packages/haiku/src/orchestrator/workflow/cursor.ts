@@ -48,6 +48,7 @@
 //                 gate, no agent gates, merge_stage auto-fires once
 //                 quality_gates is signed
 
+import { execFileSync } from "node:child_process"
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { basename, join } from "node:path"
 import matter from "gray-matter"
@@ -297,6 +298,53 @@ export function pendingApprovalSlots(
 ): string[] {
 	const approvals = pickApprovals(fm)
 	return configuredRoles.filter((r) => !approvals[r])
+}
+
+/**
+ * Determine the active stage for the cursor walk.
+ *
+ *   - When the working tree is on a stage branch
+ *     (`haiku/<slug>/<stage>` where stage != "main"), the branch name
+ *     is the source of truth. Calling `firstUnmergedStage` here would
+ *     lie — the stage branch's tree carries the in-flight unit work
+ *     that intent main doesn't, so `firstUnmergedStage` would walk
+ *     past the active stage.
+ *   - Otherwise (intent main, repo default, anywhere else), walk
+ *     intent main's filesystem via `firstUnmergedStage`.
+ *
+ * The caller (`haiku_run_next` / `runTickWithBranchAlignment`)
+ * arranges for the working tree to be on the appropriate branch
+ * before the cursor walk. This shortcut just reads the branch name
+ * the caller already set up.
+ */
+function activeStageFromBranchOrFilesystem(
+	slug: string,
+	studio: string,
+): string | null {
+	const stagePrefix = `haiku/${slug}/`
+	const currentBranch = currentBranchName()
+	if (currentBranch.startsWith(stagePrefix)) {
+		const tail = currentBranch.slice(stagePrefix.length)
+		if (tail !== "main" && tail.length > 0) {
+			// Confirm the branch name matches a configured stage; otherwise
+			// fall through to the filesystem walk so a misnamed branch
+			// doesn't pin the cursor to a non-existent stage.
+			const stages = resolveStudioStages(studio)
+			if (stages.includes(tail)) return tail
+		}
+	}
+	return firstUnmergedStage(slug, studio)
+}
+
+function currentBranchName(): string {
+	try {
+		return execFileSync("git", ["branch", "--show-current"], {
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "pipe"],
+		}).trim()
+	} catch {
+		return ""
+	}
 }
 
 /**
@@ -823,7 +871,7 @@ export function derivePosition(args: {
 				firstStageDir && existsSync(firstStageDir)
 					? listUnitPaths(firstStageDir).length > 0
 					: false
-			const activeForGate = firstUnmergedStage(slug, studio)
+			const activeForGate = activeStageFromBranchOrFilesystem(slug, studio)
 			const isTrulyFresh = activeForGate === firstStage && !firstStageHasUnits
 			if (isTrulyFresh) {
 				return {
@@ -835,21 +883,26 @@ export function derivePosition(args: {
 		}
 	}
 
-	// Determine the active stage (first NOT merged into intent main).
-	// Stages are never sealed — feedback can rewind the cursor by
-	// adding new units to a previously-merged stage; that stage
-	// becomes ahead-of-main and firstUnmergedStage returns it.
+	// Determine the active stage. The new disk-state cursor model
+	// (cursor-disk-state-stage-walk) says intent main's filesystem is
+	// the canonical source for "which stages have landed":
 	//
-	// CRITICAL (2026-05-06 P11 bug fix): when EVERY stage is merged,
-	// `firstUnmergedStage` returns null. Older code fell back to
-	// `stages[0]` here and then ran drift sweep + walkIntentTrack
-	// against that long-finished stage — producing false drift events
-	// (the stage's units are older than the merge commits) AND
-	// short-circuiting at the noop return below, never reaching the
-	// intent-level review block. The fix: gate Track C / B / A on
-	// the REAL `activeStage`, not the fallback. When activeStage is
-	// null, fall through to intent-level approvals.
-	const activeStage = firstUnmergedStage(slug, studio)
+	//   - When the working tree is on intent main, walk the filesystem.
+	//   - When the working tree is on a stage branch (where the
+	//     in-flight unit work lives), the branch name itself names
+	//     the active stage — `firstUnmergedStage` would lie if called
+	//     here because the stage branch's tree HAS the units that
+	//     intent main does not.
+	//
+	// `haiku_run_next` ensures the working tree is on the right
+	// branch before this function runs, so the branch-name shortcut
+	// is reliable. Tests use `runTickWithBranchAlignment` to do the
+	// same dance.
+	//
+	// When every stage is merged, `firstUnmergedStage` returns null
+	// and we fall through to intent-level approvals (Track A only
+	// fires when there's an active stage).
+	const activeStage = activeStageFromBranchOrFilesystem(slug, studio)
 
 	// Track C — drift sweep, only against the active stage.
 	if (activeStage) {

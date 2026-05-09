@@ -26,6 +26,8 @@ import {
 	makeFeedback,
 	makeIntent,
 	makeStudio,
+	onStageBranch,
+	runTickWithBranchAlignment,
 	seedVerifiedElaboration,
 } from "./_v4-fixtures.mjs"
 
@@ -85,33 +87,27 @@ test("run_next is idempotent — N successive calls without writes return identi
  * Build a unit file directly with given iterations[]/reviews{}/approvals{}.
  * Bypasses the makeMergedUnit "fully merged" defaults so we can assert
  * cursor behavior at every lifecycle position.
+ *
+ * Stage-scoped: writes to the stage branch, not intent main. Intent
+ * main reflects only merged content under the new cursor model.
  */
 function writeUnit(intentDir, stage, name, fm, body = "") {
-	const unitsDir = join(intentDir, "stages", stage, "units")
-	mkdirSync(unitsDir, { recursive: true })
-	const path = join(unitsDir, `${name}.md`)
-	writeFileSync(path, matter.stringify(body || `# ${name}\n`, fm))
+	const slug = intentDir.split("/").pop() ?? ""
+	const repoRoot = intentDir.split("/").slice(0, -3).join("/")
+	const path = join(intentDir, "stages", stage, "units", `${name}.md`)
+	onStageBranch(repoRoot, slug, stage, () => {
+		mkdirSync(join(intentDir, "stages", stage, "units"), { recursive: true })
+		writeFileSync(path, matter.stringify(body || `# ${name}\n`, fm))
+	})
 	return path
 }
 
 /**
- * Drive a tick from a tmp repo with a fresh studio fixture. The cursor's
- * studio reads chdir to the repoRoot so its project-local studio
- * fixture overrides the plugin built-ins.
+ * Drive a tick — alias for `runTickWithBranchAlignment` so tests call
+ * the same dance the production engine performs.
  */
 async function runTick(repoRoot, slug) {
-	const origCwd = process.cwd()
-	process.chdir(repoRoot)
-	try {
-		const { dispatchOrchestratorAction } = await import(
-			"../src/orchestrator/workflow/run-tick.js"
-		)
-		const { clearStudioCache } = await import("../src/studio-reader.js")
-		clearStudioCache()
-		return dispatchOrchestratorAction(slug, "")
-	} finally {
-		process.chdir(origCwd)
-	}
+	return runTickWithBranchAlignment(repoRoot, slug)
 }
 
 // ── Track A scenarios ────────────────────────────────────────────────
