@@ -30,13 +30,14 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { branchExists, isBranchMerged } from "./git-worktree.js"
+import { deriveStageState } from "./orchestrator/workflow/derived-stage-state.js"
 import {
 	resolveIntentStages,
 	resolveStudioStages,
 } from "./orchestrator/studio.js"
 import { isGitRepo } from "./state/shared.js"
-import { intentDir, parseFrontmatter, readJson } from "./state-tools.js"
-import type { IntentCurrentState, IntentPhase, StageState } from "./types.js"
+import { intentDir, parseFrontmatter } from "./state-tools.js"
+import type { IntentCurrentState, IntentPhase } from "./types.js"
 
 const VALID_PHASES = new Set<IntentPhase>([
 	"elaborate",
@@ -59,19 +60,10 @@ function readIntentFm(
 	return data
 }
 
-function readStageState(
-	slug: string,
-	stage: string,
-	root?: string,
-): Partial<StageState> {
-	const path = join(resolveIntentDir(slug, root), "stages", stage, "state.json")
-	if (!existsSync(path)) return {}
-	try {
-		return readJson(path) as Partial<StageState>
-	} catch {
-		return {}
-	}
-}
+// readStageState removed (v4): per-stage state is derived from
+// per-unit FM + branch-merge state via `deriveStageState`. The
+// state.json file is migrator-deleted and the engine no longer
+// recreates it.
 
 /** Resolve the current state of an intent from per-stage state.json.
  *  Returns null when the intent does not exist or has no studio set
@@ -106,11 +98,22 @@ export function getCurrentState(
 	const gitAvailable = isGitRepo()
 	const intentMainBranch = `haiku/${slug}/main`
 	const intentMainExists = gitAvailable && branchExists(intentMainBranch)
+	const intentMode =
+		typeof intent.mode === "string" && (intent.mode as string).length > 0
+			? (intent.mode as string)
+			: "continuous"
 	for (const stage of fallbackStages) {
-		const st = readStageState(slug, stage, root)
-		const status = (st.status as string) || "pending"
-		const gateOutcome = (st.gate_outcome as string) || ""
-		const stateLooksDone = status === "completed" && gateOutcome !== "blocked"
+		const derived = deriveStageState({
+			slug,
+			studio,
+			stage,
+			intentDir: resolveIntentDir(slug, root),
+			intentMode,
+		})
+		const status = derived.status
+		// v4 derivation never returns "blocked" — that was a v3
+		// state.json shape. Treat completed as done outright.
+		const stateLooksDone = status === "completed"
 		// Merge gate: in git mode (with both stage branch and intent
 		// main present), a completed+advanced stage stays "current"
 		// until its branch has landed in intent main. The merge is the
@@ -135,8 +138,14 @@ export function getCurrentState(
 		}
 	}
 
-	const stageState = readStageState(slug, current, root)
-	const rawPhase = (stageState.phase as string) || ""
+	const derivedCurrent = deriveStageState({
+		slug,
+		studio,
+		stage: current,
+		intentDir: resolveIntentDir(slug, root),
+		intentMode,
+	})
+	const rawPhase = derivedCurrent.phase ?? ""
 	const phase: IntentPhase | "" = VALID_PHASES.has(rawPhase as IntentPhase)
 		? (rawPhase as IntentPhase)
 		: ""

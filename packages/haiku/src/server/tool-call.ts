@@ -11,7 +11,7 @@
 // visually consistent.
 
 import { spawn } from "node:child_process"
-import { appendFileSync } from "node:fs"
+import { appendFileSync, existsSync, mkdirSync } from "node:fs"
 import { readFile } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
 import { z } from "zod"
@@ -69,7 +69,6 @@ import {
 	listVisibleIntents,
 	parseFrontmatter,
 	readJson,
-	stageStatePath,
 	writeJson,
 } from "../state-tools.js"
 import { withAnnouncement } from "../tools/orchestrator/_announce.js"
@@ -520,15 +519,26 @@ export async function handleToolCall(
 			session.ad_hoc = false
 			launchBrowserBestEffort(reviewUrl, "User gate review")
 			if (activeStage) {
-				const ssPath = stageStatePath(slug, activeStage)
-				const stageState = readJson(ssPath)
+				// v4: state.json is gone. Gate-session pointers live on
+				// per-stage `gate-session.json` so haiku_await_gate can
+				// find the open session without touching state.json.
+				const gateSessionFile = join(
+					intentDir(slug),
+					"stages",
+					activeStage,
+					"gate-session.json",
+				)
+				mkdirSync(dirname(gateSessionFile), { recursive: true })
+				const stageState = existsSync(gateSessionFile)
+					? readJson(gateSessionFile)
+					: {}
 				stageState.gate_review_session_id = session.session_id
 				stageState.gate_review_url = reviewUrl
 				// Map cursor's gate_kind → await_gate's gate_review_context
 				// vocabulary (see stampGateApproval in haiku_await_gate.ts).
 				stageState.gate_review_context =
 					gateKind === "spec" ? "elaborate_to_execute" : "stage_gate"
-				writeJson(ssPath, stageState)
+				writeJson(gateSessionFile, stageState)
 			}
 			return {
 				content: [

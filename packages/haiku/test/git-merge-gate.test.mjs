@@ -20,6 +20,7 @@ import {
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import matter from "gray-matter"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 process.env.CLAUDE_PLUGIN_ROOT = resolve(__dirname, "..", "..", "..", "plugin")
@@ -33,6 +34,12 @@ const { checkoutFromBranchOnIntentMain } = await import(
 )
 const { _resetIsGitRepoForTests, setHaikuRootForTests } = await import(
 	"../src/state/shared.ts"
+)
+const { resolveStageHats: _resolveStageHats } = await import(
+	"../src/orchestrator/studio.ts"
+)
+const { readReviewAgentPaths: _readReviewAgentPaths } = await import(
+	"../src/studio-reader.ts"
 )
 
 let passed = 0
@@ -88,6 +95,50 @@ function writeStageState(root, slug, stage, state) {
 	writeFileSync(join(sd, "state.json"), JSON.stringify(state, null, 2))
 }
 
+/** v4: write a fully-signed unit (terminal hat advance + every required
+ *  approval). Mirrors the canonical "stage is logically completed"
+ *  signal the cursor reads. Studio-aware so the hats and review-agent
+ *  set match what `derivedStageState` expects. */
+function writeCompletedUnit(root, slug, stage, studio = "software") {
+	const sd = join(root, ".haiku", "intents", slug, "stages", stage)
+	const unitsDir = join(sd, "units")
+	mkdirSync(unitsDir, { recursive: true })
+	const at = "2026-05-09T00:00:00Z"
+	// Read studio config dynamically — keeps the fixture aligned with
+	// whatever `software/<stage>` declares without a hardcoded list.
+	const hats = _resolveStageHats(studio, stage)
+	const agents = Object.keys(_readReviewAgentPaths(studio, stage)).sort()
+	const reviews = { spec: { at }, user: { at } }
+	const approvals = { spec: { at }, quality_gates: { at }, user: { at } }
+	for (const a of agents) {
+		reviews[a] = { at }
+		approvals[a] = { at }
+	}
+	writeFileSync(
+		join(sd, "elaboration.md"),
+		matter.stringify(`# Elaboration ${stage}\n`, {
+			title: stage,
+			verified_at: at,
+		}),
+	)
+	const unitFm = {
+		title: `${stage}-u1`,
+		started_at: at,
+		iterations: hats.map((hat) => ({
+			hat,
+			started_at: at,
+			completed_at: at,
+			result: "advance",
+		})),
+		reviews,
+		approvals,
+	}
+	writeFileSync(
+		join(unitsDir, `${stage}-u1.md`),
+		matter.stringify(`# ${stage}-u1\n`, unitFm),
+	)
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Section 1 — getCurrentState merge-gate (current-state.ts:118-134)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -97,32 +148,42 @@ console.log("=== getCurrentState merge-gate ===")
 test("completed+advanced stage NOT merged stays current", () => {
 	const { root, git, cleanup } = makeGitRepo()
 	try {
-		// Create intent main and a diverging stage branch (not merged)
+		// Create intent main and a stage branch with the unit on it.
+		// Unit lives only on the stage branch (not merged into intent
+		// main yet) — v4's intentMainHasStageUnits returns false →
+		// status="active" → inception stays current.
 		git("git checkout -b haiku/gate-test/main")
 		git("git checkout -b haiku/gate-test/inception")
-		git("git commit --allow-empty -m 'inception stage work'")
+		writeIntent(root, "gate-test", {
+			studio: "software",
+			active_stage: "inception",
+		})
+		writeCompletedUnit(root, "gate-test", "inception")
+		git("git add -A")
+		git("git commit -m 'inception stage work'")
 		git("git checkout haiku/gate-test/main")
+		// Remove the unit files from the working tree on intent main
+		// so the on-disk view reflects "stage hasn't merged yet."
+		rmSync(join(root, ".haiku", "intents", "gate-test", "stages", "inception"), {
+			recursive: true,
+			force: true,
+		})
 
 		process.chdir(root)
 		_resetIsGitRepoForTests()
 
 		const haikuRoot = join(root, ".haiku")
+		// Re-write intent.md after rm above.
 		writeIntent(root, "gate-test", {
 			studio: "software",
 			active_stage: "inception",
 		})
-		writeStageState(root, "gate-test", "inception", {
-			stage: "inception",
-			status: "completed",
-			phase: "gate",
-			gate_outcome: "advanced",
-		})
 
 		const state = getCurrentState("gate-test", haikuRoot)
-		// Stage branch not yet merged → isDone=false → inception stays current
+		// Stage branch not yet merged into intent main → inception stays
+		// current (the cursor's natural "first unmerged stage" behavior).
 		assert.ok(state, "should return a state")
 		assert.strictEqual(state.stage, "inception")
-		assert.strictEqual(state.phase, "gate")
 	} finally {
 		process.chdir(origCwd)
 		_resetIsGitRepoForTests()
@@ -135,29 +196,28 @@ test("completed+advanced stage IS merged advances past it to next", () => {
 	try {
 		git("git checkout -b haiku/gate-merged/main")
 		git("git checkout -b haiku/gate-merged/inception")
-		git("git commit --allow-empty -m 'inception stage work'")
+		writeIntent(root, "gate-merged", {
+			studio: "software",
+			active_stage: "inception",
+		})
+		writeCompletedUnit(root, "gate-merged", "inception")
+		git("git add -A")
+		git("git commit -m 'inception stage work'")
 		git("git checkout haiku/gate-merged/main")
-		// Merge inception into intent main — now isDone=true for inception
+		// Merge inception into intent main — units now live on intent
+		// main's tree, so intentMainHasStageUnits returns true →
+		// status="completed" for inception.
 		git("git merge haiku/gate-merged/inception --no-ff -m 'merge inception'")
 
 		process.chdir(root)
 		_resetIsGitRepoForTests()
 
 		const haikuRoot = join(root, ".haiku")
-		writeIntent(root, "gate-merged", {
-			studio: "software",
-			active_stage: "inception",
-		})
-		writeStageState(root, "gate-merged", "inception", {
-			stage: "inception",
-			status: "completed",
-			phase: "gate",
-			gate_outcome: "advanced",
-		})
-		// design has no state.json → treated as pending → becomes current
 
 		const state = getCurrentState("gate-merged", haikuRoot)
-		// Inception merged → isDone=true → advances past inception to design
+		// Inception merged → derived status="completed" → advances past
+		// inception to the next stage (design has no units → pending →
+		// becomes current).
 		assert.ok(state, "should return a state")
 		assert.strictEqual(
 			state.stage,

@@ -365,50 +365,75 @@ const { findIncompleteStages } = await import(
 	"../src/orchestrator/workflow/side-effects.ts"
 )
 
-// Test: 3-stage intent where only 2 stages completed — findIncompleteStages
-// returns the incomplete stage so completeOrReviewIntent can block.
-test("findIncompleteStages returns incomplete stages when some are missing state.json", () => {
+const { resolveStageHats: _resolveStageHats } = await import(
+	"../src/orchestrator/studio.ts"
+)
+const { readReviewAgentPaths: _readReviewAgentPaths } = await import(
+	"../src/studio-reader.ts"
+)
+
+/** v4 fs-mode: write a single fully-signed unit for a stage. Queries
+ *  the studio's actual hat sequence + review-agent list so the unit
+ *  satisfies whatever the studio declares — keeps tests robust to
+ *  studio config changes. */
+function writeCompletedStageUnit(iDir, stage, studio = "software") {
+	const at = "2026-05-09T00:00:00Z"
+	const unitsDir = join(iDir, "stages", stage, "units")
+	mkdirSync(unitsDir, { recursive: true })
+	const hats = _resolveStageHats(studio, stage)
+	const agents = Object.keys(_readReviewAgentPaths(studio, stage)).sort()
+	const reviews = { spec: { at }, user: { at } }
+	const approvals = { spec: { at }, quality_gates: { at }, user: { at } }
+	for (const a of agents) {
+		reviews[a] = { at }
+		approvals[a] = { at }
+	}
+	const iterations = hats.map((hat) => ({
+		hat,
+		started_at: at,
+		completed_at: at,
+		result: "advance",
+	}))
+	const fm = {
+		title: `${stage}-u1`,
+		started_at: at,
+		iterations,
+		reviews,
+		approvals,
+	}
+	writeFileSync(
+		join(unitsDir, `${stage}-u1.md`),
+		`---\n${Object.entries(fm)
+			.map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+			.join("\n")}\n---\n\n# ${stage}-u1\n`,
+	)
+}
+
+// Test: 3-stage intent, 2 stages have fully-signed units → only the
+// third is reported incomplete.
+test("findIncompleteStages flags stages whose units aren't fully signed", () => {
 	const slug = "test-completeness-guard-partial"
 	const root = mkdtempSync(join(tmpdir(), "haiku-completeness-"))
 	const haikuRoot = join(root, ".haiku")
 	const iDir = join(haikuRoot, "intents", slug)
 	mkdirSync(iDir, { recursive: true })
 
-	// Intent with 3 stages, only 2 will have completed state.json.
 	const intentFm = [
 		"---",
 		`studio: "software"`,
 		`stages: ["inception", "design", "product"]`,
 		`active_stage: "product"`,
+		`mode: "continuous"`,
 		"---",
 		"",
 		"# Test intent for completeness guard",
 	].join("\n")
 	writeFileSync(join(iDir, "intent.md"), intentFm)
 
-	// inception: completed
-	const inceptionDir = join(iDir, "stages", "inception")
-	mkdirSync(inceptionDir, { recursive: true })
-	writeFileSync(
-		join(inceptionDir, "state.json"),
-		JSON.stringify({ status: "completed" }),
-	)
-
-	// design: completed
-	const designDir = join(iDir, "stages", "design")
-	mkdirSync(designDir, { recursive: true })
-	writeFileSync(
-		join(designDir, "state.json"),
-		JSON.stringify({ status: "completed" }),
-	)
-
-	// product: active (not completed) — simulates stages that never ran
-	const productDir = join(iDir, "stages", "product")
-	mkdirSync(productDir, { recursive: true })
-	writeFileSync(
-		join(productDir, "state.json"),
-		JSON.stringify({ status: "active", phase: "gate" }),
-	)
+	writeCompletedStageUnit(iDir, "inception")
+	writeCompletedStageUnit(iDir, "design")
+	// product: empty stage dir (no units) — signals "not yet complete"
+	mkdirSync(join(iDir, "stages", "product"), { recursive: true })
 
 	const origCwd = process.cwd()
 	let result
@@ -429,8 +454,8 @@ test("findIncompleteStages returns incomplete stages when some are missing state
 	)
 })
 
-// Test: all stages completed — findIncompleteStages returns empty array.
-test("findIncompleteStages returns [] when all declared stages are completed", () => {
+// Test: all stages have fully-signed units → empty incomplete list.
+test("findIncompleteStages returns [] when every stage's units are fully signed", () => {
 	const slug = "test-completeness-guard-full"
 	const root = mkdtempSync(join(tmpdir(), "haiku-completeness-full-"))
 	const haikuRoot = join(root, ".haiku")
@@ -442,6 +467,7 @@ test("findIncompleteStages returns [] when all declared stages are completed", (
 		`studio: "software"`,
 		`stages: ["inception", "design"]`,
 		`active_stage: "design"`,
+		`mode: "continuous"`,
 		"---",
 		"",
 		"# Test intent for completeness guard — all complete",
@@ -449,12 +475,7 @@ test("findIncompleteStages returns [] when all declared stages are completed", (
 	writeFileSync(join(iDir, "intent.md"), intentFm)
 
 	for (const stage of ["inception", "design"]) {
-		const stDir = join(iDir, "stages", stage)
-		mkdirSync(stDir, { recursive: true })
-		writeFileSync(
-			join(stDir, "state.json"),
-			JSON.stringify({ status: "completed" }),
-		)
+		writeCompletedStageUnit(iDir, stage)
 	}
 
 	const origCwd = process.cwd()
@@ -476,8 +497,8 @@ test("findIncompleteStages returns [] when all declared stages are completed", (
 	)
 })
 
-// Test: stage with missing state.json entirely is also flagged as incomplete.
-test("findIncompleteStages includes stages with no state.json at all", () => {
+// Test: stage with no units at all is flagged as incomplete.
+test("findIncompleteStages includes stages with no units on disk", () => {
 	const slug = "test-completeness-guard-missing"
 	const root = mkdtempSync(join(tmpdir(), "haiku-completeness-miss-"))
 	const haikuRoot = join(root, ".haiku")
@@ -489,19 +510,15 @@ test("findIncompleteStages includes stages with no state.json at all", () => {
 		`studio: "software"`,
 		`stages: ["inception", "design", "product"]`,
 		`active_stage: "design"`,
+		`mode: "continuous"`,
 		"---",
 		"",
 		"# Test intent — missing stage dir",
 	].join("\n")
 	writeFileSync(join(iDir, "intent.md"), intentFm)
 
-	// Only inception has state.json; design and product don't exist at all.
-	const inceptionDir = join(iDir, "stages", "inception")
-	mkdirSync(inceptionDir, { recursive: true })
-	writeFileSync(
-		join(inceptionDir, "state.json"),
-		JSON.stringify({ status: "completed" }),
-	)
+	// Only inception has fully-signed units; design and product don't exist.
+	writeCompletedStageUnit(iDir, "inception")
 
 	const origCwd = process.cwd()
 	let result

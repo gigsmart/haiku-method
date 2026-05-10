@@ -7,6 +7,7 @@ import { execFileSync, execSync, spawn, spawnSync } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import {
 	type Dirent,
+	appendFileSync,
 	existsSync,
 	lstatSync,
 	mkdirSync,
@@ -61,6 +62,7 @@ import {
 import { withStageLock } from "./locks.js"
 import { escalate } from "./model-selection.js"
 import { clearMarkersForFeedbackSync } from "./orchestrator/workflow/baseline-clear-marker.js"
+import { deriveStageState } from "./orchestrator/workflow/derived-stage-state.js"
 import { reportError } from "./sentry.js"
 import { logSessionEvent, writeHaikuMetadata } from "./session-metadata.js"
 import { sealIntentState } from "./state-integrity.js"
@@ -2897,33 +2899,146 @@ export interface AppendIterationResult {
 	signature: string
 }
 
-/** Normalized iteration count — prefer the iterations array, fall back to
- *  the legacy `visits` scalar so existing state files stay readable. */
+/** Path to the per-stage iteration log. v4 disk-artifact home —
+ *  replaces state.json's `iterations[]` array. JSONL append-only:
+ *  every appendStageIteration writes one line, every
+ *  closeCurrentStageIteration appends a "close" line. Read by
+ *  re-folding the lines into the in-memory iteration array. */
+function stageIterationsPath(slug: string, stage: string): string {
+	return join(stageDir(slug, stage), "iterations.jsonl")
+}
+
+/** Path to the per-stage decision log. v4 disk-artifact home —
+ *  replaces state.json's `decision_log[]` array. JSONL append-only:
+ *  every `haiku_decision_record` (and the implicit acknowledgement
+ *  in `haiku_reconciliation_acknowledge`) appends one line. */
+function stageDecisionLogPath(slug: string, stage: string): string {
+	return join(stageDir(slug, stage), "decisions.jsonl")
+}
+
+/** Append a structured decision-log entry to the per-stage JSONL.
+ *  Mirrors `appendIterationLogLine` — best-effort, never throws.
+ *  Caller is the engine path that just made the decision; the log is
+ *  provenance, not state of record. */
+function appendDecisionLogLine(
+	slug: string,
+	stage: string,
+	line: Record<string, unknown>,
+): void {
+	const path = stageDecisionLogPath(slug, stage)
+	try {
+		mkdirSync(dirname(path), { recursive: true })
+		appendFileSync(path, `${JSON.stringify(line)}\n`)
+	} catch (err) {
+		console.error(
+			`[haiku] failed to append decision log for ${slug}/${stage}: ${err instanceof Error ? err.message : String(err)}`,
+		)
+	}
+}
+
+/** Read all decision-log entries for a stage. Returns an empty array
+ *  when the log doesn't exist yet (fresh stage with no decisions). */
+function readDecisionLog(
+	slug: string,
+	stage: string,
+): Array<Record<string, unknown>> {
+	const path = stageDecisionLogPath(slug, stage)
+	if (!existsSync(path)) return []
+	const raw = readFileSync(path, "utf8")
+	const out: Array<Record<string, unknown>> = []
+	for (const line of raw.split("\n")) {
+		const trimmed = line.trim()
+		if (!trimmed) continue
+		try {
+			out.push(JSON.parse(trimmed) as Record<string, unknown>)
+		} catch {
+			// malformed line — skip
+		}
+	}
+	return out
+}
+
+/** Reduce the iterations.jsonl log into the canonical in-memory array.
+ *  Each "open" line opens a new entry; the next "close" line attaches
+ *  result/completed_at to it. Malformed lines are skipped. */
+function readStageIterations(slug: string, stage: string): StageIteration[] {
+	const path = stageIterationsPath(slug, stage)
+	if (!existsSync(path)) return []
+	const raw = readFileSync(path, "utf8")
+	const out: StageIteration[] = []
+	for (const line of raw.split("\n")) {
+		const trimmed = line.trim()
+		if (!trimmed) continue
+		let parsed: Record<string, unknown>
+		try {
+			parsed = JSON.parse(trimmed) as Record<string, unknown>
+		} catch {
+			continue
+		}
+		if (parsed.kind === "open") {
+			out.push({
+				index: out.length + 1,
+				started_at: (parsed.at as string) || timestamp(),
+				completed_at: null,
+				trigger: (parsed.trigger as StageIterationTrigger) || "initial",
+				result: null,
+				...(parsed.reason ? { reason: parsed.reason as string } : {}),
+				...(parsed.feedback_signature
+					? { feedback_signature: parsed.feedback_signature as string }
+					: {}),
+			})
+		} else if (parsed.kind === "close" && out.length > 0) {
+			const last = out[out.length - 1]
+			last.completed_at = (parsed.at as string) || timestamp()
+			last.result =
+				(parsed.result as StageIterationResult) || ("advanced" as StageIterationResult)
+			if (parsed.reason && !last.reason) last.reason = parsed.reason as string
+		}
+	}
+	return out
+}
+
+/** Append a structured line to iterations.jsonl. Best-effort — never
+ *  throws; failures are logged but don't roll back the engine
+ *  transition that triggered the append. */
+function appendIterationLogLine(
+	slug: string,
+	stage: string,
+	line: Record<string, unknown>,
+): void {
+	const path = stageIterationsPath(slug, stage)
+	try {
+		mkdirSync(dirname(path), { recursive: true })
+		appendFileSync(path, `${JSON.stringify(line)}\n`)
+	} catch (err) {
+		console.error(
+			`[haiku] failed to append iteration log for ${slug}/${stage}: ${err instanceof Error ? err.message : String(err)}`,
+		)
+	}
+}
+
+/** Normalized iteration count — read from the JSONL log. The legacy
+ *  `state.json.iterations[]` and `state.json.visits` fields are dead
+ *  in v4 engine code; this function reads the disk artifact directly.
+ *
+ *  Fallback for legacy callers: if `slug`+`stage` are missing OR the
+ *  JSONL log is empty, fall back to the passed-in `stageState`'s
+ *  `iterations[]`/`visits` so test fixtures and any v3 reader still
+ *  produce a stable count. New code should always pass `slug`+`stage`
+ *  to read from the disk artifact. */
 export function getStageIterationCount(
 	stageState: Record<string, unknown>,
+	slug?: string,
+	stage?: string,
 ): number {
+	if (slug && stage) {
+		const fromLog = readStageIterations(slug, stage).length
+		if (fromLog > 0) return fromLog
+	}
 	const arr = stageState.iterations as StageIteration[] | undefined
 	if (Array.isArray(arr)) return arr.length
 	const legacy = stageState.visits as number | undefined
 	return typeof legacy === "number" ? legacy : 0
-}
-
-/** Read the iterations array with a migration fallback from `visits: N`. */
-function readIterations(stageState: Record<string, unknown>): StageIteration[] {
-	const arr = stageState.iterations as StageIteration[] | undefined
-	if (Array.isArray(arr)) return arr.slice()
-	const legacyVisits = (stageState.visits as number) || 0
-	if (legacyVisits <= 0) return []
-	// Synthesize a minimal iterations array so the new code path sees
-	// something it can append to. Legacy entries are marked unknown.
-	const now = timestamp()
-	return Array.from({ length: legacyVisits }, (_, i) => ({
-		index: i + 1,
-		started_at: now,
-		completed_at: i < legacyVisits - 1 ? now : null,
-		trigger: "initial" as StageIterationTrigger,
-		result: i < legacyVisits - 1 ? ("advanced" as StageIterationResult) : null,
-	}))
 }
 
 /** Append a new stage iteration. Closes the previous one (if open) with
@@ -2948,18 +3063,30 @@ export function appendStageIteration(
 	},
 	prevResult: StageIterationResult = "feedback-revisit",
 ): AppendIterationResult {
-	const path = stageStatePath(slug, stage)
-	const state = readJson(path)
-	const iters = readIterations(state)
+	const iters = readStageIterations(slug, stage)
 	const now = timestamp()
 	if (iters.length > 0) {
 		const last = iters[iters.length - 1]
-		if (!last.completed_at) last.completed_at = now
-		if (!last.result) last.result = prevResult
+		if (!last.completed_at) {
+			// Implicit close of the prior open iteration. Record the
+			// close line so the JSONL log stays a faithful event stream.
+			appendIterationLogLine(slug, stage, {
+				kind: "close",
+				at: now,
+				result: prevResult,
+			})
+		}
 	}
 	const signature = entry.feedbackTitles
 		? computeFeedbackSignature(entry.feedbackTitles)
 		: ""
+	appendIterationLogLine(slug, stage, {
+		kind: "open",
+		at: now,
+		trigger: entry.trigger,
+		...(entry.reason ? { reason: entry.reason } : {}),
+		...(signature ? { feedback_signature: signature } : {}),
+	})
 	iters.push({
 		index: iters.length + 1,
 		started_at: now,
@@ -2969,11 +3096,6 @@ export function appendStageIteration(
 		...(entry.reason ? { reason: entry.reason } : {}),
 		...(signature ? { feedback_signature: signature } : {}),
 	})
-	state.iterations = iters
-	// Maintain `visits` as a shadow for any legacy reader that still
-	// dereferences it. New code should use getStageIterationCount.
-	state.visits = iters.length
-	writeJson(path, state)
 
 	const count = iters.length
 	const isAgentInvoked =
@@ -3011,29 +3133,24 @@ export function closeCurrentStageIteration(
 	result: StageIterationResult,
 	reason?: string,
 ): void {
-	const path = stageStatePath(slug, stage)
-	const state = readJson(path)
-	const iters = readIterations(state)
+	const iters = readStageIterations(slug, stage)
+	const now = timestamp()
 	if (iters.length === 0) {
-		// No prior iteration recorded — synthesize an "initial" one so the
-		// history isn't blank.
-		iters.push({
-			index: 1,
-			started_at: timestamp(),
-			completed_at: timestamp(),
+		// No prior iteration recorded — synthesize "open" + "close" so
+		// the history isn't blank. Two writes keeps the event-stream
+		// shape consistent with the normal advance path.
+		appendIterationLogLine(slug, stage, {
+			kind: "open",
+			at: now,
 			trigger: "initial",
-			result,
-			...(reason ? { reason } : {}),
 		})
-	} else {
-		const last = iters[iters.length - 1]
-		if (!last.completed_at) last.completed_at = timestamp()
-		last.result = result
-		if (reason) last.reason = reason
 	}
-	state.iterations = iters
-	state.visits = iters.length
-	writeJson(path, state)
+	appendIterationLogLine(slug, stage, {
+		kind: "close",
+		at: now,
+		result,
+		...(reason ? { reason } : {}),
+	})
 }
 
 // ── Unit iteration tracking ────────────────────────────────────────────────
@@ -4317,9 +4434,20 @@ export function syncSessionMetadata(
 
 		let phase = ""
 		if (activeStage) {
-			const sf = stageStatePath(intent, activeStage)
-			const stageState = readJson(sf)
-			phase = (stageState.phase as string) || ""
+			// v4: phase is derived, not read from state.json (which is dead).
+			const intentMode =
+				typeof intentData.mode === "string" &&
+				(intentData.mode as string).length > 0
+					? (intentData.mode as string)
+					: "continuous"
+			const derived = deriveStageState({
+				slug: intent,
+				studio,
+				stage: activeStage,
+				intentDir: join(root, "intents", intent),
+				intentMode,
+			})
+			phase = derived.phase ?? ""
 		}
 
 		let activeUnit: string | null = null
@@ -4582,26 +4710,11 @@ export function persistDesignDirectionSelection(opts: {
 		nn++
 	}
 
-	const ssPath = stageStatePath(opts.slug, opts.stage)
-	const ssData = readJson(ssPath)
-	ssData.design_direction_selected = true
-	ssData.design_direction_selected_at = timestamp()
-	ssData.design_direction = {
-		archetype: opts.archetype,
-		...(opts.comments ? { comments: opts.comments } : {}),
-		...(persisted.length > 0 ? { annotations: persisted } : {}),
-	}
-	// Drop any prior surfaced flag so the next run_next emits the
-	// recovery action against this fresh selection.
-	delete ssData.design_direction_surfaced
-	writeJson(ssPath, ssData)
-
-	// P3 (2026-05-06): also stamp the selection on intent.md
-	// frontmatter as `design_directions: { <stage>: { archetype, at } }`.
-	// The v4 cursor reads intent.md (not state.json) for the
-	// `requires_design_direction` gate check. Without this stamp, a v4
-	// stage would re-emit `design_direction_required` after every
-	// pick_design_direction call.
+	// v4: the design-direction selection is stamped on intent.md FM
+	// (see below) and the manifest written at
+	// `stages/<stage>/artifacts/design-direction.md`. Both are what
+	// the cursor reads. The state.json write the v3 picker did is
+	// deleted — the file no longer exists in v4 and nothing reads it.
 	try {
 		const intentMdPath = join(intentDir(opts.slug), "intent.md")
 		if (existsSync(intentMdPath)) {
@@ -4756,25 +4869,10 @@ export function persistDesignDirectionUploads(opts: {
 		nn++
 	}
 
-	const ssPath = stageStatePath(opts.slug, opts.stage)
-	const ssData = readJson(ssPath)
-	ssData.design_direction_selected = true
-	ssData.design_direction_selected_at = timestamp()
-	ssData.design_direction = {
-		mode: "upload",
-		...(opts.comments ? { comments: opts.comments } : {}),
-		uploads,
-	}
-	delete ssData.design_direction_surfaced
-	writeJson(ssPath, ssData)
-
-	// v4 cursor reads intent.md (not state.json) for the
-	// `requires_design_direction` gate check. Stamp the upload payload
-	// onto `design_directions[<stage>]` with `mode: "upload"` so the
-	// surface-once branch in cursor.ts emits `design_direction_uploaded`
-	// before elaborate. Without this stamp, an upload submission would
-	// satisfy state.json but the v4 cursor would keep emitting
-	// `design_direction_required`.
+	// v4: the upload-mode selection is stamped on intent.md FM (see
+	// below) and the same artifact directory holds the upload files.
+	// The state.json write the v3 picker did is deleted — the file no
+	// longer exists in v4 and nothing reads it.
 	try {
 		const intentMdPath = join(intentDir(opts.slug), "intent.md")
 		if (existsSync(intentMdPath)) {
@@ -5052,14 +5150,15 @@ export function writeFeedbackFile(
 	const authorType = deriveAuthorType(origin)
 	const author = opts.author || deriveDefaultAuthor(origin)
 
-	// Read current iteration count from stage state (intent-scope
-	// feedback has no stage state — use 0 as a neutral sentinel so the
-	// numbering stays deterministic).
+	// Read current iteration count from the per-stage iterations log,
+	// falling back to legacy state.json when present (test fixtures
+	// and pre-v4 intents). Intent-scope feedback has no stage — use 0
+	// as a neutral sentinel so the numbering stays deterministic.
 	let iteration = 0
 	if (stage) {
 		const stateFile = stageStatePath(slug, stage)
-		const stageState = readJson(stateFile)
-		iteration = getStageIterationCount(stageState)
+		const fallback = existsSync(stateFile) ? readJson(stateFile) : {}
+		iteration = getStageIterationCount(fallback, slug, stage)
 	}
 
 	// Persist a sidecar attachment if the caller passed one. Filename is
@@ -6518,7 +6617,7 @@ Forbidden FM fields (workflow-driven, mutating these returns \`fsm_field_forbidd
 	{
 		name: "haiku_stage_set",
 		description:
-			"Set a field on a stage's state.json. Engine-internal — every field in STAGE_STATE_SCHEMA is workflow-managed (status, phase, started_at, completed_at, gate_entered_at, gate_outcome, visits, iterations, etc). Agent calls are rejected with `stage_field_engine_only`. Reserved for future engine-internal routing and operator break-glass paths.",
+			"Set a field on stage state. v4: stage state.json is dead — status / phase / gate_outcome / etc. derive from per-unit FM and branch-merge state. This tool stays as a no-op-with-stable-error so legacy callers get a clean rejection. Agent calls return `stage_field_engine_only`.",
 		inputSchema: jsonSchemaOf(HAIKU_STAGE_SET_INPUT_SCHEMA),
 		outputSchema: {
 			type: "object",
@@ -7018,12 +7117,46 @@ export function handleStateTool(
 				"haiku_stage_get",
 			)
 			if (stageGetInputErr) return stageGetInputErr
-			const path = stageStatePath(args.intent as string, args.stage as string)
-			const data = readJson(path)
-			const val = data[args.field as string]
+			// v4: stage state is derived on demand from per-unit FM +
+			// branch-merge state. No state.json read — the file is
+			// migrator-deleted. Fields the derivation knows about are
+			// returned as derived values; everything else (decision_log,
+			// design_direction, upstream_reconciliation_*, etc.) returns
+			// null until those disk-artifact homes land.
+			const intentSlug = args.intent as string
+			const stageName = args.stage as string
+			const fieldName = args.field as string
+			const intentFile = join(intentDir(intentSlug), "intent.md")
+			const intentFm = existsSync(intentFile)
+				? parseFrontmatter(readFileSync(intentFile, "utf8")).data
+				: ({} as Record<string, unknown>)
+			const studio = (intentFm.studio as string) || ""
+			const intentMode =
+				typeof intentFm.mode === "string" && (intentFm.mode as string).length > 0
+					? (intentFm.mode as string)
+					: "continuous"
+			const derived = deriveStageState({
+				slug: intentSlug,
+				studio,
+				stage: stageName,
+				intentDir: intentDir(intentSlug),
+				intentMode,
+			})
+			const knownFields: Record<string, unknown> = {
+				stage: derived.stage,
+				status: derived.status,
+				phase: derived.phase ?? "",
+				started_at: derived.started_at,
+				completed_at: derived.completed_at,
+				gate_outcome: derived.gate_outcome,
+				visits: derived.visits,
+			}
+			const val = Object.hasOwn(knownFields, fieldName)
+				? knownFields[fieldName]
+				: null
 			return reply({
 				found: val != null,
-				field: args.field as string,
+				field: fieldName,
 				value: val == null ? null : (val as unknown),
 			})
 		}
@@ -8402,25 +8535,19 @@ export function handleStateTool(
 					{ isError: true },
 				)
 			}
-			const stageDir = join(intentDir(intentArg), "stages", stage)
-			const stateFile = join(stageDir, "state.json")
-			if (!existsSync(stateFile)) {
-				return reply(
-					{
-						error: "stage_state_missing",
-						message: `Stage state file not found: ${stateFile}`,
-					},
-					{ isError: true },
-				)
-			}
-			const reconState = readJson(stateFile) as Record<string, unknown>
-			reconState.upstream_reconciliation_acknowledged = true
-			reconState.upstream_reconciliation_acknowledged_at = timestamp()
-			reconState.upstream_reconciliation_rationale = rationale
-			const reconLog = ((reconState.decision_log as unknown[]) || []) as Array<
-				Record<string, unknown>
-			>
-			reconLog.push({
+			// v4: write to a dedicated per-stage marker
+			// `stages/<stage>/upstream-reconciliation.json` and append a
+			// line to `stages/<stage>/decisions.jsonl`. No state.json
+			// touch — the file no longer exists in v4.
+			const reconStageDir = join(intentDir(intentArg), "stages", stage)
+			mkdirSync(reconStageDir, { recursive: true })
+			const reconMarkerFile = join(reconStageDir, "upstream-reconciliation.json")
+			writeJson(reconMarkerFile, {
+				acknowledged: true,
+				acknowledged_at: timestamp(),
+				rationale,
+			})
+			appendDecisionLogLine(intentArg, stage, {
 				decision: "Upstream reconciliation acknowledged",
 				options: ["reconcile upstream artifacts", "acknowledge divergence"],
 				choice: "acknowledge divergence",
@@ -8429,8 +8556,6 @@ export function handleStateTool(
 				kind: "upstream_reconciliation",
 				recorded_at: timestamp(),
 			})
-			reconState.decision_log = reconLog
-			writeJson(stateFile, reconState)
 			sealIntentState(intentArg)
 			emitTelemetry("haiku.reconciliation.acknowledged", {
 				intent: intentArg,
@@ -8465,21 +8590,14 @@ export function handleStateTool(
 				)
 			}
 
-			const stageDir = join(intentDir(intentArg), "stages", stage)
-			const stateFile = join(stageDir, "state.json")
-			if (!existsSync(stateFile)) {
-				return reply(
-					{
-						error: "stage_state_missing",
-						message: `Stage state file not found: ${stateFile}`,
-					},
-					{ isError: true },
-				)
-			}
-			const stageState = JSON.parse(readFileSync(stateFile, "utf8")) as Record<
-				string,
-				unknown
-			>
+			// v4: no state.json. Decision data lives in two disk artifacts:
+			//   - `stages/<stage>/no-decisions.json` — set by the
+			//     `no_decisions: true` branch below
+			//   - `stages/<stage>/decisions.jsonl` — appended by the
+			//     `decision_log` branch below
+			// Both are stage-scoped and engine-managed.
+			const decisionStageDir = join(intentDir(intentArg), "stages", stage)
+			mkdirSync(decisionStageDir, { recursive: true })
 
 			const noDecisions = args.no_decisions === true
 			const rationale = (args.rationale as string | undefined)?.trim()
@@ -8495,10 +8613,12 @@ export function handleStateTool(
 						{ isError: true },
 					)
 				}
-				stageState.elaboration_no_decisions = true
-				stageState.elaboration_no_decisions_rationale = rationale
-				stageState.elaboration_no_decisions_at = timestamp()
-				writeJson(stateFile, stageState)
+				const noDecisionsMarker = join(decisionStageDir, "no-decisions.json")
+				writeJson(noDecisionsMarker, {
+					declared: true,
+					declared_at: timestamp(),
+					rationale,
+				})
 				sealIntentState(intentArg)
 				emitTelemetry("haiku.elaboration.no_decisions_declared", {
 					intent: intentArg,
@@ -8561,10 +8681,7 @@ export function handleStateTool(
 				)
 			}
 
-			const log = ((stageState.decision_log as unknown[]) || []) as Array<
-				Record<string, unknown>
-			>
-			log.push({
+			appendDecisionLogLine(intentArg, stage, {
 				decision,
 				options,
 				choice,
@@ -8572,8 +8689,7 @@ export function handleStateTool(
 				rationale: rationale || null,
 				recorded_at: timestamp(),
 			})
-			stageState.decision_log = log
-			writeJson(stateFile, stageState)
+			const decisionCount = readDecisionLog(intentArg, stage).length
 			sealIntentState(intentArg)
 			emitTelemetry("haiku.decision.recorded", {
 				intent: intentArg,
@@ -8584,7 +8700,7 @@ export function handleStateTool(
 				ok: true,
 				intent: intentArg,
 				stage,
-				decision_count: log.length,
+				decision_count: decisionCount,
 			})
 		}
 

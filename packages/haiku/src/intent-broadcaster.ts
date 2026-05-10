@@ -15,9 +15,10 @@
 //
 // Events are best-effort: a missed broadcast is recoverable via the
 // SPA's existing `/api/session/:id` poll fallback. The broadcaster is
-// not the source of truth — state.json + intent.md are. The SPA
-// reduces events on top of an initial snapshot fetched from the API
-// and resyncs on WS reconnect.
+// not the source of truth — intent.md FM + per-unit FM + branch-merge
+// state are (v4: state.json is dead). The SPA reduces events on top
+// of an initial snapshot fetched from the API and resyncs on WS
+// reconnect.
 
 import { EventEmitter } from "node:events"
 

@@ -75,7 +75,6 @@ import {
 	parseFrontmatter,
 	readJson,
 	setFrontmatterField,
-	stageStatePath,
 	syncSessionMetadata,
 	writeJson,
 } from "../../state-tools.js"
@@ -195,19 +194,24 @@ export default defineTool({
 		const activeStage = (intentMeta.active_stage as string) || ""
 		const intentPhase = (intentMeta.phase as string) || ""
 
-		// Gate-pointer source: stage state.json for stage-scope gates,
-		// intent.md frontmatter for intent-scope gates (intent_review
-		// pre-stage, intent_completion post-final). Pre-stage
-		// intent_review has no active_stage yet — pointers live on
-		// intent.md only.
+		// Gate-pointer source: per-stage `gate-session.json` for
+		// stage-scope gates, intent.md frontmatter for intent-scope
+		// gates (intent_review pre-stage, intent_completion post-final).
+		// v4: state.json is gone; gate session pointers live on the
+		// dedicated disk artifact.
 		const isIntentScopeGate =
 			!activeStage ||
 			intentPhase === "intent_review" ||
 			intentPhase === "awaiting_completion_review" ||
 			intentPhase === "intent_completion"
 
-		const ssPath = activeStage ? stageStatePath(slug, activeStage) : ""
-		const stageState: Record<string, unknown> = ssPath ? readJson(ssPath) : {}
+		const gateSessionFile = activeStage
+			? join(intentDir(slug), "stages", activeStage, "gate-session.json")
+			: ""
+		const stageState: Record<string, unknown> =
+			gateSessionFile && existsSync(gateSessionFile)
+				? readJson(gateSessionFile)
+				: {}
 
 		const stagePersistedSid =
 			(stageState.gate_review_session_id as string | undefined) || ""
@@ -274,17 +278,17 @@ export default defineTool({
 		// Clear the persisted session pointers as soon as the await tool
 		// owns the wait — even if the wait throws, we don't want stale
 		// state to suggest an open session that's no longer in memory.
-		// Stage-scope pointers live on stage state.json; intent-scope
-		// pointers live on intent.md frontmatter.
+		// Stage-scope pointers live on the per-stage gate-session.json;
+		// intent-scope pointers live on intent.md frontmatter.
 		try {
-			if (ssPath) {
-				const ss = readJson(ssPath)
+			if (gateSessionFile && existsSync(gateSessionFile)) {
+				const ss = readJson(gateSessionFile)
 				delete ss.gate_review_session_id
 				delete ss.gate_review_url
 				delete ss.gate_review_context
 				delete ss.gate_review_next_stage
 				delete ss.gate_review_next_phase
-				writeJson(ssPath, ss)
+				writeJson(gateSessionFile, ss)
 			}
 			if (isIntentScopeGate) {
 				deleteFrontmatterFields(intentMd, [

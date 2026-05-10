@@ -13,7 +13,16 @@ import {
 	writeFileSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
+
+// Point CLAUDE_PLUGIN_ROOT at the repo's plugin/ dir so the v4
+// derived-state path can resolve studio config (resolveStageHats,
+// readReviewAgentPaths). Without this, the haiku_stage_get tests
+// silently see hats=[] and route through the wrong derivation branch.
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+process.env.CLAUDE_PLUGIN_ROOT = resolve(__dirname, "..", "..", "..", "plugin")
 
 import {
 	getIntentScopeTickCounter,
@@ -888,16 +897,25 @@ body
 
 	console.log("\n=== haiku_stage_get ===")
 
-	test("reads phase from stage state", () => {
+	test("reads phase derived from per-unit FM (v4)", () => {
+		// v4: phase is derived from per-unit FM, not state.json. The
+		// fixture's units have no iterations[] yet — derivation reports
+		// "execute" because hats are configured but no unit has run
+		// terminal-advance. The test fixture pre-dates v4's per-unit
+		// signal; the assertion follows what v4 actually computes from
+		// the on-disk shape.
 		const result = handleStateTool("haiku_stage_get", {
 			intent: intentSlug,
 			stage: "inception",
 			field: "phase",
 		})
-		assert.strictEqual(JSON.parse(getTextResult(result)).value, "elaborate")
+		assert.strictEqual(JSON.parse(getTextResult(result)).value, "execute")
 	})
 
-	test("reads status from stage state", () => {
+	test("reads status derived from per-unit FM (v4)", () => {
+		// v4: status comes from per-unit completion + branch-merge state.
+		// In fs mode (this fixture), a stage with units that aren't all
+		// fully signed is "active".
 		const result = handleStateTool("haiku_stage_get", {
 			intent: intentSlug,
 			stage: "inception",
@@ -906,7 +924,10 @@ body
 		assert.strictEqual(JSON.parse(getTextResult(result)).value, "active")
 	})
 
-	test("returns null for missing stage field", () => {
+	test("returns null for fields not in the v4 derivation set", () => {
+		// v4: `decision_log`, `design_direction`, etc. don't have
+		// disk-artifact homes yet — the tool returns null until those
+		// migrations land.
 		const result = handleStateTool("haiku_stage_get", {
 			intent: intentSlug,
 			stage: "inception",
@@ -917,15 +938,19 @@ body
 		assert.strictEqual(parsed.value, null)
 	})
 
-	test("returns null for missing stage directory", () => {
+	test("a stage that doesn't exist on disk derives as pending/elaborate", () => {
+		// v4: derivation of a stage with no units returns
+		// `status: "pending", phase: "elaborate"` — the "nothing
+		// happened yet" answer. Unlike v3's "missing state.json → null"
+		// behavior, v4 always has a derived answer.
 		const result = handleStateTool("haiku_stage_get", {
 			intent: intentSlug,
 			stage: "nonexistent",
-			field: "phase",
+			field: "status",
 		})
 		const parsed = JSON.parse(getTextResult(result))
-		assert.strictEqual(parsed.found, false)
-		assert.strictEqual(parsed.value, null)
+		assert.strictEqual(parsed.found, true)
+		assert.strictEqual(parsed.value, "pending")
 	})
 
 	// ── haiku_unit_get ────────────────────────────────────────────────────────
@@ -1462,17 +1487,21 @@ body
 		assert.strictEqual(parsed.ok, true)
 		assert.strictEqual(parsed.decision_count, 1)
 
-		// State file should have decision_log appended
-		const state = JSON.parse(
-			readFileSync(
-				join(intentDirPath, "stages", "inception", "state.json"),
-				"utf8",
-			),
+		// v4: decision log lives in stages/<stage>/decisions.jsonl,
+		// not on state.json. Each decision is one JSON line.
+		const decisionsPath = join(
+			intentDirPath,
+			"stages",
+			"inception",
+			"decisions.jsonl",
 		)
-		assert.ok(Array.isArray(state.decision_log))
-		assert.strictEqual(state.decision_log.length, 1)
-		assert.strictEqual(state.decision_log[0].source, "user")
-		assert.strictEqual(state.decision_log[0].choice, "OAuth 2.0 + PKCE")
+		const lines = readFileSync(decisionsPath, "utf8")
+			.split("\n")
+			.filter((l) => l.trim())
+			.map((l) => JSON.parse(l))
+		assert.strictEqual(lines.length, 1)
+		assert.strictEqual(lines[0].source, "user")
+		assert.strictEqual(lines[0].choice, "OAuth 2.0 + PKCE")
 	})
 
 	test("records an autonomous-acknowledged decision", () => {
@@ -1563,14 +1592,17 @@ body
 		assert.strictEqual(parsed.ok, true)
 		assert.strictEqual(parsed.no_decisions, true)
 
-		const state = JSON.parse(
-			readFileSync(
-				join(intentDirPath, "stages", "inception", "state.json"),
-				"utf8",
-			),
+		// v4: no_decisions lives at stages/<stage>/no-decisions.json,
+		// not on state.json.
+		const noDecPath = join(
+			intentDirPath,
+			"stages",
+			"inception",
+			"no-decisions.json",
 		)
-		assert.strictEqual(state.elaboration_no_decisions, true)
-		assert.ok(state.elaboration_no_decisions_rationale.length > 10)
+		const noDec = JSON.parse(readFileSync(noDecPath, "utf8"))
+		assert.strictEqual(noDec.declared, true)
+		assert.ok(noDec.rationale.length > 10)
 	})
 
 	test("rejects no_decisions without rationale", () => {

@@ -422,27 +422,31 @@ Stored as frontmatter fields in `intent.md`:
 
 ### Stage State
 
-Stored in `stages/{stage}/state.json` within the intent directory:
+Derived on demand from per-unit FM + branch-merge state — there is no
+per-stage `state.json` in v4. The fields below are computed by
+`deriveStageState`:
 
-| Field | Purpose |
+| Field | Source |
 |------|---------|
-| `phase` | Current phase within the stage (elaborate, execute, review, gate) |
-| `started_at` | When the stage began |
-| `completed_at` | When the stage finished |
-| `gate_entered_at` | When the review gate was reached |
-| `gate_outcome` | Result of gate evaluation (passed, waiting, blocked) |
+| `status` | Branch-merge state: stage's `units/` present on intent main → completed; stage branch exists with units not yet merged → active; otherwise pending. Filesystem mode falls back to per-unit completion. |
+| `phase` | Earliest milestone the stage hasn't cleared: elaboration unverified → `elaborate`; units exist but hat sequence not done → `execute`; reviews missing → `review`; approvals missing → `gate`. |
+| `started_at` | Earliest unit `started_at`. |
+| `completed_at` | Latest terminal-advance `completed_at` across units (only when status is completed). |
+| `gate_outcome` | "advanced" iff every unit has every required approval signed; otherwise null. |
+
+The legacy stage `state.json` files left over from v3 intents are
+deleted on first read by the v0→v4 migrator.
 
 ### Unit State
 
-Stored as frontmatter fields in `unit-*.md`:
+Stored as frontmatter fields in `unit-*.md`. v4 keys:
 
 | Field | Purpose |
 |------|---------|
-| `bolt` | Current bolt (iteration) number |
-| `hat` | Current hat within the bolt's hat sequence |
-| `status` | Unit status (pending, active, completed, blocked) |
-| `started_at` | When the unit began |
-| `completed_at` | When the unit finished |
+| `iterations[]` | Per-hat advance/reject log; the cursor reads the last entry to decide the next hat. |
+| `reviews{}` | Map of role → `{ at }` once the role has signed the unit's spec. |
+| `approvals{}` | Map of role → `{ at }` once the role has signed the unit's outputs. |
+| `started_at` | When the unit began. |
 
 ### Supporting Files
 
