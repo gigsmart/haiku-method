@@ -119,11 +119,11 @@ function listMdFilesFromGitRef(ref: string, dirPath: string): string[] {
  *  loading is checkout-independent — when the working tree is on
  *  intent main, the stage branch's in-flight units would otherwise
  *  be invisible and `derivePhase` would falsely report `elaborate`.
- *  Falls back to disk listing if `ls-tree` returns empty (the stage
- *  branch may not have any units yet). */
+ *  Returns `[]` when the units directory is missing or empty on
+ *  the ref. The disk fallback for fs-mode lives in `deriveStageState`
+ *  (when `refForPhase` is null), not here. */
 function listUnitsFromGitRef(
 	ref: string,
-	intentDir: string,
 	slug: string,
 	stage: string,
 ): DerivedUnitView[] {
@@ -251,7 +251,7 @@ export function deriveStageState(args: {
 	// working-tree checkout doesn't change the answer. In fs mode,
 	// fall back to the working tree (it IS the canonical view).
 	const units = refForPhase
-		? listUnitsFromGitRef(refForPhase, intentDir, slug, stage)
+		? listUnitsFromGitRef(refForPhase, slug, stage)
 		: listUnitsFromDisk(stageDir)
 
 	// Branch-merge signal. Tri-state from the pure function's POV:
