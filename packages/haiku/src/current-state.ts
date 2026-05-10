@@ -65,7 +65,8 @@ function readIntentFm(
 // state.json file is migrator-deleted and the engine no longer
 // recreates it.
 
-/** Resolve the current state of an intent from per-stage state.json.
+/** Resolve the current state of an intent from per-stage derived state
+ *  (v4: per-unit FM + branch-merge state via `deriveStageState`).
  *  Returns null when the intent does not exist or has no studio set
  *  (callers can treat this as "intent not found").
  *

@@ -73,8 +73,8 @@ export async function runRepairAgent(
 					// mechanism that corrupted unit FM (agent edits a single
 					// field, gray-matter rewrites, scoped writes silently
 					// transform YAML lists into JSON-stuffed scalars). Write is
-					// kept for state.json synthesis and discovery stub creation;
-					// the system prompt forbids writing to unit/feedback paths.
+					// kept for discovery-stub creation only; the system prompt
+					// forbids writing to unit/feedback/state.json paths.
 					allowedTools: ["Read", "Write", "Glob", "Grep"],
 					disallowedTools: ["Bash", "Agent", "WebSearch", "WebFetch", "Edit"],
 					permissionMode: "dontAsk",
@@ -134,14 +134,14 @@ You only have \`Read\`, \`Write\`, \`Glob\`, and \`Grep\` (Edit, Bash, Agent, We
 ### Write-path allowlist (anything outside is forbidden)
 
 - \`intent.md\` — frontmatter edits only; preserve body prose verbatim.
-- \`stages/*/state.json\` — synthesize completion records, fix gate_outcome, etc.
 - \`knowledge/*.md\` — create missing discovery artifact stubs (frontmatter-only) when downstream stages expect them.
-- \`stages/*/state.json\` for stages that don't yet have a directory — create the dir + the file together.
 
 ### Write-path denylist (touch ⇒ corruption)
 
+- \`stages/*/state.json\` — DEAD in v4. The migrator deletes any pre-existing files. Stage status, phase, and gate outcome are derived on demand from per-unit FM (\`iterations[]\`, \`reviews{}\`, \`approvals{}\`) plus branch-merge state. Writing state.json is a no-op the engine never reads back; flag the stage for human attention instead.
 - \`stages/*/units/*.md\` — workflow-managed. Mechanical pre-tick repair has already populated any missing \`inputs:\` field before you were invoked. If you think a unit needs changes, that is OUT OF SCOPE — flag it for human attention.
 - \`stages/*/feedback/*.md\` — workflow-managed.
+- \`stages/*/iterations.jsonl\`, \`stages/*/decisions.jsonl\`, \`stages/*/no-decisions.json\`, \`stages/*/upstream-reconciliation.json\`, \`stages/*/gate-session.json\` — engine-owned sidecar artifacts.
 - Source code, tests, application files anywhere — never.
 
 ### Other rules
@@ -161,11 +161,13 @@ knowledge/                         # Shared knowledge artifacts
   DISCOVERY.md                     # Domain research from inception
 stages/
   {stage-name}/
-    state.json                     # Stage workflow state
+    elaboration.md                 # (v4) Per-stage conversation gate artifact
     units/
       unit-01-slug.md              # Unit files with YAML frontmatter
       unit-02-slug.md
     artifacts/                     # Stage-specific outputs (optional)
+    iterations.jsonl               # (v4) Per-stage iteration log — engine-owned
+    decisions.jsonl                # (v4) haiku_decision_record log — engine-owned
 \`\`\`
 
 ### intent.md Frontmatter
@@ -183,26 +185,6 @@ completed_at: null
 ---
 \`\`\`
 
-### state.json Format
-
-Each stage has a \`state.json\` that tracks the stage workflow:
-
-\`\`\`json
-{
-  "stage": "inception",
-  "status": "completed",       // One of: pending, active, completed
-  "phase": "gate",             // One of: elaborate, execute, review, gate
-  "started_at": "2025-01-15T00:00:00Z",
-  "completed_at": "2025-01-16T00:00:00Z",
-  "gate_entered_at": null,
-  "gate_outcome": "advanced"   // One of: advanced, blocked, requested_changes, or null
-}
-\`\`\`
-
-For a completed stage: status = "completed", phase = "gate", gate_outcome = "advanced".
-For an active stage: status = "active", phase is one of elaborate/execute/review/gate.
-For a pending stage: status = "pending", phase = "" or absent.
-
 ### Unit Frontmatter (READ-ONLY for this agent)
 
 Unit files in \`stages/*/units/*.md\` are workflow-managed. **You do not edit them.** They show up here only so you understand what a healthy unit looks like when reading state.
@@ -213,12 +195,15 @@ The following stages are defined in the studio. Each stage's \`inputs:\` field i
 
 ${stageDefinitions}
 
-## Valid Values Reference
+## v4 Stage State (read-only, derived)
 
-- Stage status: \`pending\`, \`active\`, \`completed\`
-- Stage phase: \`elaborate\`, \`execute\`, \`review\`, \`gate\` (or empty string for pending)
-- Gate outcome: \`advanced\`, \`blocked\`, \`requested_changes\`, or \`null\`
-- Unit status: \`pending\`, \`active\`, \`completed\`
+Stage status, phase, and gate outcome are derived by the workflow engine on demand from per-unit FM and branch-merge state. There is no \`state.json\` to read or write — the v0→v4 migrator deletes the file. The derivation:
+
+- **status**: branch-merge state in git mode (does intent main carry the stage's units?), otherwise per-unit completion (every unit terminal-advanced + every required approval signed).
+- **phase**: the earliest milestone the stage hasn't cleared — elaborate (no verified \`elaboration.md\` or no units), execute (units exist but hat sequence not done), review (all hats done but reviews missing), gate (reviews signed but approvals missing).
+- **gate_outcome**: \`"advanced"\` iff every unit has every required approval signed; otherwise \`null\`.
+
+If a stage looks "stuck" you suspect should be marked complete: the per-unit FM is the truth, not state.json. Flag the stage in your end-of-run summary; do not invent a state.json.
 
 ## Working Directory
 
@@ -244,31 +229,26 @@ function buildTaskPrompt(diagnosis: RepairDiagnosis): string {
 		sections.push(
 			`## Already Fixed (Mechanical Synthesis)
 
-The following stages had no units and were automatically marked as completed with synthesized completion records:
-${diagnosis.synthesizedStages.map((s) => `- **${s}**: state.json created with status=completed, gate_outcome=advanced`).join("\n")}
+The following stages had no units and were skipped — the v4 cursor will treat them as already-merged when intent main carries no units for them:
+${diagnosis.synthesizedStages.map((s) => `- **${s}**`).join("\n")}
 
-No action needed for these stages — they are done.`,
+No action needed for these stages.`,
 		)
 	}
 
 	// Stages that need manual review
 	if (diagnosis.needsManualReview.length > 0) {
 		sections.push(
-			`## Stages Needing Review
+			`## Stages Needing Review (read-only)
 
-The following stages have units but are NOT marked as completed. Examine each stage:
+The following stages have units that the v4 cursor cannot mark complete on its own (per-unit FM doesn't yet show terminal advance + every required approval):
 
 ${diagnosis.needsManualReview.map((s) => `- **${s}**`).join("\n")}
 
-For each stage listed above:
-1. Read the stage's \`state.json\` (at \`stages/${"{stage}"}/state.json\`)
-2. Read all unit files in \`stages/${"{stage}"}/units/\`
-3. If ALL units have \`status: completed\`, the stage is legitimately complete — update state.json:
-   - Set \`status\` to \`"completed"\`
-   - Set \`phase\` to \`"gate"\`
-   - Set \`gate_outcome\` to \`"advanced"\`
-   - Set \`completed_at\` to the current timestamp
-4. If some units are still pending/active, leave the stage as-is but make sure state.json exists with \`status: "active"\``,
+**Do NOT write state.json or unit files.** Stage status is derived in v4 — there is no file you can edit to mark a stage complete. For each stage listed above:
+1. Read the unit files in \`stages/${"{stage}"}/units/\` (read-only).
+2. Note in your end-of-run summary: which units appear stuck, what hat sequence they're missing, what role hasn't signed approval.
+3. The user will resolve manually via \`haiku_run_next\` ticks (or \`/haiku:revisit\` if a stage needs to be re-opened).`,
 		)
 	}
 
@@ -326,8 +306,8 @@ ${missingDiscovery
 		`## When Done
 
 After making all repairs, summarize:
-1. Which state.json files were updated and what changed
-2. Which discovery artifact stubs were created (and their paths)
+1. Which discovery artifact stubs were created (and their paths)
+2. Which stages are stuck and why (read-only observations only — do not write state.json)
 3. Any issues that could not be automatically resolved and need human attention (residual unit \`inputs:\` problems, unit content concerns, anything you spotted but cannot touch)`,
 	)
 

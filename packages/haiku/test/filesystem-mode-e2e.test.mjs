@@ -11,10 +11,12 @@
 //     real git commit; the drift system itself works in fs mode and
 //     is covered by drift-no-false-positives.
 //
-// Stage progression in fs mode is tracked by `intent.md.stages_merged`
-// (a list of stage names that the engine appends to when run_next
-// executes its merge_stage handler). The cursor's firstUnmergedStage
-// returns the first stage NOT in that list.
+// Stage progression in fs mode is determined by per-unit signature
+// state. The cursor's `firstUnmergedStage` uses `isStageFullySigned`
+// (terminal hat advance + every required approval role signed) to
+// walk past completed stages. The `merge_stage` handler in fs mode
+// is a no-op that re-ticks without writing anything; the cursor
+// observes the next call's input as already-signed and advances.
 
 import assert from "node:assert/strict"
 import {
@@ -277,18 +279,11 @@ function applyResponse(intentDir, action) {
 			break
 		}
 		case "merge_stage": {
-			// In fs mode the engine appends to intent.md.stages_merged
-			// rather than running git merge. Mirror that here so the
-			// cursor's firstUnmergedStage advances on the next tick.
-			const intentMd = join(intentDir, "intent.md")
-			const fm = readFm(intentMd)
-			const merged = Array.isArray(fm.stages_merged) ? fm.stages_merged : []
-			if (!merged.includes(stage)) {
-				writeFm(intentMd, {
-					...fm,
-					stages_merged: [...merged, stage],
-				})
-			}
+			// In fs mode this is a no-op. The cursor's `isStageFullySigned`
+			// already returns true (terminal hat advance + approvals all
+			// signed), so the next tick walks past via `firstUnmergedStage`
+			// without anything written here. Kept as an explicit case to
+			// document the contract.
 			break
 		}
 		default:

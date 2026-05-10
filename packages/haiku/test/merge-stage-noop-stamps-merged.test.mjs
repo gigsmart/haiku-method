@@ -6,18 +6,18 @@
 // the source branch is missing locally and on origin (Bug D's recovery
 // path). Without this test's contract, the haiku_run_next while-loop
 // would re-call `dispatchOrchestratorAction`, get the same `merge_stage`
-// action back (because `stages_merged` is absent from intent.md and
-// `isStageBranchMerged` returns false on a missing branch), call the
-// merge function again, etc — spinning forever within a single tool
-// invocation.
+// action back, call the merge function again, etc — spinning forever
+// within a single tool invocation.
 //
 // The contract this test pins:
 //   1. The merge function flags no-op success with `noop: true` so
 //      callers can detect the case without string-matching the message.
-//   2. Calling code (haiku_run_next) is responsible for stamping
-//      `stages_merged` after a no-op so the next dispatch advances
-//      the cursor past the now-stamped stage. Tested via a direct
-//      cursor walk after stamping.
+//   2. Calling code (haiku_run_next) re-ticks after a no-op; the
+//      cursor walks past via unit files already on intent main from
+//      the original v3 merge (or, in fs mode, via per-unit signature
+//      state). No `stages_merged` stamp needed — the field is dead in
+//      v4. Tested via a direct cursor walk after writing the units to
+//      intent main's view.
 
 import assert from "node:assert"
 import { execFileSync } from "node:child_process"

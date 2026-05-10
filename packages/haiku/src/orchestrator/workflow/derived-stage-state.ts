@@ -40,26 +40,100 @@ export type {
 	DerivedStageStatus,
 }
 
-function readFm(path: string): Record<string, unknown> | null {
-	if (!existsSync(path)) return null
+function parseFm(raw: string): Record<string, unknown> | null {
 	try {
-		const raw = readFileSync(path, "utf8")
 		return matter(raw).data as Record<string, unknown>
 	} catch {
 		return null
 	}
 }
 
-function listUnits(stageDir: string): DerivedUnitView[] {
+function readFmFromDisk(path: string): Record<string, unknown> | null {
+	if (!existsSync(path)) return null
+	try {
+		return parseFm(readFileSync(path, "utf8"))
+	} catch {
+		return null
+	}
+}
+
+function listUnitsFromDisk(stageDir: string): DerivedUnitView[] {
 	const dir = join(stageDir, "units")
 	if (!existsSync(dir)) return []
 	return readdirSync(dir, { withFileTypes: true })
 		.filter((e) => e.isFile() && e.name.endsWith(".md"))
 		.sort((a, b) => a.name.localeCompare(b.name))
 		.map((e) => {
-			const fm = readFm(join(dir, e.name)) ?? {}
+			const fm = readFmFromDisk(join(dir, e.name)) ?? {}
 			return { name: basename(e.name, ".md"), fm }
 		})
+}
+
+/** Read a file's contents from a specific git ref without touching
+ *  the working tree. Returns null when the path doesn't exist on
+ *  that ref or git fails. */
+function readFromGitRef(ref: string, path: string): string | null {
+	if (!isGitRepo()) return null
+	try {
+		return execFileSync("git", ["show", `${ref}:${path}`], {
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "pipe"],
+		})
+	} catch {
+		return null
+	}
+}
+
+/** Parse FM from a path on a specific git ref. Lets `derivePhase`
+ *  read `elaboration.md` from the stage branch even when the working
+ *  tree is parked on intent main. */
+function readFmFromGitRef(
+	ref: string,
+	path: string,
+): Record<string, unknown> | null {
+	const raw = readFromGitRef(ref, path)
+	if (raw == null) return null
+	return parseFm(raw)
+}
+
+/** List `*.md` filenames in a directory on a specific git ref. */
+function listMdFilesFromGitRef(ref: string, dirPath: string): string[] {
+	if (!isGitRepo()) return []
+	try {
+		const output = execFileSync(
+			"git",
+			["ls-tree", "--name-only", `${ref}:${dirPath}`],
+			{ encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+		)
+		return output
+			.split("\n")
+			.map((s) => s.trim())
+			.filter((s) => s.endsWith(".md"))
+			.sort((a, b) => a.localeCompare(b))
+	} catch {
+		return []
+	}
+}
+
+/** List units from a specific git ref. Used in git mode so unit
+ *  loading is checkout-independent — when the working tree is on
+ *  intent main, the stage branch's in-flight units would otherwise
+ *  be invisible and `derivePhase` would falsely report `elaborate`.
+ *  Falls back to disk listing if `ls-tree` returns empty (the stage
+ *  branch may not have any units yet). */
+function listUnitsFromGitRef(
+	ref: string,
+	intentDir: string,
+	slug: string,
+	stage: string,
+): DerivedUnitView[] {
+	const dirPath = `.haiku/intents/${slug}/stages/${stage}/units`
+	const filenames = listMdFilesFromGitRef(ref, dirPath)
+	if (filenames.length === 0) return []
+	return filenames.map((filename) => {
+		const fm = readFmFromGitRef(ref, `${dirPath}/${filename}`) ?? {}
+		return { name: basename(filename, ".md"), fm }
+	})
 }
 
 /** Reviewer roles for a stage. Mirrors `walkIntentTrack` in cursor.ts.
@@ -122,10 +196,17 @@ function intentMainHasStageUnits(slug: string, stage: string): boolean {
 function branchHeadExists(branch: string): boolean {
 	if (!isGitRepo()) return false
 	try {
-		execFileSync("git", ["rev-parse", "--verify", branch], {
+		// `git rev-parse --verify <ref>` exits 0 with empty stdout on
+		// some platforms when the underlying repo can't actually
+		// resolve the ref but git fails silently — we treat empty
+		// output as "branch missing" to avoid `intentMainHasStageUnits`
+		// returning false for refs that branchHeadExists falsely
+		// reported true on.
+		const out = execFileSync("git", ["rev-parse", "--verify", branch], {
+			encoding: "utf8",
 			stdio: ["ignore", "pipe", "pipe"],
-		})
-		return true
+		}).trim()
+		return out.length > 0
 	} catch {
 		return false
 	}
@@ -145,30 +226,54 @@ export function deriveStageState(args: {
 }): DerivedStageState {
 	const { slug, studio, stage, intentDir, intentMode } = args
 	const stageDir = join(intentDir, "stages", stage)
-	const units = listUnits(stageDir)
 	const hats = resolveStageHats(studio, stage)
 	const reviewRoles = reviewRolesFor(studio, stage, intentMode)
 	const approvalRoles = approvalRolesFor(studio, stage, intentMode)
+
+	// Determine whether we can use git-ref reads (checkout-independent).
+	// Prefer the stage branch when it exists — that's where the
+	// in-flight unit work lives. When the stage branch doesn't exist
+	// yet, fall back to disk reads (which on intent main return the
+	// already-merged units, exactly what `firstUnmergedStage`
+	// observes).
+	const intentMain = `haiku/${slug}/main`
+	const stageBranch = `haiku/${slug}/${stage}`
+	const inGit = isGitRepo()
+	const intentMainExists = inGit && branchHeadExists(intentMain)
+	const stageBranchExists = inGit && branchHeadExists(stageBranch)
+	const refForPhase = stageBranchExists
+		? stageBranch
+		: intentMainExists
+			? intentMain
+			: null
+
+	// Unit loading. In git mode, read from the canonical ref so the
+	// working-tree checkout doesn't change the answer. In fs mode,
+	// fall back to the working tree (it IS the canonical view).
+	const units = refForPhase
+		? listUnitsFromGitRef(refForPhase, intentDir, slug, stage)
+		: listUnitsFromDisk(stageDir)
 
 	// Branch-merge signal. Tri-state from the pure function's POV:
 	//   - true  → intent main has the stage's units → "completed"
 	//   - false → branch exists but not merged → "active" if units
 	//   - null  → fs mode (no branch signal); pure falls back to
 	//             per-unit completion derivation
-	const intentMain = `haiku/${slug}/main`
-	const stageMergedIntoMain =
-		isGitRepo() && branchHeadExists(intentMain)
-			? intentMainHasStageUnits(slug, stage)
-			: null
+	const stageMergedIntoMain = intentMainExists
+		? intentMainHasStageUnits(slug, stage)
+		: null
 
 	// Elaboration-verified signal. Tri-state:
 	//   - true  → artifact exists AND verified_at stamped
 	//   - false → artifact exists but unverified → phase is "elaborate"
 	//   - null  → artifact missing → grandfather (cursor.ts:684-700)
-	const elabPath = join(stageDir, "elaboration.md")
+	const elabPathOnDisk = join(stageDir, "elaboration.md")
+	const elabPathOnRef = `.haiku/intents/${slug}/stages/${stage}/elaboration.md`
+	const elabFm = refForPhase
+		? readFmFromGitRef(refForPhase, elabPathOnRef)
+		: readFmFromDisk(elabPathOnDisk)
 	let elaborationVerified: boolean | null = null
-	if (existsSync(elabPath)) {
-		const elabFm = readFm(elabPath) ?? {}
+	if (elabFm !== null) {
 		const verifiedAt =
 			typeof elabFm.verified_at === "string" ? elabFm.verified_at : ""
 		elaborationVerified = verifiedAt.length > 0

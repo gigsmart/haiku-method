@@ -1,8 +1,11 @@
 // orchestrator/workflow/side-effects.ts — All workflow-engine state
-// mutators. Every function here writes disk (state.json,
-// intent.md frontmatter), runs git operations (branch create / merge
-// / reap), or both. The workflow handlers in `handlers/` call these
-// after deciding what action to emit.
+// mutators. Every function here writes disk (intent.md frontmatter,
+// per-stage sidecar JSONL logs like iterations.jsonl), runs git
+// operations (branch create / merge / reap), or both. State.json is
+// dead in v4 — stage status / phase / gate outcome are derived on
+// demand from per-unit FM and branch-merge state via
+// `derived-stage-state.ts`. The workflow handlers in `handlers/`
+// call the functions here after deciding what action to emit.
 //
 // The split from emission keeps the contract clean: handlers are
 // (mostly) pure functions that compute an OrchestratorAction from
@@ -11,11 +14,15 @@
 //
 // Functions:
 //   - workflowStartStage              — enter a stage (branch isolation,
-//     pos-0 reset, Guard 1/3, first iteration, frontmatter active_stage)
-//   - workflowAdvancePhase            — change a stage's phase
-//   - workflowCompleteStage           — mark a stage completed
+//     prev-stage merge+reap, Guard 3 cleanup, first iteration log
+//     entry, intent.md active_stage)
+//   - workflowAdvancePhase            — telemetry-only no-op (v4 derives
+//     phase from per-unit FM)
+//   - workflowCompleteStage           — close iteration log + drift
+//     marker cleanup (status/completed_at/gate_outcome are derived)
 //   - workflowAdvanceStage            — atomic complete+enter-next
-//   - workflowGateAsk                 — enter the gate phase
+//   - workflowGateAsk                 — telemetry-only no-op (v4 derives
+//     phase=gate from per-unit approvals state)
 //   - workflowEnterIntentCompletionReview — set intent.phase = awaiting...
 //   - workflowFinalizeStageIntoIntentMain — final-stage merge+reap+switch
 //   - completeOrReviewIntent          — terminal completion routing
@@ -113,8 +120,9 @@ function findPreviousStage(slug: string, stage: string): string | undefined {
  *    4. Reap A's branch (commits now live on main). Delete remote too.
  *    5. Checkout B: if B's branch already exists (go-back), merge main
  *       forward into it; otherwise create B from main.
- *    6. Guard 1 (entry pos-0 reset): write pos-0 default state.json
- *       onto main for the entered stage via temp worktree.
+ *    6. Open the first iteration entry on the per-stage iterations.jsonl
+ *       log (status="active" + phase="elaborate" are derived from this
+ *       on the next tick — there is no state.json write).
  *    7. Guard 3 (post-stage cleanup): scan again for orphans that
  *       slipped through the merge-reap cycle.
  *

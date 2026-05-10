@@ -599,7 +599,7 @@ export function openStagePullRequest(opts: {
 			branch,
 			base,
 			message:
-				"This is not a git repo — the stage merge happens via on-disk stages_merged. Nothing to open.",
+				"This is not a git repo — stage progression is driven by per-unit signature state, not a git merge. Nothing to open.",
 		}
 	}
 
@@ -1077,30 +1077,21 @@ export function reconcileIntentBranches(
 			isAncestor(stageRef, updatedIntentMainRef)
 		) {
 			// Stage is strictly behind main; pick up main's new commits.
+			// `--ff-only` is the only correct operation here — when the
+			// stage IS an ancestor of intent main, fast-forward is always
+			// the merge result. The previous `--no-ff` fallback was
+			// unreachable: any condition that breaks `--ff-only` (dirty
+			// working tree, locked index, etc.) breaks `--no-ff` the same
+			// way. Surface the failure instead of hiding it behind a
+			// fallback that can't help.
 			try {
 				execFileSync("git", ["merge", "--ff-only", intentMain], {
 					stdio: "pipe",
 				})
 				result.stageBranchFastForwarded = true
-			} catch {
-				try {
-					execFileSync(
-						"git",
-						[
-							"merge",
-							intentMain,
-							"--no-ff",
-							"--no-edit",
-							"-m",
-							`haiku: merge intent main → ${currentBranch.slice(stagePrefix.length)} (pre-tick reconcile)`,
-						],
-						{ stdio: "pipe" },
-					)
-					result.stageBranchFastForwarded = true
-				} catch (mergeErr) {
-					const existing = result.error ? `${result.error}\n` : ""
-					result.error = `${existing}Failed to merge ${intentMain} into ${currentBranch}: ${mergeErr instanceof Error ? mergeErr.message : String(mergeErr)}`
-				}
+			} catch (mergeErr) {
+				const existing = result.error ? `${result.error}\n` : ""
+				result.error = `${existing}Failed to fast-forward ${currentBranch} from ${intentMain}: ${mergeErr instanceof Error ? mergeErr.message : String(mergeErr)}`
 			}
 		}
 	}
@@ -1369,10 +1360,11 @@ export function mergeStageBranchIntoMain(
 	/** True when the function returned success without performing a
 	 *  merge — the source branch was missing locally and on origin (v3
 	 *  merged-and-deleted), or the environment isn't a git repo at all.
-	 *  Callers that drive a `merge_stage` loop must consult this flag
-	 *  to know they need to advance the cursor's state another way
-	 *  (e.g. stamp `stages_merged` on intent.md) — without it, the
-	 *  cursor re-emits `merge_stage` for the same stage forever. */
+	 *  Callers can safely re-tick: in git mode the original v3 merge
+	 *  already put the stage's unit files on intent main, so
+	 *  `firstUnmergedStage` walks past on the next tick; in fs mode the
+	 *  cursor uses per-unit signature state via `isStageFullySigned`.
+	 *  No `stages_merged` stamp needed (the field is dead in v4). */
 	noop?: boolean
 } {
 	if (!isGitRepo()) return { success: true, message: "no git", noop: true }

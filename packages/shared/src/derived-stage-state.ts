@@ -56,8 +56,19 @@ export interface DerivedStageStateInputs {
 	units: ReadonlyArray<DerivedUnitView>
 	intentMode: string
 
-	/** Ordered hat list from STAGE.md. Empty when the studio doesn't
-	 *  declare hats (research-style stages, etc.). */
+	/** Ordered hat list from STAGE.md. Two valid reasons to pass empty:
+	 *    1. The stage genuinely declares no hats (research-style stages
+	 *       that consist only of artifact production).
+	 *    2. The caller doesn't have STAGE.md available (e.g., the
+	 *       website browse UI fetches per-unit FM via VCS API and
+	 *       intentionally chooses "any advance result counts as
+	 *       terminal"). The website does this on purpose.
+	 *  When non-empty, `deriveStatus` and `derivePhase` require the
+	 *  last iteration's `hat` field to match `hats[hats.length - 1]`
+	 *  for the unit to count as past-terminal-advance. When empty,
+	 *  any `result === "advance"` qualifies — be sure that's the
+	 *  semantic you want before passing `[]` from a caller that
+	 *  *does* know the hats. */
 	hats?: ReadonlyArray<string>
 
 	/** Reviewer role list (mode-shaped). Engine builds this from the
