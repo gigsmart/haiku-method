@@ -18,8 +18,6 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { basename, join } from "node:path"
-import matter from "gray-matter"
-import { deriveStageStatePure } from "@haiku/shared/derived-stage-state"
 import type {
 	DerivedGateOutcome,
 	DerivedStagePhase,
@@ -27,6 +25,8 @@ import type {
 	DerivedStageStatus,
 	DerivedUnitView,
 } from "@haiku/shared/derived-stage-state"
+import { deriveStageStatePure } from "@haiku/shared/derived-stage-state"
+import matter from "gray-matter"
 import { isGitRepo } from "../../state/shared.js"
 import { readReviewAgentPaths } from "../../studio-reader.js"
 import { resolveStageHats } from "../studio.js"
@@ -40,9 +40,33 @@ export type {
 	DerivedStageStatus,
 }
 
+/** Walk a parsed FM object and convert every Date value (top-level or
+ *  nested in arrays/objects) to an ISO-8601 string. The pure derivation
+ *  in `@haiku/shared` checks `typeof started_at === "string"` and
+ *  `iteration.completed_at` etc.; raw `gray-matter` parses YAML
+ *  timestamps as JS `Date` objects, so without this normalization every
+ *  date-typed FM value silently fails the type guard and the cursor
+ *  reports `pending` for in-flight units. State-tools.ts has the same
+ *  normalization (`normalizeDates` in `state/shared.ts`); we duplicate
+ *  the boundary fix here so this wrapper stays free of cross-module
+ *  dependencies. */
+function normalizeDates(value: unknown): unknown {
+	if (value instanceof Date) return value.toISOString()
+	if (Array.isArray(value)) return value.map(normalizeDates)
+	if (value !== null && typeof value === "object") {
+		const out: Record<string, unknown> = {}
+		for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+			out[k] = normalizeDates(v)
+		}
+		return out
+	}
+	return value
+}
+
 function parseFm(raw: string): Record<string, unknown> | null {
 	try {
-		return matter(raw).data as Record<string, unknown>
+		const data = matter(raw).data as Record<string, unknown>
+		return normalizeDates(data) as Record<string, unknown>
 	} catch {
 		return null
 	}

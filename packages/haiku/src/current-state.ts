@@ -30,11 +30,11 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { branchExists, isBranchMerged } from "./git-worktree.js"
-import { deriveStageState } from "./orchestrator/workflow/derived-stage-state.js"
 import {
 	resolveIntentStages,
 	resolveStudioStages,
 } from "./orchestrator/studio.js"
+import { deriveStageState } from "./orchestrator/workflow/derived-stage-state.js"
 import { isGitRepo } from "./state/shared.js"
 import { intentDir, parseFrontmatter } from "./state-tools.js"
 import type { IntentCurrentState, IntentPhase } from "./types.js"

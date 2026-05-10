@@ -6,8 +6,8 @@
 import { execFileSync, execSync, spawn, spawnSync } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import {
-	type Dirent,
 	appendFileSync,
+	type Dirent,
 	existsSync,
 	lstatSync,
 	mkdirSync,
@@ -2991,7 +2991,8 @@ function readStageIterations(slug: string, stage: string): StageIteration[] {
 			const last = out[out.length - 1]
 			last.completed_at = (parsed.at as string) || timestamp()
 			last.result =
-				(parsed.result as StageIterationResult) || ("advanced" as StageIterationResult)
+				(parsed.result as StageIterationResult) ||
+				("advanced" as StageIterationResult)
 			if (parsed.reason && !last.reason) last.reason = parsed.reason as string
 		}
 	}
@@ -7132,7 +7133,8 @@ export function handleStateTool(
 				: ({} as Record<string, unknown>)
 			const studio = (intentFm.studio as string) || ""
 			const intentMode =
-				typeof intentFm.mode === "string" && (intentFm.mode as string).length > 0
+				typeof intentFm.mode === "string" &&
+				(intentFm.mode as string).length > 0
 					? (intentFm.mode as string)
 					: "continuous"
 			const derived = deriveStageState({
@@ -8541,7 +8543,10 @@ export function handleStateTool(
 			// touch — the file no longer exists in v4.
 			const reconStageDir = join(intentDir(intentArg), "stages", stage)
 			mkdirSync(reconStageDir, { recursive: true })
-			const reconMarkerFile = join(reconStageDir, "upstream-reconciliation.json")
+			const reconMarkerFile = join(
+				reconStageDir,
+				"upstream-reconciliation.json",
+			)
 			writeJson(reconMarkerFile, {
 				acknowledged: true,
 				acknowledged_at: timestamp(),

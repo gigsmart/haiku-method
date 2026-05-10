@@ -8,9 +8,6 @@ export {
 	ProgressBar,
 	StatusBadge,
 } from "./components/index"
-// v4 derived stage state — single-source-of-truth derivation shared
-// between the MCP engine and the website browse UI.
-export { deriveStageStatePure } from "./derived-stage-state"
 export type {
 	DerivedGateOutcome,
 	DerivedStagePhase,
@@ -19,6 +16,9 @@ export type {
 	DerivedStageStatus,
 	DerivedUnitView,
 } from "./derived-stage-state"
+// v4 derived stage state — single-source-of-truth derivation shared
+// between the MCP engine and the website browse UI.
+export { deriveStageStatePure } from "./derived-stage-state"
 // Formatting utilities
 export { formatDate, formatDuration, titleCase } from "./format"
 // Frontmatter YAML utilities (duplicate-key recovery)

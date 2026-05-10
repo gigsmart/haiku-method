@@ -121,11 +121,16 @@ function pickApprovals(
 /** A unit counts as "started" when it has a `started_at` stamp OR
  *  any iteration appended. Either signal proves the workflow engine
  *  began processing it. Used to distinguish pending (no work yet)
- *  from active (work in flight). */
+ *  from active (work in flight).
+ *
+ *  `started_at` may be a string (when explicitly quoted in YAML or
+ *  written via `setFrontmatterField`) or a `Date` (when gray-matter's
+ *  YAML 1.1 parser auto-promotes an unquoted ISO timestamp). Accept
+ *  both so the derivation doesn't depend on serializer choice. */
 function isUnitStarted(u: DerivedUnitView): boolean {
-	if (typeof u.fm.started_at === "string" && u.fm.started_at.length > 0) {
-		return true
-	}
+	const s = u.fm.started_at
+	if (typeof s === "string" && s.length > 0) return true
+	if (s instanceof Date && !Number.isNaN(s.getTime())) return true
 	return pickIterations(u.fm).length > 0
 }
 
@@ -225,11 +230,20 @@ function deriveGateOutcome(
 	return allApproved ? "advanced" : null
 }
 
+/** Coerce a YAML timestamp value (string or auto-promoted Date) into
+ *  the canonical ISO-8601 string. Returns null when the value is
+ *  neither a non-empty string nor a valid Date — gray-matter's YAML 1.1
+ *  parser auto-promotes unquoted ISO timestamps to `Date`, so callers
+ *  that compare or display these stamps as strings have to normalize. */
+function coerceTimestamp(v: unknown): string | null {
+	if (typeof v === "string" && v.length > 0) return v
+	if (v instanceof Date && !Number.isNaN(v.getTime())) return v.toISOString()
+	return null
+}
+
 function deriveStartedAt(units: ReadonlyArray<DerivedUnitView>): string | null {
 	const stamps = units
-		.map((u) =>
-			typeof u.fm.started_at === "string" ? (u.fm.started_at as string) : null,
-		)
+		.map((u) => coerceTimestamp(u.fm.started_at))
 		.filter((s): s is string => s !== null)
 		.sort()
 	return stamps[0] ?? null
@@ -246,7 +260,7 @@ function deriveCompletedAt(
 		if (its.length === 0) continue
 		const last = its[its.length - 1]
 		if (last.result !== "advance") continue
-		const at = typeof last.completed_at === "string" ? last.completed_at : null
+		const at = coerceTimestamp(last.completed_at)
 		if (at !== null && (latest === null || at > latest)) latest = at
 	}
 	return latest

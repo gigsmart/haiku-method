@@ -18,7 +18,10 @@
 //   completed_at × status === "completed" gating
 
 import assert from "node:assert"
-import { deriveStageStatePure, type DerivedUnitView } from "../derived-stage-state"
+import {
+	type DerivedUnitView,
+	deriveStageStatePure,
+} from "../derived-stage-state"
 
 let passed = 0
 let failed = 0
@@ -38,10 +41,7 @@ function test(name: string, fn: () => void): void {
 const at = "2026-05-09T00:00:00Z"
 const later = "2026-05-09T01:00:00Z"
 
-function unit(
-	name: string,
-	fm: Record<string, unknown> = {},
-): DerivedUnitView {
+function unit(name: string, fm: Record<string, unknown> = {}): DerivedUnitView {
 	return { name, fm }
 }
 
@@ -124,7 +124,12 @@ test("fs mode + fully signed but missing terminal hat → active", () => {
 			unit("u1", {
 				started_at: at,
 				iterations: [
-					{ hat: "researcher", started_at: at, completed_at: at, result: "advance" },
+					{
+						hat: "researcher",
+						started_at: at,
+						completed_at: at,
+						result: "advance",
+					},
 				],
 				approvals: { spec: { at }, quality_gates: { at }, user: { at } },
 			}),
@@ -197,7 +202,12 @@ test("hats configured + iterations partial → execute", () => {
 			unit("u1", {
 				started_at: at,
 				iterations: [
-					{ hat: "researcher", started_at: at, completed_at: at, result: "advance" },
+					{
+						hat: "researcher",
+						started_at: at,
+						completed_at: at,
+						result: "advance",
+					},
 				],
 			}),
 		],
@@ -226,7 +236,12 @@ test("reviews signed + approvals missing → gate", () => {
 	const u = unit("u1", {
 		started_at: at,
 		iterations: [
-			{ hat: "researcher", started_at: at, completed_at: at, result: "advance" },
+			{
+				hat: "researcher",
+				started_at: at,
+				completed_at: at,
+				result: "advance",
+			},
 			{ hat: "verifier", started_at: at, completed_at: at, result: "advance" },
 		],
 		reviews: { spec: { at }, user: { at } },

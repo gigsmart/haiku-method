@@ -48,7 +48,6 @@ import {
 	mergeStageBranchForward,
 	mergeStageBranchIntoMain,
 	pushStageBranch,
-	writeOnIntentMain,
 } from "../../git-worktree.js"
 import { withIntentMainLock } from "../../locks.js"
 import type { OrchestratorAction } from "../../orchestrator.js"

@@ -133,7 +133,7 @@ test("missing-source-branch merge returns noop=true (caller signal)", () => {
 		assert.strictEqual(
 			result.noop,
 			true,
-			"missing-branch path must signal noop=true so callers can stamp stages_merged",
+			"missing-branch path must signal noop=true so callers can advance the cursor (write the stage's unit files onto intent main under the disk-state model)",
 		)
 	} finally {
 		restoreCwd()
@@ -154,8 +154,9 @@ test("after the noop'd stage's unit files land on intent main, firstUnmergedStag
 	process.env.CLAUDE_PLUGIN_ROOT = PLUGIN_ROOT
 	try {
 		process.chdir(tmp)
-		// Pre-stamp: cursor sees inception as unmerged (branch missing,
-		// not in stages_merged) — this is what the spin would loop on.
+		// Pre-condition: cursor sees inception as unmerged (branch missing,
+		// no unit files on intent main for this stage) — this is what
+		// the spin would loop on.
 		const before = firstUnmergedStage(slug, "software")
 		assert.strictEqual(
 			before,
