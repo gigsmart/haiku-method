@@ -1376,12 +1376,14 @@ export function mergeStageBranchIntoMain(
 		// Source-branch missing recovery. v3 merged-and-deleted stage
 		// branches once the stage was complete, so migrated intents will
 		// reach this code path with a stage branch that no longer exists
-		// either locally or on origin. The cursor's `isStageBranchMerged`
-		// guard treats that as merged-already and short-circuits, but if
-		// a caller dispatches the merge directly (or origin is reachable
-		// but the local clone is stale) the rev-parse below would throw
-		// and the engine would loop on `merge_stage`. Treat both-missing
-		// as a no-op success so the workflow can advance.
+		// either locally or on origin. `firstUnmergedStage` reads unit
+		// files on intent main — when the stage branch is gone, intent
+		// main already carries the merged units (from the original v3
+		// merge), so the cursor walks past naturally. But if a caller
+		// dispatches the merge directly (or origin is reachable but the
+		// local clone is stale), the rev-parse below would throw and the
+		// engine would loop on `merge_stage`. Treat both-missing as a
+		// no-op success so the workflow can advance.
 		const localStage = tryRun(["git", "rev-parse", "--verify", stageBranch])
 		const originStage = tryRun([
 			"git",

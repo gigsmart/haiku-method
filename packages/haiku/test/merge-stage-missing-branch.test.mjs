@@ -1,14 +1,16 @@
 #!/usr/bin/env npx tsx
 // merge-stage-missing-branch.test.mjs — Coverage for the "v3
-// merged-and-deleted stage branch" recovery in `isStageBranchMerged`
+// merged-and-deleted stage branch" recovery in `firstUnmergedStage`
 // (cursor.ts) and `mergeStageBranchIntoMain` (git-worktree.ts).
 //
 // In v3, the workflow merged stage branches into intent main and
 // deleted them. Migrated v3→v4 intents reach v4 with branch names that
-// no longer exist locally or on origin. Without the recovery path, the
-// cursor's `isStageBranchMerged` returns false (no branch ref) →
-// `firstUnmergedStage` pins the stage → cursor emits `merge_stage`
-// every tick → merge fails → infinite loop.
+// no longer exist locally or on origin. The v4 cursor reads unit files
+// on intent main as the merged signal — when the migrator landed those
+// units on main during v3, `firstUnmergedStage` walks past the stage
+// naturally. The risk path: a caller dispatches `merge_stage` directly
+// against the missing branch — without the recovery, merge fails and
+// the engine loops on `merge_stage` every tick.
 //
 // Two tests:
 //   1. `firstUnmergedStage` skips stages whose branch is missing.

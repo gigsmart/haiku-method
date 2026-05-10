@@ -75,8 +75,9 @@ const PLUGIN_ROOT = join(findRepoRoot(), "plugin")
  * Without the no-op stamping in haiku_run_next:
  *   - mergeStageBranchIntoMain returns success (noop)
  *   - dispatchOrchestratorAction re-derives position
- *   - firstUnmergedStage sees: stages_merged is empty, isStageBranchMerged
- *     returns false (branch missing) → returns the same stage
+ *   - firstUnmergedStage sees: no unit files on intent main for this
+ *     stage (neither the v3 stages_merged stamp nor a stage branch
+ *     exists) → returns the same stage
  *   - while-loop calls merge again → spin
  */
 function setupSpinTrap(slug) {

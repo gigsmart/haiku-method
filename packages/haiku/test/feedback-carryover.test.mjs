@@ -112,19 +112,19 @@ function buildThreeStageStudio(repoRoot) {
 /**
  * Place A and B as already-merged, C as the active (unmerged) stage.
  *
- * `firstUnmergedStage` walks studio.stages in order and asks `git
- * isStageBranchMerged (cursor.ts) requires main to be STRICTLY ahead
- * of the stage branch — a branch that points at the same commit as
- * main is treated as "uninitialized" (not merged), because that's the
- * state when a side-effecting helper like createDiscoveryWorktree has
- * created the branch but no work has landed yet.
+ * `firstUnmergedStage` walks studio.stages in order and returns the
+ * first stage whose `stages/<name>/units/` directory on intent main
+ * has no `.md` files. Merging via `--no-ff` lands the stage branch's
+ * unit files on intent main's tree — that's the merged signal the
+ * cursor reads.
  *
- * To make stages A and B "actually merged", we add a commit on each
- * branch, switch back to main, and merge with --no-ff. This yields:
- *   haiku/<slug>/main → main has merge commits for A and B
- *   haiku/<slug>/a    → strict ancestor of main (merged)
- *   haiku/<slug>/b    → strict ancestor of main (merged)
- *   haiku/<slug>/c    → diverged from main (NOT merged, active)
+ * To make stages A and B "actually merged", we add a per-stage unit
+ * commit on each branch, switch back to main, and merge with --no-ff.
+ * This yields:
+ *   haiku/<slug>/main → main carries A's and B's units in the tree
+ *   haiku/<slug>/a    → merged into main (units appear on main's tree)
+ *   haiku/<slug>/b    → merged into main (units appear on main's tree)
+ *   haiku/<slug>/c    → no units on main's tree → cursor pins here
  */
 function setCursorOnStageC(repoRoot, slug) {
 	const main = `haiku/${slug}/main`
