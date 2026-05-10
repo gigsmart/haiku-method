@@ -41,15 +41,19 @@ export type {
 }
 
 /** Walk a parsed FM object and convert every Date value (top-level or
- *  nested in arrays/objects) to an ISO-8601 string. The pure derivation
- *  in `@haiku/shared` checks `typeof started_at === "string"` and
- *  `iteration.completed_at` etc.; raw `gray-matter` parses YAML
- *  timestamps as JS `Date` objects, so without this normalization every
- *  date-typed FM value silently fails the type guard and the cursor
- *  reports `pending` for in-flight units. State-tools.ts has the same
- *  normalization (`normalizeDates` in `state/shared.ts`); we duplicate
- *  the boundary fix here so this wrapper stays free of cross-module
- *  dependencies. */
+ *  nested in arrays/objects) to an ISO-8601 string. Raw `gray-matter`
+ *  parses YAML 1.1 unquoted timestamps as JS `Date` objects; the pure
+ *  derivation in `@haiku/shared` will accept either via `coerceTimestamp`,
+ *  but normalizing at the boundary keeps the comparisons in
+ *  `deriveCompletedAt` (`at > latest`) lexical-string operations.
+ *
+ *  Related but NOT a substitute: `state/shared.ts:normalizeDates` is
+ *  shallow (top-level keys only) AND date-only
+ *  (`toISOString().split("T")[0]` → `"2026-05-09"`). This version is
+ *  recursive (descends into `iterations[].completed_at`,
+ *  `reviews.<role>.at`, `approvals.<role>.at`, etc.) AND preserves the
+ *  full ISO-8601 string. Don't replace one with the other — they solve
+ *  different problems. */
 function normalizeDates(value: unknown): unknown {
 	if (value instanceof Date) return value.toISOString()
 	if (Array.isArray(value)) return value.map(normalizeDates)

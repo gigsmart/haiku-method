@@ -106,6 +106,75 @@ test("stageMergedIntoMain=false + only spec units (no started_at, no its) → pe
 	assert.strictEqual(out.status, "pending")
 })
 
+// Date-typed timestamps: YAML 1.1 auto-promotes unquoted ISO timestamps
+// to JS `Date` objects via gray-matter. The pure function must treat
+// these the same as ISO strings (the website path doesn't normalize
+// before calling in). These tests pin that invariant.
+
+test("Date-typed started_at counts as started (gray-matter auto-promote)", () => {
+	const u = unit("u1", { started_at: new Date("2026-05-09T00:00:00Z") })
+	const out = deriveStageStatePure({
+		stage: "design",
+		units: [u],
+		intentMode: "continuous",
+		stageMergedIntoMain: false,
+	})
+	assert.strictEqual(out.status, "active")
+})
+
+test("invalid Date-typed started_at does NOT count as started", () => {
+	// new Date("invalid") yields NaN — guard via !Number.isNaN(getTime()).
+	const u = unit("u1", { started_at: new Date("not-a-date") })
+	const out = deriveStageStatePure({
+		stage: "design",
+		units: [u],
+		intentMode: "continuous",
+		stageMergedIntoMain: false,
+	})
+	assert.strictEqual(out.status, "pending")
+})
+
+test("Date-typed iteration.completed_at flows through to completed_at output", () => {
+	const dateLater = new Date("2026-05-09T01:00:00Z")
+	const u = unit("u1", {
+		started_at: at,
+		iterations: [
+			{ hat: "researcher", started_at: at, completed_at: at, result: "advance" },
+			{
+				hat: "verifier",
+				started_at: at,
+				completed_at: dateLater,
+				result: "advance",
+			},
+		],
+		reviews: { spec: { at }, user: { at } },
+		approvals: { spec: { at }, quality_gates: { at }, user: { at } },
+	})
+	const out = deriveStageStatePure({
+		stage: "design",
+		units: [u],
+		intentMode: "continuous",
+		hats: ["researcher", "verifier"],
+		approvalRoles: ["spec", "quality_gates", "user"],
+	})
+	assert.strictEqual(out.status, "completed")
+	// coerceTimestamp converts the Date to its ISO string before
+	// derivation compares; result must equal the canonical ISO form.
+	assert.strictEqual(out.completed_at, dateLater.toISOString())
+})
+
+test("Date-typed unit.started_at flows through to started_at output", () => {
+	const dateAt = new Date("2026-05-08T12:00:00Z")
+	const u = unit("u1", { started_at: dateAt })
+	const out = deriveStageStatePure({
+		stage: "design",
+		units: [u],
+		intentMode: "continuous",
+		stageMergedIntoMain: false,
+	})
+	assert.strictEqual(out.started_at, dateAt.toISOString())
+})
+
 test("stageMergedIntoMain=null (fs mode) + fully signed → completed", () => {
 	const out = deriveStageStatePure({
 		stage: "design",

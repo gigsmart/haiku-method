@@ -42,7 +42,11 @@ export interface DerivedUnitView {
 
 interface IterationView {
 	hat?: string
-	completed_at?: string | null
+	/** May arrive as a `Date` from the website's VCS-API path (raw
+	 *  gray-matter, no normalization). Engine path normalizes to ISO
+	 *  string before reaching the pure function. Always coerce via
+	 *  `coerceTimestamp` — never write `typeof === "string"` guards. */
+	completed_at?: string | Date | null
 	result: "advance" | "reject" | null
 }
 
