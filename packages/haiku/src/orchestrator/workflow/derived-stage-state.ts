@@ -1,70 +1,43 @@
-// orchestrator/workflow/derived-stage-state.ts — Derive per-stage workflow
-// state from per-unit FM + branch-merge state. Replaces the per-stage
-// `state.json` read path in v4.
+// orchestrator/workflow/derived-stage-state.ts — Engine-side wrapper
+// for the v4 stage-state derivation. Reads disk + git, then delegates
+// the actual decision to the pure function in `@haiku/shared` so the
+// website browse UI computes the same answer from the same inputs.
 //
-// In v4, `state.json` is dead. The migrator deletes the file on first
-// read of any pre-v4 intent, and the workflow engine MUST NOT recreate
-// it. Stage status, phase, and gate outcome are derived on demand from
-// the artifacts that actually carry the signal:
+// Why a wrapper: the pure function takes already-loaded data —
+// `units[]`, `hats[]`, `reviewRoles[]`, `approvalRoles[]`,
+// `stageMergedIntoMain`, `elaborationVerified`. The engine fetches
+// those from local disk + git (`isBranchMerged`, `git ls-tree`,
+// `readFm`, etc.); the website fetches the same shapes from the VCS
+// API (`gitlab-provider.ts`, `github-provider.ts`). Both call
+// `deriveStageStatePure` to get a `DerivedStageState`.
 //
-//   status      → branch-merge state (`isBranchMerged(stage→intent main)`)
-//                 falls back to per-unit completion when git is absent.
-//   phase       → "earliest milestone the stage hasn't cleared":
-//                   - elaboration.md missing/unverified → "elaborate"
-//                   - units missing → "elaborate" (decompose pending)
-//                   - any unit not past terminal hat advance → "execute"
-//                   - any unit missing required reviews → "review"
-//                   - any unit missing required approvals → "gate"
-//                 Per the design: a NEW unit that lands after the gate
-//                 implicitly invalidates the stage because that unit
-//                 has no `approvals.user`. No separate stage stamp can
-//                 hide drift.
-//   gate_outcome → "advanced" iff every unit has every required
-//                  approval signed; else null. Pulled from per-unit
-//                  `approvals.<role>` so unit-level mutations re-derive
-//                  the stage signal in the same tick.
-//   started_at  → earliest `started_at` across units.
-//   completed_at → latest terminal-advance `completed_at` across units,
-//                  only when `status === "completed"`.
-//   visits      → `max(unit.iterations.length)` — a per-stage "how many
-//                  times has any work been redone" indicator.
-//
-// This file is pure: reads disk (FM + branch state via `isBranchMerged`),
-// no writes. Anyone can call `deriveStageState`; same disk → same answer.
+// The on-disk per-stage `state.json` is dead in v4. The migrator
+// deletes it on first read and the engine no longer recreates it —
+// see `side-effects.ts` for the four functions that used to write it.
 
 import { execFileSync } from "node:child_process"
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { basename, join } from "node:path"
 import matter from "gray-matter"
+import { deriveStageStatePure } from "@haiku/shared/derived-stage-state"
+import type {
+	DerivedGateOutcome,
+	DerivedStagePhase,
+	DerivedStageState,
+	DerivedStageStatus,
+	DerivedUnitView,
+} from "@haiku/shared/derived-stage-state"
 import { isGitRepo } from "../../state/shared.js"
 import { readReviewAgentPaths } from "../../studio-reader.js"
 import { resolveStageHats } from "../studio.js"
 
-export type DerivedStageStatus = "pending" | "active" | "completed"
-export type DerivedStagePhase = "elaborate" | "execute" | "review" | "gate"
-export type DerivedGateOutcome = "advanced" | "rejected" | null
-
-export interface DerivedStageState {
-	stage: string
-	status: DerivedStageStatus
-	/** null when status === "pending" (stage hasn't started yet) or
-	 *  when status === "completed" (no in-flight phase). */
-	phase: DerivedStagePhase | null
-	started_at: string | null
-	completed_at: string | null
-	gate_outcome: DerivedGateOutcome
-	visits: number
-}
-
-interface UnitView {
-	name: string
-	fm: Record<string, unknown>
-}
-
-interface IterationView {
-	hat?: string
-	completed_at?: string | null
-	result: "advance" | "reject" | null
+// Re-export the shared types so call sites already importing from
+// here keep working. The pure function lives in @haiku/shared.
+export type {
+	DerivedGateOutcome,
+	DerivedStagePhase,
+	DerivedStageState,
+	DerivedStageStatus,
 }
 
 function readFm(path: string): Record<string, unknown> | null {
@@ -77,7 +50,7 @@ function readFm(path: string): Record<string, unknown> | null {
 	}
 }
 
-function listUnits(stageDir: string): UnitView[] {
+function listUnits(stageDir: string): DerivedUnitView[] {
 	const dir = join(stageDir, "units")
 	if (!existsSync(dir)) return []
 	return readdirSync(dir, { withFileTypes: true })
@@ -87,27 +60,6 @@ function listUnits(stageDir: string): UnitView[] {
 			const fm = readFm(join(dir, e.name)) ?? {}
 			return { name: basename(e.name, ".md"), fm }
 		})
-}
-
-function pickIterations(fm: Record<string, unknown>): IterationView[] {
-	if (!Array.isArray(fm.iterations)) return []
-	return fm.iterations as IterationView[]
-}
-
-function pickReviews(
-	fm: Record<string, unknown>,
-): Record<string, { at: string } | null> {
-	const r = fm.reviews
-	if (r === null || typeof r !== "object" || Array.isArray(r)) return {}
-	return r as Record<string, { at: string } | null>
-}
-
-function pickApprovals(
-	fm: Record<string, unknown>,
-): Record<string, { at: string } | null> {
-	const a = fm.approvals
-	if (a === null || typeof a !== "object" || Array.isArray(a)) return {}
-	return a as Record<string, { at: string } | null>
 }
 
 /** Reviewer roles for a stage. Mirrors `walkIntentTrack` in cursor.ts.
@@ -179,157 +131,11 @@ function branchHeadExists(branch: string): boolean {
 	}
 }
 
-function deriveStatus(
-	slug: string,
-	stage: string,
-	units: UnitView[],
-	hats: string[],
-	approvalRoles: string[],
-): DerivedStageStatus {
-	const intentMain = `haiku/${slug}/main`
-	if (isGitRepo() && branchHeadExists(intentMain)) {
-		// Git mode (intent main exists): intent main's tree is the
-		// source of truth. Same signal `firstUnmergedStage` uses —
-		// units present on intent main means the stage merged.
-		// `merge_stage` is a recurring event so a previously-merged
-		// stage that gains a new unit re-opens (status stays
-		// "completed" until the merge boundary is crossed again; the
-		// gate signal flips first via per-unit approvals).
-		if (intentMainHasStageUnits(slug, stage)) return "completed"
-		if (units.length > 0) return "active"
-		return "pending"
-	}
-	// FS mode (no git): derive from per-unit completion. A stage is
-	// "completed" iff every unit reached terminal-hat-advance AND has
-	// every required approval signed. Otherwise "active" if any unit
-	// exists, else "pending".
-	if (units.length === 0) return "pending"
-	const allComplete = units.every((u) => {
-		const its = pickIterations(u.fm)
-		if (its.length === 0) return false
-		const last = its[its.length - 1]
-		if (last.result !== "advance") return false
-		if (hats.length > 0 && last.hat !== hats[hats.length - 1]) return false
-		const approvals = pickApprovals(u.fm)
-		return approvalRoles.every((r) => approvals[r])
-	})
-	return allComplete ? "completed" : "active"
-}
-
-function derivePhase(
-	stageDir: string,
-	units: UnitView[],
-	hats: string[],
-	reviewRoles: string[],
-	approvalRoles: string[],
-	intentMode: string,
-): DerivedStagePhase | null {
-	// 1. Per-stage elaborate gate (skipped under autopilot). Mirrors
-	//    cursor.ts:684-700: artifact missing & units exist →
-	//    grandfather (fall through). Artifact present but unverified
-	//    → phase is "elaborate".
-	if (intentMode !== "autopilot") {
-		const elabPath = join(stageDir, "elaboration.md")
-		if (existsSync(elabPath)) {
-			const elabFm = readFm(elabPath) ?? {}
-			const verifiedAt =
-				typeof elabFm.verified_at === "string" ? elabFm.verified_at : ""
-			if (!verifiedAt) return "elaborate"
-		} else if (units.length === 0) {
-			return "elaborate"
-		}
-	}
-
-	// 2. Decompose pending. Lump into "elaborate" for v3-shape consumers
-	//    (the SPA, telemetry, etc. that key off four canonical phase
-	//    names). The cursor's "decompose" action fires here.
-	if (units.length === 0) return "elaborate"
-
-	// 3. Execute: any unit not past terminal hat advance.
-	if (hats.length > 0) {
-		const allHatsDone = units.every((u) => {
-			const its = pickIterations(u.fm)
-			if (its.length === 0) return false
-			const last = its[its.length - 1]
-			return last.result === "advance" && last.hat === hats[hats.length - 1]
-		})
-		if (!allHatsDone) return "execute"
-	}
-
-	// 4. Review: any unit missing a required review role.
-	for (const role of reviewRoles) {
-		const missing = units.some((u) => !pickReviews(u.fm)[role])
-		if (missing) return "review"
-	}
-
-	// 5. Gate: any unit missing a required approval role.
-	for (const role of approvalRoles) {
-		const missing = units.some((u) => !pickApprovals(u.fm)[role])
-		if (missing) return "gate"
-	}
-
-	// All approvals signed — stage is past gate, awaiting `merge_stage`.
-	// The status check above will return "completed" on the next tick
-	// once the merge lands. Until then, phase is null (no in-flight
-	// phase) and the cursor emits `merge_stage`.
-	return null
-}
-
-function deriveGateOutcome(
-	units: UnitView[],
-	approvalRoles: string[],
-): DerivedGateOutcome {
-	if (units.length === 0) return null
-	// Per the design: gate is a per-unit aggregate, not a stage-level
-	// stamp. A new unit added post-approval has empty `approvals.*` and
-	// implicitly re-opens the gate.
-	const allApproved = units.every((u) => {
-		const approvals = pickApprovals(u.fm)
-		return approvalRoles.every((r) => approvals[r])
-	})
-	return allApproved ? "advanced" : null
-}
-
-function deriveStartedAt(units: UnitView[]): string | null {
-	const stamps = units
-		.map((u) =>
-			typeof u.fm.started_at === "string" ? (u.fm.started_at as string) : null,
-		)
-		.filter((s): s is string => s !== null)
-		.sort()
-	return stamps[0] ?? null
-}
-
-function deriveCompletedAt(
-	units: UnitView[],
-	status: DerivedStageStatus,
-): string | null {
-	if (status !== "completed") return null
-	let latest: string | null = null
-	for (const u of units) {
-		const its = pickIterations(u.fm)
-		if (its.length === 0) continue
-		const last = its[its.length - 1]
-		if (last.result !== "advance") continue
-		const at = typeof last.completed_at === "string" ? last.completed_at : null
-		if (at !== null && (latest === null || at > latest)) latest = at
-	}
-	return latest
-}
-
-function deriveVisits(units: UnitView[]): number {
-	let max = 0
-	for (const u of units) {
-		const its = pickIterations(u.fm)
-		if (its.length > max) max = its.length
-	}
-	return max
-}
-
 /** Compute the v4 stage state from per-unit FM + branch-merge state.
- *  Returns the v3-shape record (`status`, `phase`, `gate_outcome`,
- *  etc.) so existing callers can read derived values without changing
- *  their consumption shape. */
+ *  Wrapper around `deriveStageStatePure` that gathers the engine's
+ *  inputs from disk + git. Call this from any engine site that used
+ *  to read state.json; pass the result through where the v3 record
+ *  shape is expected. */
 export function deriveStageState(args: {
 	slug: string
 	studio: string
@@ -344,30 +150,38 @@ export function deriveStageState(args: {
 	const reviewRoles = reviewRolesFor(studio, stage, intentMode)
 	const approvalRoles = approvalRolesFor(studio, stage, intentMode)
 
-	const status = deriveStatus(slug, stage, units, hats, approvalRoles)
-	const phase =
-		status === "completed"
-			? null
-			: derivePhase(
-					stageDir,
-					units,
-					hats,
-					reviewRoles,
-					approvalRoles,
-					intentMode,
-				)
-	const gate_outcome = deriveGateOutcome(units, approvalRoles)
-	const started_at = deriveStartedAt(units)
-	const completed_at = deriveCompletedAt(units, status)
-	const visits = deriveVisits(units)
+	// Branch-merge signal. Tri-state from the pure function's POV:
+	//   - true  → intent main has the stage's units → "completed"
+	//   - false → branch exists but not merged → "active" if units
+	//   - null  → fs mode (no branch signal); pure falls back to
+	//             per-unit completion derivation
+	const intentMain = `haiku/${slug}/main`
+	const stageMergedIntoMain =
+		isGitRepo() && branchHeadExists(intentMain)
+			? intentMainHasStageUnits(slug, stage)
+			: null
 
-	return {
-		stage,
-		status,
-		phase,
-		started_at,
-		completed_at,
-		gate_outcome,
-		visits,
+	// Elaboration-verified signal. Tri-state:
+	//   - true  → artifact exists AND verified_at stamped
+	//   - false → artifact exists but unverified → phase is "elaborate"
+	//   - null  → artifact missing → grandfather (cursor.ts:684-700)
+	const elabPath = join(stageDir, "elaboration.md")
+	let elaborationVerified: boolean | null = null
+	if (existsSync(elabPath)) {
+		const elabFm = readFm(elabPath) ?? {}
+		const verifiedAt =
+			typeof elabFm.verified_at === "string" ? elabFm.verified_at : ""
+		elaborationVerified = verifiedAt.length > 0
 	}
+
+	return deriveStageStatePure({
+		stage,
+		units,
+		intentMode,
+		hats,
+		reviewRoles,
+		approvalRoles,
+		stageMergedIntoMain,
+		elaborationVerified,
+	})
 }

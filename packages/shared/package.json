@@ -15,6 +15,10 @@
 		"./frontmatter": {
 			"types": "./src/frontmatter.ts",
 			"default": "./src/frontmatter.ts"
+		},
+		"./derived-stage-state": {
+			"types": "./src/derived-stage-state.ts",
+			"default": "./src/derived-stage-state.ts"
 		}
 	},
 	"scripts": {

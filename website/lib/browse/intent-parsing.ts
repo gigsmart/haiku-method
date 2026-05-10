@@ -6,6 +6,10 @@
  * providers can't drift on what an "intent" or "stage" looks like.
  */
 
+import {
+	deriveStageStatePure,
+	type DerivedUnitView,
+} from "@haiku/shared/derived-stage-state"
 import type { HaikuArtifact, HaikuIntent, HaikuKnowledgeFile } from "./types"
 import { normalizeIntentStatus, parseFrontmatter } from "./types"
 
@@ -209,41 +213,40 @@ export function deriveV4ActiveStage(
 }
 
 /**
- * Derive a stage's "v3-style" status from its unit list. v4 stages no
- * longer have a state.json; the providers walk the per-unit FMs and
- * fold them into a single status string the existing UI knows how to
- * paint.
+ * Derive a stage's "v3-style" status from its unit list. Delegates to
+ * `deriveStageStatePure` — the same function the MCP engine calls so
+ * the cursor walk and the browse UI cannot drift on what "completed"
+ * means. The pure function returns the v4 shape (`completed`); we map
+ * to the website's existing wire vocabulary (`complete`).
  *
- *   - "complete"  — every unit has a terminal-advance iteration AND a
- *                   user approval signed (the cursor's completion sig)
- *   - "active"    — at least one unit has started but not all complete
- *   - "pending"   — no units, or every unit has empty iterations[]
+ * Inputs the website doesn't have here:
+ *   - `hats` is unknown at provider load time (the SPA doesn't fetch
+ *     STAGE.md). Pass empty array — the terminal-hat check is
+ *     skipped, matching the website's previous "any terminal advance"
+ *     behavior.
+ *   - `approvalRoles: ["user"]` mirrors the website's previous
+ *     "user-approval signed = complete" semantic without having to
+ *     load review-agent metadata over the API.
+ *   - `stageMergedIntoMain` is unknown at this layer; pass null so
+ *     the function falls back to per-unit completion derivation.
+ *   - `elaborationVerified` defaults to null (grandfathered).
  *
- * Pure function so the providers can call it after loading units.
+ * The "completed" → "complete" remapping mirrors the v3 wire shape
+ * the SPA components were built against.
  */
 export function deriveStageStatusFromUnits(
 	units: ReadonlyArray<{ raw: Record<string, unknown> }>,
+	stage = "",
 ): "pending" | "active" | "complete" {
-	if (units.length === 0) return "pending"
-	let anyStarted = false
-	let allComplete = true
-	for (const u of units) {
-		const fm = u.raw
-		const iterations = fm.iterations
-		const hasAnyIteration = Array.isArray(iterations) && iterations.length > 0
-		const lastIter = hasAnyIteration
-			? (iterations as Array<{ result?: string }>)[iterations.length - 1]
-			: undefined
-		const lastIsAdvance = lastIter?.result === "advance"
-		const approvals =
-			fm.approvals && typeof fm.approvals === "object"
-				? (fm.approvals as Record<string, unknown>)
-				: {}
-		const userApproved = approvals.user != null
-		if (hasAnyIteration) anyStarted = true
-		if (!(lastIsAdvance && userApproved)) allComplete = false
-	}
-	if (allComplete) return "complete"
-	if (anyStarted) return "active"
-	return "pending"
+	const unitViews: DerivedUnitView[] = units.map((u, i) => ({
+		name: `u${i}`,
+		fm: u.raw,
+	}))
+	const derived = deriveStageStatePure({
+		stage,
+		units: unitViews,
+		intentMode: "continuous",
+		approvalRoles: ["user"],
+	})
+	return derived.status === "completed" ? "complete" : derived.status
 }
