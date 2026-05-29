@@ -46,8 +46,6 @@ export function makeRes() {
 	return {
 		statusCode: 200,
 		body: undefined,
-		redirectedTo: undefined,
-		headers: {},
 		status(code) {
 			this.statusCode = code
 			return this
@@ -56,25 +54,9 @@ export function makeRes() {
 			this.body = payload
 			return this
 		},
-		redirect(code, url) {
-			this.statusCode = code
-			this.redirectedTo = url
-			return this
-		},
-		setHeader(name, value) {
-			this.headers[name] = value
-			if (name.toLowerCase() === "location") this.redirectedTo = value
-			return this
-		},
 	}
 }
 
-export function makeReq({
-	method = "POST",
-	path = "/",
-	body = {},
-	query = undefined,
-	headers = undefined,
-} = {}) {
-	return { method, path, body, query, headers }
+export function makeReq({ method = "POST", path = "/", body = {} } = {}) {
+	return { method, path, body }
 }

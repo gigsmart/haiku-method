@@ -89,19 +89,25 @@ export function startOAuthFlow(config: AuthConfig, returnPath: string): void {
 
 /** Initiate the CLI OAuth flow — the browse-site half of the haikumethod.ai
  *  broker handshake. The broker's `/cli/start` mints a `session_id` + a `state`
- *  and points the CLI's verification_url here. Unlike the browse flow, the CLI
- *  flow uses the SERVER-SIDE callback: the redirect_uri is the proxy's OWN
- *  `/{provider}/callback` (the URL registered on the OAuth app), so the provider
- *  hands the code straight to the proxy, which exchanges it server-side and
- *  completes the CLI session. The browser never receives the token — there is
- *  nothing to store here, and no website callback page is involved. */
+ *  and points the CLI's verification_url here. We run the SAME provider OAuth as
+ *  the browse flow (reusing the registered `/auth/{provider}/callback/` redirect
+ *  URI) but with the broker's `state` round-tripped through the provider, plus a
+ *  marker so the callback POSTs the exchanged token to the broker's
+ *  `/cli/complete` instead of only storing it for the SPA. */
 export function startCliOAuthFlow(
 	config: AuthConfig,
 	brokerState: string,
 ): void {
-	// redirect_uri targets the PROXY, not this site — it must match the OAuth
-	// app's registered callback (auth.haikumethod.ai/{provider}/callback).
-	const redirectUri = `${AUTH_PROXY_URL}/${config.provider}/callback`
+	// The broker state IS the OAuth state — the callback verifies it round-trips
+	// and forwards it to /cli/complete so the broker matches the session.
+	sessionStorage.setItem(`${STORAGE_PREFIX}oauth-state`, brokerState)
+	sessionStorage.setItem(`${STORAGE_PREFIX}oauth-return`, "/oauth/cli/done/")
+	sessionStorage.setItem(`${STORAGE_PREFIX}oauth-host`, config.host)
+	sessionStorage.setItem(`${STORAGE_PREFIX}oauth-provider`, config.provider)
+	// Marker: the callback should COMPLETE the CLI session, not just store.
+	sessionStorage.setItem(`${STORAGE_PREFIX}cli-complete`, brokerState)
+
+	const redirectUri = `${window.location.origin}/auth/${config.provider}/callback/`
 	if (config.provider === "github") {
 		const params = new URLSearchParams({
 			client_id: config.clientId,
@@ -126,6 +132,39 @@ export function startCliOAuthFlow(
 	}
 }
 
+/** POST an exchanged token bundle to the broker's `/cli/complete`, keyed by the
+ *  CLI session's `state`. Mirrors the broker contract in
+ *  `deploy/auth-proxy/src/cli.ts` `complete()`. */
+async function completeCliSession(
+	state: string,
+	host: string,
+	data: Record<string, unknown>,
+): Promise<{ ok: boolean; error?: string }> {
+	try {
+		const res = await fetch(`${AUTH_PROXY_URL}/cli/complete`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				state,
+				host,
+				access_token: data.access_token,
+				...(data.refresh_token ? { refresh_token: data.refresh_token } : {}),
+				...(data.expires_at !== undefined
+					? { expires_at: data.expires_at }
+					: {}),
+				...(data.scopes !== undefined ? { scopes: data.scopes } : {}),
+				...(data.account ? { account: data.account } : {}),
+			}),
+		})
+		if (!res.ok) {
+			return { ok: false, error: `broker /cli/complete returned ${res.status}` }
+		}
+		return { ok: true }
+	} catch (e) {
+		return { ok: false, error: (e as Error).message }
+	}
+}
+
 /** Handle the OAuth callback — call this on the callback page */
 export async function handleOAuthCallback(provider: string): Promise<{
 	success: boolean
@@ -139,12 +178,16 @@ export async function handleOAuthCallback(provider: string): Promise<{
 	const host = sessionStorage.getItem(`${STORAGE_PREFIX}oauth-host`) || ""
 	const savedProvider =
 		sessionStorage.getItem(`${STORAGE_PREFIX}oauth-provider`) || ""
+	// CLI flow marker (the broker state) — present when this callback should
+	// complete a broker CLI session rather than only store the token.
+	const cliState = sessionStorage.getItem(`${STORAGE_PREFIX}cli-complete`)
 
 	// Clean up session storage
 	sessionStorage.removeItem(`${STORAGE_PREFIX}oauth-state`)
 	sessionStorage.removeItem(`${STORAGE_PREFIX}oauth-return`)
 	sessionStorage.removeItem(`${STORAGE_PREFIX}oauth-host`)
 	sessionStorage.removeItem(`${STORAGE_PREFIX}oauth-provider`)
+	sessionStorage.removeItem(`${STORAGE_PREFIX}cli-complete`)
 
 	// Verify provider matches
 	if (provider !== savedProvider) {
@@ -199,7 +242,24 @@ export async function handleOAuthCallback(provider: string): Promise<{
 
 		const data = await res.json()
 		if (data.access_token) {
-			setToken(host, data.access_token)
+			if (cliState) {
+				// CLI flow: hand the token to the broker so the polling CLI
+				// receives it. Do NOT persist it to the SPA's localStorage — the
+				// user opened this link from their terminal, not the browse UI, so
+				// silently logging their browser in would be a surprising side
+				// effect. The broker is the only path that matters here.
+				const done = await completeCliSession(cliState, host, data)
+				if (!done.ok) {
+					return {
+						success: false,
+						host,
+						returnPath,
+						error: `Authenticated, but handing the token to the CLI failed: ${done.error}`,
+					}
+				}
+			} else {
+				setToken(host, data.access_token)
+			}
 			return { success: true, host, returnPath }
 		}
 

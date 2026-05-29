@@ -110,11 +110,6 @@ resource "google_cloudfunctions2_function" "auth_proxy" {
 
     environment_variables = {
       ALLOWED_ORIGIN = var.allowed_origin
-      # The proxy's own public origin — the host the provider redirects to and
-      # the URL registered on the OAuth app. The server-side /{provider}/callback
-      # sends this as redirect_uri at the token exchange; it MUST be byte-identical
-      # to the one the website sent at authorize (NEXT_PUBLIC_HAIKU_AUTH_PROXY_URL).
-      PROXY_PUBLIC_ORIGIN = "https://auth.${var.domain}"
     }
 
     secret_environment_variables {
