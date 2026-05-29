@@ -9,9 +9,13 @@
  *   1. CLI POSTs /cli/start → we mint a session + state, store PENDING in
  *      Firestore, and return a verification_url pointing at the browse site's
  *      CLI authorize entry carrying the state.
- *   2. The human approves; the browse site's existing /{provider}/callback
- *      exchanges code→token, then POSTs the bundle to /cli/complete keyed by
- *      state → the session flips to ready.
+ *   2. The human approves; the provider redirects to the proxy's OWN
+ *      GET /{provider}/callback (the URL registered on the OAuth app), which
+ *      exchanges code→token server-side — the held client secret never leaves
+ *      the proxy and the token never touches the browser — flips the session to
+ *      ready keyed by state, and 302-redirects the browser to the browse-site
+ *      done page. (The legacy /cli/complete POST remains for any purely
+ *      client-side completer that exchanges via /{provider}/token first.)
  *   3. CLI polls /cli/poll → the token is released ONCE, then consumed.
  *   4. /cli/refresh re-runs the provider exchange with grant_type=refresh_token.
  *
@@ -22,6 +26,7 @@
 import { randomBytes } from "node:crypto"
 import {
 	authorizeEndpoint,
+	exchangeCode,
 	isProvider,
 	normalizeHost,
 	type Provider,
@@ -40,10 +45,16 @@ export interface HttpRequest {
 	method?: string
 	path?: string
 	body?: unknown
+	/** parsed query string — present on the GET provider-callback route */
+	query?: Record<string, unknown>
+	headers?: Record<string, string | string[] | undefined>
 }
 export interface HttpResponse {
 	status(code: number): unknown
 	json(body: unknown): unknown
+	/** present on the real functions-framework response; used by the callback redirect */
+	redirect?(code: number, url: string): unknown
+	setHeader?(name: string, value: string): unknown
 }
 
 /** The browse-site origin that hosts the OAuth authorize entry + callback. */
@@ -55,6 +66,22 @@ function browseOrigin(): string {
 		.map((o) => o.trim())
 		.filter(Boolean)
 	return process.env.BROWSE_ORIGIN || allowed[0] || "https://haikumethod.ai"
+}
+
+/**
+ * The proxy's OWN public origin — the host the provider redirected to and the
+ * one registered on the OAuth app (e.g. https://auth.haikumethod.ai). The
+ * `redirect_uri` sent at the token exchange MUST be byte-identical to the one
+ * the browser used at authorize, so we reconstruct it from the inbound request
+ * (honoring the load balancer's X-Forwarded-Proto), with an env override for
+ * deployments that front the function differently.
+ */
+function selfOrigin(req: HttpRequest): string {
+	if (process.env.PROXY_PUBLIC_ORIGIN) return process.env.PROXY_PUBLIC_ORIGIN
+	const host = headerStr(req, "host")
+	if (!host) return browseOrigin()
+	const proto = headerStr(req, "x-forwarded-proto") || "https"
+	return `${proto}://${host}`
 }
 
 let store: SessionStore | null = null
@@ -92,6 +119,34 @@ function readBody(req: HttpRequest): Record<string, unknown> {
 
 function str(v: unknown): string | undefined {
 	return typeof v === "string" && v.length ? v : undefined
+}
+
+/** Read a request header case-insensitively, collapsing the array form. */
+function headerStr(req: HttpRequest, name: string): string | undefined {
+	const h = req.headers
+	if (!h) return undefined
+	const v = h[name] ?? h[name.toLowerCase()]
+	if (Array.isArray(v)) return str(v[0])
+	return str(v)
+}
+
+/** Issue a 302 to `url`, tolerating both the functions-framework res.redirect
+ *  and a bare status+header shape (so unit tests can assert without Express). */
+function redirectTo(res: HttpResponse, url: string): void {
+	if (typeof res.redirect === "function") {
+		res.redirect(302, url)
+		return
+	}
+	if (typeof res.setHeader === "function") res.setHeader("Location", url)
+	res.status(302)
+	res.json({ redirect: url })
+}
+
+/** Build a browse-site done-page URL, carrying an optional error code. */
+function doneUrl(error?: string): string {
+	const u = new URL("/oauth/cli/done", browseOrigin())
+	if (error) u.searchParams.set("error", error)
+	return u.toString()
 }
 
 function genId(bytes = 24): string {
@@ -257,6 +312,87 @@ async function refresh(req: HttpRequest, res: HttpResponse): Promise<void> {
 	})
 	res.status(200)
 	res.json(bundle)
+}
+
+/**
+ * GET /{provider}/callback — the URL registered on the OAuth app. The provider
+ * redirects the human's browser here after consent with `?code&state` (or
+ * `?error` on denial). We exchange the code for a token SERVER-side (secret
+ * stays here, token never reaches the browser), flip the matching session to
+ * ready, and redirect the browser to the browse-site done page. Every failure
+ * path redirects to the done page with an `?error` code — this is a top-level
+ * browser navigation, so a JSON body would just be shown as raw text.
+ */
+async function providerCallback(
+	provider: Provider,
+	req: HttpRequest,
+	res: HttpResponse,
+): Promise<void> {
+	const q = req.query || {}
+	const providerErr = str(q.error)
+	if (providerErr) {
+		redirectTo(res, doneUrl(providerErr))
+		return
+	}
+	const state = str(q.state)
+	if (!state) {
+		redirectTo(res, doneUrl("missing_state"))
+		return
+	}
+	const session = await sessions().getByState(state)
+	if (!session) {
+		redirectTo(res, doneUrl("unknown_state"))
+		return
+	}
+	if (session.status !== "pending") {
+		redirectTo(res, doneUrl("already_completed"))
+		return
+	}
+	if (session.provider !== provider) {
+		redirectTo(res, doneUrl("provider_mismatch"))
+		return
+	}
+	const code = str(q.code)
+	if (!code) {
+		redirectTo(res, doneUrl("missing_code"))
+		return
+	}
+
+	try {
+		const bundle = await exchangeCode({
+			provider: session.provider,
+			host: session.host,
+			code,
+			// Byte-identical to the authorize redirect_uri the website sent.
+			redirectUri: `${selfOrigin(req)}/${provider}/callback`,
+			fetchImpl,
+		})
+		await sessions().update(session.session_id, {
+			status: "ready",
+			token: bundle,
+		})
+		redirectTo(res, doneUrl())
+	} catch (err) {
+		const errCode =
+			err instanceof ProviderError ? err.code : "exchange_failed"
+		redirectTo(res, doneUrl(errCode))
+	}
+}
+
+/**
+ * Route a GET /github/callback or /gitlab/callback. Returns true when handled
+ * so the caller falls through to its own routing otherwise. Mirrors
+ * handleCliRoute's ownership shape.
+ */
+export async function handleProviderCallback(
+	req: HttpRequest,
+	res: HttpResponse,
+): Promise<boolean> {
+	const path = (req.path || "/").replace(/\/+$/, "").toLowerCase() || "/"
+	const m = path.match(/^\/(github|gitlab)\/callback$/)
+	if (!m) return false
+	await providerCallback(m[1] as Provider, req, res)
+	return true
 }
 
 /**

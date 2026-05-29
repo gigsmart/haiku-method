@@ -1,10 +1,12 @@
 import type { HttpFunction } from "@google-cloud/functions-framework"
-import { handleCliRoute } from "./cli.js"
+import { handleCliRoute, handleProviderCallback } from "./cli.js"
 
 // OAuth code→token exchange for GitHub and GitLab.
 // Deployed as a GCP Cloud Function (v2).
 //
 // Endpoints:
+//   GET  /github/callback — provider redirects here after consent; server-side
+//   GET  /gitlab/callback   exchange + flips the CLI session ready (Phase 2)
 //   POST /github/token — exchange GitHub authorization code (browse site)
 //   POST /gitlab/token — exchange GitLab authorization code (browse site)
 //   POST /cli/start    — begin a CLI device-flow handshake (Phase 2)
@@ -54,6 +56,12 @@ export const authProxy: HttpFunction = async (req, res) => {
 	// CORS preflight
 	if (req.method === "OPTIONS") {
 		res.status(204).send("")
+		return
+	}
+
+	// Server-side provider callback is a GET — the provider redirects the
+	// human's browser here after consent. Handle it before the POST-only gate.
+	if (req.method === "GET" && (await handleProviderCallback(req, res))) {
 		return
 	}
 

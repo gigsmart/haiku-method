@@ -173,6 +173,37 @@ async function postToken(
 	return parsed
 }
 
+/**
+ * Exchange an authorization `code` for a token bundle, server-side, using the
+ * held client secret. The `redirectUri` MUST be byte-identical to the one the
+ * browser sent at the authorize step — GitLab rejects the exchange otherwise,
+ * and GitHub validates it when present. This is the server-side-callback path
+ * (provider redirects straight to the proxy's `/{provider}/callback`), distinct
+ * from the Phase-1 client-side `/{provider}/token` endpoints where the browser
+ * holds the code.
+ */
+export async function exchangeCode(args: {
+	provider: Provider
+	host: string
+	code: string
+	redirectUri: string
+	env?: NodeJS.ProcessEnv
+	fetchImpl?: typeof fetch
+}): Promise<TokenBundle> {
+	const { provider, host, code, redirectUri, env, fetchImpl } = args
+	const { clientId, clientSecret } = resolveCredentials(provider, host, env)
+	const body: Record<string, string> = {
+		client_id: clientId,
+		client_secret: clientSecret,
+		code,
+		redirect_uri: redirectUri,
+	}
+	// GitHub infers the grant from the code; GitLab requires it explicitly.
+	if (provider === "gitlab") body.grant_type = "authorization_code"
+	const raw = await postToken(tokenEndpoint(provider, host), body, fetchImpl)
+	return shapeBundle(raw)
+}
+
 /** Re-run the token exchange with grant_type=refresh_token using the held secret. */
 export async function refreshToken(args: {
 	provider: Provider
