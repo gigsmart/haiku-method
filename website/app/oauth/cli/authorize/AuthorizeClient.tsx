@@ -28,6 +28,15 @@ export function AuthorizeClient() {
 			)
 			return
 		}
+		// The broker declares the provider in the URL; `host` is the authoritative
+		// signal we actually resolve against. If they disagree, the broker URL is
+		// misconfigured — catch it here instead of redirecting to the wrong place.
+		if (provider && config.provider !== provider) {
+			setError(
+				`Provider mismatch: the link says ${provider} but host ${host} resolves to ${config.provider}.`,
+			)
+			return
+		}
 		// Redirects the browser to the provider's authorize page.
 		startCliOAuthFlow(config, state)
 	}, [])

@@ -5,6 +5,7 @@
 	"main": "dist/index.js",
 	"scripts": {
 		"build": "tsc",
+		"gcp-build": "tsc",
 		"start": "functions-framework --target=authProxy",
 		"test": "tsc && node --test test/*.test.mjs"
 	},

@@ -117,11 +117,15 @@ export function startCliOAuthFlow(
 		})
 		window.location.href = `https://github.com/login/oauth/authorize?${params}`
 	} else {
+		// CLI write scope, NOT the browse flow's read-only `read_api`: the CLI
+		// uses this token to open MRs and upload proof, which need write. GitLab's
+		// `api` scope is a superset of `read_api`, so it's requested alone. (GitHub
+		// already uses `repo` in both flows — full read/write — so no delta there.)
 		const params = new URLSearchParams({
 			client_id: config.clientId,
 			redirect_uri: redirectUri,
 			response_type: "code",
-			scope: "read_api api",
+			scope: "api",
 			state: brokerState,
 		})
 		window.location.href = `https://${config.host}/oauth/authorize?${params}`
@@ -238,11 +242,12 @@ export async function handleOAuthCallback(provider: string): Promise<{
 
 		const data = await res.json()
 		if (data.access_token) {
-			setToken(host, data.access_token)
-			// CLI flow: hand the token to the broker so the polling CLI receives
-			// it. The SPA-side store above is harmless; the broker is the path
-			// that matters for the CLI.
 			if (cliState) {
+				// CLI flow: hand the token to the broker so the polling CLI
+				// receives it. Do NOT persist it to the SPA's localStorage — the
+				// user opened this link from their terminal, not the browse UI, so
+				// silently logging their browser in would be a surprising side
+				// effect. The broker is the only path that matters here.
 				const done = await completeCliSession(cliState, host, data)
 				if (!done.ok) {
 					return {
@@ -252,6 +257,8 @@ export async function handleOAuthCallback(provider: string): Promise<{
 						error: `Authenticated, but handing the token to the CLI failed: ${done.error}`,
 					}
 				}
+			} else {
+				setToken(host, data.access_token)
 			}
 			return { success: true, host, returnPath }
 		}
